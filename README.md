@@ -13,6 +13,8 @@ This node manages the unrealcv client and the connection with a running UE4 game
 
 ## Parameters
 * **test** Set to true to manually navigate the camera inside the UE4 game and use the client to broadcast its pose (with respect to the world frame, located at the origin of the unreal coordinate system). If false, the MAVs pose is set by the odometry topic (in odometry frame, with the origin at the camera position at the point of connection). Default is false.
+* **collision_on** Set to true to check for collision in the unreal game. Set to false to set the camera anyway. May result in rendering artifacts if the camera overlaps with objects. Default is true.
+* **collision_tol** Distance threshold for collision detection in unreal units (default is cm). Will trigger a collision warning if the requested and realized position are further away than the threshold. Default is 10.
 * **Hint:** To change the resolution and field of view (FOV) of the camera, the [unrealcv configuration file](http://docs.unrealcv.org/en/master/plugin/config.html) needs to be changed. Its path is displayed when launching the unreal_ros_client node.
 
 ## Input Topics

@@ -2,7 +2,7 @@
 <package format="2">
   <name>unreal_cv_ros</name>
   <version>0.0.0</version>
-  <description>ROS interface to connect and stream images from an unreal engine game world, using the unreal_cv api.</description>
+  <description>ROS interface to connect and stream images from an unreal engine game world, using the unrealcv api.</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <maintainer email="schmluk@student.ethz.ch">Lukas Schmid</maintainer>
@@ -54,6 +54,7 @@
   <depend>rospy</depend>
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>cv_bridge</depend>
 

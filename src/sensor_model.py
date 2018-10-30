@@ -4,6 +4,7 @@
 import rospy
 from unreal_cv_ros.msg import UeSensorRaw
 from sensor_msgs.msg import PointCloud2, PointField
+import tf
 
 # Image conversion
 from cv_bridge import CvBridge
@@ -12,7 +13,7 @@ from cv_bridge import CvBridge
 import sys
 import math
 import numpy as np
-
+from struct import pack, unpack
 
 class sensor_model:
 
@@ -36,30 +37,36 @@ class sensor_model:
         self.pub = rospy.Publisher("ue_sensor_out", PointCloud2, queue_size=1)
         self.sub = rospy.Subscriber("ue_sensor_raw", UeSensorRaw, self.callback, queue_size=1)
         self.bridge = CvBridge()
+        self.tf_br = tf.TransformBroadcaster()
 
-    def callback(self, data):
+    def callback(self, ros_data):
         ''' Produce simulated sensor outputs from raw unreal color+depth image '''
         if rospy.is_shutdown():
             return
-
+        time = rospy.Time.now()
         # Read out images
-        img_color = self.bridge.imgmsg_to_cv2(data.color_image, "8UC4")
-        img_depth = self.bridge.imgmsg_to_cv2(data.depth_image, "32FC1")
-
-        # test
-        # cv2.imshow("Color input", img_color[:, :, [2, 1, 0]])
-        # cv2.waitKey(3)
-        # cv2.imshow("Depth input", cv2.applyColorMap(np.uint8(img_depth), cv2.COLORMAP_JET))
-        # cv2.imshow("Normalized depth", cv2.applyColorMap(np.uint8(255*(img_depth-np.amin(img_depth)/
-        #                                                            (np.amax(img_depth)-np.amin(img_depth)))),
-        #                                                           cv2.COLORMAP_JET))
-        # cv2.waitKey(3)
-        # print('image received')
+        img_color = self.bridge.imgmsg_to_cv2(ros_data.color_image, "8UC4")
+        img_depth = self.bridge.imgmsg_to_cv2(ros_data.depth_image, "32FC1")
 
         # Process point cloud
         if self.model == 'ground_truth':
-            pointcloud = self.process_ground_truth(img_depth, data.camera_info)
-            pointcloud = np.stack([pointcloud, img_color[:, :, [0, 1, 2]]], axis=2)
+            pointcloud = self.process_ground_truth(img_depth, ros_data.camera_info)
+
+        # Build colored pointcloud data
+        rgb = np.ones((img_color.shape[0], img_color.shape[1]))
+        # img_color = np.ones(img_color.shape, dtype=int)
+        for i in range(img_color.shape[0]):
+            for j in range(img_color.shape[1]):
+                color = int(img_color[i, j, 0]) << 16 | int(img_color[i, j, 1]) << 8 | int(img_color[i, j, 2])
+                rgb[i, j] = unpack('f', pack('i', color))[0]
+        data = np.dstack((pointcloud, rgb))
+
+        # Publish pose
+        position = ros_data.camera_link_pose.position
+        orientation = ros_data.camera_link_pose.orientation
+        self.tf_br.sendTransform((position.x, position.y, position.z),
+                                 (orientation.x, orientation.y, orientation.z, orientation.w),
+                                 rospy.Time.now(), "camera_link", "world")
 
         # Publish pointcloud
         msg = PointCloud2()
@@ -71,26 +78,12 @@ class sensor_model:
             PointField('x', 0, PointField.FLOAT32, 1),
             PointField('y', 4, PointField.FLOAT32, 1),
             PointField('z', 8, PointField.FLOAT32, 1),
-            PointField('r', 12, PointField.FLOAT32, 1),
-            PointField('g', 16, PointField.FLOAT32, 1),
-            PointField('b', 20, PointField.FLOAT32, 1)]
-        # msg.fields = [
-        #     PointField('x', 0, PointField.FLOAT32, 1),
-        #     PointField('y', 4, PointField.FLOAT32, 1),
-        #     PointField('z', 8, PointField.FLOAT32, 1),
-        #     PointField('r', 12, PointField.UINT8, 1),
-        #     PointField('g', 13, PointField.UINT8, 1),
-        #     PointField('b', 14, PointField.UINT8, 1)]
+            PointField('rgb', 12, PointField.FLOAT32, 1)]
         msg.is_bigendian = False
-        msg.point_step = 24 #15
+        msg.point_step = 16
         msg.row_step = msg.point_step * msg.width
         msg.is_dense = True
-
-        msg.data = np.float32(pointcloud).tostring()
-        # data = np.dstack([np.float32(pointcloud), np.uint8(img_color[:, :, [0, 1, 2]])])
-        # print(data.shape, data.dtype)
-        # msg.data = data.tostring()
-
+        msg.data = np.float32(data).tostring()
         self.pub.publish(msg)
 
     @staticmethod
