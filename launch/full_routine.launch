@@ -79,7 +79,7 @@
   <node name="hovering_example" pkg="rotors_gazebo" type="hovering_example" output="screen" ns="$(arg mav_name)">
 		<param name="x" value="0" />
 		<param name="y" value="3.0" />
-		<param name="z" value="1.0" />
+		<param name="z" value="3.0" />
 		<param name="yaw" value="1.57" />
   </node>
 </launch>
