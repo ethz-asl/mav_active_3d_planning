@@ -62,15 +62,16 @@ class sensor_model:
         data = np.dstack((pointcloud, rgb))
 
         # Publish pose
+        header_time = rospy.Time.now()
         position = ros_data.camera_link_pose.position
         orientation = ros_data.camera_link_pose.orientation
         self.tf_br.sendTransform((position.x, position.y, position.z),
                                  (orientation.x, orientation.y, orientation.z, orientation.w),
-                                 rospy.Time.now(), "camera_link", "world")
+                                 header_time, "camera_link", "world")
 
         # Publish pointcloud
         msg = PointCloud2()
-        msg.header.stamp = rospy.Time.now()
+        msg.header.stamp = header_time
         msg.header.frame_id = 'camera'
         msg.width = pointcloud.shape[0]
         msg.height = pointcloud.shape[1]
