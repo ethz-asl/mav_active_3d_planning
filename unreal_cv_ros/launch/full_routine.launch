@@ -13,6 +13,7 @@
   <arg name="verbose_voxblox" default="false"/>
   <!-- Unreal/Routine arguments -->
   <arg name="sensor_model_config" default="sensor_model_config.yaml"/>
+  <arg name="uecv_mode" default="standard"/>
   <arg name="rviz_config_voxblox" default="test_launch_config_voxblox.rviz"/>
 
 
@@ -50,9 +51,11 @@
     <!-- Unreal vision client + sensor model -->
     <node name="unreal_ros_client" pkg="unreal_cv_ros" type="unreal_ros_client.py" output="screen">
       <remap from="odometry" to="ground_truth/odometry" />
+			<param name="mode" value="$(arg uecv_mode)"/>
     </node>
     <node name="unreal_sensor_model" pkg="unreal_cv_ros" type="sensor_model.py" output="screen">
       <rosparam command="load" file="$(find unreal_cv_ros)/cfg/$(arg sensor_model_config)"/>
+      <param name="mode" value="$(arg uecv_mode)"/>
     </node>
     <!-- static camera transform (odom to camera frame)-->
    <node pkg="tf" type="static_transform_publisher" name="tf_camera_to_link" args="0 0 0 -0.5 0.5 -0.5 0.5 /camera_link /camera 100"/>
@@ -78,8 +81,8 @@
 	<!-- Some simple movement for testing -->
   <node name="hovering_example" pkg="rotors_gazebo" type="hovering_example" output="screen" ns="$(arg mav_name)">
 		<param name="x" value="0" />
-		<param name="y" value="3.0" />
-		<param name="z" value="3.0" />
+		<param name="y" value="0" />
+		<param name="z" value="1.0" />
 		<param name="yaw" value="1.57" />
   </node>
 </launch>

@@ -9,6 +9,7 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <run_depend>unreal_cv_ros</run_depend>
+  <run_depend>mav_active_3d_planning</run_depend>
 
   <export>
     <metapackage/>

@@ -5,9 +5,13 @@ unreal_cv_ros is a package to allow ROS based simulation of a MAV equipped with 
 * [unreal_ros_client](#unreal_ros_client)
 * [sensor_model](#sensor_model)
 
-**Tips and notes**
+**Setuting up Unreal**
+* [Unrealcv Plugin Setup](#Unrealcv-Plugin-Setup)
+* [Creating UE4 worlds](#Creating-UE4-worlds)
+* [Custom collision radius](#Custom-collision-radius)
+
+**Examples**
 * [Example](#Example)
-* [Building UE4 worlds](##Creating-UE4-worlds)
 
 ## Dependencies
 What should all be added here? The unreal_ros_client node depends on the unrealcv python library `pip install unrealcv`.
@@ -45,13 +49,15 @@ This node converts the UE game output into a pointcloud for further processing a
 ## Example
 To illustrate the pipeline we run the unreal_ros_client in test mode with ground_truth as our sensor model. Please download the [RealisticRendering](http://docs.unrealcv.org/en/master/reference/model_zoo.html#rr) game binary and launch the game. In a command window type `roslaunch unreal_cv_ros test_pointcloud.launch` to start the pipeline and wait until the connection is setup (takes few seconds). You can now navigate the drone inside the game using the mouse and W-A-S-D keys while a rviz window displayes the produced ground truth pointclouds as well as the MAV pose in the unreal world frame.
 
+## Unrealcv Plugin Setup
+
 ## Creating UE4 worlds
 In order to easily create unreal_cv_ros compatible worlds UE4 worlds:
 * Install and use unreal engine editor **4.16** (for compatibility with unrealcv).
 * Make sure the unrealcv plugin is installed **and** activated in the current project (Edit > Plugins > Science > Unreal CV, see [unrealcv docs](http://docs.unrealcv.org/en/master/plugin/install.html)).
 * Set the player to a spectator with collision type: World Settings > Game Mode > Selected GameMode > Default Pawn Class := DefaultPawn.
 
-### Custom collision radius
+## Custom collision radius
 The default collision for the *DefaultPawn* is a sphere of radius 35cm. For custom collision (radius), you need to create your own pawn blueprint (with DefaultPawn as base class). 'Easy' way to create a pawn of custom collision radius:
 1. In the Modes window, search for 'DefaultPawn' and create an instance (drag and drop into the game world).
 2. Select the pawn instance and click Blueprints > Convert selected actor to blueprint class...

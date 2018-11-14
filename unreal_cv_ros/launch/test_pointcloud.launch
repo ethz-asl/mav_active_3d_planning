@@ -7,10 +7,11 @@
 
   <!-- Unreal vision client + sensor model -->
   <node name="unreal_ros_client" pkg="unreal_cv_ros" type="unreal_ros_client.py" output="screen">
-    <rosparam param="test">true</rosparam>
+    <rosparam param="mode">test</rosparam>
   </node>
   <node name="unreal_sensor_model" pkg="unreal_cv_ros" type="sensor_model.py" output="screen">
     <rosparam command="load" file="$(find unreal_cv_ros)/cfg/$(arg sensor_model_config)"/>
+    <rosparam param="mode">test</rosparam>
   </node>
 
   <!-- RVIZ -->

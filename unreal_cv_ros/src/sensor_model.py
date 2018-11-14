@@ -8,6 +8,7 @@ import tf
 
 # Image conversion
 from cv_bridge import CvBridge
+import io
 
 # Python
 import sys
@@ -22,6 +23,7 @@ class sensor_model:
 
         # Read in params
         model_type_in = rospy.get_param('~model_type', 'ground_truth')
+        self.client_mode = rospy.get_param('~mode', 'standard')  # test, standard, fast, fast2
 
         # Setup sensor type
         model_types = {'ground_truth': 'ground_truth'}      # Dictionary of implemented models
@@ -33,28 +35,51 @@ class sensor_model:
         else:
             self.model = selected
 
+        # Select client mode
+        mode_types = {'standard': 'standard', 'fast': 'fast', 'test': 'test', 'fast2': 'fast2'}
+        selected = mode_types.get(self.client_mode, 'NotFound')
+        if selected == 'NotFound':
+            warning = "Unknown client mode '" + self.mode + "'. Implemented modes are: " + \
+                      "".join(["'" + m + "', " for m in mode_types])
+            rospy.logfatal(warning[:-2])
+
         # Initialize node
         self.pub = rospy.Publisher("ue_sensor_out", PointCloud2, queue_size=1)
-        self.sub = rospy.Subscriber("ue_sensor_raw", UeSensorRaw, self.callback, queue_size=1)
-        self.bridge = CvBridge()
+        if self.client_mode == 'standard' or self.client_mode == 'test':
+            self.sub = rospy.Subscriber("ue_sensor_raw", UeSensorRaw, self.callback_standard, queue_size=1)
+            self.bridge = CvBridge()
+        else:
+            self.sub = rospy.Subscriber("ue_sensor_raw", UeSensorRawFast, self.callback_fast, queue_size=1)
         self.tf_br = tf.TransformBroadcaster()
 
-    def callback(self, ros_data):
+    def callback_standard(self, ros_data):
         ''' Produce simulated sensor outputs from raw unreal color+depth image '''
         if rospy.is_shutdown():
             return
-        time = rospy.Time.now()
         # Read out images
         img_color = self.bridge.imgmsg_to_cv2(ros_data.color_image, "8UC4")
         img_depth = self.bridge.imgmsg_to_cv2(ros_data.depth_image, "32FC1")
+        self.callback_main(img_color, img_depth, ros_data)
 
+    def callback_fast(self, ros_data):
+        ''' Produce simulated sensor outputs from raw binary data '''
+        if rospy.is_shutdown():
+            return
+        # Read out images
+        z = list(str(ros_data.data))
+        idx = int(len(z) / 2)   # Half of the bytes are the 4channel color img, half the depth
+        img_color = np.load(io.BytesIO(bytearray(z[:idx])))
+        img_depth = np.load(io.BytesIO(bytearray(z[idx:])))
+        self.callback_main(img_color, img_depth, ros_data)
+
+    def callback_main(self, img_color, img_depth, ros_data):
+        ''' Produce pointcloud from color and depth image and apply sensor noise models'''
         # Process point cloud
         if self.model == 'ground_truth':
             pointcloud = self.process_ground_truth(img_depth, ros_data.camera_info)
 
         # Build colored pointcloud data
         rgb = np.ones((img_color.shape[0], img_color.shape[1]))
-        # img_color = np.ones(img_color.shape, dtype=int)
         for i in range(img_color.shape[0]):
             for j in range(img_color.shape[1]):
                 color = int(img_color[i, j, 0]) << 16 | int(img_color[i, j, 1]) << 8 | int(img_color[i, j, 2])
@@ -62,16 +87,15 @@ class sensor_model:
         data = np.dstack((pointcloud, rgb))
 
         # Publish pose
-        header_time = rospy.Time.now()
         position = ros_data.camera_link_pose.position
         orientation = ros_data.camera_link_pose.orientation
         self.tf_br.sendTransform((position.x, position.y, position.z),
                                  (orientation.x, orientation.y, orientation.z, orientation.w),
-                                 header_time, "camera_link", "world")
+                                 ros_data.header.stamp, "camera_link", "world")
 
         # Publish pointcloud
         msg = PointCloud2()
-        msg.header.stamp = header_time
+        msg.header.stamp = ros_data.header.stamp
         msg.header.frame_id = 'camera'
         msg.width = pointcloud.shape[0]
         msg.height = pointcloud.shape[1]
