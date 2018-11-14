@@ -11,6 +11,8 @@ This repo contains packages for active path planning for 3D reconstruction. The 
 TODO: coming soon.
 
 # Packages
+More detailed information for every package is found in their respective readmes.
+
 ## unreal_cv_ros
 Simulate 3D perception for MAVs in an unreal engine 4 game.
 
