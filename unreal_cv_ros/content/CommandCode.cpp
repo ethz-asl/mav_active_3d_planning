@@ -22,15 +22,11 @@ FExecStatus FCameraCommandHandler::UecvrosFull(const TArray<FString>& Args)
 		float Xo = FCString::Atof(*Args[7]), Yo = FCString::Atof(*Args[8]), Zo = FCString::Atof(*Args[9]);
 		
 		// Check for collision
-		bool collided = false;
 		bool sweep = tol > 0;	// Is collision enabled?
-		if (sweep)
-		{
-			APawn* Pawn = FUE4CVServer::Get().GetPawn();
-			FVector LocReal = Pawn->GetActorLocation();
-			float dist = pow(pow(Xo-LocReal.X, 2.0) + pow(Yo-LocReal.Y, 2.0) + pow(Zo-LocReal.Z, 2.0), 0.5);
-			collided = dist >= tol;
-		}
+		APawn* Pawn = FUE4CVServer::Get().GetPawn();
+		FVector LocReal = Pawn->GetActorLocation();
+		float dist = pow(pow(Xo-LocReal.X, 2.0) + pow(Yo-LocReal.Y, 2.0) + pow(Zo-LocReal.Z, 2.0), 0.5);
+		bool collided = dist >= tol && sweep;
 				
 		TArray<uint8> Data;
 		if (!collided)
