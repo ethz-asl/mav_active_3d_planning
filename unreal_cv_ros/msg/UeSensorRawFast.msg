@@ -1,7 +1,7 @@
 Header header
 
-# Bianry image data
-std_msgs/String data
+# Binary image data
+string data
 
 # Camera parameters
 sensor_msgs/CameraInfo camera_info

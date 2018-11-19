@@ -2,7 +2,7 @@
 
 # ros
 import rospy
-from unreal_cv_ros.msg import UeSensorRaw
+from unreal_cv_ros.msg import UeSensorRaw, UeSensorRawFast
 from sensor_msgs.msg import PointCloud2, PointField
 import tf
 

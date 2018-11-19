@@ -19,6 +19,7 @@ from cv_bridge import CvBridge
 import sys
 import math
 import numpy as np
+import time
 
 
 class unreal_ros_client:
@@ -98,6 +99,12 @@ class unreal_ros_client:
             # Use ros in unreal plugin?
             self.sub = rospy.Subscriber("odometry", Odometry, self.fast_callback, queue_size=1)
 
+        # Performance measures
+        self.perf_reqs_skipped = []
+        self.perf_reqs_counter = 0
+        self.perf_framerate_true = []
+        self.perf_framerate_ros = []
+
         # Finish setup
         self.ready = True
         rospy.loginfo("unreal_ros_client is ready in mode: " + self.mode)
@@ -105,9 +112,17 @@ class unreal_ros_client:
     def fast_callback(self, ros_data):
         ''' Use the custom unrealcv command to get images and collision checks. vget UECVROS command returns the images
         and then sets the new pose, therefore the delay. '''
+        # Performance Measures
+        self.perf_reqs_counter += 1
+        print("callback call")
+
         if rospy.is_shutdown() or not self.ready:
             return
         self.ready = False
+
+        time_start = time.time()
+        self.perf_reqs_skipped.append(self.perf_reqs_counter-1)
+        self.perf_reqs_counter = 0
 
         # Get pose in unreal coords
         position, orientation = self.transform_to_unreal(ros_data.pose.pose)
@@ -128,17 +143,21 @@ class unreal_ros_client:
                     rospy.logerr("Unrealcv error: " + result)
             elif isinstance(result, str):
                 # Successful: Publish data for previous pose
-                msg = UeSensorRaw()
+                msg = UeSensorRawFast()
                 msg.header.stamp = self.previous_odom_msg.header.stamp
                 msg.data = result
                 msg.camera_info = self.camera_info
                 msg.camera_link_pose = self.previous_odom_msg.pose.pose
                 self.pub.publish(msg)
+                print("published an image")
             else:
                 rospy.logerr("Unknown return format from unrealcv {0}".format(type(result)))
 
         self.previous_odom_msg = ros_data
         self.previous_loc_req = position
+        self.perf_framerate_true.append(float(time.time()-time_start))
+        print(np.mean(self.perf_reqs_skipped), np.std(self.perf_reqs_skipped),
+              np.mean(self.perf_framerate_true), np.std(self.perf_framerate_true))
         self.ready = True
 
     def odom_callback(self, ros_data):
