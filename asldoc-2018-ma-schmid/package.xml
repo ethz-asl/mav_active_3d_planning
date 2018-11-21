@@ -1,0 +1,17 @@
+<package>
+  <name>asldoc-2018-ma-schmid</name>
+  <version>1.0.0</version>
+  <description>Active pathplanning for 3D reconstruction, using voxblox and unreal engine 4 worlds as simulation environment. </description>
+  <maintainer email="schmluk@student.ethz.ch">Lukas Schmid</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>unreal_cv_ros</run_depend>
+  <run_depend>mav_active_3d_planning</run_depend>
+
+  <export>
+    <metapackage/>
+  </export>
+</package>
