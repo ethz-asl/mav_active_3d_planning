@@ -51,7 +51,7 @@ Visualization Manager:
     - Class: voxblox_rviz_plugin/VoxbloxMesh
       Enabled: true
       Name: VoxbloxMesh
-      Topic: /voxblox_node/mesh
+      Topic: /voxblox/voxblox_node/mesh
       Unreliable: false
       Value: true
   Enabled: true
