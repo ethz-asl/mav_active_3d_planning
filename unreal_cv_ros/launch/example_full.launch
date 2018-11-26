@@ -2,8 +2,7 @@
   <!-- Gazebo arguments -->
   <arg name="mav_name" default="firefly"/>
   <arg name="debug" default="false"/>
-  <arg name="gui" default="true"/>
-  <arg name="paused" default="true"/>
+  <arg name="gui" default="false"/>
   <arg name="verbose_gazebo" default="false"/>
 
   <!-- Voxblox arguments -->
@@ -17,6 +16,9 @@
   <arg name="uecv_mode" default="fast"/>
   <arg name="rviz_config_voxblox" default="example_full.rviz"/>
   
+  <!-- Random Planner -->
+  <arg name="verbose_planner" default="true"/>
+  
 
   <!-- Setup gazebo world -->
   <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find rotors_gazebo)/models"/>
@@ -24,7 +26,7 @@
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="world_name" value="$(find unreal_cv_ros)/content/gazebo_empty.world" />
     <arg name="debug" value="$(arg debug)" />
-    <arg name="paused" value="$(arg paused)" />
+    <arg name="paused" value="true" />
     <arg name="gui" value="$(arg gui)" />
     <arg name="verbose" value="$(arg verbose_gazebo)"/>
   </include>
@@ -38,11 +40,18 @@
       <arg name="enable_logging" value="false" />
       <arg name="z" value="0" />
     </include>
-    <node name="lee_position_controller_node" pkg="rotors_control" type="lee_position_controller_node" output="screen">
-      <rosparam command="load" file="$(find rotors_gazebo)/resource/lee_controller_$(arg mav_name).yaml" />
-      <rosparam command="load" file="$(find rotors_gazebo)/resource/$(arg mav_name).yaml" />
-      <remap from="odometry" to="odometry_sensor1/odometry" />
+    <node name="mav_nonlinear_mpc" pkg="mav_nonlinear_mpc" type="nonlinear_mpc_node" respawn="true" clear_params="true">
+      <remap from="odometry" to="ground_truth/odometry" />
+      <rosparam file="$(find mav_nonlinear_mpc)/resources/nonlinear_mpc_$(arg mav_name).yaml" />
+      <rosparam file="$(find mav_disturbance_observer)/resources/disturbance_observer_$(arg mav_name).yaml"/>
+      <param name="use_rc_teleop" value="false"/>
+      <param name="verbose" value="false" />
+      <param name="reference_frame" value="world"/>
     </node>
+    <node name="PID_attitude_controller" pkg="mav_lowlevel_attitude_controller" type="mav_pid_attitude_controller_node" respawn="true" clear_params="true">
+      <remap from="odometry" to="ground_truth/odometry" />
+      <rosparam file="$(find mav_lowlevel_attitude_controller)/resources/PID_attitude_$(arg mav_name).yaml" />
+		</node>
 
 		<!-- static camera transform -->
     <node pkg="tf" type="static_transform_publisher" name="tf_camera_to_link" args="0 0 0 -0.5 0.5 -0.5 0.5 /$(arg mav_name)/base_link /camera 100"/>	
@@ -89,6 +98,12 @@
 			<param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
 			<param name="update_mesh_every_n_sec" value="0.0" />
 			<param name="world_frame" value="$(arg world_frame)" />
+			
+			<param name="range" value="1.0" />
+			<param name="speed" value="0.05" />
+			<param name="collision_radius" value="0.35" />
+			<param name="planar" value="false" />
+			<param name="verbose" value="$(arg verbose_planner)" />
 		</node>
 		
 		<!-- Simulation manager -->

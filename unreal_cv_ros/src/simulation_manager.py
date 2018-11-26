@@ -5,7 +5,7 @@ import rospy
 from trajectory_msgs.msg import MultiDOFJointTrajectory, MultiDOFJointTrajectoryPoint
 from geometry_msgs.msg import Pose, Twist, Transform
 from nav_msgs.msg import Odometry
-from std_srvs.srv import Empty
+from std_srvs.srv import Empty, SetBool
 from sensor_msgs.msg import Imu
 from gazebo_msgs.srv import SetModelState
 from gazebo_msgs.msg import ModelState
@@ -31,9 +31,9 @@ class SimulationManager:
     def __init__(self):
         '''  Initialize ros node and read params '''
         # Parse parameters
-        self.mav_name = rospy.get_param('~mav_name', "NoNameFound")
-        if self.mav_name == "NoNameFound":
-            rospy.logfatal("Parameter mav_name is required!")
+        self.ns_gazebo = rospy.get_param('~ns_gazebo', "/gazebo")
+        self.ns_mav = rospy.get_param('~ns_mav', "/firefly")
+        self.ns_planner = rospy.get_param('~ns_planner', "/firefly/random_planner/")
 
         self.regulate = rospy.get_param('~regulate', False)     # Manage odom throughput for unreal_ros_client
         self.monitor = rospy.get_param('~monitor', False)       # Measure performance of unreal pipeline
@@ -61,7 +61,7 @@ class SimulationManager:
 
             # Printing service
             rospy.Service('~display_monitor', Empty, self.mon_print_handle)
-            rospy.Timer(rospy.Duration(1.0), self.mon_print_handle)
+            # rospy.Timer(rospy.Duration(3.0), self.mon_print_handle)
 
         if self.regulate:
             # Subscribers and publishers
@@ -74,11 +74,11 @@ class SimulationManager:
     def launch_simulation(self):
         # Wait for Gazebo services
         rospy.loginfo("Starting simulation setup coordination...")
-        rospy.wait_for_service("/gazebo/unpause_physics")
-        rospy.wait_for_service("/gazebo/set_model_state")
+        rospy.wait_for_service(self.ns_gazebo + "/unpause_physics")
+        rospy.wait_for_service(self.ns_gazebo + "/set_model_state")
 
         # Prepare initialization trajectory command
-        traj_pub = rospy.Publisher("/" + self.mav_name + "/command/trajectory", MultiDOFJointTrajectory, queue_size=10)
+        traj_pub = rospy.Publisher(self.ns_mav + "/command/trajectory", MultiDOFJointTrajectory, queue_size=10)
         traj_msg = MultiDOFJointTrajectory()
         traj_msg.joint_names = ["base_link"]
         transforms = Transform()
@@ -89,30 +89,37 @@ class SimulationManager:
         traj_msg.points.append(point)
 
         # Prepare initialization setModelState service
-        set_model_srv = rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
-        model_state = ModelState(self.mav_name, Pose(), Twist(), "world")
+        set_model_srv = rospy.ServiceProxy(self.ns_gazebo + "/set_model_state", SetModelState)
+        model_state = ModelState(self.ns_mav[1:], Pose(), Twist(), "world")
 
         # Wake up gazebo
         rospy.loginfo("Waiting for gazebo to wake up ...")
-        unpause_srv = rospy.ServiceProxy("/gazebo/unpause_physics", Empty)
+        unpause_srv = rospy.ServiceProxy(self.ns_gazebo + "/unpause_physics", Empty)
         while not unpause_srv():
             rospy.sleep(0.1)
-        rospy.loginfo("Waiting for gazebo to wake up ... done!")
+        rospy.loginfo("Waiting for gazebo to wake up ... done.")
 
         # Wait for drone to spawn (imu is publishing)
         rospy.loginfo("Waiting for MAV to spawn ...")
-        rospy.wait_for_message("/" + self.mav_name +"/imu", Imu)
+        rospy.wait_for_message(self.ns_mav + "/imu", Imu)
 
         # Initialize drone stable at [0, 0, 0]
         traj_msg.header.stamp = rospy.Time.now()
         traj_pub.publish(traj_msg)
         set_model_srv(model_state)
-        rospy.loginfo("Waiting for MAV to spawn ... done!")
+        rospy.loginfo("Waiting for MAV to spawn ... done.")
 
         # Wait for unreal client
         rospy.loginfo("Waiting for unreal client to setup ...")
         rospy.wait_for_service("get_camera_params")
-        rospy.loginfo("Waiting for unreal client to setup ... done!")
+        rospy.loginfo("Waiting for unreal client to setup ... done.")
+
+        # Launch planner
+        wait_time = 2.0
+        rospy.loginfo("Setup ready. The planner will be launched in %.2f seconds." % wait_time)
+        rospy.sleep(wait_time)
+        run_planner_srv = rospy.ServiceProxy(self.ns_planner + "/toggle_running", SetBool)
+        run_planner_srv(True)
 
         # Finish
         rospy.loginfo("Succesfully started the simulation!")

@@ -11,11 +11,6 @@ from unreal_cv_ros.msg import UeSensorRaw
 from unreal_cv_ros.srv import GetCameraParams, GetCameraParamsResponse
 import tf
 
-# Image conversion
-import StringIO
-import PIL.Image
-from cv_bridge import CvBridge
-
 # Python
 import sys
 import math
@@ -26,7 +21,6 @@ class UnrealRosClient:
 
     def __init__(self):
         '''  Initialize ros node, unrealcv client and params '''
-        self.busy = True
         rospy.on_shutdown(self.reset_client)
 
         # Read in params
@@ -70,18 +64,17 @@ class UnrealRosClient:
         self.coord_origin = np.array([float(x) for x in location])
 
         # Setup mode
-        self.pub = rospy.Publisher("ue_sensor_raw", UeSensorRaw, queue_size=10)
         if self.mode == 'test':
-            self.previous_pose = None       # Update only when pose has changed
-            self.tf_br = tf.TransformBroadcaster()  # Publish camera transforms from game
-            rospy.Timer(rospy.Duration(0.01), self.test_callback)  # 100 Hz try capture frequency
+            self.previous_pose = None                               # Update only when pose has changed
+            self.tf_br = tf.TransformBroadcaster()                  # Publish camera transforms from game
+            rospy.Timer(rospy.Duration(0.01), self.test_callback)   # 100 Hz try capture frequency
 
         elif self.mode == 'standard':
-            self.sub = rospy.Subscriber("odometry", Odometry, self.odom_callback, queue_size=1, buff_size=2**24)
+            self.sub = rospy.Subscriber("odometry", Odometry, self.odom_callback, queue_size=1, buff_size=2 ** 24)
 
         elif self.mode == 'fast':
-            self.sub = rospy.Subscriber("odometry", Odometry, self.fast_callback, queue_size=1, buff_size=2**24)
-            self.previous_odom_msg = None       # Previously processed Odom message
+            self.sub = rospy.Subscriber("odometry", Odometry, self.fast_callback, queue_size=1, buff_size=2 ** 24)
+            self.previous_odom_msg = None                   # Previously processed Odom message
             self.previous_loc_req = np.array([0, 0, 0])     # Requested unreal coords for collision check
             if not self.collision_on:
                 self.collision_tolerance = -1
@@ -91,16 +84,14 @@ class UnrealRosClient:
             self.sub = rospy.Subscriber("odometry", Odometry, self.fast_callback, queue_size=1)
 
         # Finish setup
+        self.pub = rospy.Publisher("ue_sensor_raw", UeSensorRaw, queue_size=10)
         self.camera_params_srv = rospy.Service('get_camera_params', GetCameraParams, self.get_camera_params_handle)
-        rospy.loginfo("unreal_ros_client is ready in mode " + self.mode)
-        self.busy = False
+        rospy.loginfo("unreal_ros_client is ready in %s mode." % self.mode)
 
     def fast_callback(self, ros_data):
         ''' Use the custom unrealcv command to get images and collision checks. vget UECVROS command returns the images
         and then seuts the new pose, therefore the delay. '''
         # Get pose in unreal coords
-        # print("CLIENT: message received with delay of {0:.3f}s".format(rospy.get_time() - ros_data.header.stamp.to_sec()))
-        self.busy = True
         position, orientation = self.transform_to_unreal(ros_data.pose.pose)
         position = position + self.coord_origin
 
@@ -130,7 +121,6 @@ class UnrealRosClient:
 
         self.previous_odom_msg = ros_data
         self.previous_loc_req = position
-        self.busy = False
 
     def odom_callback(self, ros_data):
         ''' Produce images for given odometry '''
@@ -169,7 +159,6 @@ class UnrealRosClient:
 
         # Update only if there is a new view, publish images
         if np.array_equal(pose, self.previous_pose):
-            self.busy = False
             return
 
         self.previous_pose = pose
@@ -180,14 +169,6 @@ class UnrealRosClient:
         self.tf_br.sendTransform((position[0], position[1], position[2]),
                                  (orientation[0], orientation[1], orientation[2], orientation[3]),
                                  timestamp, "camera_link", "world")
-
-    def dispatcher_callback(self, ros_data):
-        print("CLIENT: message received with delay of {0:.3f}s".format(rospy.get_time() - ros_data.header.stamp.to_sec()))
-        if self.busy:
-            return
-        print("CLIENT: Processing start with delay of {0:.3f}s".format(
-            rospy.get_time() - ros_data.header.stamp.to_sec()))
-        self.fast_callback(ros_data)
 
     def publish_images(self, header_stamp):
         ''' Produce and publish images for test and standard mode'''
