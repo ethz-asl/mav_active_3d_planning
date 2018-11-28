@@ -58,10 +58,13 @@ class UnrealRosClient:
         f = width / 2 / np.tan(fov * math.pi / 180 / 2)
         self.camera_params = [width, height, f]
 
-        # Initialize relative coordinate system (so camera starts at [0, 0, 0]).
+        # Initialize relative coordinate system (so camera starts at [0, 0, 0] position and [0, 0, yaw]).
         location = client.request('vget /camera/0/location')
         location = str(location).split(' ')
         self.coord_origin = np.array([float(x) for x in location])
+        rot = client.request('vget /camera/0/rotation')
+        self.coord_yaw = np.array([float(x) for x in str(rot).split(' ')])[1]
+        client.request("vset /camera/0/rotation 0 {0:f} 0".format(self.coord_yaw))
 
         # Setup mode
         if self.mode == 'test':
@@ -94,6 +97,7 @@ class UnrealRosClient:
         # Get pose in unreal coords
         position, orientation = self.transform_to_unreal(ros_data.pose.pose)
         position = position + self.coord_origin
+        orientation[1] = orientation[1] + self.coord_yaw
 
         # Call the plugin (takes images and then sets the new position)
         args = np.concatenate((position, orientation, np.array([self.collision_tolerance]), self.previous_loc_req),
@@ -125,11 +129,11 @@ class UnrealRosClient:
     def odom_callback(self, ros_data):
         ''' Produce images for given odometry '''
         # Get pose
-        pose = ros_data.pose.pose
-        position, orientation = self.transform_to_unreal(pose)
+        position, orientation = self.transform_to_unreal(ros_data.pose.pose)
+        position = position + self.coord_origin
+        orientation[1] = orientation[1] + self.coord_yaw
 
         # Set camera in unrealcv
-        position = position + self.coord_origin
         if self.collision_on:
             client.request('vset /camera/0/moveto {0} {1} {2}'.format(*position))
 

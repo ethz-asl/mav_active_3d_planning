@@ -6,7 +6,7 @@
   <arg name="verbose_gazebo" default="false"/>
 
   <!-- Voxblox arguments -->
-  <arg name="voxel_size" default="0.1"/>
+  <arg name="voxel_size" default="0.05"/>
   <arg name="voxels_per_side" default="16"/>
   <arg name="world_frame" default="world"/>
   <arg name="verbose_voxblox" default="false"/>
@@ -20,7 +20,7 @@
   <arg name="verbose_planner" default="true"/>
   
 
-  <!-- Setup gazebo world -->
+  <!-- Setup empty gazebo world for physics-->
   <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find rotors_gazebo)/models"/>
   <env name="GAZEBO_RESOURCE_PATH" value="${GAZEBO_RESOURCE_PATH}:$(find rotors_gazebo)/models"/>
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
@@ -31,7 +31,7 @@
     <arg name="verbose" value="$(arg verbose_gazebo)"/>
   </include>
 
-  <!-- Setup a mav with odom sensor and MPC -->
+  <!-- Setup a mav with odom sensor -->
   <group ns="$(arg mav_name)">
     <include file="$(find rotors_gazebo)/launch/spawn_mav.launch">
       <arg name="mav_name" value="$(arg mav_name)" />
@@ -40,6 +40,7 @@
       <arg name="enable_logging" value="false" />
       <arg name="z" value="0" />
     </include>
+    <!-- MPC trajectory tracker-->
     <node name="mav_nonlinear_mpc" pkg="mav_nonlinear_mpc" type="nonlinear_mpc_node" respawn="true" clear_params="true">
       <remap from="odometry" to="ground_truth/odometry" />
       <rosparam file="$(find mav_nonlinear_mpc)/resources/nonlinear_mpc_$(arg mav_name).yaml" />
@@ -48,6 +49,7 @@
       <param name="verbose" value="false" />
       <param name="reference_frame" value="world"/>
     </node>
+    <!-- Rotor input controller -->
     <node name="PID_attitude_controller" pkg="mav_lowlevel_attitude_controller" type="mav_pid_attitude_controller_node" respawn="true" clear_params="true">
       <remap from="odometry" to="ground_truth/odometry" />
       <rosparam file="$(find mav_lowlevel_attitude_controller)/resources/PID_attitude_$(arg mav_name).yaml" />
@@ -57,7 +59,7 @@
     <node pkg="tf" type="static_transform_publisher" name="tf_camera_to_link" args="0 0 0 -0.5 0.5 -0.5 0.5 /$(arg mav_name)/base_link /camera 100"/>	
 	</group>
 
-  <!-- Unreal vision client + sensor model (only 1 client supported)-->
+  <!-- Unreal vision client + sensor model -->
   <group ns="unreal">
     <node name="unreal_ros_client" pkg="unreal_cv_ros" type="unreal_ros_client.py" output="screen">
 			<param name="mode" value="$(arg uecv_mode)"/>
@@ -102,11 +104,11 @@
 			<param name="range" value="1.0" />
 			<param name="speed" value="0.05" />
 			<param name="collision_radius" value="0.35" />
-			<param name="planar" value="false" />
+			<param name="planar" value="true" />
 			<param name="verbose" value="$(arg verbose_planner)" />
 		</node>
 		
-		<!-- Simulation manager -->
+		<!-- Simulation manager for launching and monitoring-->
 		<node name="simulation_manager" pkg="unreal_cv_ros" type="simulation_manager.py" output="screen" ns="unreal">
 		<param name="mav_name" value="$(arg mav_name)" />
 		<param name="monitor" value="true" />

@@ -90,7 +90,8 @@ class SimulationManager:
 
         # Prepare initialization setModelState service
         set_model_srv = rospy.ServiceProxy(self.ns_gazebo + "/set_model_state", SetModelState)
-        model_state = ModelState(self.ns_mav[1:], Pose(), Twist(), "world")
+        model_state = ModelState(self.ns_mav[np.max([i for i in range(len(self.ns_mav)) if self.ns_mav[i] == "/"])+1:],
+                                 Pose(), Twist(), "world")
 
         # Wake up gazebo
         rospy.loginfo("Waiting for gazebo to wake up ...")
@@ -115,7 +116,7 @@ class SimulationManager:
         rospy.loginfo("Waiting for unreal client to setup ... done.")
 
         # Launch planner
-        wait_time = 2.0
+        wait_time = 3
         rospy.loginfo("Setup ready. The planner will be launched in %.2f seconds." % wait_time)
         rospy.sleep(wait_time)
         run_planner_srv = rospy.ServiceProxy(self.ns_planner + "/toggle_running", SetBool)
