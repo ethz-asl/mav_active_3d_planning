@@ -28,8 +28,7 @@ This node manages the unrealcv client and the connection with a running UE4 game
 * **mode** In which mode the client is operated. Currently implemented are:
   * **test** Navigate the MAV manually in the unreal game. The client will periodically publish the sensor data.
   * **standard** The camera pose is set based on the `/odometry` topic and images are taken. Uses the default unrealcv plugin, operates at ~1 Hz.
-  * **fast** Similar to standard, but requires a custom unrealcv command (See [Unrealcv Plugin Setup](#Unrealcv-Plugin-Setup)).  Operates at ~3 Hz.
-  * **fast2** (Hopefully coming soon) Similar to fast but requires the modified unrealcv plugin.
+  * **fast** Similar to standard, but requires a custom unrealcv command (See [Unrealcv Plugin Setup](#Unrealcv-Plugin-Setup)).  Operates at ~4 Hz.
   
   Default is 'standard'.
 * **collision_on** Set to true to check for collision in the unreal game. Set to false to set the camera anyway. May result in rendering artifacts if the camera overlaps with objects. Default is true.
@@ -37,14 +36,14 @@ This node manages the unrealcv client and the connection with a running UE4 game
 * **Hint:** To change the resolution and field of view (FOV) of the camera, the [unrealcv configuration file](http://docs.unrealcv.org/en/master/plugin/config.html) needs to be changed. Its path is displayed when the unreal_ros_client node is launched.
 
 ### Input Topics
-* **odometry** of type `nav_msgs.msg/Odometry`. Set the camera pose w.r.t. its positition at the connection of the client. Only appears if test is false.
+* **odometry** of type `nav_msgs.msg/Odometry`. Set the camera pose w.r.t. its position and yaw at the connection of the client. Only appears if test is false.
 
 ### Output Topics
 * **ue_sensor_raw** of type `unreal_cv_ros.msg/UeSensorRaw`. The output of the in-game image capture, containing a color and a depth image encoded as npy binaries.
 
 
 ## sensor_model
-This node converts the UE game output into a pointcloud for further processing and artificially simulates the behaviour of a 3D sensor (e.g. a stereo reconstruction pipeline).
+This node converts the UE client output into a pointcloud for further processing and artificially simulates the behaviour of a 3D sensor (e.g. a stereo reconstruction pipeline).
 
 ### Parameters
 * **model_type** Which sensor to simulate. Currently implemented are: 
@@ -56,24 +55,25 @@ This node converts the UE game output into a pointcloud for further processing a
 * **ue_sensor_raw** of type `unreal_cv_ros.msg/UeSensorRaw`. Output of the unreal\_ros\_client that is to be further processed.
 
 ### Output Topics
-* **ue_sensor_out** of type `sensor_msgs.msg/PointCloud2`. Result after applying the simulated sensing pipeline.
+* **ue_sensor_out** of type `sensor_msgs.msg/PointCloud2`. Resulting pointcloud after applying the simulated sensing pipeline.
 
 
 ## simulation_manager
 This node is used to coordinate the full MAV simulation using gazebo as a physics engine and an unreal game for perception and collision modeling. It is used to coordinate simulation setup and monitor or supervise the unreal_ros vision pipeline.
 
 ### Parameters
-* **mav_name** Name of the simulated MAV. This parameter is required.
+* **ns_gazebo** Namespace of gazebo, including the node name. Default is '/gazebo'.
+* **ns_mav** Namespace of the MAV, which is expected to end with the MAV name. Default is '/firefly'.
+* **ns_planner** Namespace of the planner, including the node name. Default is '/firefly/random_planner'.
 * **monitor** Set to true to measure the unreal vision pipeline's performance. Default is false.
-* **horizon** How many datapoints are kept in the performance measurement. Default is 100.
+* **horizon** How many datapoints are kept in the performance measurement. Default is 10.
 
 ### Input Topics
 * **ue_raw_in** of type `unreal_cv_ros.msg/UeSensorRaw`. Output of the unreal\_ros\_client for performance measurements. Only available if monitor is true.
-
 * **ue_out_in** of type `sensor_msgs.msg/PointCloud2`. Output of the sensor model for performance measurements. Only available if monitor is true.
 
 ### Services
-* **display_monitor** of type `std_srvs.srv/Empty`. Display the current monitoring measurements.
+* **display_monitor** of type `std_srvs.srv/Empty`. Print the current monitoring measurements to console.
 
 
 # Setting up Unreal
@@ -105,9 +105,6 @@ FExecStatus UecvrosFull(const TArray<FString>& Args);
     - In case of collision returns a Collision warning. 
     - Otherwise returns binary image data, where the first half representes the color image and the second half the depth image, both as npy arrays.
 
-### Ros node inside the plugin
-Will add this section as soon as it really works.
-
 ## Creating UE4 worlds
 In order to easily create unreal_cv_ros compatible worlds UE4 worlds:
 * Install and use unreal engine editor **4.16** (for compatibility with unrealcv).
@@ -130,9 +127,11 @@ To illustrate the vision pipeline in stand-alone fashion, we run the unreal_ros_
 **Note:** Since the taking of images and read-out of the unreal-pose is done sequentially, fast movement in the game may result in the frames not being well aligned.
 
 ## Run in standard mode
-This example demonstrates the full simulation using gazebo, an MPC controller, voxlbox and a planner node. Setup and run the RealisticRendering demo as in the test example. In a command window type `roslaunch unreal_cv_ros example_full.launch` to start the pipeline. A MAV (with its physics and a MPC controller) is simulated in gazebo. It moves to a target pose, which is specified at the end of the launch script. During movement, it will collect pointcloud images from unreal and integrate it into a voxblox mesh. The resulting mesh is displayed in a RVIZ window.
+This example demonstrates the full simulation using gazebo, an MPC high level and PID low level controller, voxblox and a planner node. Setup and run the RealisticRendering demo as in the test example. In a command window type `roslaunch unreal_cv_ros example_full.launch` to start the pipeline. The simulation\_manager will supervise the startup of all elements (this may take few seconds). If everything sets up cleanly, the RandomPlanner will start a random walk while remaining collision free. In a rviz window, the current position of the MAV is depicted together with the current planned trajectory. Furthermore, the voxblox mesh representation of the room will be updated as it is explored.
 
 **Note:** During simulation, the unreal game still takes commands from the user. Make sure to tab out of the game so that the user input does not interferewith the simulation setup. 
+
+**More Notes:** The RandomPlanner is optimistic and will treat unseen areas as collision free. It may therefore collide in such areas.
 
 # Troubleshooting
 1. Error addressing the unrealcv client. Try restarting the game.
