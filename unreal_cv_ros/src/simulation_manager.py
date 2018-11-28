@@ -104,7 +104,11 @@ class SimulationManager:
         rospy.loginfo("Waiting for MAV to spawn ...")
         rospy.wait_for_message(self.ns_mav + "/imu", Imu)
 
-        # Initialize drone stable at [0, 0, 0]
+        # Initialize drone stable at [0, 0, 0] (twice to ensure stability)
+        traj_msg.header.stamp = rospy.Time.now()
+        traj_pub.publish(traj_msg)
+        set_model_srv(model_state)
+        rospy.sleep(0.1)
         traj_msg.header.stamp = rospy.Time.now()
         traj_pub.publish(traj_msg)
         set_model_srv(model_state)
