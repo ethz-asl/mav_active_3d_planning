@@ -38,7 +38,8 @@ class SimulationManager:
         self.regulate = rospy.get_param('~regulate', False)     # Manage odom throughput for unreal_ros_client
         self.monitor = rospy.get_param('~monitor', False)       # Measure performance of unreal pipeline
         self.framerate = rospy.get_param('~framerate', 5)       # Set approximate framerate for regulation
-        self.horizon = rospy.get_param('~horizon', 10)         # How many messages are kept for evaluation
+        self.horizon = rospy.get_param('~horizon', 10)          # How many messages are kept for evaluation
+        self.gui = rospy.get_param('~gui', True)                # Set to true show a gui for launching the simulation
 
         if self.monitor:
             # Monitoring arrays

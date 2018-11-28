@@ -29,7 +29,7 @@ class UnrealRosClient:
         self.collision_tolerance = rospy.get_param('~collision_tol', 10)  # Distance threshold in UE units
 
         # Select client mode
-        mode_types = {'standard': 'standard', 'fast': 'fast', 'test': 'test', 'fast2': 'fast2'}
+        mode_types = {'standard': 'standard', 'fast': 'fast', 'test': 'test'}
         selected = mode_types.get(self.mode, 'NotFound')
         if selected == 'NotFound':
             warning = "Unknown client mode '" + self.mode + "'. Implemented modes are: " + \
@@ -81,10 +81,6 @@ class UnrealRosClient:
             self.previous_loc_req = np.array([0, 0, 0])     # Requested unreal coords for collision check
             if not self.collision_on:
                 self.collision_tolerance = -1
-
-        elif self.mode == 'fast2':
-            # Use ros in unreal plugin?
-            self.sub = rospy.Subscriber("odometry", Odometry, self.fast_callback, queue_size=1)
 
         # Finish setup
         self.pub = rospy.Publisher("ue_sensor_raw", UeSensorRaw, queue_size=10)

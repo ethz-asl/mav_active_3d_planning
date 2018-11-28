@@ -3,10 +3,11 @@
   <arg name="sensor_model_config" default="sensor_model_config.yaml"/>
   <arg name="rviz_config_pcl" default="example_test.rviz"/>
 
-  <!-- Unreal vision client + sensor model -->
+  <!-- Unreal vision client -->
   <node name="unreal_ros_client" pkg="unreal_cv_ros" type="unreal_ros_client.py" output="screen">
     <rosparam param="mode">test</rosparam>
   </node>
+  <!-- Unreal sensor model -->
   <node name="unreal_sensor_model" pkg="unreal_cv_ros" type="sensor_model.py" output="screen">
     <rosparam command="load" file="$(find unreal_cv_ros)/cfg/$(arg sensor_model_config)"/>
   </node>

@@ -13,7 +13,7 @@
     
   <!-- Unreal/Routine arguments -->
   <arg name="sensor_model_config" default="sensor_model_config.yaml"/>
-  <arg name="uecv_mode" default="fast"/>
+  <arg name="uecv_mode" default="standard"/>
   <arg name="rviz_config_voxblox" default="example_full.rviz"/>
   
   <!-- Random Planner -->
@@ -70,7 +70,7 @@
     </node>
   </group>
 
-		<!-- Voxblox -->
+	<!-- Voxblox -->
 	<group ns="voxblox">
 		<node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
 			<remap from="pointcloud" to="/unreal/ue_sensor_out"/>
@@ -91,31 +91,31 @@
 		</node>
   </group>
   
-		<!-- Random walk planner -->
-		<node name="random_planner" pkg="mav_active_3d_planning" type="random_planner" output="screen" ns="$(arg mav_name)">
-			<remap from="odometry" to="odometry_sensor1/odometry" />
-			<remap from="random_planner/esdf_map_in" to="/voxblox/voxblox_node/esdf_map_out" />
-			<param name="use_tf_transforms" value="true" />
-			<param name="tsdf_voxel_size" value="$(arg voxel_size)" />
-			<param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
-			<param name="update_mesh_every_n_sec" value="0.0" />
-			<param name="world_frame" value="$(arg world_frame)" />
-			
-			<param name="range" value="1.0" />
-			<param name="speed" value="0.05" />
-			<param name="collision_radius" value="0.4" />
-			<param name="planar" value="true" />
-			<param name="verbose" value="$(arg verbose_planner)" />
-		</node>
+	<!-- Random walk planner -->
+	<node name="random_planner" pkg="mav_active_3d_planning" type="random_planner" output="screen" ns="$(arg mav_name)">
+		<remap from="odometry" to="odometry_sensor1/odometry" />
+		<remap from="random_planner/esdf_map_in" to="/voxblox/voxblox_node/esdf_map_out" />
+		<param name="use_tf_transforms" value="true" />
+		<param name="tsdf_voxel_size" value="$(arg voxel_size)" />
+		<param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
+		<param name="update_mesh_every_n_sec" value="0.0" />
+		<param name="world_frame" value="$(arg world_frame)" />
 		
-		<!-- Simulation manager for launching and monitoring-->
-		<node name="simulation_manager" pkg="unreal_cv_ros" type="simulation_manager.py" output="screen" ns="unreal">
-		<param name="mav_name" value="$(arg mav_name)" />
+		<param name="range" value="1.0" />
+		<param name="speed" value="0.05" />
+		<param name="collision_radius" value="0.4" />
+		<param name="planar" value="true" />
+		<param name="verbose" value="$(arg verbose_planner)" />
+	</node>
+	
+	<!-- Simulation manager for launching and monitoring-->
+	<node name="simulation_manager" pkg="unreal_cv_ros" type="simulation_manager.py" output="screen" ns="unreal">
+		<param name="ns_mav" value="/$(arg mav_name)" />
 		<param name="monitor" value="true" />
 		<remap from="ue_raw_in" to="ue_sensor_raw" />
 		<remap from="ue_out_in" to="ue_sensor_out" />
 	</node>
-		
-		<!-- Visualization -->
-		<node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find unreal_cv_ros)/cfg/$(arg rviz_config_voxblox)"/>
+	
+	<!-- Visualization -->
+	<node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find unreal_cv_ros)/cfg/$(arg rviz_config_voxblox)"/>
 </launch>
