@@ -2,12 +2,11 @@
 
 # ros
 import rospy
-from unreal_cv_ros.msg import UeSensorRaw, UeSensorRawFast
+from unreal_cv_ros.msg import UeSensorRaw
+from unreal_cv_ros.srv import GetCameraParams
 from sensor_msgs.msg import PointCloud2, PointField
-import tf
 
 # Image conversion
-from cv_bridge import CvBridge
 import io
 
 # Python
@@ -15,15 +14,16 @@ import sys
 import math
 import numpy as np
 from struct import pack, unpack
+import time
 
-class sensor_model:
+
+class SensorModel:
 
     def __init__(self):
         '''  Initialize ros node and read params '''
 
         # Read in params
         model_type_in = rospy.get_param('~model_type', 'ground_truth')
-        self.client_mode = rospy.get_param('~mode', 'standard')  # test, standard, fast, fast2
 
         # Setup sensor type
         model_types = {'ground_truth': 'ground_truth'}      # Dictionary of implemented models
@@ -35,63 +35,34 @@ class sensor_model:
         else:
             self.model = selected
 
-        # Select client mode
-        mode_types = {'standard': 'standard', 'fast': 'fast', 'test': 'test', 'fast2': 'fast2'}
-        selected = mode_types.get(self.client_mode, 'NotFound')
-        if selected == 'NotFound':
-            warning = "Unknown client mode '" + self.mode + "'. Implemented modes are: " + \
-                      "".join(["'" + m + "', " for m in mode_types])
-            rospy.logfatal(warning[:-2])
+        # Initialize camera params from unreal client
+        rospy.loginfo("Waiting for unreal_ros_client camera params ...")
+        rospy.wait_for_service("get_camera_params")
+        get_camera_params = rospy.ServiceProxy('get_camera_params', GetCameraParams)
+        resp = get_camera_params()
+        self.camera_params = [resp.Width, resp.Height, resp.FocalLength]
 
         # Initialize node
-        self.pub = rospy.Publisher("ue_sensor_out", PointCloud2, queue_size=1)
-        if self.client_mode == 'standard' or self.client_mode == 'test':
-            self.sub = rospy.Subscriber("ue_sensor_raw", UeSensorRaw, self.callback_standard, queue_size=1)
-            self.bridge = CvBridge()
-        else:
-            self.sub = rospy.Subscriber("ue_sensor_raw", UeSensorRawFast, self.callback_fast, queue_size=1)
-        self.tf_br = tf.TransformBroadcaster()
+        self.pub = rospy.Publisher("ue_sensor_out", PointCloud2, queue_size=10)
+        self.sub = rospy.Subscriber("ue_sensor_raw", UeSensorRaw, self.callback, queue_size=10)
 
-    def callback_standard(self, ros_data):
-        ''' Produce simulated sensor outputs from raw unreal color+depth image '''
-        if rospy.is_shutdown():
-            return
-        # Read out images
-        img_color = self.bridge.imgmsg_to_cv2(ros_data.color_image, "8UC4")
-        img_depth = self.bridge.imgmsg_to_cv2(ros_data.depth_image, "32FC1")
-        self.callback_main(img_color, img_depth, ros_data)
+        rospy.loginfo("Sensor model setup cleanly.")
 
-    def callback_fast(self, ros_data):
+    def callback(self, ros_data):
         ''' Produce simulated sensor outputs from raw binary data '''
-        if rospy.is_shutdown():
-            return
         # Read out images
-        z = list(str(ros_data.data))
-        idx = int(len(z) / 2)   # Half of the bytes are the 4channel color img, half the depth
-        img_color = np.load(io.BytesIO(bytearray(z[:idx])))
-        img_depth = np.load(io.BytesIO(bytearray(z[idx:])))
-        self.callback_main(img_color, img_depth, ros_data)
+        img_color = np.load(io.BytesIO(bytearray(ros_data.color_data)))
+        img_depth = np.load(io.BytesIO(bytearray(ros_data.depth_data)))
 
-    def callback_main(self, img_color, img_depth, ros_data):
-        ''' Produce pointcloud from color and depth image and apply sensor noise models'''
-        # Process point cloud
-        if self.model == 'ground_truth':
-            pointcloud = self.process_ground_truth(img_depth, ros_data.camera_info)
+        # Build 3D point cloud from depth
+        pointcloud = self.depth_to_3d(img_depth)
 
-        # Build colored pointcloud data
-        rgb = np.ones((img_color.shape[0], img_color.shape[1]))
-        for i in range(img_color.shape[0]):
-            for j in range(img_color.shape[1]):
-                color = int(img_color[i, j, 0]) << 16 | int(img_color[i, j, 1]) << 8 | int(img_color[i, j, 2])
-                rgb[i, j] = unpack('f', pack('i', color))[0]
+        # Sensor processing
+        # if self.model == 'ground_truth':
+
+        # Pack RGB image (for ros representation)
+        rgb = self.rgb_to_float(img_color)
         data = np.dstack((pointcloud, rgb))
-
-        # Publish pose
-        position = ros_data.camera_link_pose.position
-        orientation = ros_data.camera_link_pose.orientation
-        self.tf_br.sendTransform((position.x, position.y, position.z),
-                                 (orientation.x, orientation.y, orientation.z, orientation.w),
-                                 ros_data.header.stamp, "camera_link", "world")
 
         # Publish pointcloud
         msg = PointCloud2()
@@ -111,32 +82,41 @@ class sensor_model:
         msg.data = np.float32(data).tostring()
         self.pub.publish(msg)
 
-    @staticmethod
-    def process_ground_truth(img_depth, cam_info):
+    def depth_to_3d(self, img_depth):
         ''' Create point cloud from depth image and camera params. Returns a width x height x 3 (XYZ) array '''
         # read camera params and create image mesh
-        height = cam_info.height
-        width = cam_info.width
-        center_x = cam_info.K[2]
-        center_y = cam_info.K[5]
-        f = cam_info.K[0]
+        height = self.camera_params[1]
+        width = self.camera_params[0]
+        center_x = width/2
+        center_y = height/2
+        f = self.camera_params[2]
         cols, rows = np.meshgrid(np.linspace(0, width - 1, num=width), np.linspace(0, height - 1, num=height))
 
         # Process depth image from ray length to camera axis depth
         distance = ((rows - center_y) ** 2 + (cols - center_x) ** 2) ** 0.5
         points_z = img_depth / (1 + (distance / f) ** 2) ** 0.5
 
-        # Set create x and y position
+        # Create x and y position
         points_x = points_z * (cols - center_x) / f
         points_y = points_z * (rows - center_y) / f
 
-        # create pointcloud as XYZ image array
         return np.dstack([points_x, points_y, points_z])
+
+    @staticmethod
+    def rgb_to_float(img_color):
+        ''' Stack uint8 rgb image into a 2D float image (efficiently) for ros compatibility '''
+        r = np.ravel(img_color[:, :, 0]).astype(int)
+        g = np.ravel(img_color[:, :, 1]).astype(int)
+        b = np.ravel(img_color[:, :, 2]).astype(int)
+        color = np.left_shift(r, 16) + np.left_shift(g, 8) + b
+        packed = pack('%di' % len(color), *color)
+        unpacked = unpack('%df' % len(color), packed)
+        return np.array(unpacked).reshape((np.size(img_color, 0), np.size(img_color, 1)))
 
 
 if __name__ == '__main__':
     rospy.init_node('sensor_model', anonymous=True)
-    sm = sensor_model()
+    sm = SensorModel()
     try:
         rospy.spin()
     except KeyboardInterrupt:
