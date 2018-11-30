@@ -1,7 +1,6 @@
 <launch>
   <!-- Gazebo arguments -->
   <arg name="mav_name" default="firefly"/>
-  <arg name="debug" default="false"/>
   <arg name="gui" default="false"/>
   <arg name="verbose_gazebo" default="false"/>
 
@@ -25,7 +24,7 @@
   <env name="GAZEBO_RESOURCE_PATH" value="${GAZEBO_RESOURCE_PATH}:$(find rotors_gazebo)/models"/>
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="world_name" value="$(find unreal_cv_ros)/content/gazebo_empty.world" />
-    <arg name="debug" value="$(arg debug)" />
+    <arg name="debug" value="false" />
     <arg name="paused" value="true" />
     <arg name="gui" value="$(arg gui)" />
     <arg name="verbose" value="$(arg verbose_gazebo)"/>
@@ -85,7 +84,6 @@
 			<param name="method" value="fast" />
 			<param name="use_const_weight" value="false" />
 			<param name="allow_clear" value="true" />
-			<param name="clear_sphere_for_planning" value="true" />
 			<param name="verbose" value="$(arg verbose_voxblox)" />
 			<param name="world_frame" value="$(arg world_frame)" />
 		</node>
@@ -101,10 +99,10 @@
 		<param name="update_mesh_every_n_sec" value="0.0" />
 		<param name="world_frame" value="$(arg world_frame)" />
 		
-		<param name="range" value="1.0" />
-		<param name="speed" value="0.05" />
+		<param name="range" value="2.0" />
+		<param name="speed" value="0.1" />
 		<param name="collision_radius" value="0.4" />
-		<param name="planar" value="true" />
+		<param name="planar" value="false" />
 		<param name="verbose" value="$(arg verbose_planner)" />
 	</node>
 	

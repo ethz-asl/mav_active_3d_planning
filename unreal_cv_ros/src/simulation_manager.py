@@ -33,13 +33,11 @@ class SimulationManager:
         # Parse parameters
         self.ns_gazebo = rospy.get_param('~ns_gazebo', "/gazebo")
         self.ns_mav = rospy.get_param('~ns_mav', "/firefly")
-        self.ns_planner = rospy.get_param('~ns_planner', "/firefly/random_planner/")
+        self.ns_planner = rospy.get_param('~ns_planner', "/firefly/random_planner")
 
         self.regulate = rospy.get_param('~regulate', False)     # Manage odom throughput for unreal_ros_client
         self.monitor = rospy.get_param('~monitor', False)       # Measure performance of unreal pipeline
-        self.framerate = rospy.get_param('~framerate', 5)       # Set approximate framerate for regulation
         self.horizon = rospy.get_param('~horizon', 10)          # How many messages are kept for evaluation
-        self.gui = rospy.get_param('~gui', True)                # Set to true show a gui for launching the simulation
 
         if self.monitor:
             # Monitoring arrays
@@ -62,7 +60,6 @@ class SimulationManager:
 
             # Printing service
             rospy.Service('~display_monitor', Empty, self.mon_print_handle)
-            # rospy.Timer(rospy.Duration(3.0), self.mon_print_handle)
 
         if self.regulate:
             # Subscribers and publishers
@@ -129,9 +126,6 @@ class SimulationManager:
 
         # Finish
         rospy.loginfo("Succesfully started the simulation!")
-
-    def odom_callback(self, ros_data):
-        return
 
     def mon_raw_callback(self, ros_data):
         # Real-time rate
@@ -206,75 +200,6 @@ class SimulationManager:
             print("Sensor delay (ros): {0:.2f} - {1:.2f} - {2:.2f} - {3:.2f}"
                   .format(np.mean(values), np.std(values), np.min(values), np.max(values)))
         print("=" * 40)
-
-    def mon_display(self, _):
-        print(self.mon_client_time)
-        print(self.mon_client_rate_real)
-
-        client_time = np.array(self.mon_client_time)
-        sensor_time = np.array(self.mon_sensor_time)
-
-        print(np.shape(client_time))
-        print(np.shape(np.array(self.mon_client_rate_real)))
-
-        print(len(client_time), len(self.mon_client_rate_real), len(self.mon_client_delay_ros), len(self.mon_client_rate_ros))
-        print(len(sensor_time), len(self.mon_sensor_rate_real), len(self.mon_sensor_delay_ros), len(self.mon_sensor_rate_ros))
-
-
-        # plt.subplot(3, 1, 1)
-        # plt.plot(client_time, np.array(self.mon_client_rate_real), 'r-', lw=2)
-        # plt.plot(sensor_time, np.array(self.mon_sensor_rate_real), 'b-', lw=2)
-        # plt.xlabel('Simulated Time [s]')
-        # plt.ylabel('Real Cycle Time [S]')
-        # plt.title('Real cycle time of the client (red) and full sensor (blue)')
-        # plt.grid(True)
-        #
-        # plt.subplot(3, 1, 2)
-        # plt.plot(client_time, np.array(self.mon_client_rate_ros), 'r-', lw=2)
-        # plt.plot(sensor_time, np.array(self.mon_sensor_rate_ros), 'b-', lw=2)
-        # plt.xlabel('Simulated Time [s]')
-        # plt.ylabel('Simulated Cycle Time [S]')
-        # plt.title('Simulated cycle time of the client (red) and full sensor (blue)')
-        # plt.grid(True)
-        #
-        # plt.subplot(3, 1, 3)
-        # plt.plot(client_time, np.array(self.mon_client_delay_ros), 'r-', lw=2)
-        # plt.plot(sensor_time, np.array(self.mon_sensor_delay_ros), 'b-', lw=2)
-        # plt.xlabel('Simulated Time [s]')
-        # plt.ylabel('Simulated Delay [S]')
-        # plt.title('Simulated delay of the client (red) and full sensor (blue)')
-        # plt.grid(True)
-        #
-        # if len(sensor_time) > 0:
-        #     plt.subplot(3, 2, 2)
-        #     plt.plot(sensor_time, np.array(self.mon_sensor_rate_real), 'b-', lw=2)
-        #     plt.xlabel('Simulated Time [s]')
-        #     plt.ylabel('Real Cycle Time [S]')
-        #     plt.title('Real cycle time of the client (red) and full sensor (blue)')
-        #     plt.grid(True)
-        #     plt.subplot(3, 2, 4)
-        #     plt.plot(sensor_time, np.array(self.mon_sensor_rate_ros), 'b-', lw=2)
-        #     plt.xlabel('Simulated Time [s]')
-        #     plt.ylabel('Simulated Cycle Time [S]')
-        #     plt.title('Simulated cycle time of the client (red) and full sensor (blue)')
-        #     plt.grid(True)
-        #     plt.subplot(3, 2, 6)
-        #     plt.plot(sensor_time, np.array(self.mon_sensor_delay_ros), 'b-', lw=2)
-        #     plt.xlabel('Simulated Time [s]')
-        #     plt.ylabel('Simulated Delay [S]')
-        #     plt.title('Simulated delay of the client (red) and full sensor (blue)')
-        #     plt.grid(True)
-        #
-        # if len(client_time) > 0:
-        #     plt.subplot(3, 2, 1)
-        #     plt.plot(client_time, np.array(self.mon_client_rate_real), 'r-', lw=2)
-        #     plt.subplot(3, 2, 3)
-        #     plt.plot(client_time, np.array(self.mon_client_rate_ros), 'r-', lw=2)
-        #     plt.subplot(3, 2, 5)
-        #     plt.plot(client_time, np.array(self.mon_client_delay_ros), 'r-', lw=2)
-        #     plt.tight_layout()
-        #     # plt.draw()
-        #     plt.show(block=False)
 
 
 if __name__ == '__main__':

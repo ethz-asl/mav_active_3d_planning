@@ -27,6 +27,7 @@ class UnrealRosClient:
         self.mode = rospy.get_param('~mode', "standard")  # Client mode (test, standard, fast, fast2)
         self.collision_on = rospy.get_param('~collision_on', True)  # Check for collision
         self.collision_tolerance = rospy.get_param('~collision_tol', 10)  # Distance threshold in UE units
+        self.publish_tf = rospy.get_param('~publish_tf', False)  # If true publish the camera transformation in tf
 
         # Select client mode
         mode_types = {'standard': 'standard', 'fast': 'fast', 'test': 'test'}
@@ -48,13 +49,13 @@ class UnrealRosClient:
         rospy.loginfo("Unrealcv client status:\n" + status)
 
         # Setup camera parameters from unrealcv config
-        loc1 = status.find('Width:')
-        loc2 = status.find('Height:')
-        loc3 = status.find('FOV:')
-        loc4 = status.find('EnableInput:')
-        width = int(status[loc1 + 7:loc2])
-        height = int(status[loc2 + 8:loc3])
-        fov = float(status[loc3 + 5:loc4])
+        loc_width = status.find('Width:')
+        loc_height = status.find('Height:')
+        loc_fov = status.find('FOV:')
+        loc_end = status.find('EnableInput:')
+        width = int(status[loc_width + 7:loc_height])
+        height = int(status[loc_height + 8:loc_fov])
+        fov = float(status[loc_fov + 5:loc_end])
         f = width / 2 / np.tan(fov * math.pi / 180 / 2)
         self.camera_params = [width, height, f]
 
@@ -66,10 +67,13 @@ class UnrealRosClient:
         self.coord_yaw = np.array([float(x) for x in str(rot).split(' ')])[1]
         client.request("vset /camera/0/rotation 0 {0:f} 0".format(self.coord_yaw))
 
+        # tf broadcaster
+        if self.mode == 'test' or self.publish_tf:
+            self.tf_br = tf.TransformBroadcaster()                  # Publish camera transforms from game
+
         # Setup mode
         if self.mode == 'test':
             self.previous_pose = None                               # Update only when pose has changed
-            self.tf_br = tf.TransformBroadcaster()                  # Publish camera transforms from game
             rospy.Timer(rospy.Duration(0.01), self.test_callback)   # 100 Hz try capture frequency
 
         elif self.mode == 'standard':
@@ -89,8 +93,9 @@ class UnrealRosClient:
 
     def fast_callback(self, ros_data):
         ''' Use the custom unrealcv command to get images and collision checks. vget UECVROS command returns the images
-        and then seuts the new pose, therefore the delay. '''
+        and then sets the new pose, therefore the delay. '''
         # Get pose in unreal coords
+        rospy.sleep(0.3)
         position, orientation = self.transform_to_unreal(ros_data.pose.pose)
         position = position + self.coord_origin
         orientation[1] = orientation[1] + self.coord_yaw
@@ -122,6 +127,9 @@ class UnrealRosClient:
         self.previous_odom_msg = ros_data
         self.previous_loc_req = position
 
+        if self.publish_tf:
+            self.publish_tf_data(ros_data)
+
     def odom_callback(self, ros_data):
         ''' Produce images for given odometry '''
         # Get pose
@@ -145,6 +153,9 @@ class UnrealRosClient:
 
         # Generate images
         self.publish_images(ros_data.header.stamp)
+
+        if self.publish_tf:
+            self.publish_tf_data(ros_data)
 
     def test_callback(self, _):
         ''' Produce images and broadcast odometry from unreal in-game controlled camera movement '''
@@ -182,6 +193,12 @@ class UnrealRosClient:
         msg.color_data = res_color
         msg.depth_data = res_depth
         self.pub.publish(msg)
+
+    def publish_tf_data(self, odom_msg):
+        pos = odom_msg.pose.pose.position
+        rot = odom_msg.pose.pose.orientation
+        self.tf_br.sendTransform((pos.x, pos.y, pos.z), (rot.x, rot.y, rot.z, rot.w),odom_msg.header.stamp,
+                                 "camera_link", "world")
 
     def get_camera_params_handle(self, _):
         return GetCameraParamsResponse(self.camera_params[0], self.camera_params[1], self.camera_params[2])
