@@ -121,6 +121,11 @@ cs_add_executable(random_planner
   src/random_planner.cpp
 )
 
+cs_add_executable(active_3d_planner_node
+  src/planner_node.cpp
+)
+
+
 #############
 ## Install ##
 #############

@@ -15,6 +15,7 @@ import tf
 import sys
 import math
 import numpy as np
+import time
 
 
 class UnrealRosClient:
@@ -28,6 +29,7 @@ class UnrealRosClient:
         self.collision_on = rospy.get_param('~collision_on', True)  # Check for collision
         self.collision_tolerance = rospy.get_param('~collision_tol', 10)  # Distance threshold in UE units
         self.publish_tf = rospy.get_param('~publish_tf', False)  # If true publish the camera transformation in tf
+        self.slowdown = rospy.get_param('~slowdown', 0.0)  # Artificially slow down image rate for UE to finish rotation
 
         # Select client mode
         mode_types = {'standard': 'standard', 'fast': 'fast', 'test': 'test'}
@@ -94,8 +96,9 @@ class UnrealRosClient:
     def fast_callback(self, ros_data):
         ''' Use the custom unrealcv command to get images and collision checks. vget UECVROS command returns the images
         and then sets the new pose, therefore the delay. '''
+        time.sleep(self.slowdown)
+
         # Get pose in unreal coords
-        rospy.sleep(0.3)
         position, orientation = self.transform_to_unreal(ros_data.pose.pose)
         position = position + self.coord_origin
         orientation[1] = orientation[1] + self.coord_yaw
@@ -132,6 +135,8 @@ class UnrealRosClient:
 
     def odom_callback(self, ros_data):
         ''' Produce images for given odometry '''
+        time.sleep(self.slowdown)
+
         # Get pose
         position, orientation = self.transform_to_unreal(ros_data.pose.pose)
         position = position + self.coord_origin

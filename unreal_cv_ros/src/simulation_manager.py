@@ -7,7 +7,7 @@ from geometry_msgs.msg import Pose, Twist, Transform
 from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty, SetBool
 from sensor_msgs.msg import Imu
-from gazebo_msgs.srv import SetModelState
+from gazebo_msgs.srv import SetModelState, GetModelState
 from gazebo_msgs.msg import ModelState
 from unreal_cv_ros.msg import UeSensorRaw
 from unreal_cv_ros.srv import GetCameraParams
@@ -86,10 +86,11 @@ class SimulationManager:
         point = MultiDOFJointTrajectoryPoint([transforms], [Twist()], [Twist()], rospy.Duration(0))
         traj_msg.points.append(point)
 
-        # Prepare initialization setModelState service
+        # Prepare initialization Get/SetModelState service
         set_model_srv = rospy.ServiceProxy(self.ns_gazebo + "/set_model_state", SetModelState)
-        model_state = ModelState(self.ns_mav[np.max([i for i in range(len(self.ns_mav)) if self.ns_mav[i] == "/"])+1:],
-                                 Pose(), Twist(), "world")
+        get_model_srv = rospy.ServiceProxy(self.ns_gazebo + "/get_model_state", GetModelState)
+        mav_name = self.ns_mav[np.max([i for i in range(len(self.ns_mav)) if self.ns_mav[i] == "/"])+1:]
+        model_state_set = ModelState(mav_name, Pose(), Twist(), "world")
 
         # Wake up gazebo
         rospy.loginfo("Waiting for gazebo to wake up ...")
@@ -102,14 +103,17 @@ class SimulationManager:
         rospy.loginfo("Waiting for MAV to spawn ...")
         rospy.wait_for_message(self.ns_mav + "/imu", Imu)
 
-        # Initialize drone stable at [0, 0, 0] (twice to ensure stability)
-        traj_msg.header.stamp = rospy.Time.now()
-        traj_pub.publish(traj_msg)
-        set_model_srv(model_state)
-        rospy.sleep(0.1)
-        traj_msg.header.stamp = rospy.Time.now()
-        traj_pub.publish(traj_msg)
-        set_model_srv(model_state)
+        # Initialize drone stable at [0, 0, 0]
+        dist = 10       # Position and velocity
+        while dist >= 0.1:
+            traj_msg.header.stamp = rospy.Time.now()
+            traj_pub.publish(traj_msg)
+            set_model_srv(model_state_set)
+            rospy.sleep(0.1)
+            state = get_model_srv(mav_name, "world")
+            pos = state.pose.position
+            twist = state.twist.linear
+            dist = np.sqrt(pos.x**2 + pos.y**2 + pos.z**2) + np.sqrt(twist.x**2 + twist.y**2 + twist.z**2)
         rospy.loginfo("Waiting for MAV to spawn ... done.")
 
         # Wait for unreal client
@@ -118,14 +122,13 @@ class SimulationManager:
         rospy.loginfo("Waiting for unreal client to setup ... done.")
 
         # Launch planner
-        wait_time = 3
-        rospy.loginfo("Setup ready. The planner will be launched in %.2f seconds." % wait_time)
-        rospy.sleep(wait_time)
+        rospy.loginfo("Waiting for planner to be ready...")
+        rospy.wait_for_service(self.ns_planner + "/toggle_running")
         run_planner_srv = rospy.ServiceProxy(self.ns_planner + "/toggle_running", SetBool)
         run_planner_srv(True)
 
         # Finish
-        rospy.loginfo("Succesfully started the simulation!")
+        rospy.loginfo("Waiting for planner to be ready... done. \nSuccesfully started the simulation!")
 
     def mon_raw_callback(self, ros_data):
         # Real-time rate

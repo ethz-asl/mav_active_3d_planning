@@ -5,19 +5,18 @@
   <arg name="verbose_gazebo" default="false"/>
 
   <!-- Voxblox arguments -->
-  <arg name="voxel_size" default="0.05"/>
+  <arg name="voxel_size" default="0.1"/>
   <arg name="voxels_per_side" default="16"/>
-  <arg name="method" default="fast"/>
+  <arg name="method" default="simple"/>
   <arg name="verbose_voxblox" default="false"/>
     
-  <!-- Unreal/Routine arguments -->
+  <!-- Unreal Routine arguments -->
   <arg name="sensor_model_config" default="sensor_model_config.yaml"/>
   <arg name="uecv_mode" default="fast"/>
   <arg name="slowdown" default="0.2"/>
-  <arg name="rviz_config_voxblox" default="example_full.rviz"/>
   
-  <!-- Random Planner -->
-  <arg name="verbose_planner" default="false"/>
+  <!--  Planner arguments -->
+  <arg name="verbose_planner" default="true"/>
   
 
   <!-- Setup empty gazebo world for physics-->
@@ -40,6 +39,7 @@
       <arg name="enable_logging" value="false" />
       <arg name="z" value="0" />
     </include>
+    
     <!-- MPC trajectory tracker-->
     <node name="mav_nonlinear_mpc" pkg="mav_nonlinear_mpc" type="nonlinear_mpc_node" respawn="true" clear_params="true">
       <remap from="odometry" to="ground_truth/odometry" />
@@ -49,6 +49,7 @@
       <param name="verbose" value="false" />
       <param name="reference_frame" value="world"/>
     </node>
+    
     <!-- Rotor input controller -->
     <node name="PID_attitude_controller" pkg="mav_lowlevel_attitude_controller" type="mav_pid_attitude_controller_node" respawn="true" clear_params="true">
       <remap from="odometry" to="ground_truth/odometry" />
@@ -67,6 +68,7 @@
 			<param name="slowdown" value="$(arg slowdown)"/>
 		  <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
     </node>
+    
     <!-- Unreal sensor model -->
     <node name="unreal_sensor_model" pkg="unreal_cv_ros" type="sensor_model.py" output="screen">
       <rosparam command="load" file="$(find unreal_cv_ros)/cfg/$(arg sensor_model_config)"/>
@@ -84,7 +86,7 @@
 			<param name="color_mode" value="color" />
 			<param name="use_tf_transforms" value="true" />
 			<param name="update_mesh_every_n_sec" value="1.0" />
-			<param name="output_mesh_as_pointcloud" value="true" />
+			<!--param name="output_mesh_as_pointcloud" value="true" /-->
 			<param name="method" value="$(arg method)" />
 			<param name="max_ray_length" value="10.0" />
 			<param name="allow_clear" value="true" />
@@ -101,29 +103,28 @@
   </group>
   
 		<!-- Random walk planner -->
-		<node name="random_planner" pkg="mav_active_3d_planning" type="random_planner" output="screen" ns="$(arg mav_name)">
-			<remap from="random_planner/esdf_map_in" to="/voxblox/voxblox_node/esdf_map_out" />
+		<node name="active_3d_planner_node" pkg="mav_active_3d_planning" type="active_3d_planner_node" output="screen" ns="$(arg mav_name)">
+			<remap from="active_3d_planner_node/esdf_map_in" to="/voxblox/voxblox_node/esdf_map_out" />
 			<param name="use_tf_transforms" value="true" />
 			<param name="tsdf_voxel_size" value="$(arg voxel_size)" />
 			<param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
 			<param name="update_mesh_every_n_sec" value="0.0" />
 			
 			<remap from="odometry" to="odometry_sensor1/odometry" />
-			<param name="range" value="1.0" />
-			<param name="speed" value="0.05" />
-			<param name="collision_radius" value="0.4" />
-			<param name="planar" value="true" />
 			<param name="verbose" value="$(arg verbose_planner)" />
+			<param name="collision_optimistic" value="false" />
+			<param name="collision_radius" value="0.45" />
 		</node>
 		
 		<!-- Simulation manager for launching and monitoring-->
 		<node name="simulation_manager" pkg="unreal_cv_ros" type="simulation_manager.py" output="screen" ns="unreal">
 			<param name="ns_mav" value="/$(arg mav_name)" />
+			<param name="ns_planner" value="/$(arg mav_name)/active_3d_planner_node" />
 			<param name="monitor" value="true" />
 			<remap from="ue_raw_in" to="ue_sensor_raw" />
 			<remap from="ue_out_in" to="ue_sensor_out" />
 		</node>
 		
 		<!-- Visualization -->
-		<node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find unreal_cv_ros)/cfg/$(arg rviz_config_voxblox)"/>
+		<node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/full_test.rviz"/>
 </launch>
