@@ -117,11 +117,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-cs_add_executable(random_planner
-  src/random_planner.cpp
-)
-
-cs_add_executable(active_3d_planner_node
+cs_add_executable(planner_node
   src/planner_node.cpp
 )
 
