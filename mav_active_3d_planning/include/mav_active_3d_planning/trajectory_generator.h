@@ -2,10 +2,13 @@
 #define MAV_ACTIVE_3D_PLANNING_TRAJECTORY_GENERATOR_H_
 
 #include "mav_active_3d_planning/trajectory_segment.h"
+#include "trajectory_segment.h"
 
 #include <ros/node_handle.h>
 #include <voxblox_ros/esdf_server.h>
+
 #include <vector>
+#include <memory>
 
 namespace mav_active_3d_planning {
 
@@ -19,15 +22,21 @@ namespace mav_active_3d_planning {
 
         virtual ~TrajectoryGenerator() {}
 
-        // Expand a selected trajectory segment and add the new trajectories to result
-        virtual bool expandSegment(std::vector<TrajectorySegment> *result, TrajectorySegment start) {
-            ROS_ERROR("expandSegments function not implemented.");
+        // Expansion policy where to expand (from full tree)
+        virtual TrajectorySegment* selectSegment(TrajectorySegment &root) {
+            ROS_ERROR("TG: selectSegment function not implemented.");
+            return nullptr;
+        }
+
+        // Expand a selected trajectory segment
+        virtual bool expandSegment(TrajectorySegment &target) {
+            ROS_ERROR("TG: expandSegment function not implemented.");
             return false;
         }
 
         // Set params from ROS Nodehandle.
         virtual bool setParamsFromRos(const ros::NodeHandle &nh) {
-            ROS_ERROR("setParamsFromRos function not implemented.");
+            ROS_ERROR("TG: setParamsFromRos function not implemented.");
             return false;
         }
 
@@ -43,12 +52,12 @@ namespace mav_active_3d_planning {
 
         // Returns true if the position is traversable
         bool checkCollision(const Eigen::Vector3d &position) {
-            double distance = 0.0;
-            if (voxblox_Ptr_->getEsdfMapPtr()->getDistanceAtPosition(position, &distance) &&
-                voxblox_Ptr_->getEsdfMapPtr()->isObserved(position)) {
-                return (distance > p_coll_radius_);
+            if (!voxblox_Ptr_->getEsdfMapPtr()->isObserved(position)) {
+                return p_coll_optimistic_;
             }
-            return p_coll_optimistic_;
+            double distance = 0.0;
+            voxblox_Ptr_->getEsdfMapPtr()->getDistanceAtPosition(position, &distance);
+            return (distance > p_coll_radius_);
         }
     };
 

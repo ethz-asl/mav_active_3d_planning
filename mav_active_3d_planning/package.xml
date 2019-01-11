@@ -15,6 +15,7 @@
   <depend>message_runtime</depend>
   <depend>roscpp</depend>
   <depend>voxblox_ros</depend>
+  <depend>voxblox</depend>
   <depend>trajectory_msgs</depend>
   <depend>mav_msgs</depend>
   <depend>std_msgs</depend>

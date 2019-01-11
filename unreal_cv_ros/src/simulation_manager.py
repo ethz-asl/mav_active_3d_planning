@@ -38,6 +38,7 @@ class SimulationManager:
         self.regulate = rospy.get_param('~regulate', False)     # Manage odom throughput for unreal_ros_client
         self.monitor = rospy.get_param('~monitor', False)       # Measure performance of unreal pipeline
         self.horizon = rospy.get_param('~horizon', 10)          # How many messages are kept for evaluation
+        self.planner_delay = rospy.get_param('~delay', 0.0)     # Waiting time until the planner is launched
 
         if self.monitor:
             # Monitoring arrays
@@ -121,14 +122,20 @@ class SimulationManager:
         rospy.wait_for_service("get_camera_params")
         rospy.loginfo("Waiting for unreal client to setup ... done.")
 
-        # Launch planner
+        # Wait for planner
         rospy.loginfo("Waiting for planner to be ready...")
         rospy.wait_for_service(self.ns_planner + "/toggle_running")
+
+        if self.planner_delay > 0:
+            rospy.loginfo("Waiting for planner to be ready... done. Launch in %d seconds.", self.planner_delay)
+            rospy.sleep(self.planner_delay)
+        else:
+            rospy.loginfo("Waiting for planner to be ready... done.")
+
+        # Launch planner (by service)
         run_planner_srv = rospy.ServiceProxy(self.ns_planner + "/toggle_running", SetBool)
         run_planner_srv(True)
-
-        # Finish
-        rospy.loginfo("Waiting for planner to be ready... done. \nSuccesfully started the simulation!")
+        rospy.loginfo("Succesfully started the simulation!")
 
     def mon_raw_callback(self, ros_data):
         # Real-time rate

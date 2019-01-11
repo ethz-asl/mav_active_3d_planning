@@ -8,6 +8,7 @@ Panels:
         - /Status1
         - /Axes1
         - /Candidate Trajectories1/Namespaces1
+        - /Evaluation1
       Splitter Ratio: 0.5
     Tree Height: 565
   - Class: rviz/Selection
@@ -137,6 +138,14 @@ Visualization Manager:
       Name: Candidate Trajectories
       Namespaces:
         candidate_trajectories: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /firefly/evaluation_visualization
+      Name: Evaluation
+      Namespaces:
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
