@@ -168,11 +168,6 @@ class UnrealRosClient:
         if np.array_equal(pose, self.previous_pose):
             return
 
-        # print("Pose UE1: {0:.2f} {1:.2f} {2:.2f} {3:.2f} {4:.2f} {5:.2f}".format(position[0], position[1],
-        #                                                                                  position[2], orientation[0],
-        #                                                                                  orientation[1],
-        #                                                                                  orientation[2]))
-
         self.previous_pose = pose
         timestamp = rospy.Time.now()
         self.publish_images(timestamp)
@@ -181,24 +176,6 @@ class UnrealRosClient:
         self.tf_br.sendTransform((position[0], position[1], position[2]),
                                  (orientation[0], orientation[1], orientation[2], orientation[3]),
                                  timestamp, "camera_link", "world")
-
-        # test
-        # print("Pose ros: {0:.2f} {1:.2f} {2:.2f} {3:.2f} {4:.2f} {5:.2f} {5:.2f}".format(position[0], position[1],
-        #                                                                                  position[2], orientation[0],
-        #                                                                                  orientation[1],
-        #                                                                                  orientation[2],
-        #                                                                                  orientation[3]))
-        # odom_test = Odometry()
-        # odom_test.pose.pose.position.x = position[0]
-        # odom_test.pose.pose.position.y = position[1]
-        # odom_test.pose.pose.position.z = position[2]
-        # odom_test.pose.pose.orientation.x = orientation[0]
-        # odom_test.pose.pose.orientation.y = orientation[1]
-        # odom_test.pose.pose.orientation.z = orientation[2]
-        # odom_test.pose.pose.orientation.w = orientation[3]
-        #
-        # P, O = self.transform_to_unreal(odom_test.pose.pose)
-        # print("Pose UE2: {0:.2f} {1:.2f} {2:.2f} {3:.2f} {4:.2f} {5:.2f}".format(P[0], P[1], P[2], O[0], O[1], O[2]))
 
     def publish_images(self, header_stamp):
         ''' Produce and publish images for test and standard mode'''
