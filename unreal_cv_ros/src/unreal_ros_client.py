@@ -100,8 +100,6 @@ class UnrealRosClient:
 
         # Get pose in unreal coords
         position, orientation = self.transform_to_unreal(ros_data.pose.pose)
-        position = position + self.coord_origin
-        orientation[1] = orientation[1] + self.coord_yaw
 
         # Call the plugin (takes images and then sets the new position)
         args = np.concatenate((position, orientation, np.array([self.collision_tolerance]), self.previous_loc_req),
@@ -139,12 +137,10 @@ class UnrealRosClient:
 
         # Get pose
         position, orientation = self.transform_to_unreal(ros_data.pose.pose)
-        position = position + self.coord_origin
-        orientation[1] = orientation[1] + self.coord_yaw
 
         # Set camera in unrealcv
         if self.collision_on:
-            client.request('vset /camera/0/moveto {0} {1} {2}'.format(*position))
+            client.request('vset /camera/0/moveto {0:f} {1:f} {2:f}'.format(*position))
 
             # Check collision
             position_eff = client.request('vget /camera/0/location')
@@ -202,38 +198,47 @@ class UnrealRosClient:
     def publish_tf_data(self, odom_msg):
         pos = odom_msg.pose.pose.position
         rot = odom_msg.pose.pose.orientation
-        self.tf_br.sendTransform((pos.x, pos.y, pos.z), (rot.x, rot.y, rot.z, rot.w),odom_msg.header.stamp,
+        self.tf_br.sendTransform((pos.x, pos.y, pos.z), (rot.x, rot.y, rot.z, rot.w), odom_msg.header.stamp,
                                  "camera_link", "world")
 
     def get_camera_params_handle(self, _):
         return GetCameraParamsResponse(self.camera_params[0], self.camera_params[1], self.camera_params[2])
 
-    @staticmethod
-    def transform_to_unreal(pose):
+    def transform_to_unreal(self, pose):
         '''
         Transform from ros to default unreal coordinates.
-        Input:      pose (ROS geometry_msgs/Pose)
+        Input:      ros pose as [x, y, z] array + quaternion array (as from pose msg)
         Output:     position ([x, y, z] array, in unreal coordinates)
                     orientation ([pitch, yaw, roll] array in unreal coordinates)
         '''
-        # Read out array
-        position = np.array([pose.position.x, pose.position.y, pose.position.z])
+        # Read out vectors
+        x = pose.position.x
+        y = pose.position.y
+        z = pose.position.z
         orientation = [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]
+
+        # Transform to relative Unreal coordinate sys rotation
+        yaw = self.coord_yaw / 180 * math.pi
+        q_rot = tf.transformations.quaternion_from_euler(0, 0, yaw)
+        orientation = tf.transformations.quaternion_multiply(q_rot, orientation)
+        position = np.array([math.cos(yaw)*x - math.sin(yaw)*y, math.sin(yaw)*x + math.cos(yaw)*y, z])
 
         # Invert y axis
         position[1] = -position[1]
-        orientation[1] = -orientation[1]
 
         # Invert rotation for left handed coordinates
         orientation = np.array([-orientation[0], -orientation[1], -orientation[2], orientation[3]])
 
         # Transform to pitch, yaw, roll
         (r, p, y) = tf.transformations.euler_from_quaternion(orientation)
-        orientation = np.array([-p, y, r])
+        orientation = np.array([p, y, r])
 
         # Transform to unreal coordinate units
         position = position * 100  # default is cm
         orientation = orientation * 180 / math.pi  # default is deg
+
+        # Transform to relative unreal coordinate sys position
+        position = position + self.coord_origin
         return position, orientation
 
     @staticmethod
@@ -253,12 +258,11 @@ class UnrealRosClient:
         orientation = orientation / 180 * math.pi  # default is deg
 
         # Transform from pitch, yaw, roll
-        (x, y, z, w) = tf.transformations.quaternion_from_euler(orientation[2], -orientation[0], orientation[1])
+        (x, y, z, w) = tf.transformations.quaternion_from_euler(orientation[2], orientation[0], orientation[1])
         orientation = np.array([x, y, z, w])
 
         # Invert y axis
         position[1] = -position[1]
-        orientation[1] = -orientation[1]
 
         # Invert rotation for left handed coordinates
         orientation = [-orientation[0], -orientation[1], -orientation[2], orientation[3]]
