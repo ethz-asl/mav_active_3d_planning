@@ -31,7 +31,7 @@ class SimulationManager:
     def __init__(self):
         '''  Initialize ros node and read params '''
         # Parse parameters
-        self.ns_gazebo = rospy.get_param('~ns_gazebo', "/gazebo")
+        self.ns_gazebo = rospy.get_param('~ns_gazebo', "/gazebo")   
         self.ns_mav = rospy.get_param('~ns_mav', "/firefly")
         self.ns_planner = rospy.get_param('~ns_planner', "/firefly/random_planner")
 

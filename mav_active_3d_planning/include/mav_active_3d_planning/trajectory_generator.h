@@ -2,13 +2,9 @@
 #define MAV_ACTIVE_3D_PLANNING_TRAJECTORY_GENERATOR_H_
 
 #include "mav_active_3d_planning/trajectory_segment.h"
-#include "trajectory_segment.h"
 
 #include <ros/node_handle.h>
 #include <voxblox_ros/esdf_server.h>
-
-#include <vector>
-#include <memory>
 
 namespace mav_active_3d_planning {
 

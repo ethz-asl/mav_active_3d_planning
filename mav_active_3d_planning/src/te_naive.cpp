@@ -1,6 +1,5 @@
 #include "mav_active_3d_planning/trajectory_evaluator.h"
 #include "mav_active_3d_planning/trajectory_segment.h"
-#include "../include/mav_active_3d_planning/trajectory_segment.h"
 
 #include <mav_msgs/eigen_mav_msgs.h>
 #include <voxblox_ros/esdf_server.h>
@@ -36,6 +35,7 @@ namespace mav_active_3d_planning {
         int p_resolution_x_;
         int p_resolution_y_;
         double p_ray_step_;
+        bool p_clear_from_parents_;
         double p_cost_weight_;
 
         // constants
@@ -53,6 +53,7 @@ namespace mav_active_3d_planning {
         nh.param("TE_resolution_x", p_resolution_x_, 640);
         nh.param("TE_resolution_y", p_resolution_y_, 480);
         nh.param("TE_ray_step", p_ray_step_, static_cast<double>(c_voxel_size_));
+        nh.param("TE_clear_from_parents", p_clear_from_parents_, false);
         nh.param("TE_cost_weight", p_cost_weight_, 1.0e-6);
 
         p_field_of_view_x_ = atan(2.0 * p_focal_length_ / p_resolution_x_);
@@ -61,6 +62,7 @@ namespace mav_active_3d_planning {
     }
 
     bool TENaive::computeGain(TrajectorySegment &traj_in) {
+        traj_in.info.clear();
         // Sample in time
         int64_t current_time = 0;
         for(int i = 0; i < traj_in.trajectory.size(); i++) {
@@ -68,29 +70,35 @@ namespace mav_active_3d_planning {
                 current_time += static_cast<int64_t>(p_sampling_time_ * 1.0e9);
                 std::vector <voxblox::GlobalIndex> new_indices = getVisibleVoxels(traj_in.trajectory[i].position_W,
                                                                                   traj_in.trajectory[i].orientation_W_B);
-                if(false){  // This takes a lot of time and is not yet necessary
-                    // Remove previously seen voxels
-                    TrajectorySegment* previous = traj_in.parent;
-                    while (previous){
-                        std::vector <voxblox::GlobalIndex> old_indices = previous->info;
-                        new_indices.erase(
-                                std::remove_if(
-                                        new_indices.begin(),
-                                        new_indices.end(),
-                                        [&old_indices](const voxblox::GlobalIndex& global_index)
-                                        {
-                                            auto it = std::find(old_indices.begin(), old_indices.end(), global_index);
-                                            return (it != old_indices.end());
-                                        }),
-                                new_indices.end());
-                        previous = previous->parent;
-                    }
-                }
-                // Store info
-                traj_in.gain = (double)new_indices.size();
-                traj_in.info = new_indices;
+
+                // Add all seen voxels
+                traj_in.info.insert(traj_in.info.begin(), new_indices.begin(), new_indices.end());
             }
         }
+        // Remove non-unique voxels
+        traj_in.info.erase( std::unique( traj_in.info.begin(), traj_in.info.end()), traj_in.info.end() );
+
+        // Remove voxels previously seen by parent (this is quite expensive)
+        if(p_clear_from_parents_){
+            TrajectorySegment* previous = traj_in.parent;
+            while (previous){
+                std::vector <voxblox::GlobalIndex> old_indices = previous->info;
+                traj_in.info.erase(
+                        std::remove_if(
+                                traj_in.info.begin(),
+                                traj_in.info.end(),
+                                [&old_indices](const voxblox::GlobalIndex& global_index)
+                                {
+                                    auto it = std::find(old_indices.begin(), old_indices.end(), global_index);
+                                    return (it != old_indices.end());
+                                }),
+                        traj_in.info.end());
+                previous = previous->parent;
+            }
+        }
+
+        // Set gain (#new voxels)
+        traj_in.gain = (double)traj_in.info.size();
         return true;
     }
 

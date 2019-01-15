@@ -1,12 +1,13 @@
 #include "mav_active_3d_planning/trajectory_generator.h"
 #include "mav_active_3d_planning/trajectory_segment.h"
+#include "mav_active_3d_planning/defaults.h"
 
 #include <mav_msgs/eigen_mav_msgs.h>
 #include <random>
-#include <memory>
 
 namespace mav_active_3d_planning {
 
+    // Create random linear segments (leads to non-smooth paths)
     class TGRandomLinear: public TrajectoryGenerator {
     public:
         TGRandomLinear(voxblox::EsdfServer *voxblox_Ptr, bool p_coll_optimistic, double p_coll_radius)
@@ -18,8 +19,8 @@ namespace mav_active_3d_planning {
         bool setParamsFromRos(const ros::NodeHandle &nh);
 
     protected:
-        double p_distance_;
-        double p_speed_;
+        double p_distance_;         // m
+        double p_speed_;            // m/s
         int p_n_segments_;
         int p_max_tries_;
         bool p_planar_;
@@ -36,34 +37,7 @@ namespace mav_active_3d_planning {
     }
 
     TrajectorySegment* TGRandomLinear::selectSegment(TrajectorySegment &root) {
-        if (root.children.empty()) { return &root; }
-        // Expansion policy: get all non-expanded segments
-        std::vector < TrajectorySegment * > candidates;
-        root.getLeaves(candidates);
-
-        // probability to select uniform random
-        srand(time(NULL));
-        if ((double) rand() / RAND_MAX < p_uniform_weight_){
-            return candidates[rand()%candidates.size()];
-        }
-
-        // select weighted with value
-        std::vector<double> values(candidates.size());
-        double value_sum = 0.0;
-        double min_value = 0.0;     // to compensate for negative values
-        for (int i = 0; i < candidates.size(); ++i) {
-            value_sum += candidates[i]->value;
-            min_value = std::min(min_value, candidates[i]->value);
-            values[i] = value_sum;
-        }
-        value_sum -= (double) candidates.size() * min_value;
-        double realization = (double) rand() / RAND_MAX * value_sum;
-        for (int i = 0; i < candidates.size(); ++i) {
-            if ((values[i] - (i+1) * min_value) >= realization) {
-                return candidates[i];
-            }
-        }
-        return &root; // Exception catching, should never happen by construction
+        return defaults::selectRandomLeafWeighted(root, p_uniform_weight_);
     }
 
     bool TGRandomLinear::expandSegment(TrajectorySegment &target) {

@@ -1,6 +1,8 @@
 #include "mav_active_3d_planning/trajectory_segment.h"
 #include "mav_active_3d_planning/trajectory_generator.h"
 #include "tg_random_linear.cpp"
+#include "tg_mav_trajectory_generation.cpp"
+#include "tg_uniform.cpp"
 #include "mav_active_3d_planning/trajectory_evaluator.h"
 #include "te_naive.cpp"
 
@@ -52,8 +54,8 @@ namespace mav_active_3d_planning {
         std::shared_ptr<TrajectorySegment> current_segment_;        // root node to full tree
         bool running_;
         Eigen::Vector3d target_position_;
-        int vis_num_previous_trajectories;
-        ros::Time info_timing;
+        int vis_num_previous_trajectories_;
+        ros::Time info_timing_;
 
         // params
         double p_replan_threshold_;
@@ -81,6 +83,7 @@ namespace mav_active_3d_planning {
         // initial values and params
         setParamsFromRos();
         running_ = false;
+        vis_num_previous_trajectories_ = 0;
 
         // Subscribers and publishers
         target_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
@@ -92,7 +95,11 @@ namespace mav_active_3d_planning {
         // Setup trajectory generator
         if (p_TG_name_ == "RandomLinear") {
             trajectory_generator_ = new TGRandomLinear(&voxblox_server_, p_coll_optimistic_, p_coll_radius_);
-        } else {
+        } else if (p_TG_name_ == "MavTrajectoryGeneration") {
+            trajectory_generator_ = new TGMavTrajectoryGeneration(&voxblox_server_, p_coll_optimistic_, p_coll_radius_);
+        } else if (p_TG_name_ == "Uniform") {
+            trajectory_generator_ = new TGUniform(&voxblox_server_, p_coll_optimistic_, p_coll_radius_);
+        } else{
             ROS_ERROR("Unknown trajectory generator '%s'.", p_TG_name_.c_str());
         }
         trajectory_generator_->setParamsFromRos(nh_private_);
@@ -149,7 +156,7 @@ namespace mav_active_3d_planning {
         trajectory_point.setFromYaw(0);
         current_segment_->trajectory.push_back(trajectory_point);
 
-        info_timing = ros::Time::now();
+        info_timing_ = ros::Time::now();
     }
 
     void PlannerNode::requestNextTrajectory() {
@@ -161,9 +168,9 @@ namespace mav_active_3d_planning {
         current_segment_->getTree(trajectories_to_vis);
         publishTrajectoryVisualization(trajectories_to_vis);
         if (p_verbose_){
-            ROS_INFO("Replanning! (Evaluated %i segments in %.3f seconds)", (int)trajectories_to_vis.size(),
-                    (ros::Time::now()-info_timing).toSec());
-            info_timing = ros::Time::now();
+            ROS_INFO("Replanning! (Evaluated %i segments in %.3f seconds)", (int)trajectories_to_vis.size()-1,
+                    (ros::Time::now()-info_timing_).toSec());
+            info_timing_ = ros::Time::now();
         }
 
         // Reset tree (Note: could also keep subtree and reevaluate but doesnt matter for this first case)
@@ -173,6 +180,9 @@ namespace mav_active_3d_planning {
 
         // Move
         requestMovement(*current_segment_);
+
+        // Force Esdf update, so next trajectories can be evaluated
+        voxblox_server_.updateEsdf();
 
         // Visualization of new info
         voxblox_server_.publishTraversable();
@@ -228,7 +238,7 @@ namespace mav_active_3d_planning {
             msg.color.r = std::min((0.5 - frac) * 2.0 + 1.0, 1.0);
             msg.color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
             msg.color.b = 0.0;
-            msg.color.a = 0.2;
+            msg.color.a = 0.4;
 
             // points
             for (int j = 0; j < trajectories[i]->trajectory.size(); ++j) {
@@ -240,7 +250,7 @@ namespace mav_active_3d_planning {
             }
             trajectory_vis_pub_.publish(msg);
         }
-        for (int i = trajectories.size(); i < vis_num_previous_trajectories; ++i) {
+        for (int i = trajectories.size(); i < vis_num_previous_trajectories_; ++i) {
             // Setup marker message
             visualization_msgs::Marker msg;
             msg.header.frame_id = "/world";
@@ -251,7 +261,7 @@ namespace mav_active_3d_planning {
             msg.action = visualization_msgs::Marker::DELETE;
             trajectory_vis_pub_.publish(msg);
         }
-        vis_num_previous_trajectories = trajectories.size();
+        vis_num_previous_trajectories_ = trajectories.size();
     }
 
     void PlannerNode::publishEvalVisualization(const TrajectorySegment &trajectory) {

@@ -110,14 +110,21 @@
 			<param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
 			<param name="update_mesh_every_n_sec" value="0.0" />
 			
-			<param name="TG_n_segments" value="3" />
-			<param name="TG_planar" value="false" />
-			<param name="TG_distance" value="1.5" />
-			
 			<remap from="odometry" to="odometry_sensor1/odometry" />
 			<param name="verbose" value="$(arg verbose_planner)" />
 			<param name="collision_optimistic" value="false" />
-			<param name="collision_radius" value="0.45" />
+			<param name="collision_radius" value="0.5" />
+			
+			<param name="trajectory_generator" value="Uniform" />
+			<param name="TG_n_segments" value="7" />
+			<param name="TG_distance" value="1.2" />
+			<param name="TG_velocity" value="0.05" />
+			<param name="TG_yaw_rate_max" value="0.03" />
+			
+			<param name="trajectory_evaluator" value="Naive" />
+			<param name="TE_sampling_time" value="3.5" />
+			<param name="TE_clear_from_parents" value="false" />			
+			
 		</node>
 		
 		<!-- Simulation manager for launching and monitoring-->
@@ -125,7 +132,7 @@
 			<param name="ns_mav" value="/$(arg mav_name)" />
 			<param name="ns_planner" value="/$(arg mav_name)/active_3d_planner_node" />
 			<param name="monitor" value="true" />
-			<param name="delay" value="0.0" />
+			<param name="delay" value="3.0" />
 			<remap from="ue_raw_in" to="ue_sensor_raw" />
 			<remap from="ue_out_in" to="ue_sensor_out" />
 		</node>

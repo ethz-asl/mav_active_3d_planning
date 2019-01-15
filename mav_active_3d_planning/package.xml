@@ -17,6 +17,8 @@
   <depend>voxblox_ros</depend>
   <depend>voxblox</depend>
   <depend>trajectory_msgs</depend>
+  <depend>mav_trajectory_generation</depend>
+  <depend>mav_trajectory_generation_ros</depend>
   <depend>mav_msgs</depend>
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
