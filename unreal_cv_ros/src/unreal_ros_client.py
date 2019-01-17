@@ -217,8 +217,10 @@ class UnrealRosClient:
         z = pose.position.z
         orientation = [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]
 
+        (r, p, y) = tf.transformations.euler_from_quaternion(orientation)
+
         # Transform to relative Unreal coordinate sys rotation
-        yaw = self.coord_yaw / 180 * math.pi
+        yaw = -self.coord_yaw / 180 * math.pi
         q_rot = tf.transformations.quaternion_from_euler(0, 0, yaw)
         orientation = tf.transformations.quaternion_multiply(q_rot, orientation)
         position = np.array([math.cos(yaw)*x - math.sin(yaw)*y, math.sin(yaw)*x + math.cos(yaw)*y, z])
