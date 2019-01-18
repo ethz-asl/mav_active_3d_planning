@@ -35,7 +35,7 @@ class SimulationManager:
         self.ns_mav = rospy.get_param('~ns_mav', "/firefly")
         self.ns_planner = rospy.get_param('~ns_planner', "/firefly/planner_node")
         self.verbose = rospy.get_param('~verbose', True)
-        # self.regulate = rospy.get_param('~regulate', False)     # Manage odom throughput for unreal_ros_client
+        self.regulate = rospy.get_param('~regulate', False)     # Manage odom throughput for unreal_ros_client
         self.monitor = rospy.get_param('~monitor', False)       # Measure performance of unreal pipeline
         self.horizon = rospy.get_param('~horizon', 10)          # How many messages are kept for evaluation
         self.planner_delay = rospy.get_param('~delay', 0.0)     # Waiting time until the planner is launched
