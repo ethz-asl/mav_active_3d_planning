@@ -27,7 +27,6 @@ class UnrealRosClient:
         # Read in params
         self.mode = rospy.get_param('~mode', "standard")  # Client mode (test, standard, fast, fast2)
         self.collision_on = rospy.get_param('~collision_on', True)  # Check for collision
-        self.collision_tolerance = rospy.get_param('~collision_tol', 10)  # Distance threshold in UE units
         self.publish_tf = rospy.get_param('~publish_tf', False)  # If true publish the camera transformation in tf
         self.slowdown = rospy.get_param('~slowdown', 0.0)  # Artificially slow down image rate for UE to finish rotation
 
@@ -71,7 +70,7 @@ class UnrealRosClient:
 
         # tf broadcaster
         if self.mode == 'test' or self.publish_tf:
-            self.tf_br = tf.TransformBroadcaster()                  # Publish camera transforms from game
+            self.tf_br = tf.TransformBroadcaster()                  # Publish camera transforms in tf
 
         # Setup mode
         if self.mode == 'test':
@@ -80,13 +79,12 @@ class UnrealRosClient:
 
         elif self.mode == 'standard':
             self.sub = rospy.Subscriber("odometry", Odometry, self.odom_callback, queue_size=1, buff_size=2 ** 24)
+            self.previous_odom_msg = None                   # Previously processed Odom message
+            self.collision_tolerance = rospy.get_param('~collision_tol', 10)  # Distance threshold in UE units
 
         elif self.mode == 'fast':
             self.sub = rospy.Subscriber("odometry", Odometry, self.fast_callback, queue_size=1, buff_size=2 ** 24)
             self.previous_odom_msg = None                   # Previously processed Odom message
-            self.previous_loc_req = np.array([0, 0, 0])     # Requested unreal coords for collision check
-            if not self.collision_on:
-                self.collision_tolerance = -1
 
         # Finish setup
         self.pub = rospy.Publisher("ue_sensor_raw", UeSensorRaw, queue_size=10)
@@ -96,22 +94,22 @@ class UnrealRosClient:
     def fast_callback(self, ros_data):
         ''' Use the custom unrealcv command to get images and collision checks. vget UECVROS command returns the images
         and then sets the new pose, therefore the delay. '''
+        # Slowdown to give more rendering time to the unreal engine
         time.sleep(self.slowdown)
 
         # Get pose in unreal coords
         position, orientation = self.transform_to_unreal(ros_data.pose.pose)
 
         # Call the plugin (takes images and then sets the new position)
-        args = np.concatenate((position, orientation, np.array([self.collision_tolerance]), self.previous_loc_req),
-                              axis=0)
+        args = np.concatenate((position, orientation, np.array([float(self.collision_on)])), axis=0)
         result = client.request("vget /uecvros/full" + "".join([" {0:f}".format(x) for x in args]))
 
         if self.previous_odom_msg is not None:
             # This is not the initialization step
             if isinstance(result, unicode):
                 # Check for collision or errors
-                if result[:9] == "Collision":
-                    rospy.logwarn(result)
+                if result == "Collision detected!":
+                    self.on_collision()
                 else:
                     rospy.logerr("Unrealcv error: " + result)
             elif isinstance(result, str):
@@ -126,17 +124,27 @@ class UnrealRosClient:
                 rospy.logerr("Unknown return format from unrealcv {0}".format(type(result)))
 
         self.previous_odom_msg = ros_data
-        self.previous_loc_req = position
 
         if self.publish_tf:
             self.publish_tf_data(ros_data)
 
     def odom_callback(self, ros_data):
         ''' Produce images for given odometry '''
+        # Slowdown to give more rendering time to the unreal engine (should not be necessary in normal mode)
         time.sleep(self.slowdown)
 
-        # Get pose
+        # Get pose in unreal coords
         position, orientation = self.transform_to_unreal(ros_data.pose.pose)
+
+        # Generate images
+        if self.previous_odom_msg is not None:
+            # This is not the initialization step
+            self.publish_images(self.previous_odom_msg.header.stamp)
+
+        if self.publish_tf:
+            self.publish_tf_data(ros_data)
+
+        self.previous_odom_msg = ros_data
 
         # Set camera in unrealcv
         if self.collision_on:
@@ -146,17 +154,11 @@ class UnrealRosClient:
             position_eff = client.request('vget /camera/0/location')
             position_eff = np.array([float(x) for x in str(position_eff).split(' ')])
             if np.linalg.norm(position - position_eff) >= self.collision_tolerance:
-                rospy.logwarn("MAV collision detected!")
+                self.on_collision()
         else:
             client.request("vset /camera/0/location {0:f} {1:f} {2:f}".format(*position))
 
         client.request("vset /camera/0/rotation {0:f} {1:f} {2:f}".format(*orientation))
-
-        # Generate images
-        self.publish_images(ros_data.header.stamp)
-
-        if self.publish_tf:
-            self.publish_tf_data(ros_data)
 
     def test_callback(self, _):
         ''' Produce images and broadcast odometry from unreal in-game controlled camera movement '''
@@ -207,7 +209,7 @@ class UnrealRosClient:
     def transform_to_unreal(self, pose):
         '''
         Transform from ros to default unreal coordinates.
-        Input:      ros pose as [x, y, z] array + quaternion array (as from pose msg)
+        Input:      ros pose in global frame
         Output:     position ([x, y, z] array, in unreal coordinates)
                     orientation ([pitch, yaw, roll] array in unreal coordinates)
         '''
@@ -217,30 +219,16 @@ class UnrealRosClient:
         z = pose.position.z
         orientation = [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]
 
-        (r, p, y) = tf.transformations.euler_from_quaternion(orientation)
+        # Transformation of position to relative UE coordsys
+        yaw = self.coord_yaw / 180 * math.pi
+        position = np.array([math.cos(yaw) * x + math.sin(yaw) * y, math.sin(yaw) * x - math.cos(yaw) * y, z])
+        position = position * 100 + self.coord_origin       # default units are cm
 
-        # Transform to relative Unreal coordinate sys rotation
-        yaw = -self.coord_yaw / 180 * math.pi
-        q_rot = tf.transformations.quaternion_from_euler(0, 0, yaw)
+        # Transformation of orientation to relative UE coordsys
+        q_rot = tf.transformations.quaternion_from_euler(0, 0, -yaw)
         orientation = tf.transformations.quaternion_multiply(q_rot, orientation)
-        position = np.array([math.cos(yaw)*x - math.sin(yaw)*y, math.sin(yaw)*x + math.cos(yaw)*y, z])
-
-        # Invert y axis
-        position[1] = -position[1]
-
-        # Invert rotation for left handed coordinates
-        orientation = np.array([-orientation[0], -orientation[1], -orientation[2], orientation[3]])
-
-        # Transform to pitch, yaw, roll
         (r, p, y) = tf.transformations.euler_from_quaternion(orientation)
-        orientation = np.array([p, y, r])
-
-        # Transform to unreal coordinate units
-        position = position * 100  # default is cm
-        orientation = orientation * 180 / math.pi  # default is deg
-
-        # Transform to relative unreal coordinate sys position
-        position = position + self.coord_origin
+        orientation = np.array([-p, -y, r]) * 180 / math.pi     # default units are deg
         return position, orientation
 
     @staticmethod
@@ -274,6 +262,10 @@ class UnrealRosClient:
     def reset_client():
         rospy.loginfo('On unreal_ros_client shutdown: disconnecting unrealcv client.')
         client.disconnect()
+
+    @staticmethod
+    def on_collision():
+        rospy.logwarn("MAV collision detected!")
 
 
 if __name__ == '__main__':

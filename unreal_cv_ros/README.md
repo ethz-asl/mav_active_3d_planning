@@ -10,12 +10,14 @@ unreal_cv_ros is a package to allow ROS based simulation of a MAV equipped with 
 * [Unrealcv Plugin Setup](#Unrealcv-Plugin-Setup)
 * [Creating UE4 worlds](#Creating-UE4-worlds)
 * [Custom collision radius](#Custom-collision-radius)
+* [The Unreal Coordinate System](#The-Unreal-Coordinate-System)
 
 **Examples**
 * [Run in test mode](#Run-in-test-mode)
 * [Run in standard mode](#Run-in-standard-mode)
 
-**[Troubleshooting](#Troubleshooting)**
+**Troubleshooting**
+* [Troubleshooting](#Troubleshooting)
 
 ## Dependencies
 What should all be added here? The unreal_ros_client node depends on the unrealcv python library `pip install unrealcv`.
@@ -107,9 +109,9 @@ FExecStatus UecvrosFull(const TArray<FString>& Args);
 
 ## Creating UE4 worlds
 In order to easily create unreal_cv_ros compatible worlds UE4 worlds:
-* Install and use unreal engine editor **4.16** (for compatibility with unrealcv).
-* Make sure the unrealcv plugin is installed **and** activated in the current project (Edit > Plugins > Science > Unreal CV, see [unrealcv docs](http://docs.unrealcv.org/en/master/plugin/install.html)).
-* Set the player to a spectator with collision type: World Settings > Game Mode > Selected GameMode > Default Pawn Class := DefaultPawn.
+* Install and use unreal engine editor **4.16** for compatibility with unrealcv. (Note: Newer versions *should* work too but without guarantees).
+* Make sure the unrealcv plugin is installed **and** activated in the current project (In the Editor check: Edit > Plugins > Science > Unreal CV, see [unrealcv docs](http://docs.unrealcv.org/en/master/plugin/install.html)).
+* Set the player to a spectator type with collision: World Settings > Game Mode > Selected GameMode > Default Pawn Class := DefaultPawn. (If this is read-only just change toa custom gamemode above.)
 
 ## Custom collision radius
 The default collision for the *DefaultPawn* is a sphere of radius 35cm. For custom collision (radius), you need to create your own pawn blueprint (with DefaultPawn as base class). 'Easy' way to create a pawn of custom collision radius:
@@ -119,6 +121,13 @@ The default collision for the *DefaultPawn* is a sphere of radius 35cm. For cust
 4. The class should now open in the blueprint editor, where its components can be edited.
 5. To change the radius elect the 'CollisionComponent', and under Details > Shape > SphereRadius := myValue. Notice that too short radii can allow the camera to enter certain objects, creating graphical artifacts.
 6. Save the blueprint. Set the World Settings > Game Mode > Selected GameMode > Default Pawn Class := myDefaultPawn
+
+## The Unreal Coordinate System
+For application with the unreal\_ros\_client, the coordinate transformations are already implemented so no need to worry. For devel/debug tasks: Unreal and unrealv use the following coordinate system: 
+
+* **Unreal World** The default coordsystem is X-forward, Y-left, Z-up. Default units are cm.
+* **Rotation Direction** Positive rotation directions around the unreal world coordinate axes are mathematically positive around the X-axis and negative around the Y and Z axes.
+* **Rotation parametrization** The Unreal engine interface and therefore also the unrealcv commands parse rotations as pitch-yaw-roll (pay attention to the order). However, inside the engine rotations are performed as Euler-XYZ rotations (i.e. roll-pitch-yaw). Default units are degrees.
 
 # Examples
 ## Run in test mode
