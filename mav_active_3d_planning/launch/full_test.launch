@@ -12,8 +12,8 @@
     
   <!-- Unreal Routine arguments -->
   <arg name="sensor_model_config" default="sensor_model_config.yaml"/>
-  <arg name="uecv_mode" default="fast"/>
-  <arg name="slowdown" default="0.2"/>
+  <arg name="uecv_mode" default="standard"/>
+  <arg name="slowdown" default="0.1"/>
   
   <!--  Planner arguments -->
   <arg name="verbose_planner" default="true"/>
@@ -40,7 +40,7 @@
       <arg name="z" value="0" />
     </include>
     
-    <!-- MPC trajectory tracker-->
+    <!-- MPC trajectory tracker (sampling time needs to match odom publish rate!)-->
     <node name="mav_nonlinear_mpc" pkg="mav_nonlinear_mpc" type="nonlinear_mpc_node" respawn="true" clear_params="true">
       <remap from="odometry" to="ground_truth/odometry" />
       <rosparam file="$(find mav_nonlinear_mpc)/resources/nonlinear_mpc_$(arg mav_name).yaml" />
@@ -48,6 +48,7 @@
       <param name="use_rc_teleop" value="false"/>
       <param name="verbose" value="false" />
       <param name="reference_frame" value="world"/>
+      <param name="sampling_time" value="0.0021"/>
     </node>
     
     <!-- Rotor input controller -->
@@ -65,6 +66,7 @@
     <node name="unreal_ros_client" pkg="unreal_cv_ros" type="unreal_ros_client.py" output="screen">
 			<param name="mode" value="$(arg uecv_mode)"/>
 			<param name="publish_tf" value="true"/>
+			<param name="collision_on" value="true"/>
 			<param name="slowdown" value="$(arg slowdown)"/>
 		  <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
     </node>
@@ -86,11 +88,11 @@
 			<param name="color_mode" value="color" />
 			<param name="use_tf_transforms" value="true" />
 			<param name="update_mesh_every_n_sec" value="1.0" />
-			<!--param name="output_mesh_as_pointcloud" value="true" /-->
 			<param name="method" value="$(arg method)" />
 			<param name="max_ray_length" value="5.0" />
 			<param name="allow_clear" value="true" />
 			<param name="clear_sphere_for_planning" value="false" />
+		  <param name="use_freespace_pointcloud" value="true" />
 			<param name="verbose" value="$(arg verbose_voxblox)" />
 		</node>
 		
@@ -113,16 +115,23 @@
 			<remap from="odometry" to="odometry_sensor1/odometry" />
 			<param name="verbose" value="$(arg verbose_planner)" />
 			<param name="collision_optimistic" value="false" />
-			<param name="collision_radius" value="0.5" />
+			<param name="collision_radius" value="0.5" />			
 			
 			<param name="trajectory_generator" value="Uniform" />
 			<param name="TG_n_segments" value="7" />
 			<param name="TG_distance" value="1.2" />
-			<param name="TG_velocity" value="0.05" />
-			<param name="TG_yaw_rate_max" value="0.03" />
+			<param name="TG_velocity" value="0.3" />
+			<param name="TG_yaw_rate_max" value="0.15" />
+			
+			<!--param name="trajectory_generator" value="MavTrajectoryGeneration" />
+			<param name="TG_n_segments" value="1" />
+			<param name="TG_distance_max" value="1.0" />
+			<param name="TG_distance_min" value="1.0" />
+			<param name="TG_uniform_weight" value="0.6" />
+			<param name="TG_max_tries" value="20" /-->
 			
 			<param name="trajectory_evaluator" value="Naive" />
-			<param name="TE_sampling_time" value="3.5" />
+			<param name="TE_sampling_time" value="1.0" />
 			<param name="TE_clear_from_parents" value="false" />			
 			
 		</node>

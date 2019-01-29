@@ -1,33 +1,12 @@
 #include "mav_active_3d_planning/defaults.h"
 
-#include <random>
-#include <memory>
-
-
 namespace mav_active_3d_planning {
     namespace defaults {
-        // Select a random leaf of the trajectory tree
-        TrajectorySegment *selectRandomLeaf(TrajectorySegment &root) {
-            if (root.children.empty()) { return &root; }
-            std::vector < TrajectorySegment * > candidates;
-            root.getLeaves(candidates);
-            srand(time(NULL));
+        TrajectorySegment *selectRandomUniform(std::vector < TrajectorySegment * > &candidates){
             return candidates[rand()%candidates.size()];
         }
 
-        // Select a random leaf of the trajectory tree, every leaf is weighted with its value
-        TrajectorySegment* selectRandomLeafWeighted(TrajectorySegment &root, double uniform_weight){
-            if (root.children.empty()) { return &root; }
-            std::vector < TrajectorySegment * > candidates;
-            root.getLeaves(candidates);
-
-            // probability to select uniform random (to give a minimum non-zero probability to all leaves)
-            srand(time(NULL));
-            if ((double) rand() / RAND_MAX < uniform_weight){
-                return candidates[rand()%candidates.size()];
-            }
-
-            // select weighted with value
+        TrajectorySegment *selectRandomWeighted(std::vector < TrajectorySegment * > &candidates) {
             std::vector<double> values(candidates.size());
             double value_sum = 0.0;
             double min_value = 0.0;     // to compensate for negative values
@@ -43,7 +22,34 @@ namespace mav_active_3d_planning {
                     return candidates[i];
                 }
             }
-            return &root; // Exception catching, should never happen by construction
+        }
+
+        TrajectorySegment *selectRandomLeafUniform(TrajectorySegment &root) {
+            if (root.children.empty()) { return &root; }
+            std::vector < TrajectorySegment * > candidates;
+            root.getLeaves(candidates);
+            return selectRandomUniform(candidates);
+        }
+
+        TrajectorySegment* selectRandomLeafWeighted(TrajectorySegment &root){
+            if (root.children.empty()) { return &root; }
+            std::vector < TrajectorySegment * > candidates;
+            root.getLeaves(candidates);
+            return selectRandomWeighted(candidates);
+        }
+
+        TrajectorySegment *selectRandomSegmentUniform(TrajectorySegment &root) {
+            if (root.children.empty()) { return &root; }
+            std::vector < TrajectorySegment * > candidates;
+            root.getTree(candidates);
+            return selectRandomUniform(candidates);
+        }
+
+        TrajectorySegment *selectRandomSegmentWeighted(TrajectorySegment &root) {
+            if (root.children.empty()) { return &root; }
+            std::vector < TrajectorySegment * > candidates;
+            root.getTree(candidates);
+            return selectRandomWeighted(candidates);
         }
 
     } // namespace defaults

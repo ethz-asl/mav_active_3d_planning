@@ -37,13 +37,16 @@ namespace mav_active_3d_planning {
     }
 
     TrajectorySegment* TGRandomLinear::selectSegment(TrajectorySegment &root) {
-        return defaults::selectRandomLeafWeighted(root, p_uniform_weight_);
+        if ((double)rand()/RAND_MAX < p_uniform_weight_){
+            return defaults::selectRandomLeafUniform(root);
+        }
+        return defaults::selectRandomLeafWeighted(root);
     }
 
     bool TGRandomLinear::expandSegment(TrajectorySegment &target) {
         // Create and add new adjacent trajectories to target segment
         int valid_segments = 0;
-        double rate = 10;   // Sample trajectory at 10Hz
+        double rate = 100;   // Sample trajectory at 100Hz
         Eigen::Vector3d start_pos = target.trajectory.back().position_W;
         srand(time(NULL));
         int counter = 0;

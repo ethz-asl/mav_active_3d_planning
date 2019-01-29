@@ -23,26 +23,29 @@ namespace mav_active_3d_planning {
         double p_velocity_;         // m/s
         double p_yaw_rate_max_;     // rad/s
         int p_n_segments_;
-        bool p_planar_;
+        bool p_planar_;             // Doesnt do anything as yet
         double p_uniform_weight_;   // [0-1] % of probability mass that is uniformly distributed
     };
 
     bool TGUniform::setParamsFromRos(const ros::NodeHandle &nh) {
         nh.param("TG_distance", p_distance_, 1.0);
-        nh.param("TG_velocity", p_velocity_, 0.05);
-        nh.param("TG_yaw_rate_max", p_yaw_rate_max_, 0.05);
+        nh.param("TG_velocity", p_velocity_, 0.5);
+        nh.param("TG_yaw_rate_max", p_yaw_rate_max_, 1.7);
         nh.param("TG_n_segments", p_n_segments_, 5);
         nh.param("TG_planar", p_planar_, true);
         nh.param("TG_uniform_weight", p_uniform_weight_, 0.2);
     }
 
     TrajectorySegment* TGUniform::selectSegment(TrajectorySegment &root) {
-        return defaults::selectRandomLeafWeighted(root, p_uniform_weight_);
+        if ((double)rand()/RAND_MAX < p_uniform_weight_){
+            return defaults::selectRandomLeafUniform(root);
+        }
+        return defaults::selectRandomLeafWeighted(root);
     }
 
     bool TGUniform::expandSegment(TrajectorySegment &target) {
         // Create and add new adjacent trajectories to target segment
-        const double rate = 10;   // Sample trajectory at 10Hz
+        const double rate = 20;   // Sample trajectory at 20Hz
         srand(time(NULL));
         int valid_segments = 0;
         TrajectorySegment* new_segment = target.spawnChild();

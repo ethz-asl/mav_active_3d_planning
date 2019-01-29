@@ -42,7 +42,8 @@ namespace mav_active_3d_planning {
         ros::Subscriber odom_sub_;
         ros::Publisher target_pub_;
         ros::Publisher trajectory_vis_pub_;
-        ros::Publisher evaluation_vis_pub_;
+//        ros::Publisher completed_trajectory_vis_pub_;
+//        ros::Publisher evaluation_vis_pub_;
         ros::ServiceServer run_srv_;
 
         // members
@@ -55,6 +56,7 @@ namespace mav_active_3d_planning {
         bool running_;
         Eigen::Vector3d target_position_;
         int vis_num_previous_trajectories_;
+        int vis_completed_count_;
         ros::Time info_timing_;
 
         // params
@@ -72,6 +74,7 @@ namespace mav_active_3d_planning {
         void expandTrajectories();
         void requestMovement(const TrajectorySegment &req);
         void publishTrajectoryVisualization(const std::vector<TrajectorySegment*> &trajectories);
+        void publishCompletedTrajectoryVisualization(TrajectorySegment &trajectories);
         void publishEvalVisualization(const TrajectorySegment &trajectory);
     };
 
@@ -84,12 +87,12 @@ namespace mav_active_3d_planning {
         setParamsFromRos();
         running_ = false;
         vis_num_previous_trajectories_ = 0;
+        vis_completed_count_ = 0;
 
         // Subscribers and publishers
         target_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
                 mav_msgs::default_topics::COMMAND_TRAJECTORY, 10);
         trajectory_vis_pub_ = nh_.advertise<visualization_msgs::Marker>("trajectory_visualization", 100);
-        evaluation_vis_pub_ = nh_.advertise<visualization_msgs::Marker>("evaluation_visualization", 300);
         odom_sub_ = nh_.subscribe("odometry", 1, &PlannerNode::odomCallback, this);
 
         // Setup trajectory generator
@@ -167,6 +170,7 @@ namespace mav_active_3d_planning {
         std::vector<TrajectorySegment*> trajectories_to_vis;
         current_segment_->getTree(trajectories_to_vis);
         publishTrajectoryVisualization(trajectories_to_vis);
+        publishCompletedTrajectoryVisualization(*current_segment_);
         if (p_verbose_){
             ROS_INFO("Replanning! (Evaluated %i segments in %.3f seconds)", (int)trajectories_to_vis.size()-1,
                     (ros::Time::now()-info_timing_).toSec());
@@ -184,7 +188,7 @@ namespace mav_active_3d_planning {
         // Force Esdf update, so next trajectories can be evaluated
         voxblox_server_.updateEsdf();
 
-        // Visualization of new info
+        // Visualize new info
         voxblox_server_.publishTraversable();
         publishEvalVisualization(*current_segment_);
     }
@@ -214,6 +218,7 @@ namespace mav_active_3d_planning {
         }
         target_pub_.publish(msg);
         target_position_ = req.trajectory.back().position_W;
+        ROS_DEBUG("Planned exec time: %.3f seconds", (double)req.trajectory.back().time_from_start_ns/1e9);
     }
 
     void PlannerNode::publishTrajectoryVisualization(const std::vector<TrajectorySegment*> &trajectories) {
@@ -264,6 +269,35 @@ namespace mav_active_3d_planning {
         vis_num_previous_trajectories_ = trajectories.size();
     }
 
+    void PlannerNode::publishCompletedTrajectoryVisualization(TrajectorySegment &trajectories){
+        // Continuously increment the already traveled path
+        visualization_msgs::Marker msg;
+        msg.header.frame_id = "/world";
+        msg.header.stamp = ros::Time::now();
+        msg.pose.orientation.w = 1.0;
+        msg.type = visualization_msgs::Marker::POINTS;
+        msg.ns = "completed_trajectory";
+        msg.id = vis_completed_count_;
+        msg.scale.x = 0.03;
+        msg.scale.y = 0.03;
+        msg.action = visualization_msgs::Marker::ADD;
+        msg.color.r = 0.5;
+        msg.color.g = 0.5;
+        msg.color.b = 0.5;
+        msg.color.a = 0.5;
+
+        // points
+        for (int i = 0; i < trajectories.trajectory.size(); ++i) {
+            geometry_msgs::Point point;
+            point.x = trajectories.trajectory[i].position_W[0];
+            point.y = trajectories.trajectory[i].position_W[1];
+            point.z = trajectories.trajectory[i].position_W[2];
+            msg.points.push_back(point);
+        }
+        trajectory_vis_pub_.publish(msg);
+        vis_completed_count_++;
+    }
+
     void PlannerNode::publishEvalVisualization(const TrajectorySegment &trajectory) {
         // Setup marker message
         visualization_msgs::Marker msg;
@@ -271,7 +305,7 @@ namespace mav_active_3d_planning {
         msg.header.stamp = ros::Time::now();
         msg.pose.orientation.w = 1.0;
         msg.type = visualization_msgs::Marker::CUBE_LIST;
-        msg.ns = "Evaluation";
+        msg.ns = "evaluation";
         voxblox::FloatingPoint voxel_size = voxblox_server_.getEsdfMapPtr()->voxel_size();
         voxblox::FloatingPoint block_size = voxblox_server_.getEsdfMapPtr()->block_size();
         msg.scale.x = (double) voxel_size;
@@ -297,7 +331,7 @@ namespace mav_active_3d_planning {
             point.z = (double) voxbloxpoint.z();
             msg.points.push_back(point);
         }
-        evaluation_vis_pub_.publish(msg);
+        trajectory_vis_pub_.publish(msg);
     }
 
     bool PlannerNode::runService(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) {

@@ -7,8 +7,8 @@ Panels:
         - /Global Options1
         - /Status1
         - /Axes1
-        - /Candidate Trajectories1/Namespaces1
-        - /Evaluation1
+        - /PlannerVisualization1
+        - /PlannerVisualization1/Namespaces1
       Splitter Ratio: 0.5
     Tree Height: 565
   - Class: rviz/Selection
@@ -60,7 +60,7 @@ Visualization Manager:
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /firefly/reference_trajectory
-      Name: Marker
+      Name: ReferenceTrajectory
       Namespaces:
         "": true
       Queue Size: 100
@@ -135,17 +135,11 @@ Visualization Manager:
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /firefly/trajectory_visualization
-      Name: Candidate Trajectories
+      Name: PlannerVisualization
       Namespaces:
         candidate_trajectories: true
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /firefly/evaluation_visualization
-      Name: Evaluation
-      Namespaces:
-        {}
+        completed_trajectory: true
+        evaluation: true
       Queue Size: 100
       Value: true
   Enabled: true
