@@ -132,7 +132,7 @@ The default collision for the 'DefaultPawn' is a sphere of radius 35cm. For cust
 ## The Unreal Coordinate System
 For application with the unreal\_ros\_client, the coordinate transformations are already implemented so no need to worry. For development/debugging tasks: Unreal and unrealcv use the following coordinate system: 
 
-* **Unreal World** The default coordinate system is X-forward, Y-left, Z-up. Default units are cm.
+* **Unreal World** The default coordinate system is X-forward, Y-right, Z-up. Default units are cm.
 * **Rotation Direction** Positive rotation directions around the unreal world coordinate axes are mathematically positive around the X axis and negative around the Y and Z axes.
 * **Rotation parametrization** The Unreal engine interface and therefore also the unrealcv commands parse rotations as pitch-yaw-roll (pay attention to the order). However, inside the engine rotations are performed as Euler-XYZ rotations (i.e. roll-pitch-yaw). Default units are degrees.
 
