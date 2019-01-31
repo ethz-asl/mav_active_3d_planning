@@ -115,7 +115,7 @@
 			<remap from="odometry" to="odometry_sensor1/odometry" />
 			<param name="verbose" value="$(arg verbose_planner)" />
 			<param name="collision_optimistic" value="false" />
-			<param name="collision_radius" value="0.5" />			
+			<param name="collision_radius" value="0.7" />			
 			
 			<param name="trajectory_generator" value="Uniform" />
 			<param name="TG_n_segments" value="7" />

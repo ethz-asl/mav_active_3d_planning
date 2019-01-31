@@ -42,8 +42,6 @@ namespace mav_active_3d_planning {
         ros::Subscriber odom_sub_;
         ros::Publisher target_pub_;
         ros::Publisher trajectory_vis_pub_;
-//        ros::Publisher completed_trajectory_vis_pub_;
-//        ros::Publisher evaluation_vis_pub_;
         ros::ServiceServer run_srv_;
 
         // members
@@ -218,7 +216,6 @@ namespace mav_active_3d_planning {
         }
         target_pub_.publish(msg);
         target_position_ = req.trajectory.back().position_W;
-        ROS_DEBUG("Planned exec time: %.3f seconds", (double)req.trajectory.back().time_from_start_ns/1e9);
     }
 
     void PlannerNode::publishTrajectoryVisualization(const std::vector<TrajectorySegment*> &trajectories) {
