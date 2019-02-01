@@ -99,10 +99,10 @@
 		<param name="update_mesh_every_n_sec" value="0.0" />
 		<param name="world_frame" value="$(arg world_frame)" />
 		
-		<param name="range" value="2.0" />
-		<param name="speed" value="0.1" />
+		<param name="range" value="1.0" />
+		<param name="speed" value="0.05" />
 		<param name="collision_radius" value="0.4" />
-		<param name="planar" value="false" />
+		<param name="planar" value="true" />
 		<param name="verbose" value="$(arg verbose_planner)" />
 	</node>
 	
