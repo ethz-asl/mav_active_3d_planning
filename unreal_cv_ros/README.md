@@ -13,6 +13,7 @@ unreal_cv_ros is a package to allow ROS based simulation of a MAV equipped with 
 **Setting up Unreal**
 * [Unrealcv Plugin Setup](#Unrealcv-Plugin-Setup)
 * [Creating UE4 worlds](#Creating-UE4-worlds)
+* [Static mesh collision](#Static-mesh-collision)
 * [Custom collision radius](#Custom-collision-radius)
 * [The Unreal Coordinate System](#The-Unreal-Coordinate-System)
 
@@ -120,8 +121,16 @@ In order to easily create unreal_cv_ros compatible  UE4 worlds:
 * Make sure the unrealcv plugin is installed **and** activated in the current project (In the Editor check: Edit > Plugins > Science > Unreal CV, see [unrealcv docs](http://docs.unrealcv.org/en/master/plugin/install.html)).
 * Set the player pawn to DefaultPawn, a flying spectator type with collision: World Settings > Game Mode > Selected GameMode > Default Pawn Class := DefaultPawn. (If this is read-only just change toa custom gamemode above.)
 
+## Static mesh collision
+When creating UE4 worlds, it is worth double checking the player collision with static mesh actors (the scene). By default, unreal produces convex hulls as collision objects. However, this may result in faulty collision detection. Collision can be changed to match the visible mesh as follows (may degrade performance): 
+1. Right click your object in the World Outliner and select "Edit 'your object'".
+2. Set Collision > Collision Complexity := Use Complex Collision As Simple.
+3. Save and close the editing window.
+
+Current collision can be visualized by changing the viewmode in the unreal editor from "Lit" to "Player Collision". 
+
 ## Custom collision radius
-The default collision for the 'DefaultPawn' is a sphere of radius 35cm. For custom collision (radius), you need to create your own pawn blueprint (with DefaultPawn as base class). An 'easy' way to create a pawn of custom collision radius:
+The default collision for the 'DefaultPawn' is a sphere of radius 35cm. For custom collision radii, you need to create your own pawn blueprint (with DefaultPawn as base class). An 'easy' way to create a pawn of custom collision radiusis as follows:
 1. In the Modes window, search for 'DefaultPawn' and create an instance (drag and drop into the game world).
 2. Select the pawn instance and click Blueprints > Convert selected actor to blueprint class...
 3. Save the new class, e.g. in the content/blueprints folder as myDefaultPawn.
