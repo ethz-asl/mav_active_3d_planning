@@ -15,6 +15,7 @@ unreal_cv_ros is a package to allow ROS based simulation of a MAV equipped with 
 * [Creating UE4 worlds](#Creating-UE4-worlds)
 * [Static mesh collision](#Static-mesh-collision)
 * [Custom collision radius](#Custom-collision-radius)
+* [Producing ground truth pointclouds](#Producing-ground-truth-pointclouds)
 * [The Unreal Coordinate System](#The-Unreal-Coordinate-System)
 
 **Examples**
@@ -102,6 +103,7 @@ This additional command is required to operate in`fast` mode.
 * **Compile it yourself**  To compile the plugin, first create an unreal engine development environment as is explained [here](http://docs.unrealcv.org/en/master/plugin/develop.html). Then change the source code of the unrealcv plugin in your project (eg. `UnrealProjects/playground/Plugins/UnrealCV/Source/UnrealCV/Private/Commands`) to include the new command:
   - In `CameraHandler.h` add the command declaration
   - In `CameraHandler.cpp` add the command dispatcher and function body. 
+  
 These 3 code snippets can be copied from `unreal_cv_ros/content/CustomPluginCode.cpp`. Afterwards build the project as explained in the unrealcv docs. The compiled plugin can now be copied to other projects or the engine for use.
 
 ### Command reference 
@@ -122,7 +124,7 @@ In order to easily create unreal_cv_ros compatible  UE4 worlds:
 * Set the player pawn to DefaultPawn, a flying spectator type with collision: World Settings > Game Mode > Selected GameMode > Default Pawn Class := DefaultPawn. (If this is read-only just change toa custom gamemode above.)
 
 ## Static mesh collision
-When creating UE4 worlds, it is worth double checking the player collision with static mesh actors (the scene). By default, unreal produces convex hulls as collision objects. However, this may result in faulty collision detection. Collision can be changed to match the visible mesh as follows (may degrade performance): 
+When creating UE4 worlds, it is worth double checking the player collision with static mesh actors (the scene). By default, unreal produces convex hulls as simple collision objects and checks against simple collision. However, this may result in faulty collision detection. Collision can be changed to match the visible mesh as follows (may degrade performance): 
 1. Right click your object in the World Outliner and select "Edit 'your object'".
 2. Set Collision > Collision Complexity := Use Complex Collision As Simple.
 3. Save and close the editing window.
@@ -137,6 +139,24 @@ The default collision for the 'DefaultPawn' is a sphere of radius 35cm. For cust
 4. The class should now open in the blueprint editor, where its components can be edited.
 5. To change the radius elect the 'CollisionComponent', and under Details > Shape > SphereRadius := myValue. Notice that too short radii can allow the camera to enter certain objects, creating graphical artifacts.
 6. Save the blueprint. Set the World Settings > Game Mode > Selected GameMode > Default Pawn Class := myDefaultPawn
+
+## Producing ground truth pointclouds
+For simulation evaluation, ground truth meshes can be exported from the unreal editor and further processed using tools such as [CloudCompare](https://www.danielgm.net/cc/). A voxblox compatible ground truth pointcloud can be generated as follows:
+* In the **Unreal Engine Editor**,
+1. Select the objects of interes in the World Outliner
+2. File > Export Selected...
+3. Save as \*.obj file. (Currently no need to export the material too.)
+  
+* Open **CloudCompare**,
+4. File > Import > my_mesh_export.obj
+5. Use 'Edit > Multiply/Scale > 0.01' to compensate for unreal engine units (default is cm).
+6. Use 'Edit > Apply transformation' to place and rotate the object relative to the PlayerStart settings from unreal. (I.e. with the origin at the PlayerStart location, x pointing towards the PlayerStart orientation, y-left and z-up).
+7. Use 'Edit > Crop' to remove meshes outside the region of interest and unreachable points, such as the ground plane.
+8. Click 'Sample points on a mesh' to create a pointcloud. (Currently no need to generate normals or color.)
+9. 'File > Save' and save as a \*.ply in ASCII format
+  
+* With a **TextEditor**,
+10. Open my_gt_pointcloud.ply and remove the "comment Author" and "obj_info" fields (lines 3 and 4, these create errors with pcl::plyreader).
 
 ## The Unreal Coordinate System
 For application with the unreal\_ros\_client, the coordinate transformations are already implemented so no need to worry. For development/debugging tasks: Unreal and unrealcv use the following coordinate system: 
