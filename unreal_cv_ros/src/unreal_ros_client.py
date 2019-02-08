@@ -58,7 +58,7 @@ class UnrealRosClient:
         height = int(status[loc_height + 8:loc_fov])
         fov = float(status[loc_fov + 5:loc_end])
         f = width / 2 / np.tan(fov * math.pi / 180 / 2)
-        self.camera_params = [width, height, f]
+        rospy.set_param('camera_params', {'width': float(width), 'height': float(height), 'focal_length': float(f)})
 
         # Initialize relative coordinate system (so camera starts at [0, 0, 0] position and [0, 0, yaw]).
         location = client.request('vget /camera/0/location')
@@ -88,7 +88,6 @@ class UnrealRosClient:
 
         # Finish setup
         self.pub = rospy.Publisher("ue_sensor_raw", UeSensorRaw, queue_size=10)
-        self.camera_params_srv = rospy.Service('get_camera_params', GetCameraParams, self.get_camera_params_handle)
         rospy.loginfo("unreal_ros_client is ready in %s mode." % self.mode)
 
     def fast_callback(self, ros_data):
@@ -203,9 +202,6 @@ class UnrealRosClient:
         self.tf_br.sendTransform((pos.x, pos.y, pos.z), (rot.x, rot.y, rot.z, rot.w), odom_msg.header.stamp,
                                  "camera_link", "world")
 
-    def get_camera_params_handle(self, _):
-        return GetCameraParamsResponse(self.camera_params[0], self.camera_params[1], self.camera_params[2])
-
     def transform_to_unreal(self, pose):
         '''
         Transform from ros to default unreal coordinates.
@@ -235,7 +231,7 @@ class UnrealRosClient:
     def transform_from_unreal(pose):
         '''
         Transform from unreal coordinates to odom coordinates (to camera_link)
-        Input:      pose ([x, y, z, pitch, yaw, rol] array, in unrealcv coordinates)
+        Input:      pose ([x, y, z, pitch, yaw, roll] array, in unrealcv coordinates)
         Output:     position ([x, y, z] array)
                     orientation ([x, y, z, w] quaternion)
         '''
@@ -247,15 +243,12 @@ class UnrealRosClient:
         position = position / 100  # default is cm
         orientation = orientation / 180 * math.pi  # default is deg
 
-        # Transform from pitch, yaw, roll
-        (x, y, z, w) = tf.transformations.quaternion_from_euler(orientation[2], orientation[0], orientation[1])
+        # Transform from pitch, yaw, roll (taking into account rotation directions
+        (x, y, z, w) = tf.transformations.quaternion_from_euler(orientation[2], -orientation[0], -orientation[1])
         orientation = np.array([x, y, z, w])
 
         # Invert y axis
         position[1] = -position[1]
-
-        # Invert rotation for left handed coordinates
-        orientation = [-orientation[0], -orientation[1], -orientation[2], orientation[3]]
         return position, orientation
 
     @staticmethod

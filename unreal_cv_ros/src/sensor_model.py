@@ -24,6 +24,9 @@ class SensorModel:
 
         # Read in params
         model_type_in = rospy.get_param('~model_type', 'ground_truth')
+        camera_params_ns = rospy.get_param('~camera_params_ns', rospy.get_namespace()+"camera_params")
+        self.maximum_distance = rospy.get_param('~maximum_distance', 0)  # Set to 0 to keep all points
+        self.flatten_distance = rospy.get_param('~flatten_distance', 0)  # Set to 0 to ignore
 
         # Setup sensor type
         model_types = {'ground_truth': 'ground_truth'}      # Dictionary of implemented models
@@ -35,12 +38,13 @@ class SensorModel:
         else:
             self.model = selected
 
-        # Initialize camera params from unreal client
-        rospy.loginfo("Waiting for unreal_ros_client camera params ...")
-        rospy.wait_for_service("get_camera_params")
-        get_camera_params = rospy.ServiceProxy('get_camera_params', GetCameraParams)
-        resp = get_camera_params()
-        self.camera_params = [resp.Width, resp.Height, resp.FocalLength]
+        # Initialize camera params from params or wait for unreal_ros_client to publish them
+        if not rospy.has_param(camera_params_ns+'width'):
+            rospy.loginfo("Waiting for unreal camera params at '%s' ...", camera_params_ns)
+            while not rospy.has_param(camera_params_ns+'/width'):
+                rospy.sleep(0.1)
+        self.camera_params = [rospy.get_param(camera_params_ns+'/width'), rospy.get_param(camera_params_ns+'/height'),
+                              rospy.get_param(camera_params_ns+'/focal_length')]
 
         # Initialize node
         self.pub = rospy.Publisher("ue_sensor_out", PointCloud2, queue_size=10)
@@ -53,23 +57,34 @@ class SensorModel:
         # Read out images
         img_color = np.load(io.BytesIO(bytearray(ros_data.color_data)))
         img_depth = np.load(io.BytesIO(bytearray(ros_data.depth_data)))
+        mask_depth = img_depth.reshape(-1)
 
         # Build 3D point cloud from depth
-        pointcloud = self.depth_to_3d(img_depth)
-
-        # Sensor processing
-        # if self.model == 'ground_truth':
+        if self.flatten_distance > 0:
+            img_depth = np.clip(img_depth, 0, self.flatten_distance)
+        (x, y, z) = self.depth_to_3d(img_depth)
 
         # Pack RGB image (for ros representation)
         rgb = self.rgb_to_float(img_color)
-        data = np.dstack((pointcloud, rgb))
+
+        # Remove invalid points
+        if self.maximum_distance > 0:
+            mask = mask_depth <= self.maximum_distance
+            x = x[mask]
+            y = y[mask]
+            z = z[mask]
+            rgb = rgb[mask]
+
+        # Sensor model processing
+        # if self.model == 'ground_truth':
 
         # Publish pointcloud
+        data = np.transpose(np.vstack((x, y, z, rgb)))
         msg = PointCloud2()
         msg.header.stamp = ros_data.header.stamp
         msg.header.frame_id = 'camera'
-        msg.width = pointcloud.shape[0]
-        msg.height = pointcloud.shape[1]
+        msg.width = data.shape[0]
+        msg.height = 1
         msg.fields = [
             PointField('x', 0, PointField.FLOAT32, 1),
             PointField('y', 4, PointField.FLOAT32, 1),
@@ -83,7 +98,7 @@ class SensorModel:
         self.pub.publish(msg)
 
     def depth_to_3d(self, img_depth):
-        ''' Create point cloud from depth image and camera params. Returns a width x height x 3 (XYZ) array '''
+        ''' Create point cloud from depth image and camera params. Returns a single array for x, y and z coords '''
         # read camera params and create image mesh
         height = self.camera_params[1]
         width = self.camera_params[0]
@@ -100,18 +115,18 @@ class SensorModel:
         points_x = points_z * (cols - center_x) / f
         points_y = points_z * (rows - center_y) / f
 
-        return np.dstack([points_x, points_y, points_z])
+        return points_x.reshape(-1), points_y.reshape(-1), points_z.reshape(-1)
 
     @staticmethod
     def rgb_to_float(img_color):
-        ''' Stack uint8 rgb image into a 2D float image (efficiently) for ros compatibility '''
+        ''' Stack uint8 rgb image into a single float array (efficiently) for ros compatibility '''
         r = np.ravel(img_color[:, :, 0]).astype(int)
         g = np.ravel(img_color[:, :, 1]).astype(int)
         b = np.ravel(img_color[:, :, 2]).astype(int)
         color = np.left_shift(r, 16) + np.left_shift(g, 8) + b
         packed = pack('%di' % len(color), *color)
         unpacked = unpack('%df' % len(color), packed)
-        return np.array(unpacked).reshape((np.size(img_color, 0), np.size(img_color, 1)))
+        return np.array(unpacked)
 
 
 if __name__ == '__main__':
