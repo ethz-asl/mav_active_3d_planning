@@ -44,9 +44,9 @@ This node manages the unrealcv client and the connection with a running UE4 game
   Default is 'standard'.
 * **collision_on** Set to true to check for collision in the unreal game. Set to false to set the camera anyway. May result in rendering artifacts if the camera overlaps with objects. Default is true.
 * **collision_tol** This parameter only shows in `standard` mode. Collision warnings are triggered if the requested and realized position are further apart than this threshold (in unreal units, default unit is cm). Default is 10.
-* **publish_tf** If true, the client pulishes a tf-transform of the camera pose for every taken image with matching timestamps. Default is False.
+* **publish_tf** If true, the client pulishes a tf-transform of the camera pose for every taken image with a matching timestamp. Default is False.
 * **slowdown** Artificially slows down the time between setting the pose and taking images to give unreal engine more time to render the new view. Slowdown is expected as wait duration in seconds wall-time. Default is 0.0.
-* **Hint:** To change the resolution and field of view (FOV) of the camera, the [unrealcv configuration file](http://docs.unrealcv.org/en/master/plugin/config.html) needs to be changed. Its path is displayed when the unreal_ros_client node is launched.
+* **Camera Parameters:** To change the resolution and field of view (FOV) of the camera, the [unrealcv configuration file](http://docs.unrealcv.org/en/master/plugin/config.html) needs to be changed. The relevant path is displayed when the unreal_ros_client node is launched. When the client is setup, these values are published as 'camera_params' on the ros parameter server for other nodes to access them.
 
 ### Input Topics
 * **odometry** of type `nav_msgs.msg/Odometry`. Set the camera pose w.r.t. its position and yaw at the connection of the client. Does not appear in `test` mode.
@@ -60,9 +60,12 @@ This node converts the UE client output into a pointcloud for further processing
 
 ### Parameters
 * **model_type** Which sensor to simulate. Currently implemented are: 
-  * **ground_truth:** Produces the ground truth pointcloud without additional noise. 
+  * **ground_truth:** Produces the ground truth pointcloud without additional processing. 
   
   Default is 'ground_truth'.
+* **camera_params_ns** Namespace where to read the unreal camera parameters from, which are expected as {height, width, focal_length}. Notice that the sensor_model waits until the camera params are set on the ros parameter server (e.g. from the unreal_ros_client). Default is 'camera_params'.
+* **maximum_distance** All points whose original ray length is beyond maximum_distance are removed from the pointcloud. Set to 0 to keep all points. Default is 0.0.
+* **flatten_distance** Sets the ray length of every point whose ray length is larger than flatten_distance to flatten_distance. Set to 0 to keep all points unchanged. Default is 0.0.
 
 ### Input Topics
 * **ue_sensor_raw** of type `unreal_cv_ros.msg/UeSensorRaw`. Output of the unreal\_ros\_client that is to be further processed.
@@ -72,15 +75,19 @@ This node converts the UE client output into a pointcloud for further processing
 
 
 ## simulation_manager
-This node is used to coordinate the full MAV simulation using gazebo as a physics engine and an unreal game for perception and collision modeling. It is used to coordinate simulation setup and monitor or supervise the unreal_ros vision pipeline.
+This node is used to coordinate the full MAV simulation using gazebo as a physics engine and an unreal game for perception and collision modeling. It is used to coordinate simulation setup, monitor or supervise the unreal_ros vision pipeline and to produce simulation data.
 
 ### Parameters
 * **ns_gazebo** Namespace of gazebo, including the node name. Default is '/gazebo'.
-* **ns_mav** Namespace of the MAV, which is expected to end with the MAV name. Default is '/firefly'.
+* **ns_mav** Namespace of the MAV, which is expected to end with the actual MAV name. Default is '/firefly'.
 * **ns_planner** Namespace of the planner, including the node name. Default is '/firefly/planner_node'.
-* **monitor** Set to true to measure the unreal vision pipeline's performance. Default is False.
-* **horizon** How many datapoints are kept in the performance measurement. Default is 10.
 * **delay** Additional waiting time in seconds before launching the planner to give everything time to settle. Default is 0.0.
+* **monitor** Set to true to measure the unreal vision pipeline's performance. Default is False.
+* **horizon** How many datapoints are kept and considered for the performance measurement. Only available if monitor is true. Default is 10.
+* **evaluate** Set to true to create simulation data and periodically store the voxblox map. Default is false.
+* **eval_directory** Where to create the data folder. This param is required to be set and point to an existing directory. Only available if evaluate is true.
+* **eval_frequency** Time between measurements in seconds ros-time. Only available if evaluate is true. Default is 5.0.
+* **ns_voxblox** Namespace of voxblox, including the node name. Only available if evaluate is true. Default is '/voxblox/voxblox_node'.
 
 ### Input Topics
 * **ue_raw_in** of type `unreal_cv_ros.msg/UeSensorRaw`. Output of the unreal\_ros\_client for performance measurements. Only available if monitor is true.
