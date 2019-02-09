@@ -1,0 +1,19 @@
+<launch>
+  <arg name="target_directory" default="/home/lukas/Documents/MT/Data" />
+  <arg name="gt_file_path" default="/home/lukas/Documents/MT/experiment1/gt_surface_pcl.ply"/>
+  <arg name="method" default="recent"/>
+  <arg name="show" default="true"/>
+
+
+  <!-- plotting is the main node, voxblox encapsulates c++ voxblox code -->
+  <node name="eval_plotting_node" pkg="mav_active_3d_planning" type="eval_plotting_node.py" output="screen" required="true">
+    <param name="target_directory" value="$(arg target_directory)" />
+    <param name="method" value="$(arg method)" />
+    <param name="ns_eval_voxblox_node" value="/eval_voxblox_node" />
+    <param name="show" value="$(arg show)" />
+  </node>
+  
+	<node name="eval_voxblox_node" pkg="mav_active_3d_planning" type="eval_voxblox_node" output="screen" >
+	  <param name="ground_truth_path" value="$(arg gt_file_path)" />
+	</node>
+</launch>

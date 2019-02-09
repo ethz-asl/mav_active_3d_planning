@@ -93,7 +93,8 @@ class SimulationManager:
 
             self.eval_data_file = open(os.path.join(self.eval_directory, "voxblox_data.csv"), 'wb')
             self.eval_writer = csv.writer(self.eval_data_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            self.eval_writer.writerow(['MapNumber', 'RosTime', 'WallTime', 'NPointclouds'])
+            self.eval_writer.writerow(['MapName', 'RosTime', 'WallTime', 'NPointclouds'])
+            self.eval_writer.writerow(['Unit', 'seconds', 'seconds', '-'])
             self.eval_log_file = open(os.path.join(self.eval_directory, "data_log.txt"), 'a')
             self.writelog("Data folder created at '%s'." % self.eval_directory)
             rospy.loginfo("Data folder created at '%s'." % self.eval_directory)
@@ -197,9 +198,9 @@ class SimulationManager:
         # Produce a datapoint
         time_real = time.time() - self.eval_walltime_0
         time_ros = rospy.get_time() - self.eval_rostime_0
-        self.eval_writer.writerow([self.eval_n_maps, time_ros, time_real, self.eval_n_pointclouds])
-        self.eval_voxblox_service(os.path.join(self.eval_directory, "voxblox_maps",
-                                               "{0:03d}.vxblx".format(self.eval_n_maps)))
+        map_name = "{0:05d}".format(self.eval_n_maps)
+        self.eval_writer.writerow([map_name, time_ros, time_real, self.eval_n_pointclouds])
+        self.eval_voxblox_service(os.path.join(self.eval_directory, "voxblox_maps", map_name + ".vxblx"))
         self.eval_n_pointclouds = 0
         self.eval_n_maps += 1
 
