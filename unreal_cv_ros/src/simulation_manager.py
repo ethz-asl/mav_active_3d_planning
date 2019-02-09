@@ -12,7 +12,6 @@ from sensor_msgs.msg import PointCloud2
 from std_srvs.srv import Empty, SetBool
 from gazebo_msgs.srv import SetModelState, GetModelState
 from voxblox_msgs.srv import FilePath
-
 import tf
 
 # Python
@@ -90,15 +89,15 @@ class SimulationManager:
                                                datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
             os.mkdir(self.eval_directory)
             os.mkdir(os.path.join(self.eval_directory, "voxblox_maps"))
-
             self.eval_data_file = open(os.path.join(self.eval_directory, "voxblox_data.csv"), 'wb')
             self.eval_writer = csv.writer(self.eval_data_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
             self.eval_writer.writerow(['MapName', 'RosTime', 'WallTime', 'NPointclouds'])
             self.eval_writer.writerow(['Unit', 'seconds', 'seconds', '-'])
             self.eval_log_file = open(os.path.join(self.eval_directory, "data_log.txt"), 'a')
+
+            # Finish
             self.writelog("Data folder created at '%s'." % self.eval_directory)
             rospy.loginfo("Data folder created at '%s'." % self.eval_directory)
-            # Setup
             self.eval_voxblox_service = rospy.ServiceProxy(self.ns_voxblox + "/save_map", FilePath)
             rospy.on_shutdown(self.eval_finish)
 
@@ -184,6 +183,7 @@ class SimulationManager:
         # Dump complete rosparams for reference
         subprocess.check_call(["rosparam", "dump", os.path.join(self.eval_directory, "rosparams.yaml"), "/"])
         self.writelog("Dumped the parameter server into 'rosparams.yaml'.")
+
         # Setup first measurements
         self.eval_walltime_0 = time.time()
         self.eval_rostime_0 = rospy.get_time()
@@ -195,7 +195,7 @@ class SimulationManager:
         rospy.Timer(rospy.Duration(self.eval_frequency), self.eval_callback)
 
     def eval_callback(self, _):
-        # Produce a datapoint
+        # Produce a data point
         time_real = time.time() - self.eval_walltime_0
         time_ros = rospy.get_time() - self.eval_rostime_0
         map_name = "{0:05d}".format(self.eval_n_maps)
@@ -219,52 +219,42 @@ class SimulationManager:
         self.eval_log_file.write(datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + text + "\n")
 
     def mon_raw_callback(self, ros_data):
-        # Real-time rate
+        # Measure walltime and rostime between callbacks
         time_real = time.time()
         time_ros = rospy.get_time()
         if self.mon_client_prev_real is None:
+            # Initialization
             self.mon_client_prev_real = time_real
             self.mon_client_prev_ros = time_ros
             return
 
         self.mon_client_rate_real.append(time_real-self.mon_client_prev_real)
         self.mon_client_prev_real = time_real
-
-        # Ros-time rate
         self.mon_client_rate_ros.append(time_ros-self.mon_client_prev_ros)
         self.mon_client_prev_ros = time_ros
-
-        # Sensor delay
         self.mon_client_delay_ros.append(time_ros - ros_data.header.stamp.to_sec())
-
-        # Visualization time
         self.mon_client_time.append(time_ros)
 
     def mon_out_callback(self, ros_data):
+        if self.evaluate:
+            self.eval_n_pointclouds += 1
+
         if self.monitor:
-            # Real-time rate
+            # Measure walltime and rostime between callbacks
             time_real = time.time()
             time_ros = rospy.get_time()
             if self.mon_sensor_prev_real is None:
+                # Initialization
                 self.mon_sensor_prev_real = time_real
                 self.mon_sensor_prev_ros = time_ros
                 return
 
             self.mon_sensor_rate_real.append(time_real - self.mon_sensor_prev_real)
             self.mon_sensor_prev_real = time_real
-
-            # Ros-time rate
             self.mon_sensor_rate_ros.append(time_ros - self.mon_sensor_prev_ros)
             self.mon_sensor_prev_ros = time_ros
-
-            # Sensor delay
             self.mon_sensor_delay_ros.append(time_ros - ros_data.header.stamp.to_sec())
-
-            # Visualization time
             self.mon_sensor_time.append(time_ros)
-
-        if self.evaluate:
-            self.eval_n_pointclouds += 1
 
     def mon_print_handle(self, _):
         print("="*14 + " performance monitor " + "="*14)
@@ -299,7 +289,5 @@ class SimulationManager:
 if __name__ == '__main__':
     rospy.init_node('simulation_manager', anonymous=True)
     sm = SimulationManager()
-    try:
-        rospy.spin()
-    except KeyboardInterrupt:
-        print("Shutting down simulation_manager")
+    rospy.spin()
+

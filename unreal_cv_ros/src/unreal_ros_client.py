@@ -6,9 +6,7 @@ from unrealcv import client
 # ros
 import rospy
 from nav_msgs.msg import Odometry
-from sensor_msgs.msg import CameraInfo
 from unreal_cv_ros.msg import UeSensorRaw
-from unreal_cv_ros.srv import GetCameraParams, GetCameraParamsResponse
 import tf
 
 # Python
@@ -264,7 +262,4 @@ class UnrealRosClient:
 if __name__ == '__main__':
     rospy.init_node('unreal_ros_client', anonymous=False)  # Currently only 1 Client at a time is supported by unrealcv
     uc = UnrealRosClient()
-    try:
-        rospy.spin()
-    except KeyboardInterrupt:
-        print("Shutting down unreal_ros_client")
+    rospy.spin()

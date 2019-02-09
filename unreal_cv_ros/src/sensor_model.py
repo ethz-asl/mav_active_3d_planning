@@ -3,7 +3,6 @@
 # ros
 import rospy
 from unreal_cv_ros.msg import UeSensorRaw
-from unreal_cv_ros.srv import GetCameraParams
 from sensor_msgs.msg import PointCloud2, PointField
 
 # Image conversion
@@ -132,7 +131,5 @@ class SensorModel:
 if __name__ == '__main__':
     rospy.init_node('sensor_model', anonymous=True)
     sm = SensorModel()
-    try:
-        rospy.spin()
-    except KeyboardInterrupt:
-        print("Shutting down sensor_model")
+    rospy.spin()
+
