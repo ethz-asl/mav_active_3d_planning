@@ -2,8 +2,10 @@ This repo contains packages for active path planning for 3D reconstruction. The 
 
 Some ideas and related literature: [MT Notes](https://docs.google.com/document/d/1gfO_fo0DgKRcGM9M1EXcKeVk7lgDWiqjFwAItRCTF78/edit?usp=sharing)
 
+Available ressources: [data repository](https://www.polybox.ethz.ch/index.php/s/6vhPDINcISbEogg)
+
 # Installation
-TODO: coming soon.
+TODO
 
 # Packages
 More detailed information for every package is found in their respective readmes.
@@ -16,4 +18,4 @@ More detailed information for every package is found in their respective readmes
   
 # Known issues / todos
 - [x] Unreal turn rate is sometimes slow, leading to wrong angles of taken images for high yaw rates (especially standard mode)
-
+- [ ] Next issues
