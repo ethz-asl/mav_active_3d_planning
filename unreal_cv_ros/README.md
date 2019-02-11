@@ -4,23 +4,26 @@ unreal_cv_ros is a package to allow ROS based simulation of a MAV equipped with 
 **Installation**
 * [Installation](#Installation)
 * [Dependencies](#Dependencies)
+* [Data Repository](#Data-Repository)
 
 **ROS nodes**
 * [unreal_ros_client](#unreal_ros_client)
 * [sensor_model](#sensor_model)
 * [simulation_manager](#simulation_manager)
 
-**Setting up Unreal**
+**Working with Unreal**
 * [Unrealcv Plugin Setup](#Unrealcv-Plugin-Setup)
 * [Creating UE4 worlds](#Creating-UE4-worlds)
+* [When to use which mode](#When-to-use-which-mode)
+* [Pawns and Cameras](#Pawns-and-Cameras)
+* [Custom collision and camera settings](#Custom-collision-and-camera-settings)
 * [Static mesh collision](#Static-mesh-collision)
-* [Custom collision radius](#Custom-collision-radius)
 * [Producing ground truth pointclouds](#Producing-ground-truth-pointclouds)
 * [The Unreal Coordinate System](#The-Unreal-Coordinate-System)
 
 **Examples**
 * [Run in test mode](#Run-in-test-mode)
-* [Run in standard mode](#Run-in-standard-mode)
+* [Run with MAV in standard mode](#Run-with-MAV-in-standard-mode)
 
 **Troubleshooting**
 * [Frequent Issues](#Troubleshooting)
@@ -30,6 +33,9 @@ Install as every other ROS package...
 
 ## Dependencies
 The unreal_ros_client node depends on the unrealcv python library `pip install unrealcv`.
+
+## Data Repository
+Related ressources can be downloaded [here](https://www.polybox.ethz.ch/index.php/s/6vhPDINcISbEogg). This repo was developped and tested with unrealcv v0.3.10 on Unreal Engine 4.16.3.
 
 # ROS nodes
 ## unreal_ros_client
@@ -97,15 +103,15 @@ This node is used to coordinate the full MAV simulation using gazebo as a physic
 * **display_monitor** of type `std_srvs.srv/Empty`. Print the current monitoring measurements to console. Only available if monitor is true.
 
 
-# Setting up Unreal
+# Working with Unreal
 
 ## Unrealcv Plugin Setup
 ### Standard Plugin
-For the modes `test` and `standard` the default unrealcv plugin is sufficient. Install it to the project or engine as suggested on their [website](http://docs.unrealcv.org/en/master/plugin/install.html). This repo was tested on unrealcv v0.3.10.
+For the modes `test` and `standard` the default unrealcv plugin is sufficient. Install it to the project or engine as suggested on [their website](http://docs.unrealcv.org/en/master/plugin/install.html). 
 
 ### Adding the 'vget /uecvros/full' command
 This additional command is required to operate in`fast` mode.
-* **Compiled Plugin** TODO: We can make this available somewhere I think.
+* **Compiled Plugin** The compiled plugin can be downloaded from the [data repository](#Data-Repository).
 
 * **Compile it yourself**  To compile the plugin, first create an unreal engine development environment as is explained [here](http://docs.unrealcv.org/en/master/plugin/develop.html). Then change the source code of the unrealcv plugin in your project (eg. `UnrealProjects/playground/Plugins/UnrealCV/Source/UnrealCV/Private/Commands`) to include the new command:
   - In `CameraHandler.h` add the command declaration
@@ -115,11 +121,12 @@ These 3 code snippets can be copied from `unreal_cv_ros/content/CustomPluginCode
 
 ### Command reference 
 This command take images and then request the passed position and orientation. This leaves time for the engine to finish rendering before the next images are requested.
-* Syntax: `vget /uecvros/full X, Y, Z, p, y, r, collision`. All argumentes are floats and need to be set. 
+* Syntax: `vget /uecvros/full X, Y, Z, p, y, r, collision, cameraID`. All argumentes, except the cameraID which is a uint, are floats. All arguments must be set. 
 * Input: 
   - (X, Y, Z): New target position in unreal units.
   - (p, y, r): New target orientation in degrees (and unreal coordinate system).
   - collision: Set to 1 to check collision, -1 to ignore it.
+  - cameraID:  ID of the camera to use in compliance with the unrealcv structure. Generally use 0.
 * Output: 
   - In case of collision returns "Collision detected!" as unicode. 
   - Otherwise returns the stacked binary image data as string, where the first half representes the color image and the second half the depth image, both as npy arrays.
@@ -128,7 +135,36 @@ This command take images and then request the passed position and orientation. T
 In order to easily create unreal_cv_ros compatible  UE4 worlds:
 * Install and use unreal engine editor **4.16** for compatibility with unrealcv. (Note: Newer versions *should* work too but without guarantees).
 * Make sure the unrealcv plugin is installed **and** activated in the current project (In the Editor check: Edit > Plugins > Science > Unreal CV, see [unrealcv docs](http://docs.unrealcv.org/en/master/plugin/install.html)).
-* Set the player pawn to DefaultPawn, a flying spectator type with collision: World Settings > Game Mode > Selected GameMode > Default Pawn Class := DefaultPawn. (If this is read-only just change toa custom gamemode above.)
+* Set the player pawn to a flying spectator type with collision: World Settings > Game Mode > Selected GameMode > Default Pawn Class := UecvrosDefaultPawn. (If this is read-only just change to a custom GameMode.) 
+  - Highly recommended: If using the `fast` mode, use the `UecvrosDefaultPawn`. The blueprint class can be downloaded from the [data repository](#Data-Repository).
+  - Otherwise use the unreal engine built in `DefaultPawn`.
+  
+## When to use which mode
+The unreal_cv_ros plugin is designed to work with all sorts of unreal worlds, however performance depends on how the world and the plugin is setup:
+
+| Plugin | Unreal World | Method to use |
+| --- | --- | --- |
+| Custom | Custom | When the plugin and unreal world are modifiable, it is highly recommended to use the `fast` mode with the `UecvrosDefaultPawn`. This is not only the fastest combination, but it is also more stable and produces accurate and well-aligned pointclouds. |
+| Custom | Static | If the unrealworld cannot be modified (usually it uses the `DefaultPawn`), it is still recommended to use the `fast` mode, since it runs considerably faster. However, the default camera may pose obstacles, such as motion blurr, that hinders alignment of the recorded images with the requested pose. Adjust the 'slowdown' parameter of the unreal_ros_client to give unreal enough time to properly process the desired images. |
+| Static | Any | If the plugin cannot be modified, use the `standard` mode and the built in `DefaultPawn`. |
+| `test` mode | Any | If you want to run the `test` mode, use the built in `DefaultPawn` to allow for suitable user control. |
+
+## Pawns and Cameras 
+Unrealcv works by capturing pawns and cameras in the unreal game, to which it attaches. Pawns are the physical entities that move around and collide with things, whereas cameras typically provide the views. Usually, pawns are not placed in the world, thus upon game start a Pawn will spawn at PlayerStart that is then possessed by player control and unrealcv.
+* Cameras in unrealcv are stored in chronological order. If you want to access different cameras use the 'camera_id' param of the unreal_ros_client.
+* The `DefaultPawn` is incoporates standard flying player control and a default view. However that incorporates all default features such as motion blurr when moving (or teleporting!) the pawn.
+* The `UecvrosDefaultPawn` inherits from the `DefaultPawn`. Furthermore, it has a camera attached to it that can be modified. However this disables the default player camera orientation control (which is also the one accessed with the standard unrealcv plugin).
+
+Custom camera settings can similarly be changed by editing the camera component. Notice that unrealcv overwrites certain camera settings (such as the resolution and field of view) using the unrealcv configuration file.
+
+## Custom collision and camera settings
+The default collision for the `DefaultPawn` and `UecvrosDefaultPawn` is a sphere of 35cm radius. For custom collision and camera, you need to create your own pawn blueprint (which inherits from the respective base class). E.g. an 'easy' way to create a custom `DefaultPawn` is as follows:
+1. In the Modes window, search for 'DefaultPawn' and create an instance (drag and drop into the game world).
+2. Select the pawn instance and click Blueprints > Convert selected actor to blueprint class...
+3. Save the new class, e.g. in the content/blueprints folder as myDefaultPawn.
+4. The class should now open in the blueprint editor, where its components can be edited.
+5. To change the radius select the 'CollisionComponent', and under Details > Shape > SphereRadius := myValue. Notice that too short radii can allow the camera to enter certain objects, creating graphical artifacts.
+6. Save the blueprint. Set the World Settings > Game Mode > Selected GameMode > Default Pawn Class := myDefaultPawn
 
 ## Static mesh collision
 When creating UE4 worlds, it is worth double checking the player collision with static mesh actors (the scene). By default, unreal produces convex hulls as simple collision objects and checks against simple collision. However, this may result in faulty collision detection. Collision can be changed to match the visible mesh as follows (may degrade performance): 
@@ -137,15 +173,6 @@ When creating UE4 worlds, it is worth double checking the player collision with 
 3. Save and close the editing window.
 
 Current collision can be visualized by changing the viewmode in the unreal editor from "Lit" to "Player Collision". 
-
-## Custom collision radius
-The default collision for the 'DefaultPawn' is a sphere of radius 35cm. For custom collision radii, you need to create your own pawn blueprint (with DefaultPawn as base class). An 'easy' way to create a pawn of custom collision radiusis as follows:
-1. In the Modes window, search for 'DefaultPawn' and create an instance (drag and drop into the game world).
-2. Select the pawn instance and click Blueprints > Convert selected actor to blueprint class...
-3. Save the new class, e.g. in the content/blueprints folder as myDefaultPawn.
-4. The class should now open in the blueprint editor, where its components can be edited.
-5. To change the radius elect the 'CollisionComponent', and under Details > Shape > SphereRadius := myValue. Notice that too short radii can allow the camera to enter certain objects, creating graphical artifacts.
-6. Save the blueprint. Set the World Settings > Game Mode > Selected GameMode > Default Pawn Class := myDefaultPawn
 
 ## Producing ground truth pointclouds
 For simulation evaluation, ground truth meshes can be exported from the unreal editor and further processed using tools such as [CloudCompare](https://www.danielgm.net/cc/). A voxblox compatible ground truth pointcloud can be generated as follows:
@@ -178,12 +205,12 @@ To illustrate the vision pipeline in stand-alone fashion, we run the unreal_ros_
 
 **Note:** Since the taking of images and read-out of the unreal-pose is done sequentially, fast movement in the game may result in the frames not being well aligned.
 
-## Run in standard mode
-TODO: update this example with a finished mav\_active\_3d\_planning node.
+## Run with MAV in standard mode
+TODO: update this example to the current manager and simple trajectory publisher node.
 
-This example demonstrates the full scale MAV simulation using gazebo for MAV physics, a MPC high level and PID low level controller for trajectory tracking, voxblox for mapping and a planner node for trajectory generation. Setup and run the RealisticRendering demo as in the test example. In a command window type `roslaunch unreal_cv_ros example_full.launch` to start the pipeline. The simulation\_manager will supervise the startup of all elements (this may take few seconds). If everything sets up cleanly, the planner will start a random walk. In a rviz window, the current position of the MAV is depicted together with the executed and planned trajectories. Furthermore, the voxblox mesh representation of the room will be updated as it is explored.
+(This example demonstrates the full scale MAV simulation using gazebo for MAV physics, a MPC high level and PID low level controller for trajectory tracking, voxblox for mapping and a planner node for trajectory generation. Setup and run the RealisticRendering demo as in the test example. In a command window type `roslaunch unreal_cv_ros example_full.launch` to start the pipeline. The simulation\_manager will supervise the startup of all elements (this may take few seconds). If everything sets up cleanly, the planner will start a random walk. In a rviz window, the current position of the MAV is depicted together with the executed and planned trajectories. Furthermore, the voxblox mesh representation of the room will be updated as it is explored.
 
-**Note:** During simulation, the unreal game still takes commands from the user. Make sure to tab out of the game so that the user input does not interfere with the simulation setup. 
+**Note:** During simulation, the unreal game still takes commands from the user. Make sure to tab out of the game so that the user input does not interfere with the simulation setup. )
 
 
 # Troubleshooting
