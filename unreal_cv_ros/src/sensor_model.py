@@ -23,7 +23,7 @@ class SensorModel:
 
         # Read in params
         model_type_in = rospy.get_param('~model_type', 'ground_truth')
-        camera_params_ns = rospy.get_param('~camera_params_ns', rospy.get_namespace()+"camera_params")
+        camera_params_ns = rospy.get_param('~camera_params_ns', rospy.get_namespace()+"unreal_ros_client/camera_params")
         self.maximum_distance = rospy.get_param('~maximum_distance', 0)  # Set to 0 to keep all points
         self.flatten_distance = rospy.get_param('~flatten_distance', 0)  # Set to 0 to ignore
 

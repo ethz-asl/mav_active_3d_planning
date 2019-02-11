@@ -21,6 +21,10 @@ cs_add_executable(planner_node
 )
 target_link_libraries(planner_node ${PROJECT_NAME})
 
+cs_add_executable(eval_voxblox_node
+		src/experiments/eval_voxblox_node.cpp
+)
+
 
 #############
 ## Install ##

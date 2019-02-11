@@ -13,10 +13,14 @@ import csv
 
 # Plotting
 from matplotlib import pyplot as plt
-import Image
 
 
-class PlottingNode:
+class EvalPlotting:
+    """
+    This is the main evaluation node. It expects the data folders and files to have the format hardcoded in the
+    simulation_manager and calls the eval_voxblox_node to execute c++ code. Pretty ugly and non-general code but just
+    needs to work in this specific case atm...
+    """
 
     def __init__(self):
         # Parse parameters
@@ -71,7 +75,7 @@ class PlottingNode:
 
         # Logfile should be available for voxblox node
         self.eval_log_file = open(os.path.join(target_dir, "data_log.txt"), 'a')
-        
+
         # Read voxblox data file
         data = {}
         headers = None
@@ -132,4 +136,4 @@ class PlottingNode:
 
 if __name__ == '__main__':
     rospy.init_node('eval_plotting_node', anonymous=True)
-    pn = PlottingNode()
+    ep = EvalPlotting()

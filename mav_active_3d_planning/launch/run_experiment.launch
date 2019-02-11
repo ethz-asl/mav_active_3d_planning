@@ -7,17 +7,33 @@
   <!-- Voxblox arguments -->
   <arg name="voxel_size" default="0.1"/>
   <arg name="voxels_per_side" default="16"/>
-  <arg name="method" default="simple"/>
+  <arg name="ray_length" default="5.0"/>
+  <arg name="method" default="merged"/>
   <arg name="verbose_voxblox" default="false"/>
     
   <!-- Unreal Routine arguments -->
   <arg name="sensor_model_config" default="sensor_model_config.yaml"/>
-  <arg name="uecv_mode" default="standard"/>
-  <arg name="slowdown" default="0.1"/>
+  <arg name="uecv_mode" default="fast"/>
+  <arg name="slowdown" default="0.0"/>
+  <arg name="delay" default="3.0"/>
   
   <!--  Planner arguments -->
+  <arg name="planner_general_config" default="planner/general.yaml"/>
+  <arg name="planner_generator_config" default="planner/tg_uniform.yaml"/>
+  <arg name="planner_evaluator_config" default="planner/te_frontier.yaml"/>
   <arg name="verbose_planner" default="true"/>
   
+  <!--  Experiment arguments -->  
+  <arg name="experiment_config" default="experiment1.yaml"/>
+  <arg name="record_data" default="true"/>
+  <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
+  <arg name="data_frequency" default="5.0" />
+  
+  
+  
+
+  <!-- *** Setup experiment params, data, nodes *** -->
+  <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg experiment_config)"/>
 
   <!-- Setup empty gazebo world for physics-->
   <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find rotors_gazebo)/models"/>
@@ -30,8 +46,8 @@
     <arg name="verbose" value="$(arg verbose_gazebo)"/>
   </include>
 
-  <!-- Setup a mav with odom sensor -->
   <group ns="$(arg mav_name)">
+    <!-- Setup a mav with odom sensor -->
     <include file="$(find rotors_gazebo)/launch/spawn_mav.launch">
       <arg name="mav_name" value="$(arg mav_name)" />
       <arg name="model" value="$(find rotors_description)/urdf/mav_generic_odometry_sensor.gazebo" />
@@ -61,8 +77,8 @@
     <node pkg="tf" type="static_transform_publisher" name="tf_camera_to_link" args="0 0 0 -0.5 0.5 -0.5 0.5 /camera_link /camera 100"/>	
 	</group>
 
-  <!-- Unreal vision client -->
   <group ns="unreal">
+  	<!-- Unreal vision client -->
     <node name="unreal_ros_client" pkg="unreal_cv_ros" type="unreal_ros_client.py" output="screen">
 			<param name="mode" value="$(arg uecv_mode)"/>
 			<param name="publish_tf" value="true"/>
@@ -74,78 +90,74 @@
     <!-- Unreal sensor model -->
     <node name="unreal_sensor_model" pkg="unreal_cv_ros" type="sensor_model.py" output="screen">
       <rosparam command="load" file="$(find unreal_cv_ros)/cfg/$(arg sensor_model_config)"/>
+      <param name="camera_params_ns" value="/unreal/unreal_ros_client/camera_params"/>
+      <!--param name="flatten_distance" value="$(eval 1.0 + arg('ray_length'))"/-->
+      <param name="maximum_distance" value="$(arg ray_length)"/>
+      <remap from="ue_sensor_raw" to="unreal_ros_client/ue_sensor_raw" />
     </node>
+    
+    <!-- Simulation manager for launching the MAV and monitoring -->
+		<node name="simulation_manager" pkg="unreal_cv_ros" type="simulation_manager.py" output="screen">
+			<param name="ns_mav" value="/$(arg mav_name)" />
+			<param name="ns_gazebo" value="/gazebo" />
+			<param name="monitor" value="true" />
+			<param name="horizon" value="20" />
+			<remap from="ue_raw_in" to="unreal_ros_client/ue_sensor_raw" />
+			<remap from="ue_out_in" to="unreal_sensor_model/ue_sensor_out" />
+		</node>
+		
+		<!-- Experiment launcher, data generation-->
+		<node name="eval_data_node" pkg="mav_active_3d_planning" type="eval_data_node.py" output="screen">
+			<remap from="ue_out_in" to="unreal_sensor_model/ue_sensor_out" />
+			<remap from="unreal_simulation_ready" to="simulation_manager/simulation_ready" />
+			<param name="ns_planner" value="/planner/planner_node" />
+			<param name="ns_voxblox" value="/planner/voxblox_node" />
+			<param name="delay" value="$(arg delay)" />
+			<param name="evaluate" value="$(arg record_data)" />
+			<param name="eval_directory" value="$(arg data_directory)" />
+			<param name="eval_frequency" value="$(arg data_frequency)" />
+		</node>
   </group>
 
-	<!-- Voxblox -->
-	<group ns="voxblox">
+  <group ns="planner">
+		<!-- Voxblox -->
 		<node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
-			<remap from="pointcloud" to="/unreal/ue_sensor_out"/>
-		  <param name="publish_esdf_map" value="true" />
-		  <param name="publish_pointclouds" value="true" />
+			<remap from="pointcloud" to="/unreal/unreal_sensor_model/ue_sensor_out"/>
+			<param name="publish_esdf_map" value="true" />
+			<param name="publish_pointclouds" value="true" />
 			<param name="tsdf_voxel_size" value="$(arg voxel_size)" />
 			<param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
 			<param name="color_mode" value="color" />
 			<param name="use_tf_transforms" value="true" />
 			<param name="update_mesh_every_n_sec" value="1.0" />
 			<param name="method" value="$(arg method)" />
-			<param name="max_ray_length" value="5.0" />
+			<param name="max_ray_length" value="$(arg ray_length)" />
 			<param name="allow_clear" value="true" />
-			<param name="clear_sphere_for_planning" value="false" />
-		  <param name="use_freespace_pointcloud" value="true" />
+			<param name="use_freespace_pointcloud" value="true" />
 			<param name="verbose" value="$(arg verbose_voxblox)" />
 		</node>
 		
-		<!-- Quality Measure -->
-		<node name="progress_monitor" pkg="mav_active_3d_planning" type="progress_monitor.py" output="screen">
-			<remap from="tsdf_in" to="voxblox_node/tsdf_pointcloud" />
-			<remap from="surface_pcl_in" to="voxblox_node/surface_pointcloud" />
-			<param name="voxel_size" value="$(arg voxel_size)" />
-		</node>
-  </group>
-  
-		<!-- Planner -->
-		<node name="active_3d_planner_node" pkg="mav_active_3d_planning" type="planner_node" output="screen" ns="$(arg mav_name)" >
-			<remap from="active_3d_planner_node/esdf_map_in" to="/voxblox/voxblox_node/esdf_map_out" />
+		<!-- Planner (with modular config) -->
+		<node name="planner_node" pkg="mav_active_3d_planning" type="planner_node" output="screen">
+			<remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
 			<param name="use_tf_transforms" value="true" />
 			<param name="tsdf_voxel_size" value="$(arg voxel_size)" />
 			<param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
 			<param name="update_mesh_every_n_sec" value="0.0" />
-			
-			<remap from="odometry" to="odometry_sensor1/odometry" />
+			<param name="clear_sphere_for_planning" value="true" />
+			<param name="clear_sphere_radius" value="0.5" />
+		
+			<remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
+			<remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
 			<param name="verbose" value="$(arg verbose_planner)" />
-			<param name="collision_optimistic" value="false" />
-			<param name="collision_radius" value="0.7" />			
-			
-			<param name="trajectory_generator" value="Uniform" />
-			<param name="TG_n_segments" value="7" />
-			<param name="TG_distance" value="1.2" />
-			<param name="TG_velocity" value="0.3" />
-			<param name="TG_yaw_rate_max" value="0.15" />
-			
-			<!--param name="trajectory_generator" value="MavTrajectoryGeneration" />
-			<param name="TG_n_segments" value="1" />
-			<param name="TG_distance_max" value="1.0" />
-			<param name="TG_distance_min" value="1.0" />
-			<param name="TG_uniform_weight" value="0.6" />
-			<param name="TG_max_tries" value="20" /-->
-			
-			<param name="trajectory_evaluator" value="Naive" />
-			<param name="TE_sampling_time" value="1.0" />
-			<param name="TE_clear_from_parents" value="false" />			
-			
-		</node>
 		
-		<!-- Simulation manager for launching and monitoring-->
-		<node name="simulation_manager" pkg="unreal_cv_ros" type="simulation_manager.py" output="screen" ns="unreal">
-			<param name="ns_mav" value="/$(arg mav_name)" />
-			<param name="ns_planner" value="/$(arg mav_name)/active_3d_planner_node" />
-			<param name="monitor" value="true" />
-			<param name="delay" value="3.0" />
-			<remap from="ue_raw_in" to="ue_sensor_raw" />
-			<remap from="ue_out_in" to="ue_sensor_out" />
+			<param name="trajectory_evaluator/camera_params_ns" value="/unreal/unreal_ros_client/camera_params" />		
+		  <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_general_config)"/>
+		  <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_generator_config)"/>
+		  <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_evaluator_config)"/> 
 		</node>
-		
-		<!-- Visualization -->
-		<node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/full_test.rviz"/>
+ </group>
+
+	<!-- RVIZ Visualization -->
+	<node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/simulation_visualization.rviz"/>
 </launch>
