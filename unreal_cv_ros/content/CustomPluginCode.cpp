@@ -9,15 +9,15 @@ FExecStatus UecvrosFull(const TArray<FString>& Args);
 /** 2. Add the command dispatcher in CameraHandler.cpp */
 
 Cmd = FDispatcherDelegate::CreateRaw(this, &FCameraCommandHandler::UecvrosFull);
-Help = "Run the full UECVROS routine [X, Y, Z, p, y, r, coll] Return npy image unless collided";
-CommandDispatcher->BindCommand("vget /uecvros/full [float] [float] [float] [float] [float] [float] [float]", Cmd, Help);
+Help = "Run the full UECVROS routine [X, Y, Z, p, y, r, coll, cameraID] Return npy image unless collided";
+CommandDispatcher->BindCommand("vget /uecvros/full [float] [float] [float] [float] [float] [float] [float] [uint]", Cmd, Help);
 
 
 /** 3. Add the function body to CameraHandler.cpp */
 
 FExecStatus FCameraCommandHandler::UecvrosFull(const TArray<FString>& Args)
 {
-	if (Args.Num() == 7) // [X, Y, Z, p, y, r, collisionOn]
+	if (Args.Num() == 8) // [X, Y, Z, p, y, r, collisionT, cameraID]
 	{
 		float X = FCString::Atof(*Args[0]), Y = FCString::Atof(*Args[1]), Z = FCString::Atof(*Args[2]);
 		FVector LocNew = FVector(X, Y, Z);
@@ -31,7 +31,7 @@ FExecStatus FCameraCommandHandler::UecvrosFull(const TArray<FString>& Args)
 		// produce images and stack binary data
 		TArray<uint8> Data;
 		TArray<FString> CamIdArgs;
-		CamIdArgs.Init(TEXT("0"), 1);		
+		CamIdArgs.Init(Args[7], 1);		
 		Data += this->GetNpyBinaryUint8Data(CamIdArgs, TEXT("lit"), 4);
 		Data += this->GetNpyBinaryFloat16Data(CamIdArgs, TEXT("depth"), 1);
 		
@@ -39,6 +39,7 @@ FExecStatus FCameraCommandHandler::UecvrosFull(const TArray<FString>& Args)
 		APawn* Pawn = FUE4CVServer::Get().GetPawn();
 		FHitResult* hitresult = new FHitResult();
 		Pawn->SetActorLocation(LocNew, sweep, hitresult, ETeleportType::TeleportPhysics);
+		Pawn->SetActorRotation(RotNew, ETeleportType::TeleportPhysics);
 		AController* Controller = Pawn->GetController();
 		Controller->ClientSetRotation(RotNew, true);	// the true is important for performance/blurr
 
@@ -54,3 +55,4 @@ FExecStatus FCameraCommandHandler::UecvrosFull(const TArray<FString>& Args)
 	}
 	return FExecStatus::InvalidArgument;
 }
+

@@ -46,7 +46,7 @@ class SensorModel:
                               rospy.get_param(camera_params_ns+'/focal_length')]
 
         # Initialize node
-        self.pub = rospy.Publisher("ue_sensor_out", PointCloud2, queue_size=10)
+        self.pub = rospy.Publisher("~ue_sensor_out", PointCloud2, queue_size=10)
         self.sub = rospy.Subscriber("ue_sensor_raw", UeSensorRaw, self.callback, queue_size=10)
 
         rospy.loginfo("Sensor model setup cleanly.")
