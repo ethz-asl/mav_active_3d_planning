@@ -1,0 +1,13 @@
+# General parameters for planner node
+update_segments: false
+
+# Common values for all
+trajectory_generator:
+  collision_optimistic: true 
+  collision_radius: 0.7
+  
+trajectory_evaluator:
+  camera_params_ns: "/unreal/unreal_ros_client/camera_params"
+  
+  cost_computer:
+    type: "Time"

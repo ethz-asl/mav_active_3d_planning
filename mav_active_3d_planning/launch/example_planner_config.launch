@@ -18,22 +18,11 @@
   <arg name="delay" default="3.0"/>
   
   <!--  Planner arguments -->
-  <arg name="planner_general_config" default="example_planner_config.yaml"/>
-  <arg name="planner_generator_config" default="planner/tg_uniform.yaml"/>
-  <arg name="planner_evaluator_config" default="planner/te_frontier.yaml"/>
+  <arg name="planner_config" default="$(find mav_active_3d_planning)/cfg/example_planner_config.yaml"/>
   <arg name="verbose_planner" default="true"/>
   
-  <!--  Experiment arguments -->  
-  <arg name="experiment_config" default="experiment1.yaml"/>
-  <arg name="record_data" default="false"/>
-  <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
-  <arg name="data_frequency" default="5.0" />
-  
-  
-  
 
-  <!-- *** Setup experiment params, data, nodes *** -->
-  <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg experiment_config)"/>
+
 
   <!-- Setup empty gazebo world for physics-->
   <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find rotors_gazebo)/models"/>
@@ -91,7 +80,6 @@
     <node name="unreal_sensor_model" pkg="unreal_cv_ros" type="sensor_model.py" output="screen">
       <rosparam command="load" file="$(find unreal_cv_ros)/cfg/$(arg sensor_model_config)"/>
       <param name="camera_params_ns" value="/unreal/unreal_ros_client/camera_params"/>
-      <!--param name="flatten_distance" value="$(eval 1.0 + arg('ray_length'))"/-->
       <param name="maximum_distance" value="$(arg ray_length)"/>
       <remap from="ue_sensor_raw" to="unreal_ros_client/ue_sensor_raw" />
     </node>
@@ -100,10 +88,8 @@
     <node name="simulation_manager" pkg="unreal_cv_ros" type="simulation_manager.py" output="screen">
       <param name="ns_mav" value="/$(arg mav_name)" />
       <param name="ns_gazebo" value="/gazebo" />
-      <param name="monitor" value="true" />
-      <param name="horizon" value="20" />
+      <param name="monitor" value="false" />
       <remap from="ue_raw_in" to="unreal_ros_client/ue_sensor_raw" />
-      <remap from="ue_out_in" to="unreal_sensor_model/ue_sensor_out" />
     </node>
     
     <!-- Experiment launcher, data generation-->
@@ -111,11 +97,8 @@
       <remap from="ue_out_in" to="unreal_sensor_model/ue_sensor_out" />
       <remap from="unreal_simulation_ready" to="simulation_manager/simulation_ready" />
       <param name="ns_planner" value="/planner/planner_node" />
-      <param name="ns_voxblox" value="/planner/voxblox_node" />
       <param name="delay" value="$(arg delay)" />
-      <param name="evaluate" value="$(arg record_data)" />
-      <param name="eval_directory" value="$(arg data_directory)" />
-      <param name="eval_frequency" value="$(arg data_frequency)" />
+      <param name="evaluate" value="false" />
     </node>
   </group>
 
@@ -144,21 +127,12 @@
       <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
       <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
       <param name="update_mesh_every_n_sec" value="0.0" />
-      <param name="clear_sphere_for_planning" value="true" />
-      <param name="clear_sphere_radius" value="0.5" />
     
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
       <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
       <param name="verbose" value="$(arg verbose_planner)" />
-    
-        <!-- Experiment dependent -->
-      <param name="trajectory_evaluator/camera_params_ns" value="/unreal/unreal_ros_client/camera_params" />    
-      <param name="trajectory_evaluator/ray_length" value="/$(arg ray_length)" />
-      
-      <!-- Modular config -->    
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_general_config)"/>
-      <!--rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_generator_config)" />
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_evaluator_config)"/--> 
+       
+      <rosparam command="load" file="$(arg planner_config)"/>
     </node>
  </group>
 

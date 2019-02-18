@@ -11,6 +11,9 @@ add_definitions(-std=c++11)
 #############
 cs_add_library(${PROJECT_NAME} 
 	src/defaults.cpp
+	src/module_factory.cpp
+	src/trajectory_generator.cpp
+	src/trajectory_evaluator.cpp
 )
 
 ############

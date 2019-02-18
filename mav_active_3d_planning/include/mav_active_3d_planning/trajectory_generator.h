@@ -2,60 +2,51 @@
 #define MAV_ACTIVE_3D_PLANNING_TRAJECTORY_GENERATOR_H_
 
 #include "mav_active_3d_planning/trajectory_segment.h"
+#include "mav_active_3d_planning/defaults.h"
 
-#include <ros/node_handle.h>
 #include <voxblox_ros/esdf_server.h>
+#include <Eigen/Core>
+
+#include <string>
 
 namespace mav_active_3d_planning {
+
+    // Abstract wrapper for default/modular implementations of the selectSegment method
+    class SegmentSelector {
+    public:
+        virtual TrajectorySegment* selectSegment(TrajectorySegment &root) = 0;
+    };
 
     // Base class for trajectory generation to provide uniform interface with other classes
     class TrajectoryGenerator {
     public:
-        TrajectoryGenerator(voxblox::EsdfServer *voxblox_Ptr, bool p_coll_optimistic, double p_coll_radius)
-                : voxblox_Ptr_(voxblox_Ptr),
-                  p_coll_optimistic_(p_coll_optimistic),
-                  p_coll_radius_(p_coll_radius) {}
+        TrajectoryGenerator(voxblox::EsdfServer *voxblox_ptr, std::string param_ns);
 
         virtual ~TrajectoryGenerator() {}
 
         // Expansion policy where to expand (from full tree)
-        virtual TrajectorySegment* selectSegment(TrajectorySegment &root) {
-            ROS_ERROR("TG: selectSegment function not implemented.");
-            return nullptr;
-        }
+        virtual TrajectorySegment* selectSegment(TrajectorySegment &root);
 
         // Expand a selected trajectory segment
-        virtual bool expandSegment(TrajectorySegment &target) {
-            ROS_ERROR("TG: expandSegment function not implemented.");
-            return false;
-        }
-
-        // Set params from ROS Nodehandle.
-        virtual bool setParamsFromRos(const ros::NodeHandle &nh) {
-            ROS_ERROR("TG: setParamsFromRos function not implemented.");
-            return false;
-        }
+        virtual bool expandSegment(TrajectorySegment &target);
 
     protected:
         // Pointer to the esdf server for collision checking (and others)
-        voxblox::EsdfServer *voxblox_Ptr_;
+        voxblox::EsdfServer *voxblox_ptr_;
 
-        // Whether unobserved space should be rated as free or occupied
-        bool p_coll_optimistic_;
+        // bounding box
+        defaults::BoundingVolume bounding_volume_;
 
-        // Collision radius
-        double p_coll_radius_;
+        // default modules
+        SegmentSelector* segment_selector_;
 
-        // Returns true if the position is traversable
-        bool checkCollision(const Eigen::Vector3d &position) {
-            if (!voxblox_Ptr_->getEsdfMapPtr()->isObserved(position)) {
-                return p_coll_optimistic_;
-            }
-            double distance = 0.0;
-            voxblox_Ptr_->getEsdfMapPtr()->getDistanceAtPosition(position, &distance);
-            return (distance > p_coll_radius_);
-        }
+        // Parameters
+        bool p_collision_optimistic_;
+        double p_collision_radius_;
+        std::string p_namespace_;
+
+        // Utility function for collision checking. Returns true if the position is reachable.
+        bool checkTraversable(const Eigen::Vector3d &position);
     };
-
 }  // namespace mav_active_3d_planning
 #endif  // MAV_ACTIVE_3D_PLANNING_TRAJECTORY_GENERATOR_H_

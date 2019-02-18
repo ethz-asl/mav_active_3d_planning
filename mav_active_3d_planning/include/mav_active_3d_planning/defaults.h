@@ -3,33 +3,32 @@
 
 #include "mav_active_3d_planning/trajectory_segment.h"
 
-#include <random>
-#include <vector>
+#include <Eigen/Core>
 
+#include <vector>
+#include <string>
 
 namespace mav_active_3d_planning {
+
+    // Contains default methods and utility functions that can be used by various classes
     namespace defaults {
-        /* Contains default methods and utility functions that can be used by various trajectory generators and/or
-         * evaluators. */
 
-        /* Trajectory Generators: selectSegment functions */
-        // Select uniform random segment from candidates
-        TrajectorySegment *selectRandomUniform(std::vector<TrajectorySegment *> &candidates);
+        // struct for bounding volumes (simple bounding box atm)
+        struct BoundingVolume {
+            BoundingVolume(std::string param_ns);
 
-        // Select random segment weighted with the segment value
-        TrajectorySegment *selectRandomWeighted(std::vector<TrajectorySegment *> &candidates);
+            virtual ~BoundingVolume() {}
 
-        // Select a random leaf of the trajectory tree
-        TrajectorySegment *selectRandomLeafUniform(TrajectorySegment &root);
+            // check wether point is in bounding box, if bounding box is setup
+            bool contains(Eigen::Vector3d point);
 
-        // Select a random leaf of the trajectory tree, every leaf is weighted with its value
-        TrajectorySegment *selectRandomLeafWeighted(TrajectorySegment &root);
+            bool is_setup;
+            double x_min, x_max, y_min, y_max, z_min, z_max;
+        };
 
-        // Select a random segment of the trajectory tree
-        TrajectorySegment *selectRandomSegmentUniform(TrajectorySegment &root);
-
-        // Select a random segment of the trajectory tree weighted by value
-        TrajectorySegment *selectRandomSegmentWeighted(TrajectorySegment &root);
+        // Return the indices of the EigenTrajectoryPoints in the segment to be evaluated
+        std::vector<int> samplePointsFromSegment(const TrajectorySegment &segment, double sampling_rate,
+                                                    bool include_first = false);
 
     } // namespace defaults
 } // namepsace mav_active_3d_planning

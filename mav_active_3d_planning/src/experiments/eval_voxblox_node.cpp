@@ -30,7 +30,7 @@
 
 namespace mav_active_3d_planning {
 
-    // Ros-encapsulation for c++ voxblox code to evaluates voxblox maps against a gt pointcloud upon service-request.
+    // Ros-wrapper for c++ voxblox code to evaluates voxblox maps upon request from the eval_plotting_node.
     // Largely based on the voxblox_ros/voxblox_eval.cc code.
     // Pretty ugly and non-general code but just needs to work in this specific case atm...
     class EvaluationNode {
