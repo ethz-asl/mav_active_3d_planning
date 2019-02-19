@@ -8,6 +8,7 @@ Panels:
         - /Status1
         - /VoxbloxMesh1
         - /Axes1
+        - /Traversability1
         - /Sensor Output1
         - /PlannerVisualization1
         - /PlannerVisualization1/Namespaces1
@@ -31,7 +32,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: Sensor Output
+    SyncSource: Traversability
 Visualization Manager:
   Class: ""
   Displays:
@@ -89,9 +90,9 @@ Visualization Manager:
       Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 1.78530085
+      Max Intensity: 3.7289629
       Min Color: 0; 0; 0
-      Min Intensity: 0.350006521
+      Min Intensity: 0.700000048
       Name: Traversability
       Position Transformer: XYZ
       Queue Size: 10
@@ -99,7 +100,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.100000001
       Style: Spheres
-      Topic: /firefly/active_3d_planner_node/traversable
+      Topic: /planner/planner_node/traversable
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -139,7 +140,9 @@ Visualization Manager:
       Marker Topic: /planner/trajectory_visualization
       Name: PlannerVisualization
       Namespaces:
-        {}
+        candidate_trajectories: true
+        completed_trajectory: true
+        evaluation: true
       Queue Size: 100
       Value: true
   Enabled: true
@@ -182,10 +185,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.649796963
+      Pitch: 1.26479626
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 2.07588434
+      Yaw: 2.03089428
     Saved: ~
 Window Geometry:
   Displays:

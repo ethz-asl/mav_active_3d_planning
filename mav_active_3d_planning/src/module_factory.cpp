@@ -13,6 +13,7 @@
 #include "modules/cost_computers/default_cost_computers.cpp"
 #include "modules/value_computers/default_value_computers.cpp"
 #include "modules/next_selectors/default_next_selectors.cpp"
+#include "modules/back_trackers/default_back_trackers.cpp"
 
 
 namespace mav_active_3d_planning {
@@ -21,6 +22,7 @@ namespace mav_active_3d_planning {
                                                                   std::string param_ns) {
         std::string type;
         ros::param::param<std::string>(param_ns + "/type", type, "Uniform");
+        std::string test = param_ns + "/type";
         if (type == "Uniform") {
             return new trajectory_generators::Uniform(voxblox_ptr, param_ns);
         } else if (type == "RandomLinear") {
@@ -95,6 +97,19 @@ namespace mav_active_3d_planning {
             return new next_selectors::SubsequentBest();
         } else {
             ROS_ERROR("Unknown NextSelector type '%s'.", type.c_str());
+            return nullptr;
+        }
+    }
+
+    BackTracker *ModuleFactory::createBackTracker(std::string param_ns) {
+        std::string type;
+        ros::param::param<std::string>(param_ns + "/type", type, "Rotate");
+        if (type == "Rotate") {
+            return new back_trackers::Rotate(param_ns);
+        } else if (type == "RotateReverse") {
+            return new back_trackers::RotateReverse(param_ns);
+        } else {
+            ROS_ERROR("Unknown BackTracker type '%s'.", type.c_str());
             return nullptr;
         }
     }

@@ -1,5 +1,5 @@
 trajectory_evaluator:
-  type: "Naive"
+  type: "Frontier"
   sampling_time: 0.0
   clear_from_parents: false
     

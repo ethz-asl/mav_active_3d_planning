@@ -2,7 +2,6 @@
 #include "mav_active_3d_planning/module_factory.h"
 
 #include <ros/param.h>
-#include <ros/console.h>
 
 namespace mav_active_3d_planning {
 
@@ -39,9 +38,4 @@ namespace mav_active_3d_planning {
         return segment_selector_->selectSegment(root);
     }
 
-    bool TrajectoryGenerator::expandSegment(TrajectorySegment &target){
-        // This is the main responsibility of a trajectory generator, no default implementation.
-        ROS_ERROR("TrajectoryGenerator::expandSegment() is not implemented!");
-        return false;
-    }
 }  // namespace mav_active_3d_planning

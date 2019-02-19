@@ -28,7 +28,7 @@ namespace mav_active_3d_planning {
         virtual TrajectorySegment* selectSegment(TrajectorySegment &root);
 
         // Expand a selected trajectory segment
-        virtual bool expandSegment(TrajectorySegment &target);
+        virtual bool expandSegment(TrajectorySegment &target) = 0;
 
     protected:
         // Pointer to the esdf server for collision checking (and others)

@@ -37,7 +37,7 @@ namespace mav_active_3d_planning {
         virtual ~TrajectoryEvaluator() {}
 
         // compute the gain of a TrajectorySegment
-        virtual bool computeGain(TrajectorySegment &traj_in);
+        virtual bool computeGain(TrajectorySegment &traj_in) = 0;
 
         // compute the cost of a TrajectorySegment
         virtual bool computeCost(TrajectorySegment &traj_in);

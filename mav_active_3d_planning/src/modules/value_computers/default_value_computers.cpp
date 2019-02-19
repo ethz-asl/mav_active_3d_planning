@@ -1,5 +1,7 @@
 #include "mav_active_3d_planning/trajectory_evaluator.h"
 
+#include <ros/param.h>
+
 namespace mav_active_3d_planning {
     namespace value_computers {
 

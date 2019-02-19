@@ -2,7 +2,6 @@
 #include "mav_active_3d_planning/module_factory.h"
 
 #include <ros/param.h>
-#include <ros/console.h>
 
 #include <vector>
 #include <chrono>
@@ -16,12 +15,6 @@ namespace mav_active_3d_planning {
               value_computer_(nullptr),
               next_selector_(nullptr),
               p_namespace_(param_ns) {}
-
-    bool TrajectoryEvaluator::computeGain(TrajectorySegment &traj_in) {
-        // This is the main responsibility of a trajectory evaluator, no default implementation.
-        ROS_ERROR("TrajectoryEvaluator::computeGain() is not implemented!");
-        return false;
-    }
 
     bool TrajectoryEvaluator::computeCost(TrajectorySegment &traj_in) {
         // If not implemented use a (default) module

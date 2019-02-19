@@ -2,6 +2,7 @@
 #include "mav_active_3d_planning/defaults.h"
 
 #include <mav_msgs/eigen_mav_msgs.h>
+#include <ros/param.h>
 
 #include <vector>
 #include <cmath>
@@ -9,6 +10,7 @@
 namespace mav_active_3d_planning {
     namespace trajectory_evaluators {
 
+        // Naive just counts the number of yet unobserved visible voxels.
         class Naive: public TrajectoryEvaluator {
         public:
             Naive(voxblox::EsdfServer *voxblox_ptr, std::string param_ns);
@@ -57,23 +59,23 @@ namespace mav_active_3d_planning {
             traj_in.info.erase( std::unique( traj_in.info.begin(), traj_in.info.end()), traj_in.info.end() );
 
             // Remove voxels previously seen by parent (this is quite expensive)
-    //        if(p_clear_from_parents_){
-    //            TrajectorySegment* previous = traj_in.parent;
-    //            while (previous){
-    //                std::vector <Eigen::Vector3d> old_indices = previous->info;
-    //                traj_in.info.erase(
-    //                        std::remove_if(
-    //                                traj_in.info.begin(),
-    //                                traj_in.info.end(),
-    //                                [&old_indices](const Eigen::Vector3d& global_index)
-    //                                {
-    //                                    auto it = std::find(old_indices.begin(), old_indices.end(), global_index);
-    //                                    return (it != old_indices.end());
-    //                                }),
-    //                        traj_in.info.end());
-    //                previous = previous->parent;
-    //            }
-    //        }
+            if(p_clear_from_parents_){
+                TrajectorySegment* previous = traj_in.parent;
+                while (previous){
+                    std::vector <Eigen::Vector3d> old_indices = previous->info;
+                    traj_in.info.erase(
+                            std::remove_if(
+                                    traj_in.info.begin(),
+                                    traj_in.info.end(),
+                                    [&old_indices](const Eigen::Vector3d& global_index)
+                                    {
+                                        auto it = std::find(old_indices.begin(), old_indices.end(), global_index);
+                                        return (it != old_indices.end());
+                                    }),
+                            traj_in.info.end());
+                    previous = previous->parent;
+                }
+            }
 
             // Set gain (#new voxels)
             traj_in.gain = (double)traj_in.info.size();

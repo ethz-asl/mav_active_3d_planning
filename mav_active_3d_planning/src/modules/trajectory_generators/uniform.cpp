@@ -1,6 +1,8 @@
 #include "mav_active_3d_planning/trajectory_generator.h"
 
 #include <mav_msgs/eigen_mav_msgs.h>
+#include <ros/param.h>
+
 #include <random>
 
 namespace mav_active_3d_planning {
@@ -27,8 +29,8 @@ namespace mav_active_3d_planning {
                 : TrajectoryGenerator(voxblox_ptr, param_ns) {
             // params
             ros::param::param<double>(param_ns + "/distance", p_distance_, 1.0);
-            ros::param::param<double>(param_ns + "/velocity", p_velocity_, 0.5);
-            ros::param::param<double>(param_ns + "/yaw_rate_max", p_yaw_rate_max_, 1.7);
+            ros::param::param<double>(param_ns + "/velocity", p_velocity_, 0.33);
+            ros::param::param<double>(param_ns + "/yaw_rate_max", p_yaw_rate_max_, 0.5);
             ros::param::param<double>(param_ns + "/p_sampling_rate", p_sampling_rate_, 20.0);
             ros::param::param<int>(param_ns + "/n_segments", p_n_segments_, 5);
             ros::param::param<bool>(param_ns + "/planar", p_planar_, true);
@@ -36,6 +38,7 @@ namespace mav_active_3d_planning {
 
         bool Uniform::expandSegment(TrajectorySegment &target) {
             // Create and add new adjacent trajectories to target segment
+            target.tg_visited = true;
             int valid_segments = 0;
             TrajectorySegment *new_segment = target.spawnChild();
 
@@ -71,19 +74,10 @@ namespace mav_active_3d_planning {
                     new_segment = target.spawnChild();
                 }
             }
-            if (valid_segments == 0) {
-                // No feasible solution: try rotating only
-                mav_msgs::EigenTrajectoryPoint trajectory_point;
-                trajectory_point.position_W = target.trajectory.back().position_W;
-                trajectory_point.setFromYaw(target.trajectory.back().getYaw() + 0.05);
-                trajectory_point.time_from_start_ns = 0;
-                new_segment->trajectory.clear();
-                new_segment->trajectory.push_back(trajectory_point);
-                return false;
-            } else {
-                target.children.pop_back();
-                return true;
-            }
+            target.children.pop_back();
+            // Feasible solution found?
+            return (valid_segments > 0);
         }
+
     } // namespace trajectory_generators
 }  // namespace mav_active_3d_planning

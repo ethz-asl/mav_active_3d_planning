@@ -3,6 +3,7 @@
 
 #include "mav_active_3d_planning/trajectory_generator.h"
 #include "mav_active_3d_planning/trajectory_evaluator.h"
+#include "mav_active_3d_planning/back_tracker.h"
 
 #include <voxblox_ros/esdf_server.h>
 #include <string>
@@ -31,10 +32,13 @@ namespace mav_active_3d_planning {
         // TrajectoryEvaluators -> selectNextBest wrapper
         static NextSelector *createNextSelector(std::string param_ns);
 
+        // BackTrackers
+        static BackTracker *createBackTracker(std::string param_ns);
+
     private:
         ModuleFactory() {}
         virtual ~ModuleFactory() {}
     };
-} // namepsace mav_active_3d_planning
 
+} // namepsace mav_active_3d_planning
 #endif //MAV_ACTIVE_3D_PLANNING_COMPONENT_FACTORY_H

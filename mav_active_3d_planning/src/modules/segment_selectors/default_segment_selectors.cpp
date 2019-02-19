@@ -1,6 +1,8 @@
 #include "mav_active_3d_planning/trajectory_generator.h"
 #include "mav_active_3d_planning/defaults.h"
 
+#include <ros/param.h>
+
 #include <vector>
 #include <algorithm>
 #include <random>

@@ -2,6 +2,8 @@
 #include "mav_active_3d_planning/trajectory_segment.h"
 
 #include <mav_msgs/eigen_mav_msgs.h>
+#include <ros/param.h>
+
 #include <random>
 
 namespace mav_active_3d_planning {
@@ -46,6 +48,7 @@ namespace mav_active_3d_planning {
 
         bool RandomLinear::expandSegment(TrajectorySegment &target) {
             // Create and add new adjacent trajectories to target segment
+            target.tg_visited = true;
             int valid_segments = 0;
             int n_points = ceil(p_distance_ / 10);  // test collision every 0.1m
             Eigen::Vector3d start_pos = target.trajectory.back().position_W;
@@ -92,17 +95,8 @@ namespace mav_active_3d_planning {
                 }
                 valid_segments++;
             }
-            if (counter >= p_max_tries_ && valid_segments == 0) {
-                // No feasible solution: try rotating only
-                TrajectorySegment *new_segment = target.spawnChild();
-                mav_msgs::EigenTrajectoryPoint trajectory_point;
-                trajectory_point.position_W = start_pos;
-                trajectory_point.setFromYaw(target.trajectory.back().getYaw() + 0.05);
-                trajectory_point.time_from_start_ns = 0;
-                new_segment->trajectory.push_back(trajectory_point);
-                return false;
-            }
-            return true;
+            // Feasible solution found?
+            return (valid_segments > 0);
         }
 
     } // namespace trajectory_generators

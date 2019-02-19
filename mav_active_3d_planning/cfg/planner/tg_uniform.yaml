@@ -2,8 +2,8 @@ trajectory_generator:
   type: "Uniform"
   n_segments: 7
   distance: 1.2  
-  velocity: 0.3  
-  yaw_rate_max: 0.2
+  velocity: 0.4  
+  yaw_rate_max: 0.3
   planar: true
   sampling_rate: 20
   
@@ -11,5 +11,5 @@ trajectory_generator:
     type: "RandomWeighted"
     leaves_only: true
     revisit: false
-    factor: 1.0
+    factor: 3.0
     uniform_weight: 0.1

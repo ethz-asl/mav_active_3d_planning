@@ -12,14 +12,13 @@
   <arg name="verbose_voxblox" default="false"/>
     
   <!-- Unreal Routine arguments -->
-  <arg name="sensor_model_config" default="sensor_model_config.yaml"/>
   <arg name="uecv_mode" default="fast"/>
   <arg name="slowdown" default="0.0"/>
   <arg name="delay" default="3.0"/>
   
   <!--  Planner arguments -->
-  <arg name="planner_general_config" default="example_planner_config.yaml"/>
-  <arg name="planner_generator_config" default="planner/tg_uniform.yaml"/>
+  <arg name="planner_general_config" default="planner/general.yaml"/>
+  <arg name="planner_generator_config" default="planner/tg_random_linear.yaml"/>
   <arg name="planner_evaluator_config" default="planner/te_frontier.yaml"/>
   <arg name="verbose_planner" default="true"/>
   
@@ -89,7 +88,6 @@
     
     <!-- Unreal sensor model -->
     <node name="unreal_sensor_model" pkg="unreal_cv_ros" type="sensor_model.py" output="screen">
-      <rosparam command="load" file="$(find unreal_cv_ros)/cfg/$(arg sensor_model_config)"/>
       <param name="camera_params_ns" value="/unreal/unreal_ros_client/camera_params"/>
       <!--param name="flatten_distance" value="$(eval 1.0 + arg('ray_length'))"/-->
       <param name="maximum_distance" value="$(arg ray_length)"/>
@@ -157,8 +155,8 @@
       
       <!-- Modular config -->    
       <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_general_config)"/>
-      <!--rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_generator_config)" />
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_evaluator_config)"/--> 
+      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_generator_config)" />
+      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_evaluator_config)"/> 
     </node>
  </group>
 

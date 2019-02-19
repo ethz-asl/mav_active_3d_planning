@@ -2,6 +2,7 @@
 #include "mav_active_3d_planning/defaults.h"
 
 #include <mav_msgs/eigen_mav_msgs.h>
+#include <ros/param.h>
 
 #include <vector>
 #include <cmath>
@@ -48,28 +49,35 @@ namespace mav_active_3d_planning {
                                     new_voxels.end());
                 }
                 voxblox::EsdfMap* esdf_map = voxblox_ptr_->getEsdfMapPtr().get();
-                new_voxels.erase(std::remove_if(new_voxels.begin(), new_voxels.end(), [esdf_map](const Eigen::Vector3d& voxel) {
-                    return esdf_map->isObserved(voxel); } ), new_voxels.end());
+                new_voxels.erase(std::remove_if(new_voxels.begin(), new_voxels.end(),
+                        [esdf_map](const Eigen::Vector3d& voxel) { return esdf_map->isObserved(voxel); } ),
+                                new_voxels.end());
 
                 // Remove non-frontier voxels
                 double voxel_size = static_cast<double>(voxblox_ptr_->getEsdfMapPtr()->voxel_size());
-                double *distance;
                 new_voxels.erase(std::remove_if(new_voxels.begin(), new_voxels.end(),
-                        [esdf_map, voxel_size, distance](const Eigen::Vector3d& voxel) {
+                        [esdf_map, voxel_size](const Eigen::Vector3d& voxel) {
                             // Check all neighboring voxels
-                            esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(voxel_size, 0, 0), distance);
-                            if (*distance > voxel_size){ return true;}
-                            esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(-voxel_size, 0, 0), distance);
-                            if (*distance > voxel_size){ return true;}
-                            esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(0, voxel_size, 0), distance);
-                            if (*distance > voxel_size){ return true;}
-                            esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(0, -voxel_size, 0), distance);
-                            if (*distance > voxel_size){ return true;}
-                            esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(0, 0, voxel_size), distance);
-                            if (*distance > voxel_size){ return true;}
-                            esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(0, 0, -voxel_size), distance);
-                            if (*distance > voxel_size){ return true;}
-                            return false; } ), new_voxels.end());
+                            double distance;
+                            if (esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(voxel_size, 0, 0), &distance)){
+                                if (distance < voxel_size){ return false;}
+                            }
+                            if (esdf_map->getDistanceAtPosition(voxel - Eigen::Vector3d(voxel_size, 0, 0), &distance)){
+                                if (distance < voxel_size){ return false;}
+                            }
+                            if (esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(0, voxel_size, 0), &distance)){
+                                if (distance < voxel_size){ return false;}
+                            }
+                            if (esdf_map->getDistanceAtPosition(voxel - Eigen::Vector3d(0, voxel_size, 0), &distance)){
+                                if (distance < voxel_size){ return false;}
+                            }
+                            if (esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(0, 0, voxel_size), &distance)){
+                                if (distance < voxel_size){ return false;}
+                            }
+                            if (esdf_map->getDistanceAtPosition(voxel - Eigen::Vector3d(0, 0, voxel_size), &distance)){
+                                if (distance < voxel_size){ return false;}
+                            }
+                            return true; } ), new_voxels.end());
                 traj_in.info.insert(traj_in.info.begin(), new_voxels.begin(), new_voxels.end());
             }
 
@@ -77,23 +85,23 @@ namespace mav_active_3d_planning {
             traj_in.info.erase( std::unique( traj_in.info.begin(), traj_in.info.end()), traj_in.info.end() );
 
             // Remove voxels previously seen by parent (this is quite expensive)
-    //        if(p_clear_from_parents_){
-    //            TrajectorySegment* previous = traj_in.parent;
-    //            while (previous){
-    //                std::vector <Eigen::Vector3d> old_indices = previous->info;
-    //                traj_in.info.erase(
-    //                        std::remove_if(
-    //                                traj_in.info.begin(),
-    //                                traj_in.info.end(),
-    //                                [&old_indices](const Eigen::Vector3d& global_index)
-    //                                {
-    //                                    auto it = std::find(old_indices.begin(), old_indices.end(), global_index);
-    //                                    return (it != old_indices.end());
-    //                                }),
-    //                        traj_in.info.end());
-    //                previous = previous->parent;
-    //            }
-    //        }
+            if(p_clear_from_parents_){
+                TrajectorySegment* previous = traj_in.parent;
+                while (previous){
+                    std::vector <Eigen::Vector3d> old_indices = previous->info;
+                    traj_in.info.erase(
+                            std::remove_if(
+                                    traj_in.info.begin(),
+                                    traj_in.info.end(),
+                                    [&old_indices](const Eigen::Vector3d& global_index)
+                                    {
+                                        auto it = std::find(old_indices.begin(), old_indices.end(), global_index);
+                                        return (it != old_indices.end());
+                                    }),
+                            traj_in.info.end());
+                    previous = previous->parent;
+                }
+            }
 
             // Set gain (#new voxels)
             traj_in.gain = (double)traj_in.info.size();
