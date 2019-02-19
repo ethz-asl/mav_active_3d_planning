@@ -5,6 +5,7 @@
 #include <ros/param.h>
 
 #include <vector>
+#include <algorithm>
 #include <cmath>
 
 namespace mav_active_3d_planning {

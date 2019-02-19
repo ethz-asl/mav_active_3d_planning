@@ -9,6 +9,7 @@ namespace mav_active_3d_planning {
             : voxblox_ptr_(voxblox_ptr),
               bounding_volume_(param_ns + "/bounding_volume"),
               segment_selector_(nullptr),
+              generator_updater_(nullptr),
               p_namespace_(param_ns) {
         // Parameters
         ros::param::param<bool>(param_ns + "/collision_optimistic", p_collision_optimistic_, false);
@@ -36,6 +37,14 @@ namespace mav_active_3d_planning {
             segment_selector_ = ModuleFactory::createSegmentSelector(p_namespace_+"/segment_selector");
         }
         return segment_selector_->selectSegment(root);
+    }
+
+    bool TrajectoryGenerator::updateSegments(TrajectorySegment &root){
+        // If not implemented use a (default) module
+        if (generator_updater_ == nullptr){
+            generator_updater_ = ModuleFactory::createGeneratorUpdater(p_namespace_+"/generator_updater", this);
+        }
+        return generator_updater_->updateSegments(root);
     }
 
 }  // namespace mav_active_3d_planning

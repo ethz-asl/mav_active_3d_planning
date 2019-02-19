@@ -14,6 +14,7 @@ namespace mav_active_3d_planning {
               cost_computer_(nullptr),
               value_computer_(nullptr),
               next_selector_(nullptr),
+              evaluator_updater_(nullptr),
               p_namespace_(param_ns) {}
 
     bool TrajectoryEvaluator::computeCost(TrajectorySegment &traj_in) {
@@ -38,6 +39,14 @@ namespace mav_active_3d_planning {
             next_selector_ = ModuleFactory::createNextSelector(p_namespace_+"/next_selector");
         }
         return next_selector_->selectNextBest(traj_in);
+    }
+
+    bool TrajectoryEvaluator::updateSegments(TrajectorySegment &root) {
+        // If not implemented use a (default) module
+        if (evaluator_updater_ == nullptr){
+            evaluator_updater_ = ModuleFactory::createEvaluatorUpdater(p_namespace_+"/evaluator_updater", this);
+        }
+        return evaluator_updater_->updateSegments(root);
     }
 
     RayCaster::RayCaster(voxblox::EsdfServer *voxblox_ptr, std::string param_ns) : voxblox_ptr_(voxblox_ptr) {

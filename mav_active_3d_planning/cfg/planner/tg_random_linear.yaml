@@ -1,9 +1,9 @@
 trajectory_generator:
   type: "RandomLinear"
-  distance: 1.0  
-  v_max: 0.5
-  a_max: 0.5  
-  planar: true
+  distance: 1.2  
+  v_max: 0.4
+  a_max: 0.4 
+  planar: false
   n_segments: 1
   max_tries: 1000
   sampling_rate: 20.0
@@ -12,5 +12,8 @@ trajectory_generator:
     type: "RandomWeighted"
     leaves_only: false
     revisit: true
-    factor: 3.0
+    factor: 1.0
     uniform_weight: 0.1
+    
+  generator_updater:
+    type: "CheckCollision"

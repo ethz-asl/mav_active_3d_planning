@@ -10,3 +10,6 @@ trajectory_evaluator:
     
   next_selector:
     type: "SubsequentBest"
+    
+  evaluator_updater:
+    type: "EvaluateFromScratch"

@@ -11,23 +11,11 @@
 
 namespace mav_active_3d_planning {
 
-    // Abstract wrapper for default/modular implementations of the computeCost method
-    class CostComputer {
-    public:
-        virtual bool computeCost(TrajectorySegment &traj_in) = 0;
-    };
-
-    // Abstract wrapper for default/modular implementations of the computeValue method
-    class ValueComputer {
-    public:
-        virtual bool computeValue(TrajectorySegment &traj_in) = 0;
-    };
-
-    // Abstract wrapper for default/modular implementations of the selectNextBest method
-    class NextSelector {
-    public:
-        virtual int selectNextBest(TrajectorySegment &traj_in) = 0;
-    };
+    // Forward declaration
+    class CostComputer;
+    class ValueComputer;
+    class NextSelector;
+    class EvaluatorUpdater;
 
     // Base class for trajectory evaluators to provide uniform interface with other classes
     class TrajectoryEvaluator {
@@ -48,6 +36,9 @@ namespace mav_active_3d_planning {
         // return the index of the most promising child segment
         virtual int selectNextBest(TrajectorySegment &traj_in);
 
+        // Whether and how to update existing segments when a new trajectory is executed
+        virtual bool updateSegments(TrajectorySegment &root);
+
     protected:
         // Voxblox map
         voxblox::EsdfServer *voxblox_ptr_;
@@ -62,6 +53,36 @@ namespace mav_active_3d_planning {
         CostComputer* cost_computer_;
         ValueComputer* value_computer_;
         NextSelector* next_selector_;
+        EvaluatorUpdater* evaluator_updater_;
+    };
+
+    // Abstract wrapper for default/modular implementations of the computeCost method
+    class CostComputer {
+    public:
+        virtual bool computeCost(TrajectorySegment &traj_in) = 0;
+    };
+
+    // Abstract wrapper for default/modular implementations of the computeValue method
+    class ValueComputer {
+    public:
+        virtual bool computeValue(TrajectorySegment &traj_in) = 0;
+    };
+
+    // Abstract wrapper for default/modular implementations of the selectNextBest method
+    class NextSelector {
+    public:
+        virtual int selectNextBest(TrajectorySegment &traj_in) = 0;
+    };
+
+    // Abstract wrapper for default/modular implementations of the updateSegments method
+    class EvaluatorUpdater {
+    public:
+        EvaluatorUpdater(TrajectoryEvaluator* parent = nullptr) : parent_(parent) {};
+
+        virtual bool updateSegments(TrajectorySegment &root) = 0;
+
+    protected:
+        TrajectoryEvaluator* parent_;
     };
 
     // Utility class that finds visible voxels. Available for all trajectory generators, improve performance here.

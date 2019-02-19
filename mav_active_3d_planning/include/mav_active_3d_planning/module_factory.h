@@ -20,17 +20,23 @@ namespace mav_active_3d_planning {
         // Trajectory Evaluators
         static TrajectoryEvaluator* createTrajectoryEvaluator(voxblox::EsdfServer *voxblox_ptr, std::string param_ns);
 
-        // TrajectoryGenerators -> selectSegment wrapper
+        // TrajectoryGenerator -> selectSegment wrappers
         static SegmentSelector *createSegmentSelector(std::string param_ns);
 
-        // TrajectoryEvaluators -> computeCost wrapper
+        // TrajectoryGenerator -> updateSegments wrappers
+        static GeneratorUpdater *createGeneratorUpdater(std::string param_ns, TrajectoryGenerator* parent);
+
+        // TrajectoryEvaluator -> computeCost wrappers
         static CostComputer *createCostComputer(std::string param_ns);
 
-        // TrajectoryEvaluators -> computeValue wrapper
+        // TrajectoryEvaluator -> computeValue wrappers
         static ValueComputer *createValueComputer(std::string param_ns);
 
-        // TrajectoryEvaluators -> selectNextBest wrapper
+        // TrajectoryEvaluator -> selectNextBest wrappers
         static NextSelector *createNextSelector(std::string param_ns);
+
+        // TrajectoryEvaluator -> updateSegments wrappers
+        static EvaluatorUpdater *createEvaluatorUpdater(std::string param_ns, TrajectoryEvaluator* parent);
 
         // BackTrackers
         static BackTracker *createBackTracker(std::string param_ns);

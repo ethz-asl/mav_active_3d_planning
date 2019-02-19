@@ -63,7 +63,6 @@ namespace mav_active_3d_planning {
         double p_replan_pos_threshold_;     // m
         double p_replan_yaw_threshold_;     // rad
         bool p_verbose_;
-        bool p_update_segments_;
         // ideas: use fixed sampling size, take images only on points,
 
         // methods
@@ -90,9 +89,6 @@ namespace mav_active_3d_planning {
         // When to start next trajectory, use 0 for not relevant
         nh_private_.param("replan_pos_threshold", p_replan_pos_threshold_, 0.1);
         nh_private_.param("replan_yaw_threshold", p_replan_yaw_threshold_, 0.2);
-
-        // Instead of restarting planning, keep existing subsegments and update them
-        nh_private_.param("update_segments", p_update_segments_, false);
 
         // Setup members
         std::string ns = ros::this_node::getName();
@@ -166,16 +162,9 @@ namespace mav_active_3d_planning {
             info_timing_ = ros::Time::now();
         }
 
-        // Reset/Update tree
+        // Move
         current_segment_ = current_segment_->children[next_segment];
         current_segment_->parent = nullptr;
-        if (p_update_segments_){
-//            trajectory_generator_->updateSegments(current_segment_);
-        } else {
-            current_segment_->children.clear();
-        }
-
-        // Move
         requestMovement(*current_segment_);
         back_tracker_->segmentIsExecuted(*current_segment_);
 
@@ -185,6 +174,10 @@ namespace mav_active_3d_planning {
         // Visualize new info
         voxblox_server_.publishTraversable();
         publishEvalVisualization(*current_segment_);
+
+        // Update tree
+        trajectory_generator_->updateSegments(*current_segment_);
+        trajectory_evaluator_->updateSegments(*current_segment_);
     }
 
     void PlannerNode::expandTrajectories() {

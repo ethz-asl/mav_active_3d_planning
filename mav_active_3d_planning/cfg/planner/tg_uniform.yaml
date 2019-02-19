@@ -13,3 +13,6 @@ trajectory_generator:
     revisit: false
     factor: 3.0
     uniform_weight: 0.1
+    
+  generator_updater:
+    type: "CheckCollision"

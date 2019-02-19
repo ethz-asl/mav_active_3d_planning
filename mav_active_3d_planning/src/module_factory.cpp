@@ -3,17 +3,21 @@
 #include <ros/param.h>
 #include <ros/console.h>
 
+// Default modules
+#include "modules/trajectory_generators/segment_selectors/default_segment_selectors.cpp"
+#include "modules/trajectory_generators/generator_updaters/default_generator_updaters.cpp"
+#include "modules/trajectory_evaluators/cost_computers/default_cost_computers.cpp"
+#include "modules/trajectory_evaluators/value_computers/default_value_computers.cpp"
+#include "modules/trajectory_evaluators/next_selectors/default_next_selectors.cpp"
+#include "modules/trajectory_evaluators/evaluator_updaters/default_evaluator_updaters.cpp"
+#include "modules/back_trackers/default_back_trackers.cpp"
+
 // Include available modules. Modules are to be included and created ONLY though the factory
 #include "modules/trajectory_generators/uniform.cpp"
 #include "modules/trajectory_generators/random_linear.cpp"
 #include "modules/trajectory_generators/mav_trajectory_generation.cpp"
 #include "modules/trajectory_evaluators/naive.cpp"
 #include "modules/trajectory_evaluators/frontier.cpp"
-#include "modules/segment_selectors/default_segment_selectors.cpp"
-#include "modules/cost_computers/default_cost_computers.cpp"
-#include "modules/value_computers/default_value_computers.cpp"
-#include "modules/next_selectors/default_next_selectors.cpp"
-#include "modules/back_trackers/default_back_trackers.cpp"
 
 
 namespace mav_active_3d_planning {
@@ -62,6 +66,21 @@ namespace mav_active_3d_planning {
         }
     }
 
+    GeneratorUpdater *ModuleFactory::createGeneratorUpdater(std::string param_ns, TrajectoryGenerator* parent){
+        std::string type;
+        ros::param::param<std::string>(param_ns + "/type", type, "Clear");
+        if (type == "Clear") {
+            return new generator_updaters::Clear();
+        } else if (type == "Void") {
+            return new generator_updaters::Void();
+        } else if (type == "CheckCollision") {
+            return new generator_updaters::CheckCollision(parent);
+        } else {
+            ROS_ERROR("Unknown GeneratorUpdater type '%s'.", type.c_str());
+            return nullptr;
+        }
+    }
+
     CostComputer *ModuleFactory::createCostComputer(std::string param_ns) {
         std::string type;
         ros::param::param<std::string>(param_ns + "/type", type, "Time");
@@ -97,6 +116,19 @@ namespace mav_active_3d_planning {
             return new next_selectors::SubsequentBest();
         } else {
             ROS_ERROR("Unknown NextSelector type '%s'.", type.c_str());
+            return nullptr;
+        }
+    }
+
+    EvaluatorUpdater *ModuleFactory::createEvaluatorUpdater(std::string param_ns, TrajectoryEvaluator* parent){
+        std::string type;
+        ros::param::param<std::string>(param_ns + "/type", type, "Void");
+        if (type == "Void") {
+            return new evaluator_updaters::Void();
+        } else if (type == "EvaluateFromScratch") {
+            return new evaluator_updaters::EvaluateFromScratch(parent);
+        } else {
+            ROS_ERROR("Unknown EvaluatorUpdater type '%s'.", type.c_str());
             return nullptr;
         }
     }

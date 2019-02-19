@@ -77,7 +77,7 @@ namespace mav_active_3d_planning {
                     || target.trajectory.back().getYaw() != last_yaw_ ) {
                     current_rotation_ = 0.0;
                 }
-                if (current_rotation_ > n_rotations_ * M_PI) {
+                if (current_rotation_ > n_rotations_ * 2 * M_PI) {
                     if (stack_.empty()){
                         ROS_INFO("Backtracker: No trajectories to reverse, rotating again.");
                         current_rotation_ = 0.0;
