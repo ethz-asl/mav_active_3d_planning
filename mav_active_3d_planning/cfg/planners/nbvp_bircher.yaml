@@ -1,0 +1,45 @@
+# Config that builds the mav_active_3d_planning implementation of the nbvp planner
+replan_pos_threshold: 0.2
+replan_yaw_threshold: 0.2
+    
+trajectory_generator:
+  collision_optimistic: false 
+  collision_radius: 0.7
+  
+  type: "RRT"
+  velocity: 0.25
+  extension_range: 1.0
+  use_spheric_sampling: true
+  sampling_rate: 20.0
+  
+  generator_updater:
+    type: "Void"
+  
+trajectory_evaluator:
+  type: "Frontier"
+  sampling_time: 0.0
+  clear_from_parents: false
+  camera_params_ns: "/unreal/unreal_ros_client/camera_params"
+  ray_length: 5.0
+  
+  cost_computer:
+    type: "Distance"
+    
+  value_computer:
+    type: "LinearAccumulated"
+    cost_weight: 1.0
+    gain_weight: 1.0
+    
+  next_selector:
+    type: "SubsequentBest"
+    
+  evaluator_updater:
+    type: "EvaluateFromScratch"
+    
+back_tracker:
+  type: "RotateReverse"
+  turn_rate: 0.31415
+  update_rate: 1.0
+  sampling_rate: 20.0
+  n_rotations: 1.0
+  stack_size: 10

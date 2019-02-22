@@ -1,0 +1,20 @@
+trajectory_generator:
+  type: "Uniform"
+  n_segments: 5
+  distance: 1.5  
+  velocity: 0.5  
+  yaw_angle: 1.2
+  ascent_angle: 0.523
+  sampling_rate: 20
+  
+  segment_selector:
+    type: "RandomWeighted"
+    revisit: false
+    factor: 2.0
+    leaf_probability: 1.0
+    uniform_probability: 0.1
+    
+  generator_updater:
+    type: "CheckCollision"
+    
+replan_yaw_threshold: 0.4

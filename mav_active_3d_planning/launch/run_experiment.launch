@@ -17,10 +17,11 @@
   <arg name="delay" default="3.0"/>  
   <arg name="remove_freespace_points" default="false"/>
   
-  <!--  Planner arguments (tg_uniform, tg_random_linear)-->
-  <arg name="planner_general_config" default="planner/general.yaml"/>
-  <arg name="planner_generator_config" default="planner/tg_uniform.yaml"/>
-  <arg name="planner_evaluator_config" default="planner/te_frontier.yaml"/>
+  <!--  Planner arguments (tg_uniform, tg_random_linear, general, nbvp_bircher)-->
+  <arg name="use_separate_configs" default="false"/>
+  <arg name="planner_general_config" default="planners/nbvp_bircher.yaml"/>
+  <arg name="planner_generator_config" default="planners/modules/tg_uniform.yaml"/>
+  <arg name="planner_evaluator_config" default="planners/modules/te_frontier.yaml"/>
   <arg name="verbose_planner" default="true"/>
   
   <!--  Experiment arguments -->  
@@ -94,8 +95,8 @@
       <remap from="ue_sensor_raw" to="unreal_ros_client/ue_sensor_raw" />
     </node>
     <group if="$(arg remove_freespace_points)">
-    	<param name="unreal_sensor_model/maximum_distance" value="$(arg ray_length)"/>
-		</group>
+      <param name="unreal_sensor_model/maximum_distance" value="$(arg ray_length)"/>
+    </group>
     
     <!-- Simulation manager for launching the MAV and monitoring -->
     <node name="simulation_manager" pkg="unreal_cv_ros" type="simulation_manager.py" output="screen">
@@ -143,7 +144,7 @@
     </node>
     
     <!-- Planner -->
-    <node name="planner_node" pkg="mav_active_3d_planning" type="planner_node" output="screen">
+    <node name="planner_node" pkg="mav_active_3d_planning" type="planner_node" output="screen" >
       <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
       <param name="use_tf_transforms" value="true" />
       <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
@@ -153,16 +154,20 @@
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
       <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
       <param name="verbose" value="$(arg verbose_planner)" />
+      <param name="log_performance" value="$(arg record_data)" />
     
         <!-- Experiment dependent -->
       <param name="trajectory_evaluator/camera_params_ns" value="/unreal/unreal_ros_client/camera_params" />    
       <param name="trajectory_evaluator/ray_length" value="/$(arg ray_length)" />
       
-      <!-- Modular config -->    
+      <!-- General Config -->    
       <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_general_config)"/>
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_generator_config)" />
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_evaluator_config)"/> 
-    </node>
+    </node>    
+    <group if="$(arg use_separate_configs)">
+      <!-- Modular config -->    
+      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_generator_config)" ns="planner_node"/>
+      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_evaluator_config)" ns="planner_node"/> 
+    </group>
  </group>
 
   <!-- RVIZ Visualization -->

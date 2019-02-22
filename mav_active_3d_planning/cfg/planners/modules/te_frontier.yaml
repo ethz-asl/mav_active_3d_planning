@@ -6,10 +6,15 @@ trajectory_evaluator:
   value_computer:
     type: "LinearAccumulated"
     cost_weight: 1.0
-    gain_weight: 0.1
+    gain_weight: 1.0
     
   next_selector:
     type: "SubsequentBest"
     
   evaluator_updater:
-    type: "EvaluateFromScratch"
+    type: "PruneByValue"
+    minimum_value: 0.0
+    use_relative_values: false
+    include_subsequent: true
+    following_updater:
+      type: "EvaluateFromScratch"
