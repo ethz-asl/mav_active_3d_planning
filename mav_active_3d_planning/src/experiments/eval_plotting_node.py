@@ -10,6 +10,7 @@ import numpy as np
 import datetime
 import os
 import csv
+import re
 
 # Plotting
 from matplotlib import pyplot as plt
@@ -27,7 +28,10 @@ class EvalPlotting:
         target_dir = rospy.get_param('~target_directory')
         self.method = rospy.get_param('~method', 'single')
         self.ns_voxblox = rospy.get_param('~ns_eval_voxblox_node', '/eval_voxblox_node')
-        self.show = rospy.get_param('~show', False)
+        self.evaluate = rospy.get_param('~evaluate', True)
+        self.create_plots = rospy.get_param('~create_plots', True)
+        self.show_plots = rospy.get_param('~show_plots', False)
+        self.create_meshes = rospy.get_param('~create_meshes', True)
 
         # Check for valid params
         methods = {'single': 'single', 'recent': 'recent', 'all': 'all'}  # Dictionary of implemented models
@@ -47,87 +51,123 @@ class EvalPlotting:
 
         # Evaluate
         if self.method == 'single':
-            self.evaluate(target_dir)
+            self.run_evaluation(target_dir)
         elif self.method == 'recent':
-            subdirs = [o for o in os.listdir(target_dir) if os.path.isdir(os.path.join(target_dir, o))]
+            dir_expression = re.compile('\d{8}_\d{6}') # Only check the default names
+            subdirs = [o for o in os.listdir(target_dir) if os.path.isdir(os.path.join(target_dir, o)) and
+                       dir_expression.match(o)]
             subdirs.sort(reverse=True)
-            self.evaluate(os.path.join(target_dir, subdirs[0]))
+            if len(subdirs) == 0:
+                rospy.loginfo("No recent directories in target dir '%s' to evaluate.", target_dir)
+                sys.exit(-1)
+
+            self.run_evaluation(os.path.join(target_dir, subdirs[0]))
         elif self.method == 'all':
             subdirs = [o for o in os.listdir(target_dir) if os.path.isdir(os.path.join(target_dir, o))]
             for subdir in subdirs:
-                self.evaluate(os.path.join(target_dir, subdir))
+                self.run_evaluation(os.path.join(target_dir, subdir))
 
-        rospy.loginfo("Evaluation completed, shutting down.")
+        rospy.loginfo("\n" + "*"*53 + "\n* Evaluation completed successfully, shutting down. *\n" + "*"*53)
 
-    def evaluate(self, target_dir):
+    def run_evaluation(self, target_dir):
+        rospy.loginfo("Starting evaluation on target '%s'.", target_dir)
         # Check target dir is valid (approximately)
         if not os.path.isfile(os.path.join(target_dir, "data_log.txt")):
-            rospy.logerr("Invalid target directory '%s'.", target_dir)
+            rospy.logerr("Invalid target directory.")
             return
 
-        # Set params and call the voxblox evaluator
-        rospy.set_param(self.ns_voxblox + "/target_directory", target_dir)
-        try:
-            self.eval_voxblox_srv()
-        except:
-            rospy.logerr("eval_voxblox service call for '%s' failed .", target_dir)
-            return
+        # Check for rosbag renaming
+        self.eval_log_file = open(os.path.join(target_dir, "data_log.txt"), 'a+')
+        lines = [line.rstrip('\n') for line in self.eval_log_file]
+        if not "[FLAG] Rosbag renamed" in lines:
+            for line in lines:
+                if line[:14] == "[FLAG] Rosbag:":
+                    os.rename(os.path.join(os.path.dirname(target_dir), "tmp_bags", line[15:] + ".bag"),
+                              os.path.join(target_dir, "visualization.bag"))
+                    self.writelog("Moved the tmp rosbag into 'visualization.bag'")
+                    self.eval_log_file.write("[FLAG] Rosbag renamed\n")
 
-        # Logfile should be available for voxblox node
+        self.eval_log_file.close()  # Make it available for voxblox node
+
+        if self.create_meshes:
+            # Configure directory
+            if not os.path.isdir(os.path.join(target_dir, "meshes")):
+                os.mkdir(os.path.join(target_dir, "meshes"))
+
+        if self.evaluate or self.create_meshes:
+            # Set params and call the voxblox evaluator
+            rospy.set_param(self.ns_voxblox + "/target_directory", target_dir)
+            try:
+                self.eval_voxblox_srv()
+            except:
+                rospy.logerr("eval_voxblox service call failed.")
+                sys.exit(-1)
+
+        # Reopen
         self.eval_log_file = open(os.path.join(target_dir, "data_log.txt"), 'a')
 
-        # Read voxblox data file
-        data = {}
-        headers = None
-        with open(os.path.join(target_dir, "voxblox_data.csv")) as infile:
-            reader = csv.reader(infile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            for row in reader:
-                if row[0] == 'MapName':
-                    headers = row
-                    for header in headers:
-                        data[header] = []
-                    continue
-                if row[0] != 'Unit':
-                    for i in range(len(row)):
-                        data[headers[i]].append(row[i])
+        if self.create_plots:
+            # Read voxblox data file
+            data = {}
+            headers = None
+            with open(os.path.join(target_dir, "voxblox_data.csv")) as infile:
+                reader = csv.reader(infile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                for row in reader:
+                    if row[0] == 'MapName':
+                        headers = row
+                        for header in headers:
+                            data[header] = []
+                        continue
+                    if row[0] != 'Unit':
+                        for i in range(len(row)):
+                            data[headers[i]].append(row[i])
 
-        # Create Graphs
-        rospy.loginfo("Creating Graphs ...")
-        if not os.path.isdir(os.path.join(target_dir, "graphs")):
-            os.mkdir(os.path.join(target_dir, "graphs"))
+            # Create Graphs
+            rospy.loginfo("Creating Graphs ...")
+            if not os.path.isdir(os.path.join(target_dir, "graphs")):
+                os.mkdir(os.path.join(target_dir, "graphs"))
 
-        figtype = "SimulationOverview"
-        x = np.array(data['RosTime'])
-        rmse = np.array(data['RMSE'])
-        unknown = np.array(data['UnknownVoxels'])
-        truncated = np.array(data['OutsideTruncation'])
-        pointclouds = np.cumsum(np.array(data['NPointclouds'], dtype=float))
+            figtype = "SimulationOverview"
+            x = np.array(data['RosTime'])
+            meanerr = np.array(data['MeanError'])
+            stddev = np.array(data['StdDevError'])
+            unknown = np.array(data['UnknownVoxels'])
+            truncated = np.array(data['OutsideTruncation'])
+            pointclouds = np.cumsum(np.array(data['NPointclouds'], dtype=float))
+            cpu_time = np.cumsum(np.array(data['CPUTime'], dtype=float))
 
-        _, axes = plt.subplots(4, 1)
-        axes[0].plot(x, rmse, 'b-')
-        axes[0].set_ylabel('RMSE [m]')
-        axes[0].set_ylim(bottom=0)
-        axes[1].plot(x, unknown, 'g-')
-        axes[1].set_ylabel('Unknown Voxels [%]')
-        axes[1].set_ylim(0, 1)
-        axes[2].plot(x, truncated, 'r-')
-        axes[2].set_ylabel('Truncated Voxels [%]')
-        axes[2].set_ylim(0, 1)
-        axes[3].plot(x, pointclouds, 'k-')
-        axes[3].set_ylabel('Processed Pointclouds [-]')
-        axes[3].set_xlabel('Simulated Time [s]')
-        plt.suptitle("Simulation Overview")
+            fig, axes = plt.subplots(3, 2)
+            axes[0, 0].plot(x, meanerr, 'b-')
+            axes[0, 0].set_ylabel('MeanError [m]')
+            axes[0, 0].set_ylim(bottom=0)
+            axes[1, 0].plot(x, stddev, 'b-')
+            axes[1, 0].set_ylabel('StdDevError [m]')
+            axes[2, 0].plot(x, truncated, 'r-')
+            axes[2, 0].set_ylabel('Truncated Voxels [%]')
+            axes[2, 0].set_ylim(0, 1)
+            axes[2, 0].set_xlabel('Simulated Time [s]')
 
-        save_name = os.path.join(target_dir, "graphs", figtype + ".png")
-        if os.path.isfile(save_name):
-            os.remove(save_name)
-        plt.savefig(save_name, dpi=300, format='png', bbox_inches='tight')
-        self.writelog("Created graphs '"+figtype+"'.")
-        self.eval_log_file.close()
+            axes[0, 1].plot(x, unknown, 'g-')
+            axes[0, 1].set_ylabel('Unknown Voxels [%]')
+            axes[0, 1].set_ylim(0, 1)
+            axes[1, 1].plot(x, pointclouds, 'k-')
+            axes[1, 1].set_ylabel('Processed Pointclouds [-]')
+            axes[2, 1].plot(x, cpu_time, 'k-')
+            axes[2, 1].set_ylabel('Planner CPU time [s]')
+            axes[2, 1].set_xlabel('Simulated Time [s]')
+            plt.suptitle("Simulation Overview")
+            fig.set_size_inches(15, 10, forward=True)
 
-        if self.show:
-            rospy.loginfo("Displaying created graph '%s'. Close to continue...", save_name)
-            plt.show()
+            save_name = os.path.join(target_dir, "graphs", figtype + ".png")
+            if os.path.isfile(save_name):
+                os.remove(save_name)
+            plt.savefig(save_name, dpi=300, format='png', bbox_inches='tight')
+            self.writelog("Created graphs '"+figtype+"'.")
+            self.eval_log_file.close()
+
+            if self.show_plots:
+                rospy.loginfo("Displaying created graph '%s'. Close to continue...", save_name)
+                plt.show()
 
     def writelog(self, text):
         if self.eval_log_file is not None:
