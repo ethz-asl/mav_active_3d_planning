@@ -132,7 +132,7 @@ namespace mav_active_3d_planning {
                 if (!std::ifstream((p_target_dir_ + "/voxblox_maps/" + map_name + ".vxblx").c_str())) {
                     ROS_INFO("Skipping map '%s' (non-existant)", map_name.c_str());
                     if (p_evaluate_) {
-                        fout << line + ",,,,\n";
+                        fout << line + ",0,0,0,0\n";
                     }
                     continue;
                 }

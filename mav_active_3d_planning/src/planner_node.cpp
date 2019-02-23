@@ -173,7 +173,7 @@ namespace mav_active_3d_planning {
             }
         }
         info_timing_ = ros::Time::now();
-        info_count_ = 1;
+        info_count_ = 0;
         cpu_srv_timer_ = std::clock();
     }
 
@@ -185,6 +185,7 @@ namespace mav_active_3d_planning {
         }
 
         // Performance tracking
+        double perf_rostime;
         double perf_vis = 0.0;
         double perf_next;
         double perf_uptg;
@@ -200,9 +201,10 @@ namespace mav_active_3d_planning {
         publishTrajectoryVisualization(trajectories_to_vis);
         int num_trajectories = trajectories_to_vis.size();
         if (p_verbose_ || p_log_performance_){
+            perf_rostime = (ros::Time::now() - info_timing_).toSec();
             if (p_verbose_) {
                 ROS_INFO("Replanning! Found %i new segments (%i total) in %.3f seconds.",
-                         num_trajectories - info_count_, num_trajectories, (ros::Time::now() - info_timing_).toSec());
+                         num_trajectories - info_count_, num_trajectories, perf_rostime);
             }
             info_timing_ = ros::Time::now();
         }
@@ -254,10 +256,10 @@ namespace mav_active_3d_planning {
             info_count_ = trajectory_count.size();
 
             if (p_log_performance_){
-                perf_log_file_ << (ros::Time::now() - info_timing_).toSec() << "," << num_trajectories << "," <<
-                        info_count_ << "," << perf_log_data_[0] << "," << perf_log_data_[1] << "," <<
-                        perf_log_data_[2] << "," << perf_log_data_[3] << "," << perf_log_data_[4] << "," << perf_next <<
-                        "," << perf_uptg << "," << perf_upte << "," << perf_vis << "," <<
+                perf_log_file_ << perf_rostime << "," << num_trajectories << "," << info_count_ << "," <<
+                        perf_log_data_[0] << "," << perf_log_data_[1] << "," << perf_log_data_[2] << "," <<
+                        perf_log_data_[3] << "," << perf_log_data_[4] << "," << perf_next << "," <<
+                        perf_uptg << "," << perf_upte << "," << perf_vis << "," <<
                         (double)(std::clock() - perf_log_timer_)/CLOCKS_PER_SEC << std::endl;
                 perf_log_data_ = std::vector<double>(5, 0.0);
                 perf_log_timer_ = std::clock();

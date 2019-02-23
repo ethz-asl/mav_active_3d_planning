@@ -142,7 +142,7 @@ class EvalPlotting:
                 os.mkdir(os.path.join(target_dir, "graphs"))
 
             # Create graphs
-            # self.plot_sim_overview(data_voxblox, target_dir)
+            self.plot_sim_overview(data_voxblox, target_dir)
             self.plot_perf_overview(data_perf, target_dir)
 
             # Finish
@@ -166,6 +166,7 @@ class EvalPlotting:
         axes[0, 0].set_ylim(bottom=0)
         axes[1, 0].plot(x, stddev, 'b-')
         axes[1, 0].set_ylabel('StdDevError [m]')
+        axes[1, 0].set_ylim(bottom=0)
         axes[2, 0].plot(x, truncated, 'r-')
         axes[2, 0].set_ylabel('Truncated Voxels [%]')
         axes[2, 0].set_ylim(0, 1)
@@ -264,6 +265,8 @@ class EvalPlotting:
 
         axes[1].plot(x, n_trajectories, 'b-')
         axes[1].plot(x, n_new, 'g-')
+        axes[1].fill_between(x, 0, n_new, facecolor="#009000", alpha=.3)
+        axes[1].fill_between(x, n_new, n_trajectories, facecolor="#0000ff", alpha=.3)
         axes[1].set_xlim(left=0, right=x[-1])
         axes[1].set_ylim(bottom=0)
         axes[1].set_title("Trajectory Tree Size")
@@ -274,9 +277,9 @@ class EvalPlotting:
 
         axes[2].plot(x, np.cumsum(cpu_time), 'k-')
         axes[2].set_xlim(left=0, right=x[-1])
-        axes[2].set_ylabel('time [s]')
+        axes[2].set_ylabel('Time [s]')
         axes[2].set_title("Absolute CPU usage")
-        axes[2].set_xlabel('simulated time [s]')
+        axes[2].set_xlabel('Simulated Time [s]')
 
         fig.set_size_inches(15, 15, forward=True)
         plt.tight_layout()
