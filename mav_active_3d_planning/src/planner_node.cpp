@@ -1,4 +1,5 @@
 #define _USE_MATH_DEFINES
+#define _POSIX_SOURCE
 
 #include "mav_active_3d_planning/trajectory_segment.h"
 #include "mav_active_3d_planning/trajectory_generator.h"
@@ -27,6 +28,10 @@
 #include <ctime>
 #include <iostream>
 #include <fstream>
+#include <cstdlib>
+#include <cstdio>
+#include "sys/times.h"
+#include "sys/vtimes.h"
 
 namespace mav_active_3d_planning {
 
@@ -68,10 +73,12 @@ namespace mav_active_3d_planning {
         // Info bookkeeping
         ros::Time info_timing_;
         int info_count_;
-        std::clock_t cpu_srv_timer_;
         std::ofstream perf_log_file_;
         std::vector<double> perf_log_data_; // select, expand, gain, cost, value [cpu seconds]
-        std::clock_t perf_log_timer_;
+        std::clock_t perf_log_timer_;       // total time counter
+        std::clock_t last_sys_cpu_, last_user_cpu_;   // To get CPU usage
+        double cpu_time_srv_;
+        double cpu_time_perf_;
 
         // params
         double p_replan_pos_threshold_;     // m
@@ -85,6 +92,7 @@ namespace mav_active_3d_planning {
         void requestNextTrajectory();
         void expandTrajectories();
         void requestMovement(const TrajectorySegment &req);
+        void updateCPUTimes(bool init=false);
 
         // visualization
         void publishTrajectoryVisualization(const std::vector<TrajectorySegment*> &trajectories);
@@ -169,12 +177,14 @@ namespace mav_active_3d_planning {
                 perf_log_data_ = std::vector<double>(5, 0.0); //select, expand, gain, cost, value
                 perf_log_timer_ = std::clock();
                 perf_log_file_ << "RosTime,NTrajectories,NTrajAfterUpdate,Select,Expand,Gain,Cost,Value,NextBest,"
-                                    "UpdateTG,UpdateTE,Visualization,Total" << std::endl;
+                                    "UpdateTG,UpdateTE,Visualization,Total,CPU" << std::endl;
             }
         }
+        updateCPUTimes(true);
+        cpu_time_perf_ = 0.0;
+        cpu_time_srv_ = 0.0;
         info_timing_ = ros::Time::now();
         info_count_ = 0;
-        cpu_srv_timer_ = std::clock();
     }
 
     void PlannerNode::requestNextTrajectory() {
@@ -256,11 +266,13 @@ namespace mav_active_3d_planning {
             info_count_ = trajectory_count.size();
 
             if (p_log_performance_){
+               updateCPUTimes();
                 perf_log_file_ << perf_rostime << "," << num_trajectories << "," << info_count_ << "," <<
                         perf_log_data_[0] << "," << perf_log_data_[1] << "," << perf_log_data_[2] << "," <<
                         perf_log_data_[3] << "," << perf_log_data_[4] << "," << perf_next << "," <<
                         perf_uptg << "," << perf_upte << "," << perf_vis << "," <<
-                        (double)(std::clock() - perf_log_timer_)/CLOCKS_PER_SEC << std::endl;
+                        (double)(std::clock() - perf_log_timer_)/CLOCKS_PER_SEC << "," << cpu_time_perf_ << std::endl;
+                cpu_time_perf_ = 0.0;
                 perf_log_data_ = std::vector<double>(5, 0.0);
                 perf_log_timer_ = std::clock();
             }
@@ -432,6 +444,26 @@ namespace mav_active_3d_planning {
         trajectory_vis_pub_.publish(msg);
     }
 
+    void PlannerNode::updateCPUTimes(bool init){
+        struct tms timeSample;
+        times(&timeSample);
+        if (!init) {
+            if (timeSample.tms_stime < last_sys_cpu_ || timeSample.tms_utime < last_user_cpu_) {
+                //Overflow
+            } else {
+                int ticks_per_sec = sysconf(_SC_CLK_TCK);
+                cpu_time_srv_ +=
+                        (double) (timeSample.tms_stime - last_sys_cpu_ + timeSample.tms_utime - last_user_cpu_) /
+                        ticks_per_sec;
+                cpu_time_perf_ +=
+                        (double) (timeSample.tms_stime - last_sys_cpu_ + timeSample.tms_utime - last_user_cpu_) /
+                        ticks_per_sec;
+            }
+        }
+        last_sys_cpu_ = timeSample.tms_stime;
+        last_user_cpu_ = timeSample.tms_utime;
+    }
+
     bool PlannerNode::runSrvCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) {
         res.success = true;
         if (req.data) {
@@ -447,10 +479,10 @@ namespace mav_active_3d_planning {
 
     bool PlannerNode::cpuSrvCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) {
         // Just return cpu time as the service message
-        std::clock_t time = std::clock();
-        res.message = std::to_string((double)(time - cpu_srv_timer_)/CLOCKS_PER_SEC).c_str();
-        cpu_srv_timer_ = time;
+        updateCPUTimes();
+        res.message = std::to_string(cpu_time_srv_).c_str();
         res.success = true;
+        cpu_time_srv_ = 0.0;
         return true;
     }
 

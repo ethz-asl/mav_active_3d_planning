@@ -158,7 +158,13 @@ class EvalPlotting:
         unknown = np.array(data['UnknownVoxels'])
         truncated = np.array(data['OutsideTruncation'])
         pointclouds = np.cumsum(np.array(data['NPointclouds'], dtype=float))
-        cpu_time = np.cumsum(np.array(data['CPUTime'], dtype=float))
+        wall_time = np.array(data['WallTime'], dtype=float)
+        cpu_time = np.array(data['CPUTime'], dtype=float)
+        cpu_use =np.zeros(np.shape(cpu_time))
+        for i in range(len(cpu_time)-1):
+            cpu_use[i] = (cpu_time[i+1])/(wall_time[i+1]-wall_time[i])
+        cpu_use[-1] = cpu_use[-2]
+        cpu_use = np.repeat(cpu_use, 2)
 
         fig, axes = plt.subplots(3, 2)
         axes[0, 0].plot(x, meanerr, 'b-')
@@ -177,9 +183,13 @@ class EvalPlotting:
         axes[0, 1].set_ylim(0, 1)
         axes[1, 1].plot(x, pointclouds, 'k-')
         axes[1, 1].set_ylabel('Processed Pointclouds [-]')
-        axes[2, 1].plot(x, cpu_time, 'k-')
-        axes[2, 1].set_ylabel('Planner CPU time [s]')
+
+        x = np.repeat(x, 2)
+        x = np.concatenate((np.array([0]), x[:-1]))
+        axes[2, 1].plot(x, cpu_use, 'k-')
+        axes[2, 1].set_ylabel('Average CPU usage [cores]')
         axes[2, 1].set_xlabel('Simulated Time [s]')
+        axes[2, 1].set_ylim(bottom=0)
         plt.suptitle("Simulation Overview")
         fig.set_size_inches(15, 10, forward=True)
 
@@ -254,7 +264,7 @@ class EvalPlotting:
         axes[0].fill_between(x, y8, 1, facecolor="#cccccc", alpha=.5)
         axes[0].set_xlim(left=0, right=x[-1])
         axes[0].set_ylim(bottom=0, top=1)
-        axes[0].set_title("Percentage of Computation Time Spent per Function")
+        axes[0].set_title("Percentage of Time Spent per Function")
         axes[0].set_ylabel('Percent [%]')
 
         x = np.cumsum(np.array(data['RosTime'], dtype=float))
@@ -273,12 +283,14 @@ class EvalPlotting:
         axes[1].set_ylabel('TrajectorySegments [-]')
         axes[1].legend(["Total", "New"], loc='upper left', fancybox=True)
 
-        cpu_time = np.array(data['Total'], dtype=float)
+        cpu_time = np.array(data['CPU'], dtype=float)
+        wall_time = np.array(data['Total'], dtype=float)
 
-        axes[2].plot(x, np.cumsum(cpu_time), 'k-')
+        axes[2].plot(x, cpu_time/wall_time, 'k-')
         axes[2].set_xlim(left=0, right=x[-1])
-        axes[2].set_ylabel('Time [s]')
-        axes[2].set_title("Absolute CPU usage")
+        axes[2].set_ylim(bottom=0)
+        axes[2].set_ylabel('CPU Usage [cores]')
+        axes[2].set_title("Average CPU Usage")
         axes[2].set_xlabel('Simulated Time [s]')
 
         fig.set_size_inches(15, 15, forward=True)
