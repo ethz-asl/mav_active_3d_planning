@@ -95,16 +95,20 @@ namespace mav_active_3d_planning {
         // Return the voxel centers of all visible voxels for a simple camera model pointing in x-direction
         std::vector <Eigen::Vector3d> getVisibleVoxels(Eigen::Vector3d position, Eigen::Quaterniond orientation);
 
+        // Return the voxel centers of all visible voxels, sampling camera poses from a trajectory segment
+        std::vector <Eigen::Vector3d> getVisibleVoxelsFromTrajectory(TrajectorySegment* traj_in);
+
     protected:
         // voxblox map
         voxblox::EsdfServer *voxblox_ptr_;
 
         // parameters
-        double p_ray_length_;
+        double p_ray_length_;       // params for simple camera model
         double p_focal_length_;
         double p_ray_step_;
         int p_resolution_x_;
         int p_resolution_y_;
+        double p_sampling_time_;    // sample camera poses from segment, use 0 for alst only
 
         // constants
         voxblox::FloatingPoint c_voxel_size_;

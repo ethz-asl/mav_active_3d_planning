@@ -15,9 +15,11 @@
 // Include available modules. Modules are to be included and created ONLY though the factory
 #include "modules/trajectory_generators/uniform.cpp"
 #include "modules/trajectory_generators/random_linear.cpp"
+#include "modules/trajectory_generators/rrt.cpp"
 #include "modules/trajectory_generators/mav_trajectory_generation.cpp"
 #include "modules/trajectory_evaluators/naive.cpp"
 #include "modules/trajectory_evaluators/frontier.cpp"
+#include "modules/trajectory_evaluators/voxel_type.cpp"
 
 
 namespace mav_active_3d_planning {
@@ -33,7 +35,9 @@ namespace mav_active_3d_planning {
             return new trajectory_generators::RandomLinear(voxblox_ptr, param_ns);
         } else if (type == "MavTrajectoryGeneration") {
             return new trajectory_generators::MavTrajectoryGeneration(voxblox_ptr, param_ns);
-        } else {
+        } else if (type == "RRT") {
+            return new trajectory_generators::RRT(voxblox_ptr, param_ns);
+        }else {
             ROS_ERROR("Unknown TrajectoryGenerator type '%s'.", type.c_str());
             return nullptr;
         }
@@ -47,6 +51,8 @@ namespace mav_active_3d_planning {
             return new trajectory_evaluators::Naive(voxblox_ptr, param_ns);
         } else if (type == "Frontier") {
             return new trajectory_evaluators::Frontier(voxblox_ptr, param_ns);
+        } else if (type == "VoxelType") {
+            return new trajectory_evaluators::VoxelType(voxblox_ptr, param_ns);
         } else {
             ROS_ERROR("Unknown TrajectoryEvaluator type '%s'.", type.c_str());
             return nullptr;
@@ -98,10 +104,12 @@ namespace mav_active_3d_planning {
         std::string type;
         ros::param::param<std::string>(param_ns + "/type", type, "Linear");
         if (type == "Linear") {
-            return new value_computers::Linear(param_ns); }
-        else if (type == "LinearAccumulated") {
-            return new value_computers::LinearAccumulated(param_ns); }
-        else {
+            return new value_computers::Linear(param_ns);
+        } else if (type == "ExponentialDiscount") {
+            return new value_computers::ExponentialDiscount(param_ns);
+        }  else if (type == "Accumulate") {
+            return new value_computers::Accumulate(param_ns);
+        }else {
             ROS_ERROR("Unknown ValueComputer type '%s'.", type.c_str());
             return nullptr;
         }
@@ -127,6 +135,8 @@ namespace mav_active_3d_planning {
             return new evaluator_updaters::Void();
         } else if (type == "EvaluateFromScratch") {
             return new evaluator_updaters::EvaluateFromScratch(parent);
+        } else if (type == "PruneByValue") {
+            return new evaluator_updaters::PruneByValue(param_ns, parent);
         } else {
             ROS_ERROR("Unknown EvaluatorUpdater type '%s'.", type.c_str());
             return nullptr;

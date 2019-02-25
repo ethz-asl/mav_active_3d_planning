@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+
 #include "mav_active_3d_planning/defaults.h"
 
 #include <ros/param.h>
@@ -32,30 +34,37 @@ namespace mav_active_3d_planning {
             return true;
         }
 
-        std::vector<int> samplePointsFromSegment(const TrajectorySegment &segment, double sampling_rate, bool include_first) {
-            std::vector<int> result;
-            if (sampling_rate <= 0.0) {
-                // Rate of 0 means only last point
-                result.push_back(segment.trajectory.size()-1);
-                return result;
+        double angleScaled(double angle){
+            angle = std::fmod(angle, 2.0 * M_PI);
+            return angle + 2.0 * M_PI * (angle < 0);
+        }
+
+        double angleDifference(double angle1, double angle2){
+            double angle = std::abs(std::fmod(angle1 - angle2, 2.0 * M_PI));
+            if (angle > M_PI){
+                angle = 2.0 * M_PI - angle;
             }
-            int64_t sampling_time_ns = static_cast<int64_t>(sampling_rate * 1.0e9);
-            if (include_first && segment.trajectory.front().time_from_start_ns < sampling_time_ns) {
-                result.push_back(0);
-            }
-            if (sampling_time_ns >= segment.trajectory.back().time_from_start_ns) {
-                // no points within one sampling interval: add last point
-                result.push_back(segment.trajectory.size()-1);
-                return result;
-            }
-            int64_t current_time = sampling_time_ns;
-            for (int i = 0; i < segment.trajectory.size(); ++i) {
-                if (segment.trajectory[i].time_from_start_ns >= current_time) {
-                    current_time += sampling_time_ns;
-                    result.push_back(i);
+            return angle;
+        }
+
+        double angleDirection(double input, double target){
+            input = angleScaled(input);
+            target = angleScaled(target);
+            if (target == input) { return 0.0; }
+            if (target > input){
+                if (target - input < M_PI){
+                    return 1.0;
+                } else {
+                    return -1.0;
+                }
+            } else {
+                if (input - target < M_PI){
+                    return -1.0;
+                } else {
+                    return 1.0;
                 }
             }
-            return result;
         }
+
     } // namespace defaults
 } // namepsace mav_active_3d_planning

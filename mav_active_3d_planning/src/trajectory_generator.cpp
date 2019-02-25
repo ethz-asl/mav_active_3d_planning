@@ -23,12 +23,11 @@ namespace mav_active_3d_planning {
         if (!bounding_volume_.contains(position)) {
             return false;
         }
-        if (!voxblox_ptr_->getEsdfMapPtr()->isObserved(position)) {
-            return p_collision_optimistic_;
-        }
         double distance = 0.0;
-        voxblox_ptr_->getEsdfMapPtr()->getDistanceAtPosition(position, &distance);
-        return (distance > p_collision_radius_);
+        if (voxblox_ptr_->getEsdfMapPtr()->getDistanceAtPosition(position, &distance)) {
+            return (distance > p_collision_radius_);
+        }
+        return p_collision_optimistic_;
     }
 
     TrajectorySegment* TrajectoryGenerator::selectSegment(TrajectorySegment &root){

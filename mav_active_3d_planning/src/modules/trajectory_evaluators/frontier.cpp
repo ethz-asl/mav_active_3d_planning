@@ -31,59 +31,56 @@ namespace mav_active_3d_planning {
             : TrajectoryEvaluator(voxblox_ptr, param_ns),
               ray_caster_(voxblox_ptr, param_ns) {
             // params
-            ros::param::param<double>(param_ns + "/sampling_time", p_sampling_time_, 0.0);
             ros::param::param<bool>(param_ns + "/clear_from_parents", p_clear_from_parents_, false);
         }
 
         bool Frontier::computeGain(TrajectorySegment &traj_in) {
-            traj_in.info.clear();
-            std::vector<int> indices = defaults::samplePointsFromSegment(traj_in, p_sampling_time_);
-            for (int i=0; i < indices.size(); ++i ){
-                std::vector <Eigen::Vector3d> new_voxels = ray_caster_.getVisibleVoxels(
-                        traj_in.trajectory[indices[i]].position_W, traj_in.trajectory[indices[i]].orientation_W_B);
+            std::vector <Eigen::Vector3d> new_voxels = ray_caster_.getVisibleVoxelsFromTrajectory(&traj_in);
 
-                // Check for interesting bounding box and already known voxels
-                if (bounding_volume_.is_setup){
-                    new_voxels.erase(std::remove_if(new_voxels.begin(), new_voxels.end(),
-                            [this](const Eigen::Vector3d& voxel)
-                            { return !bounding_volume_.contains(voxel); }),
-                                    new_voxels.end());
-                }
-                voxblox::EsdfMap* esdf_map = voxblox_ptr_->getEsdfMapPtr().get();
+            // Check for interesting bounding box
+            if (bounding_volume_.is_setup){
                 new_voxels.erase(std::remove_if(new_voxels.begin(), new_voxels.end(),
-                        [esdf_map](const Eigen::Vector3d& voxel) { return esdf_map->isObserved(voxel); } ),
+                        [this](const Eigen::Vector3d& voxel)
+                        { return !bounding_volume_.contains(voxel); }),
                                 new_voxels.end());
-
-                // Remove non-frontier voxels
-                double voxel_size = static_cast<double>(voxblox_ptr_->getEsdfMapPtr()->voxel_size());
-                new_voxels.erase(std::remove_if(new_voxels.begin(), new_voxels.end(),
-                        [esdf_map, voxel_size](const Eigen::Vector3d& voxel) {
-                            // Check all neighboring voxels
-                            double distance;
-                            if (esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(voxel_size, 0, 0), &distance)){
-                                if (distance < voxel_size){ return false;}
-                            }
-                            if (esdf_map->getDistanceAtPosition(voxel - Eigen::Vector3d(voxel_size, 0, 0), &distance)){
-                                if (distance < voxel_size){ return false;}
-                            }
-                            if (esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(0, voxel_size, 0), &distance)){
-                                if (distance < voxel_size){ return false;}
-                            }
-                            if (esdf_map->getDistanceAtPosition(voxel - Eigen::Vector3d(0, voxel_size, 0), &distance)){
-                                if (distance < voxel_size){ return false;}
-                            }
-                            if (esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(0, 0, voxel_size), &distance)){
-                                if (distance < voxel_size){ return false;}
-                            }
-                            if (esdf_map->getDistanceAtPosition(voxel - Eigen::Vector3d(0, 0, voxel_size), &distance)){
-                                if (distance < voxel_size){ return false;}
-                            }
-                            return true; } ), new_voxels.end());
-                traj_in.info.insert(traj_in.info.begin(), new_voxels.begin(), new_voxels.end());
             }
 
+            // Remove already observed voxels
+            voxblox::EsdfMap* esdf_map = voxblox_ptr_->getEsdfMapPtr().get();
+            new_voxels.erase(std::remove_if(new_voxels.begin(), new_voxels.end(),
+                    [esdf_map](const Eigen::Vector3d& voxel) { return esdf_map->isObserved(voxel); } ),
+                            new_voxels.end());
+
             // Remove non-unique voxels
-            traj_in.info.erase( std::unique( traj_in.info.begin(), traj_in.info.end()), traj_in.info.end() );
+            new_voxels.erase( std::unique( new_voxels.begin(), new_voxels.end()), new_voxels.end() );
+
+            // Remove non-frontier voxels
+            double voxel_size = static_cast<double>(voxblox_ptr_->getEsdfMapPtr()->voxel_size());
+            new_voxels.erase(std::remove_if(new_voxels.begin(), new_voxels.end(),
+                    [esdf_map, voxel_size](const Eigen::Vector3d& voxel) {
+                        // Check all neighboring voxels
+                        double distance;
+                        if (esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(voxel_size, 0, 0), &distance)){
+                            if (distance < voxel_size){ return false;}
+                        }
+                        if (esdf_map->getDistanceAtPosition(voxel - Eigen::Vector3d(voxel_size, 0, 0), &distance)){
+                            if (distance < voxel_size){ return false;}
+                        }
+                        if (esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(0, voxel_size, 0), &distance)){
+                            if (distance < voxel_size){ return false;}
+                        }
+                        if (esdf_map->getDistanceAtPosition(voxel - Eigen::Vector3d(0, voxel_size, 0), &distance)){
+                            if (distance < voxel_size){ return false;}
+                        }
+                        if (esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(0, 0, voxel_size), &distance)){
+                            if (distance < voxel_size){ return false;}
+                        }
+                        if (esdf_map->getDistanceAtPosition(voxel - Eigen::Vector3d(0, 0, voxel_size), &distance)){
+                            if (distance < voxel_size){ return false;}
+                        }
+                        return true; } ), new_voxels.end());
+
+            traj_in.info = new_voxels;
 
             // Remove voxels previously seen by parent (this is quite expensive)
             if(p_clear_from_parents_){
@@ -104,9 +101,10 @@ namespace mav_active_3d_planning {
                 }
             }
 
-            // Set gain (#new voxels)
+            // Set gain (#new frontier voxels)
             traj_in.gain = (double)traj_in.info.size();
             return true;
         }
+
     } // namespace trajectory_evaluators
 }  // namespace mav_active_3d_planning

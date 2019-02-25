@@ -50,6 +50,11 @@ namespace mav_active_3d_planning {
         }
 
         // The following utility functions assume a tree structure (no loops)
+        // Add pointers to all immediate children to the result vector
+        inline void getChildren(std::vector<TrajectorySegment*> &result) {
+            for (int i = 0; i < children.size(); ++i) { result.push_back(children[i].get()); }
+        }
+
         // Recursively add pointers to all leaf nodes (have no children) to the result vector
         inline void getLeaves(std::vector<TrajectorySegment*> &result) {
             if (children.empty()) { result.push_back(this); return;}

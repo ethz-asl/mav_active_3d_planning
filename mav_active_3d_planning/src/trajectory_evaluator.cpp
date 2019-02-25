@@ -59,6 +59,7 @@ namespace mav_active_3d_planning {
         ros::param::param<std::string>(param_ns+"/camera_params_ns", camera_params_ns, param_ns);
         ros::param::param<double>(param_ns+"/ray_length", p_ray_length_, 5.0);
         ros::param::param<double>(param_ns+"/ray_step", p_ray_step_, static_cast<double>(c_voxel_size_));
+        ros::param::param<double>(param_ns+"/sampling_time", p_sampling_time_, 0.0);
 
         // Wait until the camera params are on parameter server
         while (!ros::param::has(camera_params_ns+"/width")) { ros::Duration(0.1).sleep(); }
@@ -115,4 +116,40 @@ namespace mav_active_3d_planning {
 //        ROS_DEBUG("Raycasting: found %i voxels in %.3f miliseconds", (int)result.size(), (double)((end_time - start_time)/std::chrono::milliseconds(1)));
         return result;
     }
+
+    std::vector <Eigen::Vector3d> RayCaster::getVisibleVoxelsFromTrajectory(TrajectorySegment* traj_in) {
+        // Sample camera poses
+        std::vector<int> indices;
+        if (p_sampling_time_ <= 0.0) {
+            // Rate of 0 means only last point
+            indices.push_back(traj_in->trajectory.size() - 1);
+        } else {
+            int64_t sampling_time_ns = static_cast<int64_t>(p_sampling_time_ * 1.0e9);
+            if (sampling_time_ns >= traj_in->trajectory.back().time_from_start_ns) {
+                // no points within one sampling interval: add last point
+                indices.push_back(traj_in->trajectory.size() - 1);
+            } else {
+                int64_t current_time = sampling_time_ns;
+                for (int i = 0; i < traj_in->trajectory.size(); ++i) {
+                    if (traj_in->trajectory[i].time_from_start_ns >= current_time) {
+                        current_time += sampling_time_ns;
+                        indices.push_back(i);
+                    }
+                }
+            }
+        }
+
+        // Get all visible voxels
+        std::vector <Eigen::Vector3d> new_voxels;
+        for (int i=0; i < indices.size(); ++i ){
+            std::vector <Eigen::Vector3d> this_view = getVisibleVoxels(
+                    traj_in->trajectory[indices[i]].position_W, traj_in->trajectory[indices[i]].orientation_W_B);
+            new_voxels.insert(new_voxels.begin(), this_view.begin(), this_view.end());
+        }
+
+        // Remove non-unique voxels
+        new_voxels.erase( std::unique(new_voxels.begin(), new_voxels.end()), new_voxels.end() );
+        return new_voxels;
+    }
+
 } // namepsace mav_active_3d_planning

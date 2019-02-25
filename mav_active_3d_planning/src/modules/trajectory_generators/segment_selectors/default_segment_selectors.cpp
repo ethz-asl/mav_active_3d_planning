@@ -24,6 +24,10 @@ namespace mav_active_3d_planning {
                 } else {
                     root.getTree(candidates);
                 }
+                if (candidates.empty()){
+                    // exception catching
+                    return &root;
+                }
                 return *std::max_element(candidates.begin(), candidates.end(), TrajectorySegment::comparePtr);
             }
 
@@ -36,15 +40,15 @@ namespace mav_active_3d_planning {
         public:
             RandomWeighted(std::string param_ns) {
                 ros::param::param<double>(param_ns + "/factor", factor_, 0.0);  // weighting, 0 for uniform
-                ros::param::param<bool>(param_ns + "/leaves_only", leaves_only_, false);    // Leaves or tree
+                ros::param::param<double>(param_ns + "/leaf_probability", leaf_probability_, 1.0);    // P(Only Leaves)
                 ros::param::param<bool>(param_ns + "/revisit", revisit_, false);    // only unchecked segments
-                ros::param::param<double>(param_ns + "/uniform_weight", uniform_weight_, 0.0);    // part of probability
-                // mass that is distributed uniformly (to guarantee non-zero probability for all candidates)
+                ros::param::param<double>(param_ns + "/uniform_probability", uniform_probability_, 0.0);    // part of
+                // probability mass that is distributed uniformly (to guarantee non-zero probability for all candidates)
             }
 
             TrajectorySegment* selectSegment(TrajectorySegment &root){
                 std::vector<TrajectorySegment*> candidates;
-                if (leaves_only_) {
+                if ((double)rand() / RAND_MAX <= leaf_probability_) {
                     root.getLeaves(candidates);
                 } else {
                     root.getTree(candidates);
@@ -53,7 +57,11 @@ namespace mav_active_3d_planning {
                     candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
                             [](const TrajectorySegment* segment) {return segment->tg_visited;}), candidates.end());
                 }
-                if (factor_ > 0.0 && (double)rand()/RAND_MAX >= uniform_weight_){
+                if (candidates.empty()){
+                    // exception catching
+                    return &root;
+                }
+                if (factor_ > 0.0 && (double)rand() / RAND_MAX > uniform_probability_){
                     std::vector<double> values(candidates.size());
                     double value_sum = 0.0;
                     // shift to 0 to compensate for negative values
@@ -76,10 +84,10 @@ namespace mav_active_3d_planning {
             }
 
         protected:
-            bool leaves_only_;
+            double leaf_probability_;
             bool revisit_;
             double factor_;
-            double uniform_weight_;
+            double uniform_probability_;
         };
 
     } // namespace segment_selectors

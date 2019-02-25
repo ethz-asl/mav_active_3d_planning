@@ -52,15 +52,20 @@ namespace mav_active_3d_planning {
 
             void checkSingle(TrajectorySegment &segment){
                 // Recursive removal
-                segment.children.erase(std::remove_if(segment.children.begin(), segment.children.end(),
-                        [this](std::shared_ptr<TrajectorySegment> x){return isCollided(x->trajectory); }),
-                                segment.children.end());
+                int j = 0;
+                for (int i = 0; i < segment.children.size(); ++i) {
+                    if (isCollided(segment.children[j]->trajectory)){
+                        segment.children.erase(segment.children.begin() + j);
+                    } else {
+                        j++;
+                    }
+                }
+                // remaining children
                 for (int i = 0; i < segment.children.size(); ++i) {
                     checkSingle(*(segment.children[i]));
                 }
             }
         };
-
 
     } // namespace generator_updaters
 } // namepsace mav_active_3d_planning

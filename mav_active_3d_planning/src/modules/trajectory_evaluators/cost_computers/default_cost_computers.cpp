@@ -37,7 +37,7 @@ namespace mav_active_3d_planning {
                 double distance = 0.0;
                 Eigen::Vector3d last_point = traj_in.trajectory[0].position_W;
                 for (int i = 1; i < traj_in.trajectory.size(); ++i) {
-                    distance += (traj_in.trajectory[i].position_W - last_point).squaredNorm();
+                    distance += (traj_in.trajectory[i].position_W - last_point).norm();
                     last_point = traj_in.trajectory[i].position_W;
                 }
                 traj_in.cost = distance;

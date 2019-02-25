@@ -1,5 +1,6 @@
 #define _USE_MATH_DEFINES
 #include "mav_active_3d_planning/back_tracker.h"
+#include "mav_active_3d_planning/defaults.h"
 
 #include <ros/param.h>
 #include <ros/console.h>
@@ -16,7 +17,7 @@ namespace mav_active_3d_planning {
         public:
             Rotate(std::string param_ns) {
                 ros::param::param<double>(param_ns + "/turn_rate", turn_rate_, 0.79);
-                ros::param::param<double>(param_ns + "/sampling_rate", sampling_rate_, 2.0);
+                ros::param::param<double>(param_ns + "/update_rate", update_rate_, 2.0);
                 ros::param::param<double>(param_ns + "/sampling_rate", sampling_rate_, 20.0);
             }
 
@@ -28,7 +29,7 @@ namespace mav_active_3d_planning {
                     mav_msgs::EigenTrajectoryPoint trajectory_point;
                     trajectory_point.position_W = target.trajectory.back().position_W;
                     yaw += turn_rate_ / sampling_rate_;
-                    trajectory_point.setFromYaw(yaw);
+                    trajectory_point.setFromYaw(defaults::angleScaled(yaw));
                     trajectory_point.time_from_start_ns = static_cast<int64_t>((double)i / sampling_rate_ * 1.0e9);
                     new_segment->trajectory.push_back(trajectory_point);
                 }
@@ -36,7 +37,7 @@ namespace mav_active_3d_planning {
 
         protected:
             double turn_rate_;  // rad
-            double update_rate_;   // Hz
+            double update_rate_;   // Hz (how often the turn movement is checked for new trajectories)
             double sampling_rate_;  // Hz
         };
 
@@ -77,7 +78,7 @@ namespace mav_active_3d_planning {
                     || target.trajectory.back().getYaw() != last_yaw_ ) {
                     current_rotation_ = 0.0;
                 }
-                if (current_rotation_ > n_rotations_ * 2 * M_PI) {
+                if (current_rotation_ > n_rotations_ * 2.0 * M_PI) {
                     if (stack_.empty()){
                         ROS_INFO("Backtracker: No trajectories to reverse, rotating again.");
                         current_rotation_ = 0.0;
@@ -90,7 +91,7 @@ namespace mav_active_3d_planning {
                         for (int i = 0; i <= size; ++i) {
                             mav_msgs::EigenTrajectoryPoint trajectory_point;
                             trajectory_point.position_W = to_reverse[size - i].position_W;
-                            trajectory_point.setFromYaw(to_reverse[size - i].getYaw() + M_PI);
+                            trajectory_point.setFromYaw(defaults::angleScaled(to_reverse[size - i].getYaw() + M_PI));
                             trajectory_point.time_from_start_ns = current_time;
                             current_time += to_reverse[size - i].time_from_start_ns -
                                             to_reverse[size - i - 1].time_from_start_ns;
@@ -109,7 +110,7 @@ namespace mav_active_3d_planning {
                     mav_msgs::EigenTrajectoryPoint trajectory_point;
                     trajectory_point.position_W = target.trajectory.back().position_W;
                     yaw += turn_rate_ / sampling_rate_;
-                    trajectory_point.setFromYaw(yaw);
+                    trajectory_point.setFromYaw(defaults::angleScaled(yaw));
                     trajectory_point.time_from_start_ns = static_cast<int64_t>((double)i / sampling_rate_ * 1.0e9);
                     new_segment->trajectory.push_back(trajectory_point);
                 }
@@ -122,7 +123,7 @@ namespace mav_active_3d_planning {
         protected:
             // params
             double turn_rate_;  // rad
-            double update_rate_;   // Hz
+            double update_rate_;   // Hz (how often the turn movement is checked for new trajectories)
             double sampling_rate_;  // Hz
             double n_rotations_;
             int stack_size_;

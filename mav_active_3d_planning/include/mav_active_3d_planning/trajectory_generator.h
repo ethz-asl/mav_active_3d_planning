@@ -25,7 +25,7 @@ namespace mav_active_3d_planning {
         // Expansion policy where to expand (from full tree)
         virtual TrajectorySegment* selectSegment(TrajectorySegment &root);
 
-        // Expand a selected trajectory segment
+        // Expand a selected trajectory segment. Return true for successful expansion.
         virtual bool expandSegment(TrajectorySegment &target) = 0;
 
         // Whether and how to update existing segments when a new trajectory is executed

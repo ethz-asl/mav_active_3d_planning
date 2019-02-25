@@ -120,7 +120,7 @@ namespace mav_active_3d_planning {
         nh_private_.param("max_new_segments", p_max_new_segments_, 0);  // set 0 for infinite
         nh_private_.param("min_new_segments", p_min_new_segments_, 0);
         nh_private_.param("max_new_tries", p_max_new_tries_, 0);  // set 0 for infinite
-        nh_private_.param("min_new_tries", p_max_new_segments_, 0);
+        nh_private_.param("min_new_tries", p_min_new_tries_, 0);
 
         // Setup members
         std::string ns = ros::this_node::getName();
@@ -148,7 +148,6 @@ namespace mav_active_3d_planning {
     void PlannerNode::odomCallback(const nav_msgs::Odometry &msg) {
         // This is the main loop, high odom message frequency is expected to continuously run
         if (!running_) { return; }
-        ROS_DEBUG("Odom");
         Eigen::Vector3d position(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
         double yaw = tf::getYaw(msg.pose.pose.orientation);
 
@@ -324,12 +323,12 @@ namespace mav_active_3d_planning {
         // Expand the target
         int previous_children = expansion_target->children.size();
         bool success = trajectory_generator_->expandSegment(*expansion_target);
-        new_segment_tries_++;
-        if (success) { new_segments_++; }
         if (p_log_performance_) {
             perf_log_data_[1] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
+        new_segment_tries_++;
+        if (success) { new_segments_++; }
 
         // Evaluate newly added segments: Gain
         for (int i = previous_children; i < expansion_target->children.size(); ++i) {

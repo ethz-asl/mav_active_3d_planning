@@ -1,5 +1,6 @@
 # General parameters for planner node
-update_segments: false
+replan_pos_threshold: 0.2
+replan_yaw_threshold: 0.2
 
 # Specifying a trajectory generator
 trajectory_generator:
@@ -37,9 +38,11 @@ trajectory_evaluator:
     
   # How to compute the values
   value_computer:
-    type: "LinearAccumulated"
-    cost_weight: 1.0
-    gain_weight: 0.1
+    type: "Accumulate"
+    following_value_computer:
+      type: "Linear"
+      cost_weight: 1.0
+      gain_weight: 0.1
     
   # Execution policy for available segments
   next_selector:

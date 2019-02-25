@@ -26,9 +26,14 @@ namespace mav_active_3d_planning {
             double x_min, x_max, y_min, y_max, z_min, z_max;
         };
 
-        // Return the indices of the EigenTrajectoryPoints in the segment to be evaluated
-        std::vector<int> samplePointsFromSegment(const TrajectorySegment &segment, double sampling_rate,
-                                                    bool include_first = false);
+        // Scale an angle to [0, 2pi]
+        double angleScaled(double angle);
+
+        // Compute the difference between two angles in rad
+        double angleDifference(double angle1, double angle2);
+
+        // Returns the rotation direction (+1 / -1) that is closer for two angles
+        double angleDirection(double angle1, double angle2);
 
     } // namespace defaults
 } // namepsace mav_active_3d_planning
