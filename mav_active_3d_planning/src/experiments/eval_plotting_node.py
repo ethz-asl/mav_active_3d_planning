@@ -158,11 +158,11 @@ class EvalPlotting:
         unknown = np.array(data['UnknownVoxels'])
         truncated = np.array(data['OutsideTruncation'])
         pointclouds = np.cumsum(np.array(data['NPointclouds'], dtype=float))
-        wall_time = np.array(data['WallTime'], dtype=float)
+        ros_time = np.array(data['RosTime'], dtype=float)
         cpu_time = np.array(data['CPUTime'], dtype=float)
         cpu_use =np.zeros(np.shape(cpu_time))
         for i in range(len(cpu_time)-1):
-            cpu_use[i] = (cpu_time[i+1])/(wall_time[i+1]-wall_time[i])
+            cpu_use[i] = (cpu_time[i+1])/(ros_time[i+1]-ros_time[i])
         cpu_use[-1] = cpu_use[-2]
         cpu_use = np.repeat(cpu_use, 2)
 
@@ -187,7 +187,7 @@ class EvalPlotting:
         x = np.repeat(x, 2)
         x = np.concatenate((np.array([0]), x[:-1]))
         axes[2, 1].plot(x, cpu_use, 'k-')
-        axes[2, 1].set_ylabel('Average CPU usage [cores]')
+        axes[2, 1].set_ylabel('Simulated CPU usage [cores]')
         axes[2, 1].set_xlabel('Simulated Time [s]')
         axes[2, 1].set_ylim(bottom=0)
         plt.suptitle("Simulation Overview")
@@ -283,14 +283,33 @@ class EvalPlotting:
         axes[1].set_ylabel('TrajectorySegments [-]')
         axes[1].legend(["Total", "New"], loc='upper left', fancybox=True)
 
-        cpu_time = np.array(data['CPU'], dtype=float)
-        wall_time = np.array(data['Total'], dtype=float)
+        x = np.array([])
+        cpu_time = np.array(data['Total'], dtype=float)
+        ros_time = np.array(data['RosTime'], dtype=float)
+        cpu_use = np.array([])
+        i = 0
+        averaging_threshold = 1    # seconds, for smoothing
+        t_curr = ros_time[0]
+        x_curr = 0
+        cpu_curr = cpu_time[0]
+        while i + 1 < len(ros_time):
+            i = i + 1
+            if t_curr >= averaging_threshold:
+                cpu_use = np.append(cpu_use, cpu_curr / t_curr)
+                x_curr = x_curr + t_curr
+                x = np.append(x, x_curr)
+                t_curr = ros_time[i]
+                cpu_curr = cpu_time[i]
+            else:
+                t_curr = t_curr + ros_time[i]
+                cpu_curr = cpu_curr + cpu_time[i]
 
-        axes[2].plot(x, cpu_time/wall_time, 'k-')
+        axes[2].plot(np.array([0, x[-1]]), np.array([1, 1]), linestyle='-', color='0.7', alpha=0.5)
+        axes[2].plot(x, cpu_use, 'k-')
         axes[2].set_xlim(left=0, right=x[-1])
         axes[2].set_ylim(bottom=0)
         axes[2].set_ylabel('CPU Usage [cores]')
-        axes[2].set_title("Average CPU Usage")
+        axes[2].set_title("Planner Consumed CPU Time per Simulated Time)")
         axes[2].set_xlabel('Simulated Time [s]')
 
         fig.set_size_inches(15, 15, forward=True)

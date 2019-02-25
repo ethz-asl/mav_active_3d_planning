@@ -6,9 +6,9 @@
 #include "mav_active_3d_planning/trajectory_evaluator.h"
 #include "mav_active_3d_planning/back_tracker.h"
 #include "mav_active_3d_planning/module_factory.h"
+#include "mav_active_3d_planning/defaults.h"
 
 #include <ros/ros.h>
-#include <signal.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Point.h>
@@ -28,10 +28,7 @@
 #include <ctime>
 #include <iostream>
 #include <fstream>
-#include <cstdlib>
-#include <cstdio>
-#include "sys/times.h"
-#include "sys/vtimes.h"
+
 
 namespace mav_active_3d_planning {
 
@@ -44,7 +41,6 @@ namespace mav_active_3d_planning {
         void odomCallback(const nav_msgs::Odometry &msg);
         bool runSrvCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
         bool cpuSrvCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
-        void onShutdown();
 
     protected:
         // ros
@@ -64,35 +60,38 @@ namespace mav_active_3d_planning {
 
         // variables
         std::shared_ptr<TrajectorySegment> current_segment_;        // root node of full trajectory tree
-        bool running_;
-        Eigen::Vector3d target_position_;
+        bool running_;                      // whether to run the main loop
+        Eigen::Vector3d target_position_;   // current movement goal
         double target_yaw_;
-        int vis_num_previous_trajectories_;
+        int vis_num_previous_trajectories_; // Counter for visualization function
         int vis_completed_count_;
+        int new_segments_;                  // keep track of min/max tries and segments
+        int new_segment_tries_;
 
-        // Info bookkeeping
-        ros::Time info_timing_;
-        int info_count_;
-        std::ofstream perf_log_file_;
+        // Info+performance bookkeeping
+        ros::Time info_timing_;             // Rostime for verbose and perf
+        int info_count_;                    // num trajectories counter for verbose
+        std::ofstream perf_log_file_;       // performance file
         std::vector<double> perf_log_data_; // select, expand, gain, cost, value [cpu seconds]
-        std::clock_t perf_log_timer_;       // total time counter
-        std::clock_t last_sys_cpu_, last_user_cpu_;   // To get CPU usage
-        double cpu_time_srv_;
-        double cpu_time_perf_;
+        std::clock_t perf_cpu_timer_;       // total time counter
+        std::clock_t cpu_srv_timer_;        // To get CPU usage for service
 
         // params
         double p_replan_pos_threshold_;     // m
         double p_replan_yaw_threshold_;     // rad
         bool p_verbose_;
         bool p_log_performance_;            // Whether to write a performance log file
-        // ideas: use fixed sampling size, take images only on points,
+        int p_max_new_segments_;
+        int p_min_new_segments_;
+        int p_min_new_tries_;
+        int p_max_new_tries_;
+        // ideas: take images only on points,
 
         // methods
         void initializePlanning();
         void requestNextTrajectory();
         void expandTrajectories();
         void requestMovement(const TrajectorySegment &req);
-        void updateCPUTimes(bool init=false);
 
         // visualization
         void publishTrajectoryVisualization(const std::vector<TrajectorySegment*> &trajectories);
@@ -108,12 +107,20 @@ namespace mav_active_3d_planning {
               vis_num_previous_trajectories_(0),
               vis_completed_count_(0) {
 
-        // Get params
+        // Params
         // When to start next trajectory, use 0 for not relevant
         nh_private_.param("replan_pos_threshold", p_replan_pos_threshold_, 0.1);
         nh_private_.param("replan_yaw_threshold", p_replan_yaw_threshold_, 0.2);
+
+        // Logging and printing
         nh_private_.param("verbose", p_verbose_, true);
         nh_private_.param("log_performance", p_log_performance_, false);
+
+        // Sampling constraints
+        nh_private_.param("max_new_segments", p_max_new_segments_, 0);  // set 0 for infinite
+        nh_private_.param("min_new_segments", p_min_new_segments_, 0);
+        nh_private_.param("max_new_tries", p_max_new_tries_, 0);  // set 0 for infinite
+        nh_private_.param("min_new_tries", p_max_new_segments_, 0);
 
         // Setup members
         std::string ns = ros::this_node::getName();
@@ -136,22 +143,33 @@ namespace mav_active_3d_planning {
         // Finish
         run_srv_ = nh_private_.advertiseService("toggle_running", &PlannerNode::runSrvCallback, this);
         get_cpu_time_srv_ = nh_private_.advertiseService("get_cpu_time", &PlannerNode::cpuSrvCallback, this);
-
     }
 
     void PlannerNode::odomCallback(const nav_msgs::Odometry &msg) {
         // This is the main loop, high odom message frequency is expected to continuously run
         if (!running_) { return; }
+        ROS_DEBUG("Odom");
         Eigen::Vector3d position(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
         double yaw = tf::getYaw(msg.pose.pose.orientation);
-        if ((p_replan_pos_threshold_ <= 0 || (target_position_ - position).norm() < p_replan_pos_threshold_ )
-            && (p_replan_yaw_threshold_ <= 0 || std::abs(std::fmod(target_yaw_ - yaw, M_PI))  < p_replan_yaw_threshold_)) {
-            // After finishing the current segment execute next one
-            requestNextTrajectory();
-        } else {
-            // Continuosly expand the trajectory space
-            expandTrajectories();
+
+        // check goal pos reached (if tol is set)
+        if (p_replan_pos_threshold_ <= 0 || (target_position_ - position).norm() < p_replan_pos_threshold_) {
+            // check goal yaw reached (if tol is set)
+            if (p_replan_yaw_threshold_ <= 0 || defaults::angleDifference(target_yaw_, yaw) < p_replan_yaw_threshold_) {
+                // check minimum tries reached
+                if (new_segment_tries_ >= p_min_new_tries_) {
+                    if (new_segments_ >= p_min_new_segments_ ||
+                        (new_segment_tries_ >= p_max_new_tries_ && p_max_new_tries_ > 0)) {
+                        // After finishing the current segment execute next one
+                        requestNextTrajectory();
+                        return;
+                    }
+                }
+            }
         }
+
+        // Otherwise continuosly expand the trajectory space
+        expandTrajectories();
     }
 
     void PlannerNode::initializePlanning() {
@@ -166,29 +184,32 @@ namespace mav_active_3d_planning {
         trajectory_point.setFromYaw(target_yaw_);
         current_segment_->trajectory.push_back(trajectory_point);
 
-        // Setup info
+        // Setup performance log
         if (p_log_performance_) {
             std::string log_dir("");
             if (!nh_private_.getParam("performance_log_dir", log_dir)) {
+                // Wait for this param until planning start so it can be set after constructor (e.g. from other nodes)
                 ROS_WARN("No directory for performance log set, performance log turned off.");
                 p_log_performance_ = false;
             } else {
                 perf_log_file_.open(log_dir + "/performance_log.csv");
                 perf_log_data_ = std::vector<double>(5, 0.0); //select, expand, gain, cost, value
-                perf_log_timer_ = std::clock();
+                perf_cpu_timer_ = std::clock();
                 perf_log_file_ << "RosTime,NTrajectories,NTrajAfterUpdate,Select,Expand,Gain,Cost,Value,NextBest,"
-                                    "UpdateTG,UpdateTE,Visualization,Total,CPU" << std::endl;
+                                  "UpdateTG,UpdateTE,Visualization,Total" << std::endl;
             }
         }
-        updateCPUTimes(true);
-        cpu_time_perf_ = 0.0;
-        cpu_time_srv_ = 0.0;
+
+        // Setup counters
+        cpu_srv_timer_ = std::clock();
         info_timing_ = ros::Time::now();
         info_count_ = 0;
+        new_segments_ = 0;
+        new_segment_tries_ = 0;
     }
 
     void PlannerNode::requestNextTrajectory() {
-        if (current_segment_->children.empty()){
+        if (current_segment_->children.empty()) {
             // No trajectories available: call the backtracker
             back_tracker_->trackBack(*current_segment_);
             return;
@@ -201,25 +222,25 @@ namespace mav_active_3d_planning {
         double perf_uptg;
         double perf_upte;
         std::clock_t timer;
-        if (p_log_performance_){
+        if (p_log_performance_) {
             timer = std::clock();
         }
 
         // Visualize candidates
-        std::vector<TrajectorySegment*> trajectories_to_vis;
+        std::vector < TrajectorySegment * > trajectories_to_vis;
         current_segment_->getTree(trajectories_to_vis);
         publishTrajectoryVisualization(trajectories_to_vis);
         int num_trajectories = trajectories_to_vis.size();
-        if (p_verbose_ || p_log_performance_){
+        if (p_verbose_ || p_log_performance_) {
             perf_rostime = (ros::Time::now() - info_timing_).toSec();
+            info_timing_ = ros::Time::now();
             if (p_verbose_) {
                 ROS_INFO("Replanning! Found %i new segments (%i total) in %.3f seconds.",
                          num_trajectories - info_count_, num_trajectories, perf_rostime);
             }
-            info_timing_ = ros::Time::now();
         }
-        if (p_log_performance_){
-            perf_vis += (double)(std::clock() - timer)/CLOCKS_PER_SEC;
+        if (p_log_performance_) {
+            perf_vis += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
 
@@ -227,8 +248,8 @@ namespace mav_active_3d_planning {
         int next_segment = trajectory_evaluator_->selectNextBest(*current_segment_);
         current_segment_ = current_segment_->children[next_segment];
         current_segment_->parent = nullptr;
-        if (p_log_performance_){
-            perf_next = (double)(std::clock() - timer)/CLOCKS_PER_SEC;
+        if (p_log_performance_) {
+            perf_next = (double) (std::clock() - timer) / CLOCKS_PER_SEC;
         }
 
         // Move
@@ -239,84 +260,101 @@ namespace mav_active_3d_planning {
         voxblox_server_.updateEsdf();
 
         // Visualize
-        if (p_log_performance_){
+        if (p_log_performance_) {
             timer = std::clock();
         }
         voxblox_server_.publishTraversable();
         publishCompletedTrajectoryVisualization(*current_segment_);
         publishEvalVisualization(*current_segment_);
-        if (p_log_performance_){
-            perf_vis += (double)(std::clock() - timer)/CLOCKS_PER_SEC;
+        if (p_log_performance_) {
+            perf_vis += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
 
         // Update tree
         trajectory_generator_->updateSegments(*current_segment_);
-        if (p_log_performance_){
-            perf_uptg = (double)(std::clock() - timer)/CLOCKS_PER_SEC;
+        if (p_log_performance_) {
+            perf_uptg = (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
         trajectory_evaluator_->updateSegments(*current_segment_);
-        if (p_log_performance_){
-            perf_upte = (double)(std::clock() - timer)/CLOCKS_PER_SEC;
+        if (p_log_performance_) {
+            perf_upte = (double) (std::clock() - timer) / CLOCKS_PER_SEC;
         }
-        if (p_verbose_ || p_log_performance_){
-            std::vector<TrajectorySegment*> trajectory_count;
+
+        // Performance log
+        if (p_verbose_ || p_log_performance_) {
+            std::vector < TrajectorySegment * > trajectory_count;
             current_segment_->getTree(trajectory_count);
             info_count_ = trajectory_count.size();
 
-            if (p_log_performance_){
-               updateCPUTimes();
+            if (p_log_performance_) {
                 perf_log_file_ << perf_rostime << "," << num_trajectories << "," << info_count_ << "," <<
-                        perf_log_data_[0] << "," << perf_log_data_[1] << "," << perf_log_data_[2] << "," <<
-                        perf_log_data_[3] << "," << perf_log_data_[4] << "," << perf_next << "," <<
-                        perf_uptg << "," << perf_upte << "," << perf_vis << "," <<
-                        (double)(std::clock() - perf_log_timer_)/CLOCKS_PER_SEC << "," << cpu_time_perf_ << std::endl;
-                cpu_time_perf_ = 0.0;
+                               perf_log_data_[0] << "," << perf_log_data_[1] << "," << perf_log_data_[2] << "," <<
+                               perf_log_data_[3] << "," << perf_log_data_[4] << "," << perf_next << "," <<
+                               perf_uptg << "," << perf_upte << "," << perf_vis << "," <<
+                               (double) (std::clock() - perf_cpu_timer_) / CLOCKS_PER_SEC << std::endl;
                 perf_log_data_ = std::vector<double>(5, 0.0);
-                perf_log_timer_ = std::clock();
+                perf_cpu_timer_ = std::clock();
             }
         }
+
+        // Update tracking values
+        new_segment_tries_ = 0;
+        new_segments_ = 0;
     }
 
     void PlannerNode::expandTrajectories() {
-        // Select and expand a segment
+        // Check max number of tries already
+        if (p_max_new_segments_ > 0 && new_segments_ >= p_max_new_segments_) {
+            return;
+        }
+
+        // Select expansion target
         std::clock_t timer;
-        if (p_log_performance_){
+        if (p_log_performance_) {
             timer = std::clock();
         }
-        TrajectorySegment* expansion_target = trajectory_generator_->selectSegment(*current_segment_);
-        if (p_log_performance_){
-            perf_log_data_[0]+= (double)(std::clock() - timer)/CLOCKS_PER_SEC;
-            timer = std::clock();
-        }
-        int previous_children = expansion_target->children.size();
-        trajectory_generator_->expandSegment(*expansion_target);
-        if (p_log_performance_){
-            perf_log_data_[1]+= (double)(std::clock() - timer)/CLOCKS_PER_SEC;
+        TrajectorySegment *expansion_target = trajectory_generator_->selectSegment(*current_segment_);
+        if (p_log_performance_) {
+            perf_log_data_[0] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
 
-        // Evaluate newly added segments
-        for (int i=previous_children; i < expansion_target->children.size(); ++i) {
+        // Expand the target
+        int previous_children = expansion_target->children.size();
+        bool success = trajectory_generator_->expandSegment(*expansion_target);
+        new_segment_tries_++;
+        if (success) { new_segments_++; }
+        if (p_log_performance_) {
+            perf_log_data_[1] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
+            timer = std::clock();
+        }
+
+        // Evaluate newly added segments: Gain
+        for (int i = previous_children; i < expansion_target->children.size(); ++i) {
             trajectory_evaluator_->computeGain(*(expansion_target->children[i]));
         }
-        if (p_log_performance_){
-            perf_log_data_[2]+= (double)(std::clock() - timer)/CLOCKS_PER_SEC;
+        if (p_log_performance_) {
+            perf_log_data_[2] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
-        for (int i=previous_children; i < expansion_target->children.size(); ++i) {
+
+        // Costs
+        for (int i = previous_children; i < expansion_target->children.size(); ++i) {
             trajectory_evaluator_->computeCost(*(expansion_target->children[i]));
         }
-        if (p_log_performance_){
-            perf_log_data_[3]+= (double)(std::clock() - timer)/CLOCKS_PER_SEC;
+        if (p_log_performance_) {
+            perf_log_data_[3] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
-        for (int i=previous_children; i < expansion_target->children.size(); ++i) {
+
+        // Final value
+        for (int i = previous_children; i < expansion_target->children.size(); ++i) {
             trajectory_evaluator_->computeValue(*(expansion_target->children[i]));
         }
-        if (p_log_performance_){
-            perf_log_data_[4]+= (double)(std::clock() - timer)/CLOCKS_PER_SEC;
+        if (p_log_performance_) {
+            perf_log_data_[4] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
     }
@@ -383,7 +421,7 @@ namespace mav_active_3d_planning {
         vis_num_previous_trajectories_ = trajectories.size();
     }
 
-    void PlannerNode::publishCompletedTrajectoryVisualization(TrajectorySegment &trajectories){
+    void PlannerNode::publishCompletedTrajectoryVisualization(TrajectorySegment &trajectories) {
         // Continuously increment the already traveled path
         visualization_msgs::Marker msg;
         msg.header.frame_id = "/world";
@@ -444,26 +482,6 @@ namespace mav_active_3d_planning {
         trajectory_vis_pub_.publish(msg);
     }
 
-    void PlannerNode::updateCPUTimes(bool init){
-        struct tms timeSample;
-        times(&timeSample);
-        if (!init) {
-            if (timeSample.tms_stime < last_sys_cpu_ || timeSample.tms_utime < last_user_cpu_) {
-                //Overflow
-            } else {
-                int ticks_per_sec = sysconf(_SC_CLK_TCK);
-                cpu_time_srv_ +=
-                        (double) (timeSample.tms_stime - last_sys_cpu_ + timeSample.tms_utime - last_user_cpu_) /
-                        ticks_per_sec;
-                cpu_time_perf_ +=
-                        (double) (timeSample.tms_stime - last_sys_cpu_ + timeSample.tms_utime - last_user_cpu_) /
-                        ticks_per_sec;
-            }
-        }
-        last_sys_cpu_ = timeSample.tms_stime;
-        last_user_cpu_ = timeSample.tms_utime;
-    }
-
     bool PlannerNode::runSrvCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) {
         res.success = true;
         if (req.data) {
@@ -478,11 +496,12 @@ namespace mav_active_3d_planning {
     }
 
     bool PlannerNode::cpuSrvCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) {
+        double time = (double)(std::clock() - cpu_srv_timer_) / CLOCKS_PER_SEC;
+        cpu_srv_timer_ = std::clock();
+
         // Just return cpu time as the service message
-        updateCPUTimes();
-        res.message = std::to_string(cpu_time_srv_).c_str();
+        res.message = std::to_string(time).c_str();
         res.success = true;
-        cpu_time_srv_ = 0.0;
         return true;
     }
 
