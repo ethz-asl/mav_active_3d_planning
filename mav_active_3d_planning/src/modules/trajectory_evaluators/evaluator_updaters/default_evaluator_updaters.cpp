@@ -2,6 +2,7 @@
 #include "mav_active_3d_planning/module_factory.h"
 
 #include <ros/param.h>
+#include <ros/time.h>
 
 #include <vector>
 #include <algorithm>
@@ -106,6 +107,42 @@ namespace mav_active_3d_planning {
             double minimum_value_;
             bool use_relative_values_;
             bool include_subsequent_;
+            EvaluatorUpdater* following_updater_;
+        };
+
+        // Only periodically call another updater (Decorator pattern)
+        class Periodic : public EvaluatorUpdater {
+        public:
+            Periodic(std::string param_ns, TrajectoryEvaluator* parent)
+                : EvaluatorUpdater(parent),
+                  waited_calls_(0) {
+                // Params
+                ros::param::param<double>(param_ns + "/minimum_wait_time", p_minimum_wait_time_, 0.0);  // seconds
+                ros::param::param<int>(param_ns + "/minimum_wait_calls", p_minimum_wait_calls_, 0);
+
+                previous_time_ = ros::Time::now();
+
+                // Following Updater (Default is Void)
+                following_updater_ = ModuleFactory::createEvaluatorUpdater(param_ns+"/following_updater", parent);
+            }
+
+            bool updateSegments(TrajectorySegment &root) {
+                // Both conditions need to be met
+                if ((ros::Time::now() - previous_time_).toSec() >= p_minimum_wait_time_ &&
+                    waited_calls_ >= p_minimum_wait_calls_) {
+                    previous_time_ = ros::Time::now();
+                    waited_calls_ = 0;
+                    return following_updater_->updateSegments(root);
+                }
+                waited_calls_++;
+                return true;
+            }
+
+        protected:
+            double p_minimum_wait_time_;
+            int p_minimum_wait_calls_;
+            ros::Time previous_time_;
+            int waited_calls_;
             EvaluatorUpdater* following_updater_;
         };
 

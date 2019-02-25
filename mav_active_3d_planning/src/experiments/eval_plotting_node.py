@@ -264,7 +264,7 @@ class EvalPlotting:
         axes[0].fill_between(x, y8, 1, facecolor="#cccccc", alpha=.5)
         axes[0].set_xlim(left=0, right=x[-1])
         axes[0].set_ylim(bottom=0, top=1)
-        axes[0].set_title("Percentage of Time Spent per Function")
+        axes[0].set_title("Percentage of CPU Time Spent per Function")
         axes[0].set_ylabel('Percent [%]')
 
         x = np.cumsum(np.array(data['RosTime'], dtype=float))

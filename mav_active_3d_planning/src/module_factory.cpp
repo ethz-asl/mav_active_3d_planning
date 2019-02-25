@@ -137,7 +137,9 @@ namespace mav_active_3d_planning {
             return new evaluator_updaters::EvaluateFromScratch(parent);
         } else if (type == "PruneByValue") {
             return new evaluator_updaters::PruneByValue(param_ns, parent);
-        } else {
+        } else if (type == "Periodic") {
+            return new evaluator_updaters::Periodic(param_ns, parent);
+        }else {
             ROS_ERROR("Unknown EvaluatorUpdater type '%s'.", type.c_str());
             return nullptr;
         }

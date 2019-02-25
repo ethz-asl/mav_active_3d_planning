@@ -80,6 +80,7 @@ namespace mav_active_3d_planning {
         double p_replan_pos_threshold_;     // m
         double p_replan_yaw_threshold_;     // rad
         bool p_verbose_;
+        bool p_visualize_candidates_;
         bool p_log_performance_;            // Whether to write a performance log file
         int p_max_new_segments_;
         int p_min_new_segments_;
@@ -114,6 +115,7 @@ namespace mav_active_3d_planning {
 
         // Logging and printing
         nh_private_.param("verbose", p_verbose_, true);
+        nh_private_.param("visualize_candidates", p_visualize_candidates_, false);
         nh_private_.param("log_performance", p_log_performance_, false);
 
         // Sampling constraints
@@ -228,7 +230,9 @@ namespace mav_active_3d_planning {
         // Visualize candidates
         std::vector < TrajectorySegment * > trajectories_to_vis;
         current_segment_->getTree(trajectories_to_vis);
-        publishTrajectoryVisualization(trajectories_to_vis);
+        if (p_visualize_candidates_){
+            publishTrajectoryVisualization(trajectories_to_vis);
+        }
         int num_trajectories = trajectories_to_vis.size();
         if (p_verbose_ || p_log_performance_) {
             perf_rostime = (ros::Time::now() - info_timing_).toSec();
@@ -262,9 +266,11 @@ namespace mav_active_3d_planning {
         if (p_log_performance_) {
             timer = std::clock();
         }
-        voxblox_server_.publishTraversable();
+        if (p_visualize_candidates_) {
+            voxblox_server_.publishTraversable();
+            publishEvalVisualization(*current_segment_);
+        }
         publishCompletedTrajectoryVisualization(*current_segment_);
-        publishEvalVisualization(*current_segment_);
         if (p_log_performance_) {
             perf_vis += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
