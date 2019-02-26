@@ -1,10 +1,10 @@
 <launch>
-  <arg name="target_directory" default="/home/lukas/Documents/MT/Data" />
+  <arg name="target_directory" default="/home/lukas/Documents/MT/Data/nbvp_original" />
   <arg name="gt_file_path" default="/home/lukas/Documents/MT/experiment1/gt_surface_pcl.ply"/>
-  <arg name="method" default="recent"/>
+  <arg name="method" default="single"/>
   
-  <arg name="evaluate" default="true"/>
-  <arg name="create_meshes" default="true"/>
+  <arg name="evaluate" default="false"/>
+  <arg name="create_meshes" default="false"/>
   <arg name="create_plots" default="true"/>
   <arg name="show_plots" default="false"/>
 

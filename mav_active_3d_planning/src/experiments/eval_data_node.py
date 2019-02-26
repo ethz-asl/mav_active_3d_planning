@@ -38,6 +38,7 @@ class EvalData:
 
             self.ns_voxblox = rospy.get_param('~ns_voxblox', "/voxblox/voxblox_node")
             self.eval_frequency = rospy.get_param('~eval_frequency', 5.0)  # Save rate in seconds
+            self.time_limit = rospy.get_param('~time_limit', 0)  # Maximum sim duration in minutes, 0 for inf
 
             # Statistics
             self.eval_walltime_0 = None
@@ -134,6 +135,11 @@ class EvalData:
         self.eval_n_pointclouds = 0
         self.eval_n_maps += 1
 
+        # If the time limit is reached stop the simulation
+        if self.time_limit > 0:
+            if (rospy.get_time() - self.eval_rostime_0).to_sec() >= self.time_limit * 60:
+                self.stop_experiment("Time limit reached.")
+
     def eval_finish(self):
         self.eval_data_file.close()
         map_path = os.path.join(self.eval_directory, "voxblox_maps")
@@ -152,13 +158,19 @@ class EvalData:
         if self.evaluate:
             self.eval_n_pointclouds += 1
 
+    def stop_experiment(self, reason):
+        # Shutdown the node with proper logging, only required when experiment is performed
+        if self.evaluate:
+            reason = "Stopping the experiment: " + reason
+            self.writelog(reason)
+            width = len(reason) + 4
+            rospy.loginfo("\n" + "*" * width + "\n* " + reason + " *\n" + "*" * width)
+            rospy.signal_shutdown(reason)
+
     def collision_callback(self, _):
         if not self.collided:
-            # This is only called if evaluating, shutdown the simulation with a collision warning
-            self.writelog("Collision detected! Stopping the experiment.")
-            rospy.loginfo("\n" + "*"*48 + "\n* Collision detected! Stopping the experiment. *\n" + "*"*48)
             self.collided = True
-            rospy.signal_shutdown('Quit on collision')
+            self.stop_experiment("Collision detected!")
 
 
 if __name__ == '__main__':

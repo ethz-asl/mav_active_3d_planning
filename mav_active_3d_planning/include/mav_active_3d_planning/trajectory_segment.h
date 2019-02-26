@@ -10,7 +10,7 @@ namespace mav_active_3d_planning {
 
     // Struct to store trajectory tree data
     struct TrajectorySegment {
-        TrajectorySegment() : parent(nullptr), tg_visited(false) {};
+        TrajectorySegment() : parent(nullptr), tg_visited(false), gain(0.0), cost(0.0), value(0.0) {};
 
         // All trajectory points
         mav_msgs::EigenTrajectoryPointVector trajectory;

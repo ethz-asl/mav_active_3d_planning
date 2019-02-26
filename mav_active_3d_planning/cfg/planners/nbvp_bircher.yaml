@@ -1,7 +1,7 @@
 # Config that builds the mav_active_3d_planning implementation of the nbvp planner (bircher paper)
 visualize_candidates: true
 
-max_new_segments: 0
+max_new_segments: 15
 min_new_segments: 15
 max_new_tries: 100
 min_new_tries: 0
@@ -25,11 +25,11 @@ trajectory_generator:
   
 trajectory_evaluator:
   type: "Naive"
+  sampling_time: 0.0
+  clear_from_parents: false
 #  type: "VoxelType"
 #  sampling_time: 0.0
 #  clear_from_parents: false
-#  camera_params_ns: "/unreal/unreal_ros_client/camera_params"
-#  ray_length: 5.0
 #  outer_volume_namespace: "/planner/planner_node/trajectory_generator/bounding_volume"
 #  gain_unknown: 1.0
 #  gain_occupied: 0.0
@@ -45,23 +45,22 @@ trajectory_evaluator:
     type: "Accumulate"
     following_value_computer:
       type: "ExponentialDiscount"
-      cost_scale: 10.0
+      cost_scale: 0.5
     
   next_selector:
     type: "SubsequentBest"
     
   evaluator_updater:
-    type: "PruneByValue"
-    minimum_value: 0.01
-    use_relative_values: false
-    include_subsequent: true
-    following_updater:
-      type: "PruneByValue"
-      minimum_value: 0.9
-      use_relative_values: true
-      include_subsequent: true
-      following_updater:
-        type: "EvaluateFromScratch"
+    type: "UpdateAll"
+    update_gain: true
+    update_cost: false
+    update_value: true
+#    type: "PruneByValue"
+#    minimum_value: 0.99
+#    use_relative_values: true
+#    include_subsequent: true
+#    following_updater:
+#      type: "EvaluateFromScratch"
     
 back_tracker:
   type: "RotateReverse"

@@ -50,10 +50,8 @@ namespace mav_active_3d_planning {
 
             bool computeValue(TrajectorySegment &traj_in) {
                 following_value_computer_->computeValue(traj_in);
-                TrajectorySegment *current = traj_in.parent;
-                while (current) {
-                    traj_in.value = traj_in.value + current->value;
-                    current = current->parent;
+                if(traj_in.parent) {
+                    traj_in.value += traj_in.parent->value;
                 }
                 return true;
             }

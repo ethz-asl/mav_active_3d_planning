@@ -151,8 +151,12 @@ class EvalPlotting:
 
     def plot_sim_overview(self, data, target_dir):
         rospy.loginfo("Creating Graphs: SimulationOverview")
+        unit = "s"
 
-        x = np.array(data['RosTime'])
+        x = np.array(data['RosTime'], dtype=float)
+        if x[-1] >= 300:
+            unit = "min"
+            x = np.divide(x, 60)
         meanerr = np.array(data['MeanError'])
         stddev = np.array(data['StdDevError'])
         unknown = np.array(data['UnknownVoxels'])
@@ -176,7 +180,7 @@ class EvalPlotting:
         axes[2, 0].plot(x, truncated, 'r-')
         axes[2, 0].set_ylabel('Truncated Voxels [%]')
         axes[2, 0].set_ylim(0, 1)
-        axes[2, 0].set_xlabel('Simulated Time [s]')
+        axes[2, 0].set_xlabel("Simulated Time [%s]" % unit)
 
         axes[0, 1].plot(x, unknown, 'g-')
         axes[0, 1].set_ylabel('Unknown Voxels [%]')
@@ -188,7 +192,7 @@ class EvalPlotting:
         x = np.concatenate((np.array([0]), x[:-1]))
         axes[2, 1].plot(x, cpu_use, 'k-')
         axes[2, 1].set_ylabel('Simulated CPU usage [cores]')
-        axes[2, 1].set_xlabel('Simulated Time [s]')
+        axes[2, 1].set_xlabel("Simulated Time [%s]" % unit)
         axes[2, 1].set_ylim(bottom=0)
         plt.suptitle("Simulation Overview")
         fig.set_size_inches(15, 10, forward=True)
@@ -204,6 +208,10 @@ class EvalPlotting:
         rospy.loginfo("Creating Graphs: PerformanceOverview")
 
         x = np.cumsum(np.array(data['RosTime'], dtype=float))
+        unit = "s"
+        if x[-1] >= 300:
+            unit = "min"
+            x = np.true_divide(x, 60)
         y_select = np.array(data['Select'], dtype=float)
         y_expand = np.array(data['Expand'], dtype=float)
         y_gain = np.array(data['Gain'], dtype=float)
@@ -268,6 +276,8 @@ class EvalPlotting:
         axes[0].set_ylabel('Percent [%]')
 
         x = np.cumsum(np.array(data['RosTime'], dtype=float))
+        if unit == "min":
+            x = np.true_divide(x, 60)
         n_trajectories = np.array(data['NTrajectories'], dtype=int)
         n_after_update = np.array(data['NTrajAfterUpdate'], dtype=int)
         n_after_update = np.concatenate((np.array([0]), n_after_update[:-1]))
@@ -304,13 +314,16 @@ class EvalPlotting:
                 t_curr = t_curr + ros_time[i]
                 cpu_curr = cpu_curr + cpu_time[i]
 
+        if unit == "min":
+            x = np.true_divide(x, 60)
+
         axes[2].plot(np.array([0, x[-1]]), np.array([1, 1]), linestyle='-', color='0.7', alpha=0.5)
         axes[2].plot(x, cpu_use, 'k-')
         axes[2].set_xlim(left=0, right=x[-1])
         axes[2].set_ylim(bottom=0)
         axes[2].set_ylabel('CPU Usage [cores]')
-        axes[2].set_title("Planner Consumed CPU Time per Simulated Time)")
-        axes[2].set_xlabel('Simulated Time [s]')
+        axes[2].set_title("Planner Consumed CPU Time per Simulated Time")
+        axes[2].set_xlabel('Simulated Time [%s]' % unit)
 
         fig.set_size_inches(15, 15, forward=True)
         plt.tight_layout()
@@ -321,7 +334,7 @@ class EvalPlotting:
                   "({0:02.1f}%) Cost".format(s3), "({0:02.1f}%) Value".format(s4), "({0:02.1f}%) NextBest".format(s5),
                   "({0:02.1f}%) updateGen".format(s6), "({0:02.1f}%) UpdateEval".format(s7),
                   "({0:02.1f}%) Vis".format(s8), "({0:02.1f}%) Other".format(s9)]
-        axes[0].legend(legend, loc='upper center', bbox_to_anchor=(0.5, -0.03), ncol=5, fancybox=True)
+        axes[0].legend(legend, loc='upper center', bbox_to_anchor=(0.5, -0.04), ncol=5, fancybox=True)
 
         save_name = os.path.join(target_dir, "graphs", "PerformanceOverview.png")
         plt.savefig(save_name, dpi=300, format='png', bbox_inches='tight')

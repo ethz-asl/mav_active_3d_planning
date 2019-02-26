@@ -21,28 +21,41 @@ namespace mav_active_3d_planning {
             }
         };
 
-        // Evaluate all existing trajectories from scratch
-        class EvaluateFromScratch : public EvaluatorUpdater {
+        // Update gain/cost/value for the complete trajectory tree
+        class UpdateAll : public EvaluatorUpdater {
         public:
-            EvaluateFromScratch(TrajectoryEvaluator* parent) : EvaluatorUpdater(parent) {}
+            UpdateAll(std::string param_ns, TrajectoryEvaluator* parent) : EvaluatorUpdater(parent) {
+                ros::param::param<bool>(param_ns + "/update_gain", update_gain_, true);
+                ros::param::param<bool>(param_ns + "/update_cost", update_cost_, true);
+                ros::param::param<bool>(param_ns + "/update_value", update_value_, true);
+
+                // Following Updater (Default is Void)
+                following_updater_ = ModuleFactory::createEvaluatorUpdater(param_ns+"/following_updater", parent);
+            }
 
             bool updateSegments(TrajectorySegment &root) {
-                // recursively evaluate all segments from root to leaves (as in the planner)
+                // recursively update all segments from root to leaves (as in the planner)
                 updateSingle(root);
-                return true;
+                return following_updater_->updateSegments(root);
             }
 
             void updateSingle(TrajectorySegment &segment){
-                parent_->computeGain(segment);
-                parent_->computeCost(segment);
-                parent_->computeValue(segment);
+                if (update_gain_) { parent_->computeGain(segment); }
+                if (update_cost_) { parent_->computeCost(segment); }
+                if (update_value_) { parent_->computeValue(segment); }
                 for (int i = 0; i < segment.children.size(); ++i) {
                     updateSingle(*(segment.children[i]));
                 }
             }
+
+        protected:
+            bool update_gain_;
+            bool update_cost_;
+            bool update_value_;
+            EvaluatorUpdater* following_updater_;
         };
 
-        // Remove all segments that dont have a minimum value, can then call another updater (Decorator pattern)
+        // Remove all segments that dont have a minimum value, can then call another updater
         class PruneByValue : public EvaluatorUpdater {
         public:
             PruneByValue(std::string param_ns, TrajectoryEvaluator* parent) : EvaluatorUpdater(parent) {
@@ -110,7 +123,7 @@ namespace mav_active_3d_planning {
             EvaluatorUpdater* following_updater_;
         };
 
-        // Only periodically call another updater (Decorator pattern)
+        // Only periodically call another updater
         class Periodic : public EvaluatorUpdater {
         public:
             Periodic(std::string param_ns, TrajectoryEvaluator* parent)

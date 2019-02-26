@@ -29,6 +29,8 @@
   <arg name="record_data" default="true"/>
   <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
   <arg name="data_frequency" default="15.0" />
+  <arg name="time_limit" default="30.0" />
+  
   
   
   
@@ -119,6 +121,7 @@
       <param name="evaluate" value="$(arg record_data)" />
       <param name="eval_directory" value="$(arg data_directory)" />
       <param name="eval_frequency" value="$(arg data_frequency)" />
+      <param name="time_limit" value="$(arg time_limit)" />
     </node>
     
     <!-- Record a rosbag of the visualization-->

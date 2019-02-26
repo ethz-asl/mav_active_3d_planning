@@ -27,6 +27,7 @@
 #include <cmath>
 #include <ctime>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 
 
@@ -247,10 +248,13 @@ namespace mav_active_3d_planning {
             timer = std::clock();
         }
 
-        // Select best next trajectory and advance tree
+        // Select best next trajectory and update root
         int next_segment = trajectory_evaluator_->selectNextBest(*current_segment_);
         current_segment_ = current_segment_->children[next_segment];
         current_segment_->parent = nullptr;
+        current_segment_->gain = 0.0;
+        current_segment_->cost = 0.0;
+        current_segment_->value = 0.0;
         if (p_log_performance_) {
             perf_next = (double) (std::clock() - timer) / CLOCKS_PER_SEC;
         }
@@ -411,6 +415,32 @@ namespace mav_active_3d_planning {
                 msg.points.push_back(point);
             }
             trajectory_vis_pub_.publish(msg);
+
+            // Text
+            visualization_msgs::Marker msg2;
+            msg2.header.frame_id = "/world";
+            msg2.header.stamp = ros::Time::now();
+            msg2.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+            msg2.id = i;
+            msg2.ns = "candidate_text";
+            msg2.scale.x = 0.2;
+            msg2.scale.y = 0.2;
+            msg2.scale.z = 0.2;
+
+            msg2.color.r = 0.0f;
+            msg2.color.g = 0.0f;
+            msg2.color.b = 0.0f;
+            msg2.color.a = 1.0;
+            msg2.pose.position.x = trajectories[i]->trajectory.back().position_W[0];
+            msg2.pose.position.y = trajectories[i]->trajectory.back().position_W[1];
+            msg2.pose.position.z = trajectories[i]->trajectory.back().position_W[2];
+            std::stringstream stream;
+            stream << std::fixed << std::setprecision(2) << trajectories[i]->gain << "/" << std::fixed <<
+                   std::setprecision(2) << trajectories[i]->cost << "/" << std::fixed << std::setprecision(2) <<
+                   trajectories[i]->value;
+            msg2.text = stream.str();
+            msg2.action = visualization_msgs::Marker::ADD;
+            trajectory_vis_pub_.publish(msg2);
         }
         for (int i = trajectories.size(); i < vis_num_previous_trajectories_; ++i) {
             // Setup marker message
@@ -422,6 +452,17 @@ namespace mav_active_3d_planning {
             msg.ns = "candidate_trajectories";
             msg.action = visualization_msgs::Marker::DELETE;
             trajectory_vis_pub_.publish(msg);
+
+            // Text
+            visualization_msgs::Marker msg2;
+            msg2.header.frame_id = "/world";
+            msg2.header.stamp = ros::Time::now();
+            msg2.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+            msg2.id = i;
+            msg2.ns = "candidate_text";
+            msg2.action = visualization_msgs::Marker::DELETE;
+            trajectory_vis_pub_.publish(msg2);
+
         }
         vis_num_previous_trajectories_ = trajectories.size();
     }

@@ -33,6 +33,8 @@ namespace mav_active_3d_planning {
             // kdtree + bookkeeping
             kdtree* kdtree_;
             TrajectorySegment* previous_root_;
+            bool expansion_target_valid_;
+            Eigen::Vector3d goal_pos_;
         };
 
         RRT::RRT(voxblox::EsdfServer *voxblox_ptr, std::string param_ns)
@@ -61,11 +63,7 @@ namespace mav_active_3d_planning {
                 }
                 previous_root_ = &root;
             }
-            // just return the root to expandSegment()
-            return &root;
-        }
 
-        bool RRT::expandSegment(TrajectorySegment &target) {
             // sample candidate points
             bool goal_found = false;
             Eigen::Vector3d goal_pos;
@@ -77,7 +75,7 @@ namespace mav_active_3d_planning {
                     double radius = std::sqrt(std::pow(bounding_volume_.x_max - bounding_volume_.x_min, 2.0) +
                                               std::pow(bounding_volume_.y_max - bounding_volume_.y_min, 2.0) +
                                               std::pow(bounding_volume_.z_max - bounding_volume_.z_min, 2.0));
-                    goal_pos = target.trajectory.back().position_W;
+                    goal_pos = root.trajectory.back().position_W;
                     goal_pos[0] += 2.0 * radius * (((double) rand()) / ((double) RAND_MAX) - 0.5);
                     if (goal_pos[0] < bounding_volume_.x_min) {
                         continue;
@@ -99,31 +97,47 @@ namespace mav_active_3d_planning {
                 } else {
                     // sample from bounding volume (assumes box atm)
                     goal_pos[0] = bounding_volume_.x_min +
-                        (double) rand() / RAND_MAX * (bounding_volume_.x_max - bounding_volume_.x_min);
+                                  (double) rand() / RAND_MAX * (bounding_volume_.x_max - bounding_volume_.x_min);
                     goal_pos[1] = bounding_volume_.y_min +
-                        (double) rand() / RAND_MAX * (bounding_volume_.y_max - bounding_volume_.y_min);
+                                  (double) rand() / RAND_MAX * (bounding_volume_.y_max - bounding_volume_.y_min);
                     goal_pos[2] = bounding_volume_.z_min +
-                        (double) rand() / RAND_MAX * (bounding_volume_.z_max - bounding_volume_.z_min);
+                                  (double) rand() / RAND_MAX * (bounding_volume_.z_max - bounding_volume_.z_min);
                 }
                 if (!checkTraversable(goal_pos)){
                     continue;
                 }
                 goal_found = true;
             }
-            if (!goal_found){ return false; }
+            if (!goal_found){
+                expansion_target_valid_ = false;
+                return &root;
+            }
 
             // find closest point
             kdres * nearest = kd_nearest3(kdtree_, goal_pos[0], goal_pos[1], goal_pos[2]);
             if (kd_res_size(nearest) <= 0) {
                 kd_res_free(nearest);
-                return false;
+                expansion_target_valid_ = false;
+                return &root;
             }
+
+            // Valid target found
             TrajectorySegment* new_parent = (TrajectorySegment *) kd_res_item_data(nearest);
             kd_res_free(nearest);
+            goal_pos_ = goal_pos;
+            expansion_target_valid_ = true;
+            return new_parent;
+        }
+
+        bool RRT::expandSegment(TrajectorySegment &target) {
+            if (!expansion_target_valid_){
+                // Segment selection failed
+                return false;
+            }
 
             // Check max segment range
-            Eigen::Vector3d start_pos = new_parent->trajectory.back().position_W;
-            Eigen::Vector3d direction = goal_pos - start_pos;
+            Eigen::Vector3d start_pos = target.trajectory.back().position_W;
+            Eigen::Vector3d direction = goal_pos_ - start_pos;
             if (direction.norm() > p_extension_range_ && p_extension_range_ > 0.0){
                 direction *= p_extension_range_ / direction.norm();
             }
@@ -144,14 +158,14 @@ namespace mav_active_3d_planning {
             }
 
             // Build result
-            TrajectorySegment *new_segment = new_parent->spawnChild();
+            TrajectorySegment *new_segment = target.spawnChild();
             double goal_yaw = (double) rand() / (double) RAND_MAX * 2.0 * M_PI;
             n_points = std::ceil(direction.norm() / p_velocity_ * p_sampling_rate_);
-            kd_insert3(kdtree_, goal_pos[0], goal_pos[1], goal_pos[2], new_segment);
+            kd_insert3(kdtree_, goal_pos_[0], goal_pos_[1], goal_pos_[2], new_segment);
             for (int i = 0; i < n_points; ++i) {
                 mav_msgs::EigenTrajectoryPoint trajectory_point;
                 trajectory_point.position_W = start_pos + (double) i / (double) n_points * direction;
-                trajectory_point.setFromYaw(goal_yaw);
+                trajectory_point.setFromYaw(defaults::angleScaled(goal_yaw));
                 trajectory_point.time_from_start_ns = static_cast<int64_t>((double) i / p_sampling_rate_ * 1.0e9);
                 new_segment->trajectory.push_back(trajectory_point);
             }
