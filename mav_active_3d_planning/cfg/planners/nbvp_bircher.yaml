@@ -15,7 +15,7 @@ trajectory_generator:
   
   type: "RRT"
   velocity: 0.5
-  extension_range: 2.0
+  extension_range: 1.0
   use_spheric_sampling: true
   maximum_tries: 1000
   sampling_rate: 20.0

@@ -16,5 +16,3 @@ trajectory_generator:
     
   generator_updater:
     type: "CheckCollision"
-    
-replan_yaw_threshold: 0.4

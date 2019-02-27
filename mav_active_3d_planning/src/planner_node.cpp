@@ -116,7 +116,7 @@ namespace mav_active_3d_planning {
 
         // Logging and printing
         nh_private_.param("verbose", p_verbose_, true);
-        nh_private_.param("visualize_candidates", p_visualize_candidates_, false);
+        nh_private_.param("visualize_candidates", p_visualize_candidates_, true);
         nh_private_.param("log_performance", p_log_performance_, false);
 
         // Sampling constraints

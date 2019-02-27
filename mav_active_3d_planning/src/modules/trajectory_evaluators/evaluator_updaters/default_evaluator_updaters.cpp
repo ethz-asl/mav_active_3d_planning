@@ -21,6 +21,17 @@ namespace mav_active_3d_planning {
             }
         };
 
+        // Discard all segments and start from scratch
+        class Clear : public EvaluatorUpdater {
+        public:
+            Clear() {}
+
+            bool updateSegments(TrajectorySegment &root) {
+                root.children.clear();
+                return true;
+            }
+        };
+
         // Update gain/cost/value for the complete trajectory tree
         class UpdateAll : public EvaluatorUpdater {
         public:

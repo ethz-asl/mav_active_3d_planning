@@ -30,6 +30,7 @@ namespace mav_active_3d_planning {
             int p_n_segments_;
             int p_max_tries_;
             bool p_planar_;
+            bool p_sample_yaw_;      // false: face direction of travel
         };
 
         RandomLinear::RandomLinear(voxblox::EsdfServer *voxblox_ptr, std::string param_ns)
@@ -43,6 +44,7 @@ namespace mav_active_3d_planning {
             ros::param::param<int>(param_ns + "/n_segments", p_n_segments_, 5);
             ros::param::param<int>(param_ns + "/max_tries", p_max_tries_, 1000);
             ros::param::param<bool>(param_ns + "/planar", p_planar_, true);
+            ros::param::param<bool>(param_ns + "/sample_yaw", p_sample_yaw_, false);
         }
 
         bool RandomLinear::expandSegment(TrajectorySegment &target) {
@@ -65,6 +67,9 @@ namespace mav_active_3d_planning {
                 if (p_planar_) { theta = 0.5 * M_PI; }
                 Eigen::Vector3d target_pos = start_pos + distance *
                                              Eigen::Vector3d(sin(theta) * cos(yaw), sin(theta) * sin(yaw), cos(theta));
+                if (p_sample_yaw_) {
+                    yaw = (double) rand() * 2.0 * M_PI / (double) RAND_MAX; // new orientation
+                }
 
                 // Simulate trajectory (accelerate and deccelerate to 0 velocity at goal points)
                 double x_curr = 0, v_curr = 0, t_curr = 0;

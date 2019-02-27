@@ -137,7 +137,7 @@ class EvalData:
 
         # If the time limit is reached stop the simulation
         if self.time_limit > 0:
-            if (rospy.get_time() - self.eval_rostime_0).to_sec() >= self.time_limit * 60:
+            if rospy.get_time() - self.eval_rostime_0 >= self.time_limit * 60:
                 self.stop_experiment("Time limit reached.")
 
     def eval_finish(self):

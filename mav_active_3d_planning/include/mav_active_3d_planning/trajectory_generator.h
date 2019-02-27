@@ -51,13 +51,13 @@ namespace mav_active_3d_planning {
         std::string p_namespace_;
     };
 
-    // Abstract wrapper for default/modular implementations of the selectSegment method
+    // Abstract encapsulation for default/modular implementations of the selectSegment method
     class SegmentSelector {
     public:
         virtual TrajectorySegment* selectSegment(TrajectorySegment &root) = 0;
     };
 
-    // Abstract wrapper for default/modular implementations of the updateSegments method
+    // Abstract encapsulation for default/modular implementations of the updateSegments method
     class GeneratorUpdater {
     public:
         GeneratorUpdater(TrajectoryGenerator* parent = nullptr) : parent_(parent) {};

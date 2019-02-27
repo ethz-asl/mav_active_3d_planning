@@ -14,6 +14,7 @@ cs_add_library(${PROJECT_NAME}
 	src/module_factory.cpp
 	src/trajectory_generator.cpp
 	src/trajectory_evaluator.cpp
+	src/ray_caster.cpp
     src/libs/kdtree/kdtree.cpp
 )
 

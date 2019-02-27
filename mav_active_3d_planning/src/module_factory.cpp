@@ -133,6 +133,8 @@ namespace mav_active_3d_planning {
         ros::param::param<std::string>(param_ns + "/type", type, "Void");
         if (type == "Void") {
             return new evaluator_updaters::Void();
+        } else if (type == "Clear") {
+            return new evaluator_updaters::Clear();
         } else if (type == "UpdateAll") {
             return new evaluator_updaters::UpdateAll(param_ns, parent);
         } else if (type == "PruneByValue") {
