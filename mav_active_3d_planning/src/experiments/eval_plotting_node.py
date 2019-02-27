@@ -19,7 +19,7 @@ from matplotlib import pyplot as plt
 class EvalPlotting:
     """
     This is the main evaluation node. It expects the data folders and files to have the format hardcoded in the
-    simulation_manager and calls the eval_voxblox_node to execute c++ code. Pretty ugly and non-general code but just
+    eval_data_node and calls the eval_voxblox_node to execute c++ code. Pretty ugly and non-general code but just
     needs to work in this specific case atm...
     """
 
@@ -174,19 +174,24 @@ class EvalPlotting:
         axes[0, 0].plot(x, meanerr, 'b-')
         axes[0, 0].set_ylabel('MeanError [m]')
         axes[0, 0].set_ylim(bottom=0)
+        axes[0, 0].set_xlim(left=0, right=x[-1])
         axes[1, 0].plot(x, stddev, 'b-')
         axes[1, 0].set_ylabel('StdDevError [m]')
         axes[1, 0].set_ylim(bottom=0)
+        axes[1, 0].set_xlim(left=0, right=x[-1])
         axes[2, 0].plot(x, truncated, 'r-')
         axes[2, 0].set_ylabel('Truncated Voxels [%]')
         axes[2, 0].set_ylim(0, 1)
         axes[2, 0].set_xlabel("Simulated Time [%s]" % unit)
+        axes[2, 0].set_xlim(left=0, right=x[-1])
 
         axes[0, 1].plot(x, unknown, 'g-')
         axes[0, 1].set_ylabel('Unknown Voxels [%]')
         axes[0, 1].set_ylim(0, 1)
+        axes[0, 1].set_xlim(left=0, right=x[-1])
         axes[1, 1].plot(x, pointclouds, 'k-')
         axes[1, 1].set_ylabel('Processed Pointclouds [-]')
+        axes[1, 1].set_xlim(left=0, right=x[-1])
 
         x = np.repeat(x, 2)
         x = np.concatenate((np.array([0]), x[:-1]))
@@ -194,6 +199,7 @@ class EvalPlotting:
         axes[2, 1].set_ylabel('Simulated CPU usage [cores]')
         axes[2, 1].set_xlabel("Simulated Time [%s]" % unit)
         axes[2, 1].set_ylim(bottom=0)
+        axes[2, 1].set_xlim(left=0, right=x[-1])
         plt.suptitle("Simulation Overview")
         fig.set_size_inches(15, 10, forward=True)
 
