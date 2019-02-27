@@ -1,59 +1,205 @@
+**This is a first rough readme, will be more formulated out.**
+
 mav_active_3d_planning contains code for  voxblox based active path planning in unknown environments with the goal of optimizing a 3D-reconstruction gain such as exploration and quality while minimizing a cost. 
-This is a first rough readme.
+
+We provide a framework for buidling and evaluating sampling based, receding horizon planners.
 
 # Table of Contents
+**Installation**
+* [Installation](#Installation)
+* [Dependencies](#Dependencies)
+* [Data Repository](#Data-Repository)
+
 **Planner Structure**
 * [Main Planner](#Main_Planner)
 * [Trajectory Generator](#Trajectory-Generator)
 * [Trajectory Evaluator](#Trajectory-Evaluator)
-* [Voxblox Server](#MVoxblox-Server)
+* [Voxblox Server](#Voxblox-Server)
 
-**ROS nodes**
+**Planner Design Framework**
+* [Modular Configuration](#Modular-Configuration)
+* [Building Planners](#Building-Planners)
+* [Contributing Custom Modules](#Contributing-Custom-Modules)
+
+**Running and Evaluating a Simulated Experiment**
+* [Simulation Framework](#Simulation-Framework)
+* [Conducting an Experiment](#Conducting-an-Experiment)
+* [Results and Monitoring Tools](#Results-and-Monitoring-Tools)
+
+**ROS Nodes**
 * [planner_node](#planner_node)
+* [eval_data_node](#eval_data_node)
+* [eval_plotting_node](#eval_plotting_node)
+* [eval_voxblox_node](#eval_voxblox_node)
+
+**List of Modules**
+* [Default Modules](#Default-Modules)
 
 **Examples**
-* [Proof of concept](#Proof-of-concept)
+* [Configuring a Planner](#Configuring-a-Planner)
+* [Run an Experiment](#Run-an-Experiment)
+
+# Installation
+
+Coming...
 
 ## Dependencies
-voxblox, 
+To run the mav_active_3d_planning simulation framework, the following packages are required: `gazebo_ros`, `rotors_gazebo`, `mav_nonlinear_mpc`, `mav_lowlevel_attitude_controller`, `voxblox_ros` and `unreal_cv_ros`.
+
+## Data Repository
+Related ressources can be downloaded from [here](https://www.polybox.ethz.ch/index.php/s/6vhPDINcISbEogg). 
+
 
 # Planner Structure
-The planner is structured in a modular setup to provide a clear interface for customization. It consists of 4 essential ingredients:
+In this repository we propose a framework for sampling based receding horizon planning. For this purpose we provide a common scaffolding that structures all planners. A planner consists of 4 essential ingredients:
 
 ## Main Planner
 This is the master node containing the 3 other classes as members. In a receding horizon fashion, a tree of possible trajectory segments is continuosly expanded and expected costs and gains are computed. 
-Once the current trajectory segment has finished executing, the next best adjacent segment is published and the trajectory tree updated.
+Once the current trajectory segment has finished executing, the next best adjacent segment is published and the trajectory tree updated. Furthermore, the main planner contains a backtracker, which tells the planner what to do in case it gets stuck somewhere.
 
 ## Trajectory Generator
 The trajectory generator is responsible for expanding the trajectory tree. 
 To guarantee constraint satisfaction, the proposed new trajectories need to fulfill all system (such as maximum thrusts, rates, ...) and environment (such as collision, ...) constraints.
-All constraints therefore need to be incorporated in the trajectory generator. Custom, derived trajectory generators need to implement the following virtual functions:
+All constraints therefore need to be incorporated in the trajectory generator. Trajectory generators need to implement the following virtual functions:
 * **selectSegment** Expansion policy where to expand the current tree.
 * **expandSegment** Add adjacent trajectory segments to the target segment.
-* **setParamsFromRos** Initialization using the main planner's nodehandle.
+* **updateSegments** Whether and how to update existing segments when a new trajectory is executed.
 
 ## Trajectory Evaluator
 The trajectory evaluator computes expected gains, costs and final values for different trajectory segments.
-Custom, derived trajectory generators need to implement the following virtual functions:
+Trajectory generators need to implement the following virtual functions:
 * **computeGain** Compute the expected gain from executing a trajectory segment.
 * **computeCost** Compute the expected cost from executing a trajectory segment.
 * **computeValue** Assign the final value for a trajectory segment, usually f(gain, cost, ...).
-* **selectNextBest** Execution Policy for available segments.
-* **setParamsFromRos** Initialization using the main planner's nodehandle.
+* **selectNextBest** Policy for executing the next segment.
+* **updateSegments** Whether and how to update existing segments when a new trajectory is executed.
 
 ## Voxblox Server
 The main planner includes a [voxblox](https://github.com/ethz-asl/voxblox) server, which is updated from a separate voxblox node and contains all information about the environment. 
 The server is made available to the trajectory generator and evaluator for constraint satisfaction, gain computation and more.
 
-# ROS nodes
+
+# Planner Design Framework
+Many sampling based planners make use of similar functionalities or approaches. To make building new planners as easy as possible, we provide a modular object-oriented framework for creating new planners.
+
+## Modular Configuration
+All planners have a common structure as is presented [above](#Planner-Structure). The core components of TrajectoryGenerators and TrajectoryEvaluators are supposed to have a flexible enough interface to allow for a large variety of planners. However, they don't need to implement every single of their virtual functions. Each of these functions has different implementations encapsulated as modules, allowing reusage of common implementations. All functions, which are not explicitely overridden, will be built from these modular building blocks.
+
+Modules are specified and configured via the ros parameter server, where the main planner and other submodules forward their namespace plus the respective module namespace to the ModuleFactory. Every module needs to specify a "type" parameter, according to which the desired classes are instantiated. They are then individually configured through the ros parameter server.
+
+## Building Planners
+This object-oriented modular approach has the advantage, that planners consisting of already existing modules can be built at run time via a ros parameter configuration. No more recompiling for testing new planners! The recommended way is to load a "my_config.yaml" into the planner node. An example configuration is given [here](#Configuring-a-Planner). The default namespaces for modules, relative to the planner node, are as follows:
+```yaml
+trajectory_generator:
+  type: "MyTrajectoryGenerator"
+  segment_selector:
+    type: "MyExpansionPolicy"
+  generator_updater:
+    type: "MyUpdateStrategy"
+    
+trajectory_evaluator:
+  type: "MyTrajectoryEvaluator"
+  cost_computer:
+    type: "MyCost"
+  value_computer:
+    type: "MyValueFunc"
+  next_selector:
+    type: "MyNextBestSelection"
+  evaluator_updater:
+    type: "MyUpdateStrategy"
+    
+back_tracker:
+  type: "DontGetStuck"
+```
+
+Notice that for some functionalities multiple modules can be combined using the Decorator Pattern:
+```yaml
+evaluator_updater:
+  type: "Operation1"
+  following_updater:
+    type: "Operation2"
+    following_updater:
+      ...
+```
+
+## Contributing Custom Modules
+Custom implementations for all module types can easily be added to the framework:
+* Create a "my_module.cpp" in the respective module directory.
+* Use the corresponding namespace, inherit from the base module class and implement the new functionality.
+* In "module_factory.cpp" include your new module file and add the instantiation to the respective type switch.
+
+  **Note: Modules are to be included and created ONLY through the ModuleFactory!**
+* Add some doc..?
+* Have fun :)
+
+For an idea of how certain module types are generally structured, have a look through the default modules.
+
+# Running and Evaluating a Simulated Experiment
+To test and compare the performance of planners, we provide a simulation environment and evaluation tools.
+
+## Simulation Framework
+The simulation environment is similar to the one presented in `unreal_cv_ros`. We use `gazebo` to model the MAV physics and `unreal_cv_ros` for perception and collision detection. The planner node requests trajectories, which are followed using the `mav_nonlinear_mpc` and `mav_lowlevel_attitude_controller` controllers. During execution, `unreal_cv_ros` produces pointclouds. These are integrated by the `voxblox` server into a map, based upon which the planner then proposes new trajectories.
+
+## Conducting an Experiment
+We provide utility ros nodes and launch scripts, that make conducting and evaluating experiments as simple as possible:
+* Start the unreal game map on which the experiment takes place.
+* Run `run_experiment.launch`
+
+  This launchfile coordinates the startup of all components of the simulation framework, as well the launch and termination of the planner. Furthermore, a data directory is created that stores the generated information.
+* After termination, run `evaluate_experiment.launch`
+
+  This launchfile takes a data directory, computes different evaluation metrics and produces graphs.
+* To reenact the behaviour of a planner, run `replay_experiment.launch`
+  
+  This launchfile replays a rosbag of the planner visualization topics, can also use fast forward etc.
+
+## Results and Monitoring Tools
+During simulation, the planner and eval_data_node produce the following raw data (in a predefined structure):
+* The current voxblox map is periodically saved
+* together with the elapsed simulated time, wall time, cpu time and the number of integrated pointclouds
+* After every replanning step, the cpu time per function, the total simulated and cpu time as well as the number of considered TrajectorySegments is recorded.
+* The complete rosparam configuration is dumped, such that the planner and other settings can be recovered.
+* A rosbag of the visualization topics is recorded in "tmp_bags". (When evaluation, it is looked up and moved to the right folder)
+
+During evaluation, the eval_plotting_node and eval_voxblox_node use this data to compare the saved maps against a ground truth pointcloud and compute the following metrics:
+* Mean and standard deviation of the absolute difference between constructed map and ground truth
+* Percentage of the ground truth pointcloud that was discovered (is contained in the map).
+
+Additionally, the following visualizations are produced:
+* The folder meshes contains the periodically saved mesh instances to reconstruct exploration progress.
+* Additionally, every mesh is colored according to the absolute difference to ground truth, where dark green represents 0, red the maximum error threshold (by default 2x the voxel size), and gray voxel outside this threshold (these are also not included in the error computation).
+* The folder graphs contains a 'SimulationOverview.png', containing line graphs for reconstruction quality and exploration progress over time,
+* And a 'PerformanceOverview.png', showing where the computation time was allocated and how much total computation time was consumed.
+
+All produced data is stored in csv files, which can be used for further visualization. The data_log.txt contains additional information about the experiment execution and processing.
+
+# ROS Nodes
+TODO: Need some proper doc here (topics, params, ...)
+
 ## planner_node
-This ros node that contains and runs the main planner.
+This is the node that contains and runs the main planner (so essentially every planner).
+
+## eval_data_node
+This node helps starting and stopping experiments and records raw data.
+
+## eval_plotting_node
+This node manages evaluation and produces graphs.
+
+## eval_voxblox_node
+Ros encapsulation for c++ voxblox code. Is called by the eval_plotting_node during evaluation.
+
+
+# Default Modules
+There is a lot of modules already, some doc wouldn't be bad ...
+
 
 # Examples
-## Proof of concept
-To see the naive implementation in action run `roslaunch mav_active_3d_planning full_test.launch`. 
-The planner will periodically display all candidate trajectory segments in the tree, colored according to the relative value (from red to green being lowest to highest). 
-Furthermore, the expected gain for the currently executing segment is displayed as yellow voxels. 
+## Configuring a Planner
+TODO
 
-The sampled trajectories are linear, the gain is the number of unobserved voxels and the cost the execution time of the trajectory. 
-This was tested on the RealisticRendering demo using the fast-plugin.
+See eg. `cfg/example_config.yaml` ...
+
+## Run an Experiment
+TODO
+
+Run `run_experiment.launch` and fiddle with the args I guess ...
