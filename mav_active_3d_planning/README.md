@@ -26,8 +26,14 @@ We provide a framework for buidling and evaluating sampling based, receding hori
 * [Conducting an Experiment](#Conducting-an-Experiment)
 * [Results and Monitoring Tools](#Results-and-Monitoring-Tools)
 
-**ROS nodes**
+**ROS Nodes**
 * [planner_node](#planner_node)
+* [eval_data_node](#eval_data_node)
+* [eval_plotting_node](#eval_plotting_node)
+* [eval_voxblox_node](#eval_voxblox_node)
+
+**List of Modules**
+* [Default Modules](#Default-Modules)
 
 **Examples**
 * [Configuring a Planner](#Configuring-a-Planner)
@@ -129,19 +135,71 @@ Custom implementations for all module types can easily be added to the framework
 For an idea of how certain module types are generally structured, have a look through the default modules.
 
 # Running and Evaluating a Simulated Experiment
+To test and compare the performance of planners, we provide a simulation environment and evaluation tools.
 
 ## Simulation Framework
+The simulation environment is similar to the one presented in `unreal_cv_ros`. We use `gazebo` to model the MAV physics and `unreal_cv_ros` for perception and collision detection. The planner node requests trajectories, which are followed using the `mav_nonlinear_mpc` and `mav_lowlevel_attitude_controller` controllers. During execution, `unreal_cv_ros` produces pointclouds. These are integrated by the `voxblox` server into a map, based upon which the planner then proposes new trajectories.
 
 ## Conducting an Experiment
+We provide utility ros nodes and launch scripts, that make conducting and evaluating experiments as simple as possible:
+* Start the unreal game map on which the experiment takes place.
+* Run `run_experiment.launch`
+
+  This launchfile coordinates the startup of all components of the simulation framework, as well the launch and termination of the planner. Furthermore, a data directory is created that stores the generated information.
+* After termination, run `evaluate_experiment.launch`
+
+  This launchfile takes a data directory, computes different evaluation metrics and produces graphs.
+* To reenact the behaviour of a planner, run `replay_experiment.launch`
+  
+  This launchfile replays a rosbag of the planner visualization topics, can also use fast forward etc.
 
 ## Results and Monitoring Tools
+During simulation, the planner and eval_data_node produce the following raw data (in a predefined structure):
+* The current voxblox map is periodically saved
+* together with the elapsed simulated time, wall time, cpu time and the number of integrated pointclouds
+* After every replanning step, the cpu time per function, the total simulated and cpu time as well as the number of considered TrajectorySegments is recorded.
+* The complete rosparam configuration is dumped, such that the planner and other settings can be recovered.
+* A rosbag of the visualization topics is recorded in "tmp_bags". (When evaluation, it is looked up and moved to the right folder)
 
+During evaluation, the eval_plotting_node and eval_voxblox_node use this data to compare the saved maps against a ground truth pointcloud and compute the following metrics:
+* Mean and standard deviation of the absolute difference between constructed map and ground truth
+* Percentage of the ground truth pointcloud that was discovered (is contained in the map).
 
+Additionally, the following visualizations are produced:
+* The folder meshes contains the periodically saved mesh instances to reconstruct exploration progress.
+* Additionally, every mesh is colored according to the absolute difference to ground truth, where dark green represents 0, red the maximum error threshold (by default 2x the voxel size), and gray voxel outside this threshold (these are also not included in the error computation).
+* The folder graphs contains a 'SimulationOverview.png', containing line graphs for reconstruction quality and exploration progress over time,
+* And a 'PerformanceOverview.png', showing where the computation time was allocated and how much total computation time was consumed.
 
-# ROS nodes
+All produced data is stored in csv files, which can be used for further visualization. The data_log.txt contains additional information about the experiment execution and processing.
+
+# ROS Nodes
+TODO: Need some proper doc here (topics, params, ...)
+
 ## planner_node
-This ros node that contains and runs the main planner.
+This is the node that contains and runs the main planner (so essentially every planner).
+
+## eval_data_node
+This node helps starting and stopping experiments and records raw data.
+
+## eval_plotting_node
+This node manages evaluation and produces graphs.
+
+## eval_voxblox_node
+Ros encapsulation for c++ voxblox code. Is called by the eval_plotting_node during evaluation.
+
+
+# Default Modules
+There is a lot of modules already, some doc wouldn't be bad ...
+
 
 # Examples
 ## Configuring a Planner
+TODO
+
+See eg. `cfg/example_config.yaml` ...
+
 ## Run an Experiment
+TODO
+
+Run `run_experiment.launch` and fiddle with the args I guess ...
