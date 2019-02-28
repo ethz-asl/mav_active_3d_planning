@@ -1,6 +1,8 @@
 #include "mav_active_3d_planning/module_factory.h"
+#include "mav_active_3d_planning/defaults.h"
 
 #include <ros/param.h>
+#include <ros/node_handle.h>
 #include <ros/console.h>
 
 // Default modules
@@ -94,14 +96,15 @@ namespace mav_active_3d_planning {
         }
     }
 
-    ValueComputer *ModuleFactory::createValueComputer(std::string param_ns){
-        std::string type;
-        ros::param::param<std::string>(param_ns + "/type", type, "Linear");
-        if (type == "Linear") {
-            return new value_computers::Linear(param_ns); }
-        else if (type == "LinearAccumulated") {
-            return new value_computers::LinearAccumulated(param_ns); }
-        else {
+    std::unique_ptr<ValueComputer> ModuleFactory::createValueComputer(std::string param_ns, bool verbose){
+        ros::NodeHandle nh(param_ns);
+        std::string type("LinearValue");
+        if (!nh.getParam("type", type) && verbose){
+            ROS_INFO("No ValueComputer type specified, using default.");
+        }
+        if (type == "LinearValue") {
+            return value_computers::LinearValue::createFromRos(nh, verbose);
+        } else {
             ROS_ERROR("Unknown ValueComputer type '%s'.", type.c_str());
             return nullptr;
         }

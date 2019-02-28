@@ -6,7 +6,9 @@
 #include "mav_active_3d_planning/back_tracker.h"
 
 #include <voxblox_ros/esdf_server.h>
+
 #include <string>
+#include <memory>
 
 namespace mav_active_3d_planning {
 
@@ -30,7 +32,7 @@ namespace mav_active_3d_planning {
         static CostComputer *createCostComputer(std::string param_ns);
 
         // TrajectoryEvaluator -> computeValue wrappers
-        static ValueComputer *createValueComputer(std::string param_ns);
+        static std::unique_ptr<ValueComputer> createValueComputer(std::string param_ns, bool verbose);
 
         // TrajectoryEvaluator -> selectNextBest wrappers
         static NextSelector *createNextSelector(std::string param_ns);

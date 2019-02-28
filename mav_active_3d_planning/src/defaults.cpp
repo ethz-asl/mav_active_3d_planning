@@ -1,5 +1,6 @@
 #include "mav_active_3d_planning/defaults.h"
 
+#include <ros/console.h>
 #include <ros/param.h>
 
 #include <random>

@@ -5,9 +5,12 @@
 #include "mav_active_3d_planning/defaults.h"
 
 #include <voxblox_ros/esdf_server.h>
+#include <ros/node_handle.h>
+#include <ros/console.h>
 #include <Eigen/Core>
 
 #include <string>
+#include <memory>
 
 namespace mav_active_3d_planning {
 
@@ -51,7 +54,7 @@ namespace mav_active_3d_planning {
 
         // default modules
         CostComputer* cost_computer_;
-        ValueComputer* value_computer_;
+        std::unique_ptr<ValueComputer> value_computer_;
         NextSelector* next_selector_;
         EvaluatorUpdater* evaluator_updater_;
     };

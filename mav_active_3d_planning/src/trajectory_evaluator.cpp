@@ -12,7 +12,6 @@ namespace mav_active_3d_planning {
             : voxblox_ptr_(voxblox_ptr),
               bounding_volume_(param_ns + "/bounding_volume"),
               cost_computer_(nullptr),
-              value_computer_(nullptr),
               next_selector_(nullptr),
               evaluator_updater_(nullptr),
               p_namespace_(param_ns) {}
@@ -27,8 +26,8 @@ namespace mav_active_3d_planning {
 
     bool TrajectoryEvaluator::computeValue(TrajectorySegment &traj_in) {
         // If not implemented use a (default) module
-        if (value_computer_ == nullptr){
-            value_computer_ = ModuleFactory::createValueComputer(p_namespace_+"/value_computer");
+        if (!value_computer_){
+            value_computer_ = ModuleFactory::createValueComputer(p_namespace_+"/value_computer", true); //true for test
         }
         return value_computer_->computeValue(traj_in);
     }
