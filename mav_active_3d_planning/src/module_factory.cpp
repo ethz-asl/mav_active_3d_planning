@@ -24,6 +24,7 @@
 
 namespace mav_active_3d_planning {
 
+    // Module lists
     TrajectoryGenerator *ModuleFactory::createTrajectoryGenerator(voxblox::EsdfServer *voxblox_ptr,
                                                                   std::string param_ns) {
         std::string type;
@@ -46,13 +47,14 @@ namespace mav_active_3d_planning {
         std::string type;
         ros::param::param<std::string>(param_ns + "/type", type, "Naive");
         if (type == "Naive") {
-            return new trajectory_evaluators::Naive(voxblox_ptr, param_ns);
+//            return new trajectory_evaluators::Naive(voxblox_ptr, param_ns);
         } else if (type == "Frontier") {
-            return new trajectory_evaluators::Frontier(voxblox_ptr, param_ns);
+//            return new trajectory_evaluators::Frontier(voxblox_ptr, param_ns);
         } else {
             ROS_ERROR("Unknown TrajectoryEvaluator type '%s'.", type.c_str());
             return nullptr;
         }
+        return nullptr;
     }
 
     SegmentSelector *ModuleFactory::createSegmentSelector(std::string param_ns) {
@@ -96,18 +98,22 @@ namespace mav_active_3d_planning {
         }
     }
 
-    std::unique_ptr<ValueComputer> ModuleFactory::createValueComputer(std::string param_ns, bool verbose){
-        ros::NodeHandle nh(param_ns);
+    std::unique_ptr<ValueComputer> ModuleFactory::createValueComputer(std::string args, bool verbose){
         std::string type("LinearValue");
-        if (!nh.getParam("type", type) && verbose){
-            ROS_INFO("No ValueComputer type specified, using default.");
-        }
+        Module::ParamMap map;
+        ValueComputer* result;
+        getParamMapAndType(&map, &type, args);
+
         if (type == "LinearValue") {
-            return value_computers::LinearValue::createFromRos(nh, verbose);
+            result = new value_computers::LinearValue();
         } else {
-            ROS_ERROR("Unknown ValueComputer type '%s'.", type.c_str());
+            printError("Uknown ValueComputer '" + type + "'.");
             return nullptr;
         }
+
+        result->setupFromParamMap(&map);
+        if (verbose) { printVerbose(map); }
+        return std::unique_ptr<ValueComputer>(result);
     }
 
     NextSelector *ModuleFactory::createNextSelector(std::string param_ns) {
@@ -138,15 +144,54 @@ namespace mav_active_3d_planning {
 
     BackTracker *ModuleFactory::createBackTracker(std::string param_ns) {
         std::string type;
-        ros::param::param<std::string>(param_ns + "/type", type, "Rotate");
-        if (type == "Rotate") {
-            return new back_trackers::Rotate(param_ns);
+        ros::param::param<std::string>(param_ns + "/type", type, "RotateInPlace");
+        if (type == "RotateInPlace") {
+            return new back_trackers::RotateInPlace(param_ns);
         } else if (type == "RotateReverse") {
             return new back_trackers::RotateReverse(param_ns);
         } else {
             ROS_ERROR("Unknown BackTracker type '%s'.", type.c_str());
             return nullptr;
         }
+    }
+
+    // Core functionality
+    ModuleFactory* ModuleFactory::instance_ = nullptr;
+
+    ModuleFactory* ModuleFactory::Instance(){
+        if (!instance_) {
+            // Just default to a ROS factory atm
+            instance_ = new ModuleFactoryROS();
+        }
+        return instance_;
+    }
+
+    // ROS factory
+    bool ModuleFactoryROS::getParamMapAndType(Module::ParamMap *map, std::string* type, std::string args){
+        // For the ros factory, args is the namespace of the module
+        ros::NodeHandle nh(args);
+        std::vector<std::string> keys;
+        std::string value;
+        nh.getParamNames(keys);
+        for (int i = 0; i > keys.size(); ++i){
+            nh.getParam(keys[i], value);
+            (*map)[keys[i]] = value;
+        }
+        std::string type_default("");
+        if (!nh.getParam("type", *type)){
+            type_default = " (default)";
+        }
+        (*map)["verbose_text"] = "Creating Module '" + *type + type_default +"' from namespace '"
+                                + args + "' with parameters:";
+        return true;
+    }
+
+    void ModuleFactoryROS::printVerbose(const Module::ParamMap &map){
+        ROS_INFO("%s", map.at("verbose_text").c_str()); // Will warn about formatting otherwise
+    }
+
+    void ModuleFactoryROS::printError(std::string message){
+        ROS_ERROR("%s", message.c_str());   // Will warn about formatting otherwise
     }
 
 } // namepsace mav_active_3d_planning

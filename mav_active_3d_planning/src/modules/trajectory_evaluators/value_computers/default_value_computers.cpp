@@ -1,4 +1,5 @@
 #include "mav_active_3d_planning/trajectory_evaluator.h"
+#include "mav_active_3d_planning/module_factory.h"
 
 #include <ros/param.h>
 
@@ -7,38 +8,26 @@ namespace mav_active_3d_planning {
 
         // Linear combination of cost and gain
         class LinearValue : public ValueComputer {
+            friend ModuleFactory;
+
         public:
             LinearValue(double cost_weight, double gain_weight)
                 : cost_weight_(cost_weight),
                   gain_weight_(gain_weight) {}
 
-            static std::unique_ptr<ValueComputer> createFromRos(const ros::NodeHandle &nh, bool verbose){
-                if (verbose) {
-                    S_INFO("Creating 'ValueComputer: LinearValue' from '%s' with parameters:", nh.getNamespace());
-                }
-
-                // Default values
-                double cost_weight = 1.0;
-                double gain_weight = 1.0;
-
-                // Get parameters
-                defaults::setParamFromRos<double>(nh, "cost_weight", &cost_weight, verbose);
-                defaults::setParamFromRos<double>(nh, "gain_weight", &gain_weight, verbose, &LinearValue::validGain);
-
-                return std::unique_ptr<ValueComputer>(new LinearValue(cost_weight, gain_weight));
-            }
-
-            static bool validGain(double gain){
-                // For param requirements, test example
-                return gain > 0.0;
-            }
-
-            bool computeValue(TrajectorySegment &traj_in) {
-                traj_in.value = gain_weight_ * traj_in.gain - cost_weight_ * traj_in.cost;
+            bool computeValue(TrajectorySegment *traj_in) {
+                traj_in->value = gain_weight_ * traj_in->gain - cost_weight_ * traj_in->cost;
                 return true;
             }
 
         protected:
+            LinearValue() {}
+
+            void setupFromParamMap(ParamMap *param_map){
+                setParam<double>(param_map, "cost_weight", &cost_weight_, 1.0);
+                setParam<double>(param_map, "gain_weight", &gain_weight_, 1.0);
+            }
+
             double cost_weight_;
             double gain_weight_;
         };
