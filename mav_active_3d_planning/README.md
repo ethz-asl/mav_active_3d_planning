@@ -44,7 +44,11 @@ We provide a framework for buidling and evaluating sampling based, receding hori
 Coming...
 
 ## Dependencies
+Uses [nanoflann](#https://github.com/jlblancoc/nanoflann). (included as header lib, no need to install)
+
 To run the mav_active_3d_planning simulation framework, the following packages are required: `gazebo_ros`, `rotors_gazebo`, `mav_nonlinear_mpc`, `mav_lowlevel_attitude_controller`, `voxblox_ros` and `unreal_cv_ros`.
+
+Other modules use `mav_trajectory_generation`.
 
 ## Data Repository
 Related ressources can be downloaded from [here](https://www.polybox.ethz.ch/index.php/s/6vhPDINcISbEogg). 
