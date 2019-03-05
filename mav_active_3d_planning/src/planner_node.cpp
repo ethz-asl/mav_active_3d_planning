@@ -135,7 +135,7 @@ namespace mav_active_3d_planning {
         target_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
                 mav_msgs::default_topics::COMMAND_TRAJECTORY, 10);
         trajectory_vis_pub_ = nh_.advertise<visualization_msgs::Marker>("trajectory_visualization", 1000);
-        odom_sub_ = nh_.subscribe("odometry", 1, &PlannerNode::odomCallback, this);
+        odom_sub_ = nh_.subscribe("odometry", 2, &PlannerNode::odomCallback, this);
 
         // Initialize a random seed once
         srand(time(NULL));

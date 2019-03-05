@@ -18,8 +18,8 @@
   <arg name="remove_freespace_points" default="false"/>
   
   <!--  Planner arguments (tg_uniform, tg_random_linear, general, nbvp_bircher)-->
-  <arg name="use_separate_configs" default="true"/>
-  <arg name="planner_general_config" default="planners/general.yaml"/>
+  <arg name="use_separate_configs" default="false"/>
+  <arg name="planner_general_config" default="planners/nbvp_bircher.yaml"/>
   <arg name="planner_generator_config" default="planners/modules/tg_random_linear.yaml"/>
   <arg name="planner_evaluator_config" default="planners/modules/te_frontier.yaml"/>
   <arg name="verbose_planner" default="true"/>
