@@ -91,7 +91,6 @@ namespace mav_active_3d_planning {
         TrajectorySegment* RRT::selectSegment(TrajectorySegment &root){
             // If the root has changed, reset the kdtree and populate with the current trajectory tree
             if (previous_root_ != &root){
-                ROS_DEBUG("Reset Tree");
                 std::vector<TrajectorySegment*> currrent_tree;
                 root.getTree(currrent_tree);
                 tree_data_.clear();
@@ -149,9 +148,7 @@ namespace mav_active_3d_planning {
                 // Segment selection failed
                 return false;
             }
-            ROS_DEBUG("value %.2f, traj length %i", target.value, (int)target.trajectory.size());
 
-            ROS_DEBUG_STREAM("Target:\n" << target.trajectory.back().position_W);
             // Check max segment range
             Eigen::Vector3d start_pos = target.trajectory.back().position_W;
             Eigen::Vector3d direction = goal_pos_ - start_pos;
