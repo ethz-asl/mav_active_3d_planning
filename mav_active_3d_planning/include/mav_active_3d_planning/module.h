@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <map>
+#include <stdexcept>
 
 namespace mav_active_3d_planning {
 
@@ -45,6 +46,20 @@ namespace mav_active_3d_planning {
             }
             (*map)[std::string("verbose_text")] = verbose_text;
         }
+
+        // Throw an exception if module parametrization is invalid. Call this after module constructors.
+        void assureParamsValid() {
+            std::string error_message(""); // default error
+            if (!checkParamsValid(&error_message)){
+                throw std::invalid_argument("Invalid module parameters: " + error_message);
+            }
+        }
+
+        // Allow modules to specify validity conditions. Return true if valid. Per default all params are valid.
+        virtual bool checkParamsValid(std::string *error_message) { return true; }
+
+        // whether to display the module creation info
+        bool verbose_modules_;
     };
 
 }; // namepsace mav_active_3d_planning

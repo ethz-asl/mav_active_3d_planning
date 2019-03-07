@@ -1,10 +1,10 @@
 trajectory_evaluator:
-  type: "Frontier"
+  type: "Naive"
   sampling_time: 0.0
   clear_from_parents: false
     
   value_computer:
-    type: "LinearAccumulated"
+    type: "LinearValue"
     cost_weight: 1.0
     gain_weight: 0.1
     

@@ -14,12 +14,20 @@ namespace mav_active_3d_planning {
         // Naive just counts the number of yet unobserved visible voxels.
         class Naive: public TrajectoryEvaluator {
         public:
-            Naive(voxblox::EsdfServer *voxblox_ptr, std::string param_ns);
+            Naive(std::shared_ptr<voxblox::EsdfServer> voxblox_ptr, std::string param_ns);
 
             // Overwrite virtual functions
-            bool computeGain(TrajectorySegment &traj_in);
+            bool computeGain(TrajectorySegment *traj_in);
 
         protected:
+            friend ModuleFactory;
+
+            Naive() {}
+
+            void setupFromParamMap(ParamMap *param_map){
+//                setParam<double>(param_map, "cost_weight", &cost_weight_, 1.0);
+            }
+
             // members
             RayCaster ray_caster_;
 
@@ -28,7 +36,7 @@ namespace mav_active_3d_planning {
             bool p_clear_from_parents_;
         };
 
-        Naive::Naive(voxblox::EsdfServer *voxblox_ptr, std::string param_ns)
+        Naive::Naive(std::shared_ptr<voxblox::EsdfServer> voxblox_ptr, std::string param_ns)
             : TrajectoryEvaluator(voxblox_ptr, param_ns),
               ray_caster_(voxblox_ptr, param_ns) {
             // params
@@ -36,12 +44,13 @@ namespace mav_active_3d_planning {
             ros::param::param<bool>(param_ns + "/clear_from_parents", p_clear_from_parents_, false);
         }
 
-        bool Naive::computeGain(TrajectorySegment &traj_in) {
-            traj_in.info.clear();
-            std::vector<int> indices = defaults::samplePointsFromSegment(traj_in, p_sampling_time_);
+        bool Naive::computeGain(TrajectorySegment *traj_in) {
+            traj_in->info.clear();
+            std::vector<int> indices = defaults::samplePointsFromSegment(*traj_in, p_sampling_time_);
             for (int i=0; i < indices.size(); ++i ){
-                std::vector <Eigen::Vector3d> new_voxels = ray_caster_.getVisibleVoxels(
-                        traj_in.trajectory[indices[i]].position_W, traj_in.trajectory[indices[i]].orientation_W_B);
+                std::vector <Eigen::Vector3d> new_voxels;
+                ray_caster_.getVisibleVoxels(&new_voxels, traj_in->trajectory[indices[i]].position_W,
+                                             traj_in->trajectory[indices[i]].orientation_W_B);
 
                 // Check for interesting bounding box and already seen voxels
                 if (bounding_volume_.is_setup){
@@ -53,33 +62,33 @@ namespace mav_active_3d_planning {
                 new_voxels.erase(std::remove_if(new_voxels.begin(), new_voxels.end(), [this](const Eigen::Vector3d& voxel) {
                     return voxblox_ptr_->getEsdfMapPtr()->isObserved(voxel); } ), new_voxels.end());
 
-                traj_in.info.insert(traj_in.info.begin(), new_voxels.begin(), new_voxels.end());
+                traj_in->info.insert(traj_in->info.begin(), new_voxels.begin(), new_voxels.end());
             }
 
             // Remove non-unique voxels
-            traj_in.info.erase( std::unique( traj_in.info.begin(), traj_in.info.end()), traj_in.info.end() );
+            traj_in->info.erase( std::unique( traj_in->info.begin(), traj_in->info.end()), traj_in->info.end() );
 
             // Remove voxels previously seen by parent (this is quite expensive)
             if(p_clear_from_parents_){
-                TrajectorySegment* previous = traj_in.parent;
+                TrajectorySegment* previous = traj_in->parent;
                 while (previous){
                     std::vector <Eigen::Vector3d> old_indices = previous->info;
-                    traj_in.info.erase(
+                    traj_in->info.erase(
                             std::remove_if(
-                                    traj_in.info.begin(),
-                                    traj_in.info.end(),
+                                    traj_in->info.begin(),
+                                    traj_in->info.end(),
                                     [&old_indices](const Eigen::Vector3d& global_index)
                                     {
                                         auto it = std::find(old_indices.begin(), old_indices.end(), global_index);
                                         return (it != old_indices.end());
                                     }),
-                            traj_in.info.end());
+                            traj_in->info.end());
                     previous = previous->parent;
                 }
             }
 
             // Set gain (#new voxels)
-            traj_in.gain = (double)traj_in.info.size();
+            traj_in->gain = (double)traj_in->info.size();
             return true;
         }
     } // namespace trajectory_evaluators

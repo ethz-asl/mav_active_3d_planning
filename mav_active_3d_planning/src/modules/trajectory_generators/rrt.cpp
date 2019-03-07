@@ -54,6 +54,14 @@ namespace mav_active_3d_planning {
             virtual bool expandSegment(TrajectorySegment &target);
 
         protected:
+            friend ModuleFactory;
+
+            RRT() {}
+
+            void setupFromParamMap(ParamMap *param_map){
+//                setParam<double>(param_map, "cost_weight", &cost_weight_, 1.0);
+            }
+
             // parameters
             double p_velocity_;         // m/s
             double p_sampling_rate_;    // Hz

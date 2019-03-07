@@ -18,9 +18,17 @@ namespace mav_active_3d_planning {
             MavTrajectoryGeneration(voxblox::EsdfServer *voxblox_ptr, std::string param_ns);
 
             // Overwrite virtual functions
-            bool expandSegment(TrajectorySegment &target);
+            bool expandSegment(TrajectorySegment *target);
 
         protected:
+            friend ModuleFactory;
+
+            MavTrajectoryGeneration() {}
+
+            void setupFromParamMap(ParamMap *param_map){
+//                setParam<double>(param_map, "cost_weight", &cost_weight_, 1.0);
+            }
+
             // parameters
             double p_distance_max_;
             double p_distance_min_;
@@ -68,11 +76,11 @@ namespace mav_active_3d_planning {
             parameters_ = mav_trajectory_generation::NonlinearOptimizationParameters();
         }
 
-        bool MavTrajectoryGeneration::expandSegment(TrajectorySegment &target) {
+        bool MavTrajectoryGeneration::expandSegment(TrajectorySegment *target) {
             // Create and add new adjacent trajectories to target segment
-            target.tg_visited = true;
+            target->tg_visited = true;
             int valid_segments = 0;
-            Eigen::Vector3d start_pos = target.trajectory.back().position_W;
+            Eigen::Vector3d start_pos = target->trajectory.back().position_W;
             srand(time(NULL));
             int counter = 0;
 
@@ -87,10 +95,10 @@ namespace mav_active_3d_planning {
 
                 // create trajectory (4D)
                 Eigen::Vector4d start4, goal4, vel4, acc4;
-                start4 << start_pos, target.trajectory.back().getYaw();
+                start4 << start_pos, target->trajectory.back().getYaw();
                 goal4 << goal_pos, yaw;
-                vel4 << target.trajectory.back().velocity_W, target.trajectory.back().getYawRate();
-                acc4 << target.trajectory.back().acceleration_W, target.trajectory.back().getYawAcc();
+                vel4 << target->trajectory.back().velocity_W, target->trajectory.back().getYawRate();
+                acc4 << target->trajectory.back().acceleration_W, target->trajectory.back().getYawAcc();
 
                 mav_trajectory_generation::Vertex::Vector vertices;
                 const int derivative_to_optimize = mav_trajectory_generation::derivative_order::ACCELERATION;
@@ -149,7 +157,7 @@ namespace mav_active_3d_planning {
                 if (collided) { continue; }
 
                 // Build result
-                TrajectorySegment *new_segment = target.spawnChild();
+                TrajectorySegment *new_segment = target->spawnChild();
                 new_segment->trajectory = states;
                 valid_segments++;
             }

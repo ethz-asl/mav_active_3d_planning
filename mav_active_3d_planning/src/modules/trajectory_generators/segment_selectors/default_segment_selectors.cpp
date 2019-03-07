@@ -1,8 +1,6 @@
 #include "mav_active_3d_planning/trajectory_generator.h"
 #include "mav_active_3d_planning/defaults.h"
 
-#include <ros/param.h>
-
 #include <vector>
 #include <algorithm>
 #include <random>
@@ -13,47 +11,56 @@ namespace mav_active_3d_planning {
         // Select segment with highest value
         class Greedy : public SegmentSelector {
         public:
-            Greedy(std::string param_ns) {
-                ros::param::param<bool>(param_ns + "/leaves_only", leaves_only_, false);    // Leaves or tree
-            }
+            Greedy(bool leaves_only) : leaves_only_(leaves_only) {}
 
-            TrajectorySegment* selectSegment(TrajectorySegment &root){
+            bool selectSegment(TrajectorySegment *result, TrajectorySegment *root) {
                 std::vector<TrajectorySegment*> candidates;
                 if (leaves_only_) {
-                    root.getLeaves(candidates);
+                    root->getLeaves(candidates);
                 } else {
-                    root.getTree(candidates);
+                    root->getTree(candidates);
                 }
-                return *std::max_element(candidates.begin(), candidates.end(), TrajectorySegment::comparePtr);
+                result = *std::max_element(candidates.begin(), candidates.end(), TrajectorySegment::comparePtr);
+                return true;
             }
 
         protected:
+            friend ModuleFactory;
+
+            Greedy() {}
+
+            void setupFromParamMap(ParamMap *param_map){
+                setParam<bool>(param_map, "leaves_only", &leaves_only_, false);
+            }
+
+            // variables
             bool leaves_only_;
         };
 
-        // Select certain segments weighted random, most configurable
+        // Select segments at random, weighted with their value
         class RandomWeighted : public SegmentSelector {
         public:
-            RandomWeighted(std::string param_ns) {
-                ros::param::param<double>(param_ns + "/factor", factor_, 0.0);  // weighting, 0 for uniform
-                ros::param::param<bool>(param_ns + "/leaves_only", leaves_only_, false);    // Leaves or tree
-                ros::param::param<bool>(param_ns + "/revisit", revisit_, false);    // only unchecked segments
-                ros::param::param<double>(param_ns + "/uniform_weight", uniform_weight_, 0.0);    // part of probability
-                // mass that is distributed uniformly (to guarantee non-zero probability for all candidates)
+            RandomWeighted(double factor, double uniform_weight, bool leaves_only, bool revisit)
+                : factor_(factor),
+                  uniform_weight_(uniform_weight),
+                  revisit_(revisit),
+                  leaves_only_(leaves_only){
             }
 
-            TrajectorySegment* selectSegment(TrajectorySegment &root){
+            bool selectSegment(TrajectorySegment *result, TrajectorySegment *root) {
                 std::vector<TrajectorySegment*> candidates;
+                // Get all candidates
                 if (leaves_only_) {
-                    root.getLeaves(candidates);
+                    root->getLeaves(candidates);
                 } else {
-                    root.getTree(candidates);
+                    root->getTree(candidates);
                 }
                 if (!revisit_){
                     candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
                             [](const TrajectorySegment* segment) {return segment->tg_visited;}), candidates.end());
                 }
                 if (factor_ > 0.0 && (double)rand()/RAND_MAX >= uniform_weight_){
+                    // Weighted selection, cdf of every elements value ^ factor
                     std::vector<double> values(candidates.size());
                     double value_sum = 0.0;
                     // shift to 0 to compensate for negative values
@@ -68,18 +75,34 @@ namespace mav_active_3d_planning {
                     double realization = (double) rand() / RAND_MAX * value_sum;
                     for (int i = 0; i < candidates.size(); ++i) {
                         if (values[i] >= realization) {
-                            return candidates[i];
+                            result = candidates[i];
+                            return true;
                         }
                     }
                 }
-                return candidates[rand() % candidates.size()];
+                // uniform selection
+                result = candidates[rand() % candidates.size()];
+                return true;
             }
 
         protected:
+            friend ModuleFactory;
+
+            RandomWeighted() {}
+
+            void setupFromParamMap(ParamMap *param_map){
+                setParam<double>(param_map, "factor", &factor_, 0.0);
+                setParam<double>(param_map, "uniform_weight", &uniform_weight_, 0.0);
+                setParam<bool>(param_map, "leaves_only", &leaves_only_, false);
+                setParam<bool>(param_map, "revisit", &revisit_, false);
+            }
+
+            // variables
             bool leaves_only_;
-            bool revisit_;
-            double factor_;
-            double uniform_weight_;
+            bool revisit_;  // only unchecked segments
+            double factor_; // weighting (potency), 0 for uniform
+            double uniform_weight_;// part of probability mass that is distributed uniformly (to guarantee non-zero
+            // probability for all candidates)
         };
 
     } // namespace segment_selectors

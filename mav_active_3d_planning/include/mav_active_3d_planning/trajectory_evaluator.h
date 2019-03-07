@@ -2,6 +2,7 @@
 #define MAV_ACTIVE_3D_PLANNING_TRAJECTORY_EVALUATOR_H
 
 #include "mav_active_3d_planning/trajectory_segment.h"
+#include "mav_active_3d_planning/module.h"
 #include "mav_active_3d_planning/defaults.h"
 
 #include <voxblox_ros/esdf_server.h>
@@ -21,30 +22,34 @@ namespace mav_active_3d_planning {
     class EvaluatorUpdater;
 
     // Base class for trajectory evaluators to provide uniform interface with other classes
-    class TrajectoryEvaluator {
+    class TrajectoryEvaluator : public Module {
     public:
-        TrajectoryEvaluator(voxblox::EsdfServer *voxblox_ptr, std::string param_ns);
+        TrajectoryEvaluator(std::shared_ptr<voxblox::EsdfServer> voxblox_ptr, std::string param_ns);
 
         virtual ~TrajectoryEvaluator() {}
 
         // compute the gain of a TrajectorySegment
-        virtual bool computeGain(TrajectorySegment &traj_in) = 0;
+        virtual bool computeGain(TrajectorySegment *traj_in) = 0;
 
         // compute the cost of a TrajectorySegment
-        virtual bool computeCost(TrajectorySegment &traj_in);
+        virtual bool computeCost(TrajectorySegment *traj_in);
 
         // compute the Value of a segment with known cost and gain
-        virtual bool computeValue(TrajectorySegment &traj_in);
+        virtual bool computeValue(TrajectorySegment *traj_in);
 
         // return the index of the most promising child segment
-        virtual int selectNextBest(TrajectorySegment &traj_in);
+        virtual int selectNextBest(const TrajectorySegment &traj_in);
 
         // Whether and how to update existing segments when a new trajectory is executed
-        virtual bool updateSegments(TrajectorySegment &root);
+        virtual bool updateSegments(TrajectorySegment *root);
 
     protected:
+        friend class ModuleFactory;
+
+        TrajectoryEvaluator() {}
+
         // Voxblox map
-        voxblox::EsdfServer *voxblox_ptr_;
+        std::shared_ptr<voxblox::EsdfServer> voxblox_ptr_;
 
         // bounding volume of interesting target
         defaults::BoundingVolume bounding_volume_;
@@ -53,54 +58,66 @@ namespace mav_active_3d_planning {
         std::string p_namespace_;
 
         // default modules
-        CostComputer* cost_computer_;
+        std::unique_ptr<CostComputer> cost_computer_;
         std::unique_ptr<ValueComputer> value_computer_;
-        NextSelector* next_selector_;
-        EvaluatorUpdater* evaluator_updater_;
+        std::unique_ptr<NextSelector> next_selector_;
+        std::unique_ptr<EvaluatorUpdater> evaluator_updater_;
+
+        // factory accessors
+        void setVoxbloxPtr(const std::shared_ptr<voxblox::EsdfServer> &voxblox_ptr);
+
+        virtual void setupFromParamMap(Module::ParamMap *param_map);
     };
 
     // Abstract wrapper for default/modular implementations of the computeCost method
-    class CostComputer {
+    class CostComputer : public Module {
     public:
-        virtual bool computeCost(TrajectorySegment &traj_in) = 0;
+        virtual bool computeCost(TrajectorySegment *traj_in) = 0;
     };
 
     // Abstract wrapper for default/modular implementations of the computeValue method
-    class ValueComputer {
+    class ValueComputer : public Module {
     public:
-        virtual bool computeValue(TrajectorySegment &traj_in) = 0;
+        virtual bool computeValue(TrajectorySegment *traj_in) = 0;
     };
 
     // Abstract wrapper for default/modular implementations of the selectNextBest method
-    class NextSelector {
+    class NextSelector : public Module {
     public:
-        virtual int selectNextBest(TrajectorySegment &traj_in) = 0;
+        virtual int selectNextBest(const TrajectorySegment &traj_in) = 0;
     };
 
     // Abstract wrapper for default/modular implementations of the updateSegments method
-    class EvaluatorUpdater {
+    class EvaluatorUpdater : public Module {
     public:
         EvaluatorUpdater(TrajectoryEvaluator* parent = nullptr) : parent_(parent) {};
 
-        virtual bool updateSegments(TrajectorySegment &root) = 0;
+        virtual bool updateSegments(TrajectorySegment *root) = 0;
 
     protected:
-        TrajectoryEvaluator* parent_;
+        friend class ModuleFactory;
+
+        TrajectoryEvaluator* parent_;   // modules are unique ptrs, parent is always valid
+
+        void setParent(TrajectoryEvaluator* parent);
     };
 
     // Utility class that finds visible voxels. Available for all trajectory generators, improve performance here.
     class RayCaster {
     public:
-        RayCaster(voxblox::EsdfServer *voxblox_ptr, std::string param_ns);
+        RayCaster(std::shared_ptr<voxblox::EsdfServer> voxblox_ptr, std::string param_ns);
+
+        RayCaster() {}
 
         virtual ~RayCaster() {}
 
         // Return the voxel centers of all visible voxels for a simple camera model pointing in x-direction
-        std::vector <Eigen::Vector3d> getVisibleVoxels(Eigen::Vector3d position, Eigen::Quaterniond orientation);
+        bool getVisibleVoxels(std::vector <Eigen::Vector3d> *result, const Eigen::Vector3d &position,
+                              const Eigen::Quaterniond &orientation);
 
     protected:
         // voxblox map
-        voxblox::EsdfServer *voxblox_ptr_;
+        std::shared_ptr<voxblox::EsdfServer> voxblox_ptr_;
 
         // parameters
         double p_ray_length_;

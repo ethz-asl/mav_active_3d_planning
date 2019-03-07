@@ -13,9 +13,17 @@ namespace mav_active_3d_planning {
             Uniform(voxblox::EsdfServer *voxblox_ptr, std::string param_ns);
 
             // Overwrite virtual functions
-            bool expandSegment(TrajectorySegment &target);
+            bool expandSegment(TrajectorySegment *target);
 
         protected:
+            friend ModuleFactory;
+
+            Uniform() {}
+
+            void setupFromParamMap(ParamMap *param_map){
+//                setParam<double>(param_map, "cost_weight", &cost_weight_, 1.0);
+            }
+
             // parameters
             double p_distance_;         // m
             double p_velocity_;         // m/s
@@ -36,18 +44,18 @@ namespace mav_active_3d_planning {
             ros::param::param<bool>(param_ns + "/planar", p_planar_, true);
         }
 
-        bool Uniform::expandSegment(TrajectorySegment &target) {
+        bool Uniform::expandSegment(TrajectorySegment *target) {
             // Create and add new adjacent trajectories to target segment
-            target.tg_visited = true;
+            target->tg_visited = true;
             int valid_segments = 0;
-            TrajectorySegment *new_segment = target.spawnChild();
+            TrajectorySegment *new_segment = target->spawnChild();
 
             for (int i = 0; i < p_n_segments_; ++i) {
                 // Initialization
                 new_segment->trajectory.clear();
-                Eigen::Vector3d current_pos = target.trajectory.back().position_W;
+                Eigen::Vector3d current_pos = target->trajectory.back().position_W;
                 double yaw_rate = ((double) i - (double) p_n_segments_ / 2.0 + 0.5) * p_yaw_rate_max_;
-                double current_yaw = target.trajectory.back().getYaw();
+                double current_yaw = target->trajectory.back().getYaw();
                 double current_distance = 0.0;
                 double current_time = 0.0;
                 bool collided = false;
@@ -71,10 +79,10 @@ namespace mav_active_3d_planning {
                 }
                 if (!collided) {
                     valid_segments++;
-                    new_segment = target.spawnChild();
+                    new_segment = target->spawnChild();
                 }
             }
-            target.children.pop_back();
+            target->children.pop_back();
             // Feasible solution found?
             return (valid_segments > 0);
         }

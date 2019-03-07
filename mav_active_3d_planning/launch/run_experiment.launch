@@ -18,7 +18,7 @@
   
   <!--  Planner arguments -->
   <arg name="planner_general_config" default="planner/general.yaml"/>
-  <arg name="planner_generator_config" default="planner/tg_random_linear.yaml"/>
+  <arg name="planner_generator_config" default="planner/tg_uniform.yaml"/>
   <arg name="planner_evaluator_config" default="planner/te_frontier.yaml"/>
   <arg name="verbose_planner" default="true"/>
   

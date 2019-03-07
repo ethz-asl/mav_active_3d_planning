@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+
 #include "mav_active_3d_planning/defaults.h"
 
 #include <ros/console.h>
@@ -10,26 +12,56 @@
 namespace mav_active_3d_planning {
     namespace defaults {
 
-        BoundingVolume::BoundingVolume(std::string param_ns) : is_setup(false) {
-            ros::param::param<double>(param_ns + "/x_min", x_min, 0.0);
-            ros::param::param<double>(param_ns + "/x_max", x_max, 0.0);
-            ros::param::param<double>(param_ns + "/y_min", y_min, 0.0);
-            ros::param::param<double>(param_ns + "/y_max", y_max, 0.0);
-            ros::param::param<double>(param_ns + "/z_min", z_min, 0.0);
-            ros::param::param<double>(param_ns + "/z_max", z_max, 0.0);
-            if (x_max - x_min > 0.0 && y_max - y_min > 0.0 && z_max - z_min > 0.0) {
+        bool BoundingVolume::setupFromRos(const ros::NodeHandle &nh){
+            nh.param<double>("x_min", x_min, 0.0);
+            nh.param<double>("x_max", x_max, 0.0);
+            nh.param<double>("y_min", y_min, 0.0);
+            nh.param<double>("y_max", y_max, 0.0);
+            nh.param<double>("z_min", z_min, 0.0);
+            nh.param<double>("z_max", z_max, 0.0);
+
+            // Check params span a valid volume
+            if (x_max > x_min && y_max > y_min && z_max > z_min) {
                 is_setup = true;
+            } else {
+                is_setup = false;
+                ROS_WARN("Bounding volume set up from '%s' does not span a valid volume.", nh.getNamespace().c_str());
             }
+            return is_setup;
         }
 
-        bool BoundingVolume::contains(Eigen::Vector3d point) {
-            if (!is_setup) { return true; }
-            if (point[0] < x_min) { return false; }
-            if (point[0] > x_max) { return false; }
-            if (point[1] < y_min) { return false; }
-            if (point[1] > y_max) { return false; }
-            if (point[2] < z_min) { return false; }
-            if (point[2] > z_max) { return false; }
+        bool BoundingVolume::contains(const Eigen::Vector3d &point) {
+            if (!is_setup) { return true; } // Uninitialized boxes always return true, so can always check them
+            if (point.x() < x_min) { return false; }
+            if (point.x() > x_max) { return false; }
+            if (point.y() < y_min) { return false; }
+            if (point.y() > y_max) { return false; }
+            if (point.z() < z_min) { return false; }
+            if (point.z() > z_max) { return false; }
+            return true;
+        }
+
+        bool SystemConstraints::setupFromRos(const ros::NodeHandle &nh){
+            setupFromDefaults();    // Default initialization
+            nh.getParam("v_max", v_max);
+            nh.getParam("a_max", a_max);
+            nh.getParam("yaw_rate_max", yaw_rate_max);
+
+            // Check params reasonable
+            if (v_max > 0.0 && a_max > 0.0 && yaw_rate_max > 0.0) {
+                is_setup = true;
+            } else {
+                is_setup = false;
+                ROS_WARN("System constraints set up from '%s' are not valid.", nh.getNamespace().c_str());
+            }
+            return is_setup;
+        }
+
+        bool SystemConstraints::setupFromDefaults(){
+            v_max = 1.0;
+            a_max = 1.0;
+            yaw_rate_max = M_PI / 2.0;
+            is_setup = true;
             return true;
         }
 

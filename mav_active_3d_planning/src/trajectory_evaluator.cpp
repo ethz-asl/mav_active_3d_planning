@@ -8,47 +8,57 @@
 
 namespace mav_active_3d_planning {
 
-    TrajectoryEvaluator::TrajectoryEvaluator(voxblox::EsdfServer *voxblox_ptr, std::string param_ns)
+    TrajectoryEvaluator::TrajectoryEvaluator(std::shared_ptr<voxblox::EsdfServer> voxblox_ptr, std::string param_ns)
             : voxblox_ptr_(voxblox_ptr),
               bounding_volume_(param_ns + "/bounding_volume"),
-              cost_computer_(nullptr),
-              next_selector_(nullptr),
-              evaluator_updater_(nullptr),
               p_namespace_(param_ns) {}
 
-    bool TrajectoryEvaluator::computeCost(TrajectorySegment &traj_in) {
+    void TrajectoryEvaluator::setupFromParamMap(ParamMap *param_map){
+//        setParam<double>(param_map, "cost_weight", &cost_weight_, 1.0);
+    }
+
+    bool TrajectoryEvaluator::computeCost(TrajectorySegment *traj_in) {
         // If not implemented use a (default) module
-        if (cost_computer_ == nullptr){
-            cost_computer_ = ModuleFactory::createCostComputer(p_namespace_+"/cost_computer");
+        if (!cost_computer_){
+            cost_computer_ = ModuleFactory::Instance()->createCostComputer(p_namespace_+"/cost_computer", verbose_modules_);
         }
         return cost_computer_->computeCost(traj_in);
     }
 
-    bool TrajectoryEvaluator::computeValue(TrajectorySegment &traj_in) {
+    bool TrajectoryEvaluator::computeValue(TrajectorySegment *traj_in) {
         // If not implemented use a (default) module
         if (!value_computer_){
-            value_computer_ = ModuleFactory::createValueComputer(p_namespace_+"/value_computer", true); //true for test
+            value_computer_ = ModuleFactory::Instance()->createValueComputer(p_namespace_+"/value_computer", verbose_modules_);
         }
         return value_computer_->computeValue(traj_in);
     }
 
-    int TrajectoryEvaluator::selectNextBest(TrajectorySegment &traj_in) {
+    int TrajectoryEvaluator::selectNextBest(const TrajectorySegment &traj_in) {
         // If not implemented use a (default) module
-        if (next_selector_ == nullptr){
-            next_selector_ = ModuleFactory::createNextSelector(p_namespace_+"/next_selector");
+        if (!next_selector_){
+            next_selector_ = ModuleFactory::Instance()->createNextSelector(p_namespace_+"/next_selector", verbose_modules_);
         }
         return next_selector_->selectNextBest(traj_in);
     }
 
-    bool TrajectoryEvaluator::updateSegments(TrajectorySegment &root) {
+    bool TrajectoryEvaluator::updateSegments(TrajectorySegment *root) {
         // If not implemented use a (default) module
-        if (evaluator_updater_ == nullptr){
-            evaluator_updater_ = ModuleFactory::createEvaluatorUpdater(p_namespace_+"/evaluator_updater", this);
+        if (!evaluator_updater_){
+            evaluator_updater_ = ModuleFactory::Instance()->createEvaluatorUpdater(p_namespace_+"/evaluator_updater", this, verbose_modules_);
         }
         return evaluator_updater_->updateSegments(root);
     }
 
-    RayCaster::RayCaster(voxblox::EsdfServer *voxblox_ptr, std::string param_ns) : voxblox_ptr_(voxblox_ptr) {
+    void TrajectoryEvaluator::setVoxbloxPtr(const std::shared_ptr<voxblox::EsdfServer> &voxblox_ptr){
+        voxblox_ptr_ = voxblox_ptr;
+    }
+
+    void EvaluatorUpdater::setParent(TrajectoryEvaluator* parent){
+        parent_ = parent;
+    }
+
+    RayCaster::RayCaster(std::shared_ptr<voxblox::EsdfServer>voxblox_ptr, std::string param_ns)
+        : voxblox_ptr_(voxblox_ptr) {
         // Cache constants from voxblox
         c_voxel_size_ = voxblox_ptr_->getEsdfMapPtr()->voxel_size();
         c_block_size_ = voxblox_ptr_->getEsdfMapPtr()->block_size();
@@ -70,10 +80,8 @@ namespace mav_active_3d_planning {
         c_field_of_view_y_ = 2.0 * atan(p_resolution_y_ /  p_focal_length_ / 2.0);
     }
 
-    std::vector<Eigen::Vector3d> RayCaster::getVisibleVoxels(Eigen::Vector3d position, Eigen::Quaterniond orientation) {
-        std::vector <Eigen::Vector3d> result;
-//        auto start_time = std::chrono::high_resolution_clock::now();
-
+    bool RayCaster::getVisibleVoxels(std::vector <Eigen::Vector3d> *result, const Eigen::Vector3d &position,
+                                     const Eigen::Quaterniond &orientation) {
         // Downsample to voxel size resolution at max range
         int res_x = std::min((int)ceil(p_ray_length_ * c_field_of_view_x_ / (double)c_voxel_size_), p_resolution_x_);
         int res_y = std::min((int)ceil(p_ray_length_ * c_field_of_view_y_ / (double)c_voxel_size_), p_resolution_y_);
@@ -105,13 +113,11 @@ namespace mav_active_3d_planning {
                     voxblox::VoxelIndex voxel_id = voxblox::getGridIndexFromPoint<voxblox::VoxelIndex>(
                             (current_position-center_point).cast<voxblox::FloatingPoint>(), 1.0 / c_voxel_size_);
                     center_point += voxblox::getCenterPointFromGridIndex(voxel_id, c_voxel_size_).cast<double>();
-                    result.push_back(center_point);
+                    result->push_back(center_point);
                 }
             }
         }
-        result.erase(std::unique(result.begin(), result.end()), result.end());
-//        auto end_time = std::chrono::high_resolution_clock::now();
-//        ROS_DEBUG("Raycasting: found %i voxels in %.3f miliseconds", (int)result.size(), (double)((end_time - start_time)/std::chrono::milliseconds(1)));
-        return result;
+        result->erase(std::unique(result->begin(), result->end()), result->end());
+        return true;
     }
 } // namepsace mav_active_3d_planning

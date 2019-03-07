@@ -25,172 +25,217 @@
 namespace mav_active_3d_planning {
 
     // Module lists
-    TrajectoryGenerator *ModuleFactory::createTrajectoryGenerator(voxblox::EsdfServer *voxblox_ptr,
-                                                                  std::string param_ns) {
-        std::string type;
-        ros::param::param<std::string>(param_ns + "/type", type, "Uniform");
-        std::string test = param_ns + "/type";
+    TrajectoryGenerator *ModuleFactory::parseTrajectoryGenerators(std::string type) {
         if (type == "Uniform") {
-            return new trajectory_generators::Uniform(voxblox_ptr, param_ns);
+            return new trajectory_generators::Uniform();
         } else if (type == "RandomLinear") {
-            return new trajectory_generators::RandomLinear(voxblox_ptr, param_ns);
+            return new trajectory_generators::RandomLinear();
         } else if (type == "MavTrajectoryGeneration") {
-            return new trajectory_generators::MavTrajectoryGeneration(voxblox_ptr, param_ns);
+            return new trajectory_generators::MavTrajectoryGeneration();
         } else {
-            ROS_ERROR("Unknown TrajectoryGenerator type '%s'.", type.c_str());
+            printError("Unknown TrajectoryGenerator type'" + type + "'.");
             return nullptr;
         }
     }
 
-    TrajectoryEvaluator *ModuleFactory::createTrajectoryEvaluator(voxblox::EsdfServer *voxblox_ptr,
-                                                                  std::string param_ns) {
-        std::string type;
-        ros::param::param<std::string>(param_ns + "/type", type, "Naive");
+    TrajectoryEvaluator *ModuleFactory::parseTrajectoryEvaluators(std::string type) {
         if (type == "Naive") {
-//            return new trajectory_evaluators::Naive(voxblox_ptr, param_ns);
+            return new trajectory_evaluators::Naive();
         } else if (type == "Frontier") {
-//            return new trajectory_evaluators::Frontier(voxblox_ptr, param_ns);
+            return new trajectory_evaluators::Frontier();
         } else {
-            ROS_ERROR("Unknown TrajectoryEvaluator type '%s'.", type.c_str());
+            printError("Unknown TrajectoryEvaluator type'" + type + "'.");
             return nullptr;
         }
-        return nullptr;
     }
 
-    SegmentSelector *ModuleFactory::createSegmentSelector(std::string param_ns) {
-        std::string type;
-        ros::param::param<std::string>(param_ns + "/type", type, "Greedy");
+    SegmentSelector *ModuleFactory::parseSegmentSelectors(std::string type) {
         if (type == "Greedy") {
-            return new segment_selectors::Greedy(param_ns);
+            return new segment_selectors::Greedy();
         } else if (type == "RandomWeighted") {
-            return new segment_selectors::RandomWeighted(param_ns);
+            return new segment_selectors::RandomWeighted();
         } else {
-            ROS_ERROR("Unknown SegmentSelector type '%s'.", type.c_str());
+            printError("Unknown SegmentSelector type '" + type + "'.");
             return nullptr;
         }
     }
 
-    GeneratorUpdater *ModuleFactory::createGeneratorUpdater(std::string param_ns, TrajectoryGenerator* parent){
-        std::string type;
-        ros::param::param<std::string>(param_ns + "/type", type, "Clear");
-        if (type == "Clear") {
-            return new generator_updaters::Clear();
-        } else if (type == "Void") {
-            return new generator_updaters::Void();
-        } else if (type == "CheckCollision") {
-            return new generator_updaters::CheckCollision(parent);
+    GeneratorUpdater *ModuleFactory::parseGeneratorUpdaters(std::string type) {
+        if (type == "ResetTree") {
+            return new generator_updaters::ResetTree();
+        } else if (type == "UpdateNothing") {
+            return new generator_updaters::UpdateNothing();
+        } else if (type == "RecheckCollision") {
+            return new generator_updaters::RecheckCollision();
         } else {
-            ROS_ERROR("Unknown GeneratorUpdater type '%s'.", type.c_str());
+            printError("Unknown GeneratorUpdater type '" + type + "'.");
             return nullptr;
         }
     }
 
-    CostComputer *ModuleFactory::createCostComputer(std::string param_ns) {
-        std::string type;
-        ros::param::param<std::string>(param_ns + "/type", type, "Time");
-        if (type == "Time") {
-            return new cost_computers::Time();
-        } else if (type == "Distance") {
-            return new cost_computers::Distance();
+    CostComputer *ModuleFactory::parseCostComputers(std::string type) {
+        if (type == "SegmentTime") {
+            return new cost_computers::SegmentTime();
+        } else if (type == "SegmentLength") {
+            return new cost_computers::SegmentLength();
         } else {
-            ROS_ERROR("Unknown CostComputer type '%s'.", type.c_str());
+            printError("Unknown CostComputer type '" + type + "'.");
             return nullptr;
         }
     }
 
-    std::unique_ptr<ValueComputer> ModuleFactory::createValueComputer(std::string args, bool verbose){
-        std::string type("LinearValue");
-        Module::ParamMap map;
-        ValueComputer* result;
-        getParamMapAndType(&map, &type, args);
-
+    ValueComputer *ModuleFactory::parseValueComputers(std::string type) {
         if (type == "LinearValue") {
-            result = new value_computers::LinearValue();
+            return new value_computers::LinearValue();
         } else {
-            printError("Uknown ValueComputer '" + type + "'.");
+            ModuleFactory::Instance()->printError("Unknown ValueComputer type '" + type + "'.");
             return nullptr;
         }
-
-        result->setupFromParamMap(&map);
-        if (verbose) { printVerbose(map); }
-        return std::unique_ptr<ValueComputer>(result);
     }
 
-    NextSelector *ModuleFactory::createNextSelector(std::string param_ns) {
-        std::string type;
-        ros::param::param<std::string>(param_ns + "/type", type, "ImmediateBest");
+    NextSelector *ModuleFactory::parseNextSelectors(std::string type) {
         if (type == "ImmediateBest") {
             return new next_selectors::ImmediateBest();
         } else if (type == "SubsequentBest") {
             return new next_selectors::SubsequentBest();
         } else {
-            ROS_ERROR("Unknown NextSelector type '%s'.", type.c_str());
+            printError("Unknown NextSelector type '" + type + "'.");
             return nullptr;
         }
     }
 
-    EvaluatorUpdater *ModuleFactory::createEvaluatorUpdater(std::string param_ns, TrajectoryEvaluator* parent){
-        std::string type;
-        ros::param::param<std::string>(param_ns + "/type", type, "Void");
-        if (type == "Void") {
-            return new evaluator_updaters::Void();
-        } else if (type == "EvaluateFromScratch") {
-            return new evaluator_updaters::EvaluateFromScratch(parent);
-        } else {
-            ROS_ERROR("Unknown EvaluatorUpdater type '%s'.", type.c_str());
+    EvaluatorUpdater *ModuleFactory::parseEvaluatorUpdaters(std::string type) {
+        if (type == "UpdateNothing") {
+            return new evaluator_updaters::UpdateNothing();
+        }  else {
+            printError("Unknown EvaluatorUpdater type '" + type + "'.");
             return nullptr;
         }
     }
 
-    BackTracker *ModuleFactory::createBackTracker(std::string param_ns) {
-        std::string type;
-        ros::param::param<std::string>(param_ns + "/type", type, "RotateInPlace");
+    BackTracker *ModuleFactory::parseBackTrackers(std::string type) {
         if (type == "RotateInPlace") {
-            return new back_trackers::RotateInPlace(param_ns);
+            return new back_trackers::RotateInPlace();
         } else if (type == "RotateReverse") {
-            return new back_trackers::RotateReverse(param_ns);
+            return new back_trackers::RotateReverse();
         } else {
-            ROS_ERROR("Unknown BackTracker type '%s'.", type.c_str());
+            printError("Unknown BackTracker type '" + type + "'.");
             return nullptr;
         }
     }
 
-    // Core functionality
-    ModuleFactory* ModuleFactory::instance_ = nullptr;
+    // Module factory core functionality
+    ModuleFactory *ModuleFactory::instance_ = nullptr;
 
-    ModuleFactory* ModuleFactory::Instance(){
+    ModuleFactory *ModuleFactory::Instance() {
         if (!instance_) {
-            // Just default to a ROS factory atm
+            // Default to a ROS factory here...
             instance_ = new ModuleFactoryROS();
         }
         return instance_;
     }
 
+    std::unique_ptr <TrajectoryGenerator> ModuleFactory::createTrajectoryGenerator(std::string args,
+                                                                                   std::shared_ptr <voxblox::EsdfServer> voxblox_ptr,
+                                                                                   bool verbose) {
+        std::unique_ptr <TrajectoryGenerator> result = createCommon<TrajectoryGenerator>(std::string("Uniform"),
+                                                                                         args,
+                                                                                         &ModuleFactory::parseTrajectoryGenerators,
+                                                                                         verbose);
+        if (result) {
+            result->setVoxbloxPtr(voxblox_ptr);
+        }
+        return result;
+    }
+
+    std::unique_ptr <TrajectoryEvaluator> ModuleFactory::createTrajectoryEvaluator(std::string args,
+                                                                                   std::shared_ptr <voxblox::EsdfServer> voxblox_ptr,
+                                                                                   bool verbose) {
+        std::unique_ptr <TrajectoryEvaluator> result = createCommon<TrajectoryEvaluator>(std::string("Naive"),
+                                                                                         args,
+                                                                                         &ModuleFactory::parseTrajectoryEvaluators,
+                                                                                         verbose);
+        if (result) {
+            result->setVoxbloxPtr(voxblox_ptr);
+        }
+        return result;
+    }
+
+    std::unique_ptr <SegmentSelector> ModuleFactory::createSegmentSelector(std::string args, bool verbose) {
+        return createCommon<SegmentSelector>(std::string("Greedy"), args,
+                                             &ModuleFactory::parseSegmentSelectors, verbose);
+    }
+
+    std::unique_ptr <GeneratorUpdater>
+    ModuleFactory::createGeneratorUpdater(std::string args, TrajectoryGenerator *parent,
+                                          bool verbose) {
+        std::unique_ptr <GeneratorUpdater> result = createCommon<GeneratorUpdater>(std::string("ResetTree"),
+                                                                                   args,
+                                                                                   &ModuleFactory::parseGeneratorUpdaters,
+                                                                                   verbose);
+        if (result) {
+            result->setParent(parent);
+        }
+        return result;
+    }
+
+    std::unique_ptr <CostComputer> ModuleFactory::createCostComputer(std::string args, bool verbose) {
+        return createCommon<CostComputer>(std::string("SegmentTime"), args, &ModuleFactory::parseCostComputers, verbose);
+    }
+
+    std::unique_ptr <ValueComputer> ModuleFactory::createValueComputer(std::string args, bool verbose) {
+        return createCommon<ValueComputer>(std::string("LinearValue"), args, &ModuleFactory::parseValueComputers,
+                                           verbose);
+    }
+
+    std::unique_ptr <NextSelector> ModuleFactory::createNextSelector(std::string args, bool verbose) {
+        return createCommon<NextSelector>(std::string("ImmediateBest"), args, &ModuleFactory::parseNextSelectors,
+                                          verbose);
+    }
+
+    std::unique_ptr <EvaluatorUpdater>
+    ModuleFactory::createEvaluatorUpdater(std::string args, TrajectoryEvaluator *parent,
+                                          bool verbose) {
+        std::unique_ptr <EvaluatorUpdater> result = createCommon<EvaluatorUpdater>(std::string("UpdateNothing"),
+                                                                                   args,
+                                                                                   &ModuleFactory::parseEvaluatorUpdaters,
+                                                                                   verbose);
+        if (result) {
+            result->setParent(parent);
+        }
+        return result;
+    }
+
+    std::unique_ptr <BackTracker> ModuleFactory::createBackTracker(std::string args, bool verbose) {
+        return createCommon<BackTracker>(std::string("RotateInPlace"), args, &ModuleFactory::parseBackTrackers,
+                                         verbose);
+    }
+
     // ROS factory
-    bool ModuleFactoryROS::getParamMapAndType(Module::ParamMap *map, std::string* type, std::string args){
+    bool ModuleFactoryROS::getParamMapAndType(Module::ParamMap *map, std::string *type, std::string args) {
         // For the ros factory, args is the namespace of the module
         ros::NodeHandle nh(args);
-        std::vector<std::string> keys;
+        std::vector <std::string> keys;
         std::string value;
         nh.getParamNames(keys);
-        for (int i = 0; i > keys.size(); ++i){
+        for (int i = 0; i > keys.size(); ++i) {
             nh.getParam(keys[i], value);
             (*map)[keys[i]] = value;
         }
         std::string type_default("");
-        if (!nh.getParam("type", *type)){
+        if (!nh.getParam("type", *type)) {
             type_default = " (default)";
         }
-        (*map)["verbose_text"] = "Creating Module '" + *type + type_default +"' from namespace '"
-                                + args + "' with parameters:";
+        (*map)["verbose_text"] = "Creating Module '" + *type + type_default + "' from namespace '"
+                                 + args + "' with parameters:";
         return true;
     }
 
-    void ModuleFactoryROS::printVerbose(const Module::ParamMap &map){
+    void ModuleFactoryROS::printVerbose(const Module::ParamMap &map) {
         ROS_INFO("%s", map.at("verbose_text").c_str()); // Will warn about formatting otherwise
     }
 
-    void ModuleFactoryROS::printError(std::string message){
+    void ModuleFactoryROS::printError(std::string message) {
         ROS_ERROR("%s", message.c_str());   // Will warn about formatting otherwise
     }
 

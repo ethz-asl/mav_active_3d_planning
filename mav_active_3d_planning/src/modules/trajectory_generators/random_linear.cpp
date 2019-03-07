@@ -15,9 +15,17 @@ namespace mav_active_3d_planning {
             RandomLinear(voxblox::EsdfServer *voxblox_ptr, std::string param_ns);
 
             // Overwrite virtual functions
-            bool expandSegment(TrajectorySegment &target);
+            bool expandSegment(TrajectorySegment *target);
 
         protected:
+            friend ModuleFactory;
+
+            RandomLinear() {}
+
+            void setupFromParamMap(ParamMap *param_map){
+//                setParam<double>(param_map, "cost_weight", &cost_weight_, 1.0);
+            }
+
             // params
             double p_distance_;         // m
             double p_v_max_;            // m/s
@@ -46,12 +54,12 @@ namespace mav_active_3d_planning {
             c_decelleration_distance_ = p_distance_ - std::min(p_v_max_ * p_v_max_ / p_a_max_, p_distance_) / 2;
         }
 
-        bool RandomLinear::expandSegment(TrajectorySegment &target) {
+        bool RandomLinear::expandSegment(TrajectorySegment *target) {
             // Create and add new adjacent trajectories to target segment
-            target.tg_visited = true;
+            target->tg_visited = true;
             int valid_segments = 0;
             int n_points = ceil(p_distance_ / 10);  // test collision every 0.1m
-            Eigen::Vector3d start_pos = target.trajectory.back().position_W;
+            Eigen::Vector3d start_pos = target->trajectory.back().position_W;
             int counter = 0;
 
             while (valid_segments < p_n_segments_ && counter < p_max_tries_) {
@@ -78,7 +86,7 @@ namespace mav_active_3d_planning {
                 // Build result (accelerate anddeccelerate to 0 velocity at goal points)
                 double x_curr = 0, v_curr = 0, t_curr = 0;
                 Eigen::Vector3d direction = (target_pos - start_pos).normalized();
-                TrajectorySegment *new_segment = target.spawnChild();
+                TrajectorySegment *new_segment = target->spawnChild();
                 while (v_curr >= 0) {
                     if (x_curr < c_decelleration_distance_) {
                         v_curr = std::min(v_curr + p_a_max_ / p_sampling_rate_, p_v_max_);

@@ -1,15 +1,10 @@
 #include "mav_active_3d_planning/trajectory_evaluator.h"
-#include "mav_active_3d_planning/module_factory.h"
-
-#include <ros/param.h>
 
 namespace mav_active_3d_planning {
     namespace value_computers {
 
         // Linear combination of cost and gain
         class LinearValue : public ValueComputer {
-            friend ModuleFactory;
-
         public:
             LinearValue(double cost_weight, double gain_weight)
                 : cost_weight_(cost_weight),
@@ -21,6 +16,8 @@ namespace mav_active_3d_planning {
             }
 
         protected:
+            friend ModuleFactory;
+
             LinearValue() {}
 
             void setupFromParamMap(ParamMap *param_map){
@@ -31,8 +28,6 @@ namespace mav_active_3d_planning {
             double cost_weight_;
             double gain_weight_;
         };
-
-        // This module is replaced in next version
 
     } // namespace value_computers
 } // namepsace mav_active_3d_planning
