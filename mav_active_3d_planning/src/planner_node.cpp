@@ -97,7 +97,7 @@ namespace mav_active_3d_planning {
 
         // visualization
         void publishTrajectoryVisualization(const std::vector<TrajectorySegment*> &trajectories);
-        void publishCompletedTrajectoryVisualization(TrajectorySegment &trajectories);
+        void publishCompletedTrajectoryVisualization(const TrajectorySegment &trajectories);
         void publishEvalVisualization(const TrajectorySegment &trajectory);
     };
 
@@ -467,7 +467,7 @@ namespace mav_active_3d_planning {
         vis_num_previous_trajectories_ = trajectories.size();
     }
 
-    void PlannerNode::publishCompletedTrajectoryVisualization(TrajectorySegment &trajectories) {
+    void PlannerNode::publishCompletedTrajectoryVisualization(const TrajectorySegment &trajectories) {
         // Continuously increment the already traveled path
         visualization_msgs::Marker msg;
         msg.header.frame_id = "/world";
