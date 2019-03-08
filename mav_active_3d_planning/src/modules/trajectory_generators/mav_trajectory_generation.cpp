@@ -1,46 +1,11 @@
-#include "mav_active_3d_planning/trajectory_generator.h"
+#include "mav_active_3d_planning/modules/trajectory_generators/mav_trajectory_generation.h"
 
-#include <mav_msgs/eigen_mav_msgs.h>
-#include <mav_trajectory_generation/polynomial_optimization_nonlinear.h>
-#include <mav_trajectory_generation_ros/feasibility_analytic.h>
 #include <mav_trajectory_generation/trajectory_sampling.h>
 
 #include <random>
 
 namespace mav_active_3d_planning {
     namespace trajectory_generators {
-
-        // TODO: this is a try out class (works but needs some clean up)
-        // Create random trajectories using the mav_trajectory_generation tools and check for MAV constraints (such as max
-        // yaw rate, thrusts, ...)
-        class MavTrajectoryGeneration : public TrajectoryGenerator {
-        public:
-            // Overwrite virtual functions
-            bool expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment*> *new_segments);
-
-        protected:
-            friend ModuleFactory;
-
-            MavTrajectoryGeneration() {}
-
-            void setupFromParamMap(Module::ParamMap *param_map);
-
-            bool checkParamsValid(std::string *error_message);
-
-            void initializeConstraints();
-
-            // parameters
-            double p_distance_max_;
-            double p_distance_min_;
-            double p_v_max_;
-            double p_a_max_;
-            int p_n_segments_;
-            int p_max_tries_;
-
-            // optimization settings
-            mav_trajectory_generation::FeasibilityAnalytic feasibility_check_;
-            mav_trajectory_generation::NonlinearOptimizationParameters parameters_;
-        };
 
         void MavTrajectoryGeneration::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<double>(param_map, "distance_max", &p_distance_max_, 3.0);

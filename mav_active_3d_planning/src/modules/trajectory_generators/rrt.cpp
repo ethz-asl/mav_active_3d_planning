@@ -1,82 +1,17 @@
 #define _USE_MATH_DEFINES
 
-#include "mav_active_3d_planning/trajectory_generator.h"
+#include "mav_active_3d_planning/modules/trajectory_generators/rrt.h"
 #include "mav_active_3d_planning/defaults.h"
-#include "mav_active_3d_planning/libs/nanoflann.hpp"
 
 #include <mav_msgs/eigen_mav_msgs.h>
-#include <ros/param.h>
 
 #include <vector>
 #include <random>
 #include <cmath>
 #include <memory>
-#include <chrono>
 
 namespace mav_active_3d_planning {
     namespace trajectory_generators {
-
-        class RRT : public TrajectoryGenerator {
-        public:
-            struct TreeData {
-                // data
-                std::vector<Eigen::Vector3d>  points;
-                std::vector<TrajectorySegment*> data;
-
-                // Clear up everything
-                void clear();
-
-                // push back a segment
-                void addSegment(TrajectorySegment* to_add);
-
-                // nanoflann functionality
-                inline std::size_t kdtree_get_point_count() const { return points.size(); }
-
-                inline double kdtree_get_pt(const size_t idx, const size_t dim) const
-                {
-                    if (dim == 0) return points[idx].x();
-                    else if (dim == 1) return points[idx].y();
-                    else return points[idx].z();
-                }
-
-                template <class BBOX>
-                bool kdtree_get_bbox(BBOX& /* bb */) const { return false; }
-            };
-
-            typedef nanoflann::KDTreeSingleIndexDynamicAdaptor<nanoflann::L2_Simple_Adaptor<double, TreeData>,
-                    TreeData, 3> KDTree;
-
-            // Overwrite virtual functions
-            bool selectSegment(TrajectorySegment *result, TrajectorySegment *root);
-
-            bool expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment*> *new_segments);
-
-        protected:
-            friend ModuleFactory;
-
-            RRT() {}
-
-            void setupFromParamMap(Module::ParamMap *param_map);
-
-            // parameters
-            double p_velocity_;         // m/s
-            double p_sampling_rate_;    // Hz
-            double p_extension_range_;  // m (set 0.0 to ignore)
-            bool p_use_spheric_sampling_;
-            int p_maximum_tries_;       // sampling tries, 0 for inf
-
-            // kdtree
-            std::unique_ptr<KDTree> kdtree_;
-            TreeData tree_data_;
-
-            // variables
-            TrajectorySegment *previous_root_;
-            Eigen::Vector3d goal_pos_;
-
-            // methods
-            bool sample_spheric(Eigen::Vector3d* goal_pos);
-            bool sample_box(Eigen::Vector3d* goal_pos);
-        };
 
 //        RRT::RRT(voxblox::EsdfServer *voxblox_ptr, std::string param_ns)
 //                : TrajectoryGenerator(voxblox_ptr, param_ns),
@@ -97,20 +32,21 @@ namespace mav_active_3d_planning {
             setParam<bool>(param_map, "use_spheric_sampling", &p_use_spheric_sampling_, false);
             setParam<int>(param_map, "maximum_tries", &p_maximum_tries_, 1000);
 
+            // setup parent
             TrajectoryGenerator::setupFromParamMap(param_map);
         }
 
-        bool RRT::selectSegment(TrajectorySegment *result, TrajectorySegment *root){
+        bool RRT::selectSegment(TrajectorySegment *result, TrajectorySegment *root) {
             // If the root has changed, reset the kdtree and populate with the current trajectory tree
-            if (previous_root_ != root){
-                std::vector<TrajectorySegment*> currrent_tree;
+            if (previous_root_ != root) {
+                std::vector < TrajectorySegment * > currrent_tree;
                 root->getTree(currrent_tree);
                 tree_data_.clear();
-                for (int i = 0; i < currrent_tree.size(); ++i){
+                for (int i = 0; i < currrent_tree.size(); ++i) {
                     tree_data_.addSegment(currrent_tree[i]);
                 }
-                kdtree_= std::unique_ptr<KDTree>(new KDTree(3, tree_data_));
-                kdtree_->addPoints(0, tree_data_.points.size()-1);
+                kdtree_ = std::unique_ptr<KDTree>(new KDTree(3, tree_data_));
+                kdtree_->addPoints(0, tree_data_.points.size() - 1);
                 previous_root_ = root;
             }
 
@@ -122,29 +58,29 @@ namespace mav_active_3d_planning {
                 if (p_maximum_tries_ > 0) { counter++; }
                 if (p_use_spheric_sampling_) {
                     goal_pos = root->trajectory.back().position_W;
-                    if (!sample_spheric(&goal_pos)){
+                    if (!sample_spheric(&goal_pos)) {
                         continue;
                     }
                 } else {
                     sample_box(&goal_pos);
                 }
-                if (!checkTraversable(goal_pos)){
+                if (!checkTraversable(goal_pos)) {
                     continue;
                 }
                 goal_found = true;
             }
-            if (!goal_found){
+            if (!goal_found) {
                 result = nullptr;
                 return false;
             }
 
             // find closest point in kdtree
-            double query_pt[3] = { goal_pos.x(), goal_pos.y(), goal_pos.z() };
+            double query_pt[3] = {goal_pos.x(), goal_pos.y(), goal_pos.z()};
             std::size_t ret_index;
             double out_dist_sqr;
             nanoflann::KNNResultSet<double> resultSet(1);
-            resultSet.init(&ret_index, &out_dist_sqr );
-            if (!kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10))){
+            resultSet.init(&ret_index, &out_dist_sqr);
+            if (!kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10))) {
                 result = nullptr;
                 return false;
             }
@@ -155,7 +91,7 @@ namespace mav_active_3d_planning {
             return true;
         }
 
-        bool RRT::expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment*> *new_segments) {
+        bool RRT::expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment *> *new_segments) {
             if (!target) {
                 // Segment selection failed
                 return false;
@@ -197,25 +133,25 @@ namespace mav_active_3d_planning {
             return true;
         }
 
-        bool RRT::sample_spheric(Eigen::Vector3d* goal_pos){
+        bool RRT::sample_spheric(Eigen::Vector3d *goal_pos) {
             // Bircher way (also assumes box atm, for unbiased sampling)
             double radius = std::sqrt(std::pow(bounding_volume_.x_max - bounding_volume_.x_min, 2.0) +
                                       std::pow(bounding_volume_.y_max - bounding_volume_.y_min, 2.0) +
                                       std::pow(bounding_volume_.z_max - bounding_volume_.z_min, 2.0));
-            for (int i = 0; i < 3; i++){
+            for (int i = 0; i < 3; i++) {
                 (*goal_pos)[i] += 2.0 * radius * (((double) rand()) / ((double) RAND_MAX) - 0.5);
             }
             return bounding_volume_.contains(*goal_pos);
         }
 
-        bool RRT::sample_box(Eigen::Vector3d* goal_pos){
+        bool RRT::sample_box(Eigen::Vector3d *goal_pos) {
             // sample from bounding volume (assumes box atm)
             (*goal_pos)[0] = bounding_volume_.x_min +
-                          (double) rand() / RAND_MAX * (bounding_volume_.x_max - bounding_volume_.x_min);
+                             (double) rand() / RAND_MAX * (bounding_volume_.x_max - bounding_volume_.x_min);
             (*goal_pos)[1] = bounding_volume_.y_min +
-                          (double) rand() / RAND_MAX * (bounding_volume_.y_max - bounding_volume_.y_min);
+                             (double) rand() / RAND_MAX * (bounding_volume_.y_max - bounding_volume_.y_min);
             (*goal_pos)[2] = bounding_volume_.z_min +
-                          (double) rand() / RAND_MAX * (bounding_volume_.z_max - bounding_volume_.z_min);
+                             (double) rand() / RAND_MAX * (bounding_volume_.z_max - bounding_volume_.z_min);
             return true;
         }
 
@@ -224,7 +160,7 @@ namespace mav_active_3d_planning {
             data.clear();
         }
 
-        void RRT::TreeData::addSegment(TrajectorySegment* to_add){
+        void RRT::TreeData::addSegment(TrajectorySegment *to_add) {
             points.push_back(to_add->trajectory.back().position_W);
             data.push_back(to_add);
         }

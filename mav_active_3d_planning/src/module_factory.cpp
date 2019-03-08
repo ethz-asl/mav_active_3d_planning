@@ -6,19 +6,19 @@
 #include <ros/console.h>
 
 // Default modules
-#include "modules/trajectory_generators/segment_selectors/default_segment_selectors.cpp"
-#include "modules/trajectory_generators/generator_updaters/default_generator_updaters.cpp"
-#include "modules/trajectory_evaluators/cost_computers/default_cost_computers.cpp"
-#include "modules/trajectory_evaluators/value_computers/default_value_computers.cpp"
-#include "modules/trajectory_evaluators/next_selectors/default_next_selectors.cpp"
-#include "modules/trajectory_evaluators/evaluator_updaters/default_evaluator_updaters.cpp"
-#include "modules/back_trackers/default_back_trackers.cpp"
+#include "mav_active_3d_planning/modules/trajectory_generators/segment_selectors/default_segment_selectors.h"
+#include "mav_active_3d_planning/modules/trajectory_generators/generator_updaters/default_generator_updaters.h"
+#include "mav_active_3d_planning/modules/trajectory_evaluators/cost_computers/default_cost_computers.h"
+#include "mav_active_3d_planning/modules/trajectory_evaluators/value_computers/default_value_computers.h"
+#include "mav_active_3d_planning/modules/trajectory_evaluators/next_selectors/default_next_selectors.h"
+#include "mav_active_3d_planning/modules/trajectory_evaluators/evaluator_updaters/default_evaluator_updaters.h"
+#include "mav_active_3d_planning/modules/back_trackers/default_back_trackers.h"
 
 // Include available modules. Modules are to be included and created ONLY though the factory
-#include "modules/trajectory_generators/uniform.cpp"
-#include "modules/trajectory_generators/random_linear.cpp"
-#include "modules/trajectory_generators/rrt.cpp"
-#include "modules/trajectory_generators/mav_trajectory_generation.cpp"
+#include "mav_active_3d_planning/modules/trajectory_generators/uniform.h"
+#include "mav_active_3d_planning/modules/trajectory_generators/random_linear.h"
+#include "mav_active_3d_planning/modules/trajectory_generators/rrt.h"
+#include "mav_active_3d_planning/modules/trajectory_generators/mav_trajectory_generation.h"
 #include "modules/trajectory_evaluators/naive.cpp"
 #include "modules/trajectory_evaluators/frontier.cpp"
 
@@ -36,7 +36,7 @@ namespace mav_active_3d_planning {
         } else if (type == "RRT") {
             return new trajectory_generators::RRT();
         } else {
-            printError("Unknown TrajectoryGenerator type'" + type + "'.");
+            printError("Unknown TrajectoryGenerator type '" + type + "'.");
             return nullptr;
         }
     }
@@ -49,7 +49,7 @@ namespace mav_active_3d_planning {
         } else if (type == "VoxelType") {
 //            return new trajectory_evaluators::VoxelType();
         } else {
-            printError("Unknown TrajectoryEvaluator type'" + type + "'.");
+            printError("Unknown TrajectoryEvaluator type '" + type + "'.");
             return nullptr;
         }
     }
@@ -94,9 +94,9 @@ namespace mav_active_3d_planning {
             return new value_computers::LinearValue();
         } else if (type == "ExponentialDiscount") {
             return new value_computers::ExponentialDiscount();
-        }  else if (type == "Accumulate") {
+        } else if (type == "Accumulate") {
             return new value_computers::Accumulate();
-        }else {
+        } else {
             ModuleFactory::Instance()->printError("Unknown ValueComputer type '" + type + "'.");
             return nullptr;
         }
@@ -152,7 +152,7 @@ namespace mav_active_3d_planning {
         return instance_;
     }
 
-    void ModuleFactory::parametrizeModule(std::string args, Module* module){
+    void ModuleFactory::parametrizeModule(std::string args, Module *module) {
         Module::ParamMap map;
         std::string type;
         getParamMapAndType(&map, &type, args);
@@ -204,7 +204,8 @@ namespace mav_active_3d_planning {
     }
 
     std::unique_ptr <CostComputer> ModuleFactory::createCostComputer(std::string args, bool verbose) {
-        return createCommon<CostComputer>(std::string("SegmentTime"), args, &ModuleFactory::parseCostComputers, verbose);
+        return createCommon<CostComputer>(std::string("SegmentTime"), args, &ModuleFactory::parseCostComputers,
+                                          verbose);
     }
 
     std::unique_ptr <ValueComputer> ModuleFactory::createValueComputer(std::string args, bool verbose) {

@@ -1,5 +1,6 @@
 #define _USE_MATH_DEFINES
-#include "mav_active_3d_planning/trajectory_generator.h"
+
+#include "mav_active_3d_planning/modules/trajectory_generators/uniform.h"
 #include "mav_active_3d_planning/defaults.h"
 
 #include <mav_msgs/eigen_mav_msgs.h>
@@ -9,28 +10,6 @@
 
 namespace mav_active_3d_planning {
     namespace trajectory_generators {
-
-        class Uniform : public TrajectoryGenerator {
-        public:
-            // Overwrite virtual functions
-            bool expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment*> *new_segments);
-
-        protected:
-            friend ModuleFactory;
-
-            Uniform() {}
-
-            void setupFromParamMap(Module::ParamMap *param_map);
-
-            // parameters
-            double p_distance_;         // m
-            double p_velocity_;         // m/s
-            double p_yaw_angle_;        // rad
-            double p_sampling_rate_;    // Hz
-            int p_n_segments_;
-            double p_ascent_angle_;     // Rad, Set 0 for planar
-            double c_yaw_rate_;
-        };
 
 //        Uniform::Uniform(voxblox::EsdfServer *voxblox_ptr, std::string param_ns)
 //                : TrajectoryGenerator(voxblox_ptr, param_ns) {
@@ -45,12 +24,12 @@ namespace mav_active_3d_planning {
 //            c_yaw_rate_ = p_yaw_angle_ * p_velocity_ / p_distance_ / 2.0;
 //        }
 
-        void Uniform::setupFromParamMap(Module::ParamMap *param_map){
+        void Uniform::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<double>(param_map, "distance", &p_distance_, 1.0);
             setParam<double>(param_map, "velocity", &p_velocity_, 0.5);
             setParam<double>(param_map, "yaw_angle", &p_yaw_angle_, 1.571);
             setParam<double>(param_map, "ascent_angle", &p_ascent_angle_, 0.523);
-            setParam<double>(param_map, "p_sampling_rate", &p_sampling_rate_, 20.);
+            setParam<double>(param_map, "p_sampling_rate", &p_sampling_rate_, 20.0);
             setParam<int>(param_map, "n_segments", &p_n_segments_, 5);
 
             c_yaw_rate_ = p_yaw_angle_ * p_velocity_ / p_distance_ / 2.0;
@@ -58,7 +37,7 @@ namespace mav_active_3d_planning {
         }
 
 
-        bool Uniform::expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment*> *new_segments) {
+        bool Uniform::expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment *> *new_segments) {
             // Create and add new adjacent trajectories to target segment
             target->tg_visited = true;
             int valid_segments = 0;
@@ -71,7 +50,7 @@ namespace mav_active_3d_planning {
             double current_ascent = 0.0;
             for (int j = -1; j < n_heights; ++j) {
                 if (p_ascent_angle_ != 0.0) {
-                    current_ascent = (double)j * p_ascent_angle_;
+                    current_ascent = (double) j * p_ascent_angle_;
                 }
                 for (int i = 0; i < p_n_segments_; ++i) {
                     // Initialization
@@ -89,8 +68,8 @@ namespace mav_active_3d_planning {
                         current_distance += p_velocity_ / p_sampling_rate_;
                         current_time += 1.0 / p_sampling_rate_;
                         current_pos += p_velocity_ / p_sampling_rate_ *
-                                Eigen::Vector3d(cos(current_yaw) * cos(current_ascent),
-                                                sin(current_yaw) * cos(current_ascent), sin(current_ascent));
+                                       Eigen::Vector3d(cos(current_yaw) * cos(current_ascent),
+                                                       sin(current_yaw) * cos(current_ascent), sin(current_ascent));
                         if (!checkTraversable(current_pos)) {
                             collided = true;
                             break;

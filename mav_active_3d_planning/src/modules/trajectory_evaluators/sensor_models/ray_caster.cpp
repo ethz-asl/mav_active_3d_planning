@@ -1,4 +1,4 @@
-#include "mav_active_3d_planning/ray_caster.h"
+#include "mav_active_3d_planning/modules/trajectory_evaluators/sensor_models/ray_caster.h"
 
 #include <ros/param.h>
 #include <Eigen/Dense>
