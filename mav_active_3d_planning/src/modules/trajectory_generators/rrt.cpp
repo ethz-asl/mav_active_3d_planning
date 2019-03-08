@@ -46,20 +46,24 @@ namespace mav_active_3d_planning {
             typedef nanoflann::KDTreeSingleIndexDynamicAdaptor<nanoflann::L2_Simple_Adaptor<double, TreeData>,
                     TreeData, 3> KDTree;
 
-            // Constructor
-            RRT(voxblox::EsdfServer *voxblox_ptr, std::string param_ns);
-
             // Overwrite virtual functions
-            TrajectorySegment *selectSegment(TrajectorySegment &root);
-            bool expandSegment(TrajectorySegment &target);
+            bool selectSegment(TrajectorySegment *result, TrajectorySegment *root);
+
+            bool expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment*> *new_segments);
 
         protected:
+            friend ModuleFactory;
+
+            RRT() {}
+
+            void setupFromParamMap(Module::ParamMap *param_map);
+
             // parameters
             double p_velocity_;         // m/s
             double p_sampling_rate_;    // Hz
             double p_extension_range_;  // m (set 0.0 to ignore)
             bool p_use_spheric_sampling_;
-            int p_maximum_tries_;       // 0 for inf
+            int p_maximum_tries_;       // sampling tries, 0 for inf
 
             // kdtree
             std::unique_ptr<KDTree> kdtree_;
@@ -67,7 +71,6 @@ namespace mav_active_3d_planning {
 
             // variables
             TrajectorySegment *previous_root_;
-            bool expansion_target_valid_;
             Eigen::Vector3d goal_pos_;
 
             // methods
@@ -75,31 +78,40 @@ namespace mav_active_3d_planning {
             bool sample_box(Eigen::Vector3d* goal_pos);
         };
 
-        RRT::RRT(voxblox::EsdfServer *voxblox_ptr, std::string param_ns)
-                : TrajectoryGenerator(voxblox_ptr, param_ns),
-                  previous_root_(nullptr)
-                   {
-            // params
-            ros::param::param<double>(param_ns + "/velocity", p_velocity_, 0.5);
-            ros::param::param<double>(param_ns + "/sampling_rate", p_sampling_rate_, 20.0);
-            ros::param::param<double>(param_ns + "/extension_range", p_extension_range_, 1.0);
-            ros::param::param<bool>(param_ns + "/use_spheric_sampling", p_use_spheric_sampling_, false);
-            ros::param::param<int>(param_ns + "/maximum_tries", p_maximum_tries_, 0);
-            kdtree_= std::unique_ptr<KDTree>(new KDTree(3, tree_data_));
+//        RRT::RRT(voxblox::EsdfServer *voxblox_ptr, std::string param_ns)
+//                : TrajectoryGenerator(voxblox_ptr, param_ns),
+//                  previous_root_(nullptr) {
+//            // params
+//            ros::param::param<double>(param_ns + "/velocity", p_velocity_, 0.5);
+//            ros::param::param<double>(param_ns + "/sampling_rate", p_sampling_rate_, 20.0);
+//            ros::param::param<double>(param_ns + "/extension_range", p_extension_range_, 1.0);
+//            ros::param::param<bool>(param_ns + "/use_spheric_sampling", p_use_spheric_sampling_, false);
+//            ros::param::param<int>(param_ns + "/maximum_tries", p_maximum_tries_, 0);
+//            kdtree_= std::unique_ptr<KDTree>(new KDTree(3, tree_data_));
+//        }
+
+        void RRT::setupFromParamMap(Module::ParamMap *param_map) {
+            setParam<double>(param_map, "velocity", &p_velocity_, 1.0);
+            setParam<double>(param_map, "sampling_rate", &p_sampling_rate_, 1.0);
+            setParam<double>(param_map, "max_extension_range", &p_extension_range_, 1.0);
+            setParam<bool>(param_map, "use_spheric_sampling", &p_use_spheric_sampling_, false);
+            setParam<int>(param_map, "maximum_tries", &p_maximum_tries_, 1000);
+
+            TrajectoryGenerator::setupFromParamMap(param_map);
         }
 
-        TrajectorySegment* RRT::selectSegment(TrajectorySegment &root){
+        bool RRT::selectSegment(TrajectorySegment *result, TrajectorySegment *root){
             // If the root has changed, reset the kdtree and populate with the current trajectory tree
-            if (previous_root_ != &root){
+            if (previous_root_ != root){
                 std::vector<TrajectorySegment*> currrent_tree;
-                root.getTree(currrent_tree);
+                root->getTree(currrent_tree);
                 tree_data_.clear();
                 for (int i = 0; i < currrent_tree.size(); ++i){
                     tree_data_.addSegment(currrent_tree[i]);
                 }
                 kdtree_= std::unique_ptr<KDTree>(new KDTree(3, tree_data_));
                 kdtree_->addPoints(0, tree_data_.points.size()-1);
-                previous_root_ = &root;
+                previous_root_ = root;
             }
 
             // sample candidate points
@@ -109,7 +121,7 @@ namespace mav_active_3d_planning {
             while (!goal_found && counter <= p_maximum_tries_) {
                 if (p_maximum_tries_ > 0) { counter++; }
                 if (p_use_spheric_sampling_) {
-                    goal_pos = root.trajectory.back().position_W;
+                    goal_pos = root->trajectory.back().position_W;
                     if (!sample_spheric(&goal_pos)){
                         continue;
                     }
@@ -122,8 +134,8 @@ namespace mav_active_3d_planning {
                 goal_found = true;
             }
             if (!goal_found){
-                expansion_target_valid_ = false;
-                return &root;
+                result = nullptr;
+                return false;
             }
 
             // find closest point in kdtree
@@ -133,24 +145,24 @@ namespace mav_active_3d_planning {
             nanoflann::KNNResultSet<double> resultSet(1);
             resultSet.init(&ret_index, &out_dist_sqr );
             if (!kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10))){
-                expansion_target_valid_ = false;
-                return &root;
+                result = nullptr;
+                return false;
             }
 
             // Valid target found
             goal_pos_ = goal_pos;
-            expansion_target_valid_ = true;
-            return tree_data_.data[ret_index];
+            result = tree_data_.data[ret_index];
+            return true;
         }
 
-        bool RRT::expandSegment(TrajectorySegment &target) {
-            if (!expansion_target_valid_) {
+        bool RRT::expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment*> *new_segments) {
+            if (!target) {
                 // Segment selection failed
                 return false;
             }
 
             // Check max segment range
-            Eigen::Vector3d start_pos = target.trajectory.back().position_W;
+            Eigen::Vector3d start_pos = target->trajectory.back().position_W;
             Eigen::Vector3d direction = goal_pos_ - start_pos;
             if (direction.norm() > p_extension_range_ && p_extension_range_ > 0.0) {
                 direction *= p_extension_range_ / direction.norm();
@@ -159,20 +171,15 @@ namespace mav_active_3d_planning {
             // try creating a linear trajectory and check for collision
             Eigen::Vector3d current_pos;
             int n_points = std::ceil(direction.norm() / (double) voxblox_ptr_->getEsdfMapPtr()->voxel_size());
-            bool collided = false;
             for (int i = 0; i < n_points; ++i) {
                 current_pos = start_pos + (double) i / (double) n_points * direction;
                 if (!checkTraversable(current_pos)) {
-                    collided = true;
-                    break;
+                    return false;
                 }
-            }
-            if (collided) {
-                return false;
             }
 
             // Build result
-            TrajectorySegment *new_segment = target.spawnChild();
+            TrajectorySegment *new_segment = target->spawnChild();
             double goal_yaw = (double) rand() / (double) RAND_MAX * 2.0 * M_PI;
             n_points = std::ceil(direction.norm() / p_velocity_ * p_sampling_rate_);
             for (int i = 0; i < n_points; ++i) {
@@ -182,6 +189,7 @@ namespace mav_active_3d_planning {
                 trajectory_point.time_from_start_ns = static_cast<int64_t>((double) i / p_sampling_rate_ * 1.0e9);
                 new_segment->trajectory.push_back(trajectory_point);
             }
+            new_segments->push_back(new_segment);
 
             // Add it to the kdtree
             tree_data_.addSegment(new_segment);

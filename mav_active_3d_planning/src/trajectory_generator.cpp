@@ -5,18 +5,31 @@
 
 namespace mav_active_3d_planning {
 
-    TrajectoryGenerator::TrajectoryGenerator(voxblox::EsdfServer *voxblox_ptr, std::string param_ns)
-            : voxblox_ptr_(voxblox_ptr),
-              bounding_volume_(param_ns + "/bounding_volume"),
-              segment_selector_(nullptr),
-              generator_updater_(nullptr),
-              p_namespace_(param_ns) {
-        // Parameters
-        ros::param::param<bool>(param_ns + "/collision_optimistic", p_collision_optimistic_, false);
-        ros::param::param<double>(param_ns + "/collision_radius", p_collision_radius_, 0.35);
+//    TrajectoryGenerator::TrajectoryGenerator(bool collision_optimistic, double collision_radius,
+//                                             std::shared_ptr <voxblox::EsdfServer> voxblox_ptr,
+//                                             defaults::BoundingVolume bounding_volume)
+//            : p_collision_optimistic(collision_optimistic),
+//              p_collision_radius(collision_radius),
+//              voxblox_ptr_(voxblox_ptr),
+//              bounding_volume_(bounding_volume),
+//              p_namespace_(param_ns) {
+//
+//        //Setup the voxblox server collision for visualization
+//        voxblox_ptr_->setTraversabilityRadius(static_cast<float>(p_collision_radius_));
+//    }
 
-        //Setup the voxblox server collision for visualization
-        voxblox_ptr_->setTraversabilityRadius(static_cast<float>(p_collision_radius_));
+    void TrajectoryGenerator::setupFromParamMap(Module::ParamMap *param_map) {
+        setParam<bool>(param_map, "collision_optimistic", &p_collision_optimistic_, false);
+        setParam<double>(param_map, "collision_radius", &p_collision_radius_, 0.35);
+        std::string ns;
+        setParam<std::string>(param_map, "param_namespace", &ns, std::string(""));
+        setParam<std::string>(param_map, "segment_selector_args", &p_selector_args_, ns + "/segment_selector");
+        setParam<std::string>(param_map, "generator_updater_args", &p_updater_args_, ns + "/generator_updater");
+        std::string temp_args;
+        setParam<std::string>(param_map, "bounding_volume_args", &temp_args, ns + "/bounding_volume");
+        bounding_volume_ = defaults::BoundingVolume(temp_args);
+        setParam<std::string>(param_map, "system_constraints_args", &temp_args, ns + "/system_constraints");
+        system_constraints_ = defaults::SystemConstraints(temp_args);
     }
 
     bool TrajectoryGenerator::checkTraversable(const Eigen::Vector3d &position) {
@@ -30,20 +43,29 @@ namespace mav_active_3d_planning {
         return p_collision_optimistic_;
     }
 
-    TrajectorySegment* TrajectoryGenerator::selectSegment(TrajectorySegment &root){
+    bool TrajectoryGenerator::selectSegment(TrajectorySegment *result, TrajectorySegment *root) {
         // If not implemented use a (default) module
-        if (segment_selector_ == nullptr){
-            segment_selector_ = ModuleFactory::createSegmentSelector(p_namespace_+"/segment_selector");
+        if (!segment_selector_) {
+            segment_selector_ = ModuleFactory::Instance()->createSegmentSelector(p_selector_args_, verbose_modules_);
         }
-        return segment_selector_->selectSegment(root);
+        return segment_selector_->selectSegment(result, root);
     }
 
-    bool TrajectoryGenerator::updateSegments(TrajectorySegment &root){
+    bool TrajectoryGenerator::updateSegments(TrajectorySegment *root) {
         // If not implemented use a (default) module
-        if (generator_updater_ == nullptr){
-            generator_updater_ = ModuleFactory::createGeneratorUpdater(p_namespace_+"/generator_updater", this);
+        if (!generator_updater_) {
+            generator_updater_ = ModuleFactory::Instance()->createGeneratorUpdater(p_updater_args_, this, verbose_modules_);
         }
         return generator_updater_->updateSegments(root);
+    }
+
+    void TrajectoryGenerator::setVoxbloxPtr(const std::shared_ptr <voxblox::EsdfServer> &voxblox_ptr) {
+        voxblox_ptr_ = voxblox_ptr;
+        voxblox_ptr_->setTraversabilityRadius(static_cast<float>(p_collision_radius_));
+    }
+
+    void GeneratorUpdater::setParent(TrajectoryGenerator *parent) {
+        parent_ = parent;
     }
 
 }  // namespace mav_active_3d_planning

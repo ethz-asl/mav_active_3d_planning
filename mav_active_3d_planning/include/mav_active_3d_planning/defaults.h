@@ -2,6 +2,7 @@
 #define MAV_ACTIVE_3D_PLANNING_DEFAULTS_H
 
 #include "mav_active_3d_planning/trajectory_segment.h"
+#include "mav_active_3d_planning/module.h"
 
 #include <Eigen/Core>
 
@@ -13,17 +14,46 @@ namespace mav_active_3d_planning {
     // Contains default methods and utility functions that can be used by various classes
     namespace defaults {
 
-        // struct for bounding volumes (simple bounding box atm)
-        struct BoundingVolume {
-            BoundingVolume(std::string param_ns);
+        // struct for bounding volumes (simple box atm, might include z-rotation, sphere, set of planes, ...)
+        struct BoundingVolume : public Module {
+            BoundingVolume() : is_setup(false) {}
+
+            // factory constructor
+            BoundingVolume(std::string args);
 
             virtual ~BoundingVolume() {}
 
-            // check wether point is in bounding box, if bounding box is setup
-            bool contains(Eigen::Vector3d point);
+            // populate the bounding volume
+            void setupFromParamMap(Module::ParamMap *param_map);
 
+            // check wether point is in bounding box, if bounding box is setup
+            bool contains(const Eigen::Vector3d &point);
+
+            // variables
             bool is_setup;
             double x_min, x_max, y_min, y_max, z_min, z_max;
+        };
+
+        // struct for high level system constraints (might add methods for generating these from max thrusts or so)
+        struct SystemConstraints : public Module {
+            SystemConstraints();
+
+            // factory constructor
+            SystemConstraints(std::string args);
+
+            virtual ~SystemConstraints() {}
+
+            // populate the system constraints from ros params
+            void setupFromParamMap(Module::ParamMap *param_map);
+
+            // populate the system constraints with reasonable (conservative) defaults
+            bool setupFromDefaults();
+
+            // variables
+            bool is_setup;
+            double v_max;           // m/s, maximum absolute velocity
+            double a_max ;          // m/s2, maximum absolute acceleration
+            double yaw_rate_max;    // rad/s, maximum yaw rate
         };
 
         // Scale an angle to [0, 2pi]

@@ -1,50 +1,135 @@
-#ifndef MAV_ACTIVE_3D_PLANNING_COMPONENT_FACTORY_H
-#define MAV_ACTIVE_3D_PLANNING_COMPONENT_FACTORY_H
+#ifndef MAV_ACTIVE_3D_PLANNING_MODULE_FACTORY_H
+#define MAV_ACTIVE_3D_PLANNING_MODULE_FACTORY_H
 
+#include "mav_active_3d_planning/module.h"
 #include "mav_active_3d_planning/trajectory_generator.h"
 #include "mav_active_3d_planning/trajectory_evaluator.h"
 #include "mav_active_3d_planning/back_tracker.h"
 
 #include <voxblox_ros/esdf_server.h>
+
 #include <string>
+#include <memory>
 
 namespace mav_active_3d_planning {
 
-    // Static class to generate all encapsulated functionalities/modules. Types of functionalities are declared here,
-    // add new modules in the body
+    // Base class to create modules. Setup a concrete factory for different parametrization methods. Types of modules
+    // are declared here, add new modules to the base class body.
     class ModuleFactory {
     public:
+        virtual ~ModuleFactory() {}
+
+        // Singleton accessor
+        static ModuleFactory *Instance();
+
+        // Method to allow structs to parametrize themselves
+        void parametrizeModule(std::string args, Module* module);
+
+        // Module creation accessors
         // Trajectory Generators
-        static TrajectoryGenerator* createTrajectoryGenerator(voxblox::EsdfServer *voxblox_ptr, std::string param_ns);
+        std::unique_ptr <TrajectoryGenerator> createTrajectoryGenerator(std::string args,
+                                                                        std::shared_ptr <voxblox::EsdfServer> voxblox_ptr,
+                                                                        bool verbose);
 
         // Trajectory Evaluators
-        static TrajectoryEvaluator* createTrajectoryEvaluator(voxblox::EsdfServer *voxblox_ptr, std::string param_ns);
+        std::unique_ptr <TrajectoryEvaluator> createTrajectoryEvaluator(std::string args,
+                                                                        std::shared_ptr <voxblox::EsdfServer> voxblox_ptr,
+                                                                        bool verbose);
 
         // TrajectoryGenerator -> selectSegment wrappers
-        static SegmentSelector *createSegmentSelector(std::string param_ns);
+        std::unique_ptr <SegmentSelector> createSegmentSelector(std::string args, bool verbose);
 
         // TrajectoryGenerator -> updateSegments wrappers
-        static GeneratorUpdater *createGeneratorUpdater(std::string param_ns, TrajectoryGenerator* parent);
+        std::unique_ptr <GeneratorUpdater> createGeneratorUpdater(std::string args, TrajectoryGenerator *parent,
+                                                                  bool verbose);
 
         // TrajectoryEvaluator -> computeCost wrappers
-        static CostComputer *createCostComputer(std::string param_ns);
+        std::unique_ptr <CostComputer> createCostComputer(std::string args, bool verbose);
 
         // TrajectoryEvaluator -> computeValue wrappers
-        static ValueComputer *createValueComputer(std::string param_ns);
+        std::unique_ptr <ValueComputer> createValueComputer(std::string args, bool verbose);
 
         // TrajectoryEvaluator -> selectNextBest wrappers
-        static NextSelector *createNextSelector(std::string param_ns);
+        std::unique_ptr <NextSelector> createNextSelector(std::string args, bool verbose);
 
         // TrajectoryEvaluator -> updateSegments wrappers
-        static EvaluatorUpdater *createEvaluatorUpdater(std::string param_ns, TrajectoryEvaluator* parent);
+        std::unique_ptr <EvaluatorUpdater> createEvaluatorUpdater(std::string args, TrajectoryEvaluator *parent,
+                                                                  bool verbose);
 
         // BackTrackers
-        static BackTracker *createBackTracker(std::string param_ns);
+        std::unique_ptr <BackTracker> createBackTracker(std::string args, bool verbose);
 
-    private:
+    protected:
         ModuleFactory() {}
-        virtual ~ModuleFactory() {}
+
+        // Singleton instance
+        static ModuleFactory *instance_;
+
+        // Create a param map from the arg string (ROS, string, file, ...)
+        virtual bool getParamMapAndType(Module::ParamMap *map, std::string *type, std::string args) = 0;
+
+        // Modules add verbose param text to the map. Implement this if you want to print the result.
+        virtual void printVerbose(const Module::ParamMap &map) {}
+
+        // Implement this to print type errors
+        virtual void printError(const std::string &message) {}
+
+        // Module parsers
+        TrajectoryGenerator *parseTrajectoryGenerators(std::string type);
+
+        TrajectoryEvaluator *parseTrajectoryEvaluators(std::string type);
+
+        SegmentSelector *parseSegmentSelectors(std::string type);
+
+        GeneratorUpdater *parseGeneratorUpdaters(std::string type);
+
+        CostComputer *parseCostComputers(std::string type);
+
+        ValueComputer *parseValueComputers(std::string type);
+
+        NextSelector *parseNextSelectors(std::string type);
+
+        EvaluatorUpdater *parseEvaluatorUpdaters(std::string type);
+
+        BackTracker *parseBackTrackers(std::string type);
+
+        // Base routine for creating modules
+        template<class T>
+        std::unique_ptr <T> createCommon(std::string default_type, std::string args,
+                                         T *(ModuleFactory::*parse_function)(std::string), bool verbose) {
+            Module::ParamMap map;
+            std::string type = default_type;
+            getParamMapAndType(&map, &type, args);
+            T *result = (this->*parse_function)(type);
+            if (!result) {
+                // parsing failed
+                return nullptr;
+            }
+            result->setupFromParamMap(&map);
+            result->verbose_modules_ = verbose;
+            result->assureParamsValid();
+            if (verbose) { printVerbose(map); }
+            return std::unique_ptr<T>(result);
+        }
+    };
+
+    // Concrete factory for ros param server
+    class ModuleFactoryROS : public ModuleFactory {
+        friend ModuleFactory;
+
+    public:
+        ~ModuleFactoryROS() {}
+
+    protected:
+        ModuleFactoryROS() {}
+
+        // Implement virtual methods
+        bool getParamMapAndType(Module::ParamMap *map, std::string *type, std::string args);
+
+        void printVerbose(const Module::ParamMap &map);
+
+        void printError(std::string message);
     };
 
 } // namepsace mav_active_3d_planning
-#endif //MAV_ACTIVE_3D_PLANNING_COMPONENT_FACTORY_H
+#endif //MAV_ACTIVE_3D_PLANNING_MODULE_FACTORY_H

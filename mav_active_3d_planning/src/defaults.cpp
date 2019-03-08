@@ -1,8 +1,7 @@
 #define _USE_MATH_DEFINES
 
 #include "mav_active_3d_planning/defaults.h"
-
-#include <ros/param.h>
+#include "mav_active_3d_planning/module_factory.h"
 
 #include <random>
 #include <algorithm>
@@ -11,26 +10,63 @@
 namespace mav_active_3d_planning {
     namespace defaults {
 
-        BoundingVolume::BoundingVolume(std::string param_ns) : is_setup(false) {
-            ros::param::param<double>(param_ns + "/x_min", x_min, 0.0);
-            ros::param::param<double>(param_ns + "/x_max", x_max, 0.0);
-            ros::param::param<double>(param_ns + "/y_min", y_min, 0.0);
-            ros::param::param<double>(param_ns + "/y_max", y_max, 0.0);
-            ros::param::param<double>(param_ns + "/z_min", z_min, 0.0);
-            ros::param::param<double>(param_ns + "/z_max", z_max, 0.0);
-            if (x_max - x_min > 0.0 && y_max - y_min > 0.0 && z_max - z_min > 0.0) {
+        BoundingVolume::BoundingVolume(std::string args) {
+            ModuleFactory::Instance()->parametrizeModule(args, this);
+        }
+
+        void BoundingVolume::setupFromParamMap(Module::ParamMap *param_map) {
+            setParam<double>(param_map, "x_min", &x_min, 0.0);
+            setParam<double>(param_map, "x_max", &x_max, 0.0);
+            setParam<double>(param_map, "y_min", &y_min, 0.0);
+            setParam<double>(param_map, "y_max", &y_max, 0.0);
+            setParam<double>(param_map, "z_min", &z_min, 0.0);
+            setParam<double>(param_map, "z_max", &z_max, 0.0);
+
+            // Check params span a valid volume
+            if (x_max > x_min && y_max > y_min && z_max > z_min) {
                 is_setup = true;
+            } else {
+                is_setup = false;
             }
         }
 
-        bool BoundingVolume::contains(Eigen::Vector3d point) {
-            if (!is_setup) { return true; }
-            if (point[0] < x_min) { return false; }
-            if (point[0] > x_max) { return false; }
-            if (point[1] < y_min) { return false; }
-            if (point[1] > y_max) { return false; }
-            if (point[2] < z_min) { return false; }
-            if (point[2] > z_max) { return false; }
+        bool BoundingVolume::contains(const Eigen::Vector3d &point) {
+            if (!is_setup) { return true; } // Uninitialized boxes always return true, so can always check them
+            if (point.x() < x_min) { return false; }
+            if (point.x() > x_max) { return false; }
+            if (point.y() < y_min) { return false; }
+            if (point.y() > y_max) { return false; }
+            if (point.z() < z_min) { return false; }
+            if (point.z() > z_max) { return false; }
+            return true;
+        }
+
+        SystemConstraints::SystemConstraints() {
+            setupFromDefaults();
+        }
+
+        SystemConstraints::SystemConstraints(std::string args) {
+            ModuleFactory::Instance()->parametrizeModule(args, this);
+        }
+
+        void SystemConstraints::setupFromParamMap(Module::ParamMap *param_map) {
+            setParam<double>(param_map, "v_max", &v_max, 1.0);
+            setParam<double>(param_map, "a_max", &a_max, 1.0);
+            setParam<double>(param_map, "yaw_rate_max", &yaw_rate_max, M_PI / 2.0);
+
+            // Check params reasonable
+            if (v_max > 0.0 && a_max > 0.0 && yaw_rate_max > 0.0) {
+                is_setup = true;
+            } else {
+                is_setup = false;
+            }
+        }
+
+        bool SystemConstraints::setupFromDefaults(){
+            v_max = 1.0;
+            a_max = 1.0;
+            yaw_rate_max = M_PI / 2.0;
+            is_setup = true;
             return true;
         }
 

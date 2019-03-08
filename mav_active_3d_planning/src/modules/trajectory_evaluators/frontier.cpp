@@ -3,7 +3,6 @@
 #include "mav_active_3d_planning/ray_caster.h"
 
 #include <mav_msgs/eigen_mav_msgs.h>
-#include <ros/param.h>
 
 #include <vector>
 #include <algorithm>
@@ -14,12 +13,18 @@ namespace mav_active_3d_planning {
 
         class Frontier: public TrajectoryEvaluator {
         public:
-            Frontier(voxblox::EsdfServer *voxblox_ptr, std::string param_ns);
+            Frontier(std::shared_ptr<voxblox::EsdfServer> voxblox_ptr, std::string param_ns);
 
             // Overwrite virtual functions
-            bool computeGain(TrajectorySegment &traj_in);
+            bool computeGain(TrajectorySegment *traj_in);
 
         protected:
+            friend ModuleFactory;
+
+            Frontier() {}
+
+            void setupFromParamMap(Module::ParamMap *param_map);
+
             // members
             RayCaster ray_caster_;
 
@@ -28,15 +33,20 @@ namespace mav_active_3d_planning {
             bool p_clear_from_parents_;
         };
 
-        Frontier::Frontier(voxblox::EsdfServer *voxblox_ptr, std::string param_ns)
-            : TrajectoryEvaluator(voxblox_ptr, param_ns),
-              ray_caster_(voxblox_ptr, param_ns) {
-            // params
-            ros::param::param<bool>(param_ns + "/clear_from_parents", p_clear_from_parents_, false);
+//        Frontier::Frontier(std::shared_ptr<voxblox::EsdfServer> voxblox_ptr, std::string param_ns)
+//            : TrajectoryEvaluator(voxblox_ptr, param_ns),
+//              ray_caster_(voxblox_ptr, param_ns) {
+//            // params
+//            ros::param::param<bool>(param_ns + "/clear_from_parents", p_clear_from_parents_, false);
+//        }
+
+        void Frontier::setupFromParamMap(Module::ParamMap *param_map){
+//            setParam<bool>(param_map, "cost_weight", &cost_weight_, bool);
         }
 
-        bool Frontier::computeGain(TrajectorySegment &traj_in) {
-            std::vector <Eigen::Vector3d> new_voxels = ray_caster_.getVisibleVoxelsFromTrajectory(&traj_in);
+        bool Frontier::computeGain(TrajectorySegment *traj_in) {
+            std::vector <Eigen::Vector3d> new_voxels = ray_caster_.getVisibleVoxelsFromTrajectory(traj_in);
+
 
             // Check for interesting bounding box
             if (bounding_volume_.is_setup){
@@ -81,29 +91,29 @@ namespace mav_active_3d_planning {
                         }
                         return true; } ), new_voxels.end());
 
-            traj_in.info = new_voxels;
+            traj_in->info = new_voxels;
 
             // Remove voxels previously seen by parent (this is quite expensive)
             if(p_clear_from_parents_){
-                TrajectorySegment* previous = traj_in.parent;
+                TrajectorySegment* previous = traj_in->parent;
                 while (previous){
                     std::vector <Eigen::Vector3d> old_indices = previous->info;
-                    traj_in.info.erase(
+                    traj_in->info.erase(
                             std::remove_if(
-                                    traj_in.info.begin(),
-                                    traj_in.info.end(),
+                                    traj_in->info.begin(),
+                                    traj_in->info.end(),
                                     [&old_indices](const Eigen::Vector3d& global_index)
                                     {
                                         auto it = std::find(old_indices.begin(), old_indices.end(), global_index);
                                         return (it != old_indices.end());
                                     }),
-                            traj_in.info.end());
+                            traj_in->info.end());
                     previous = previous->parent;
                 }
             }
 
-            // Set gain (#new frontier voxels)
-            traj_in.gain = (double)traj_in.info.size();
+            // Set gain (#frontier voxels)
+            traj_in->gain = (double)traj_in->info.size();
             return true;
         }
 

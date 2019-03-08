@@ -11,7 +11,7 @@ namespace mav_active_3d_planning {
         public:
             ImmediateBest() {}
 
-            int selectNextBest(TrajectorySegment &traj_in) {
+            int selectNextBest(const TrajectorySegment &traj_in) {
                 int current_index = 0;
                 double current_value = traj_in.children[0]->value;
                 for (int i = 1; i < traj_in.children.size(); ++i) {
@@ -22,6 +22,11 @@ namespace mav_active_3d_planning {
                 }
                 return current_index;
             }
+
+        protected:
+            friend ModuleFactory;
+
+            void setupFromParamMap(Module::ParamMap *param_map) {}
         };
 
         // Select the child node which contains the highest value segment in its subtree
@@ -29,7 +34,7 @@ namespace mav_active_3d_planning {
         public:
             SubsequentBest() {}
 
-            int selectNextBest(TrajectorySegment &traj_in) {
+            int selectNextBest(const TrajectorySegment &traj_in) {
                 int current_index = 0;
                 double current_value = evaluateSingle(traj_in.children[0].get());
                 double best_value = current_value;
@@ -42,6 +47,11 @@ namespace mav_active_3d_planning {
                 }
                 return current_index;
             }
+
+        protected:
+            friend ModuleFactory;
+
+            void setupFromParamMap(Module::ParamMap *param_map) {}
 
             double evaluateSingle(TrajectorySegment *traj_in) {
                 //Recursively find highest value

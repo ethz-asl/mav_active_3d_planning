@@ -1,8 +1,6 @@
 #include "mav_active_3d_planning/trajectory_generator.h"
 #include "mav_active_3d_planning/defaults.h"
 
-#include <ros/param.h>
-
 #include <vector>
 #include <algorithm>
 #include <random>
@@ -13,45 +11,50 @@ namespace mav_active_3d_planning {
         // Select segment with highest value
         class Greedy : public SegmentSelector {
         public:
-            Greedy(std::string param_ns) {
-                ros::param::param<bool>(param_ns + "/leaves_only", leaves_only_, false);    // Leaves or tree
-            }
+            Greedy(bool leaves_only) : leaves_only_(leaves_only) {}
 
-            TrajectorySegment* selectSegment(TrajectorySegment &root){
+            bool selectSegment(TrajectorySegment *result, TrajectorySegment *root) {
                 std::vector<TrajectorySegment*> candidates;
                 if (leaves_only_) {
-                    root.getLeaves(candidates);
+                    root->getLeaves(candidates);
                 } else {
-                    root.getTree(candidates);
+                    root->getTree(candidates);
                 }
-                if (candidates.empty()){
-                    // exception catching
-                    return &root;
-                }
-                return *std::max_element(candidates.begin(), candidates.end(), TrajectorySegment::comparePtr);
+                result = *std::max_element(candidates.begin(), candidates.end(), TrajectorySegment::comparePtr);
+                return true;
             }
 
         protected:
+            friend ModuleFactory;
+
+            Greedy() {}
+
+            void setupFromParamMap(Module::ParamMap *param_map){
+                setParam<bool>(param_map, "leaves_only", &leaves_only_, false);
+            }
+
+            // variables
             bool leaves_only_;
         };
 
-        // Select certain segments weighted random, most configurable
+        // Select segments at random, weighted with their value
         class RandomWeighted : public SegmentSelector {
         public:
-            RandomWeighted(std::string param_ns) {
-                ros::param::param<double>(param_ns + "/factor", factor_, 0.0);  // weighting, 0 for uniform
-                ros::param::param<double>(param_ns + "/leaf_probability", leaf_probability_, 1.0);    // P(Only Leaves)
-                ros::param::param<bool>(param_ns + "/revisit", revisit_, false);    // only unchecked segments
-                ros::param::param<double>(param_ns + "/uniform_probability", uniform_probability_, 0.0);    // part of
-                // probability mass that is distributed uniformly (to guarantee non-zero probability for all candidates)
+            RandomWeighted(double factor, double uniform_probability, double leaf_probability, bool revisit)
+                : factor_(factor),
+                  uniform_probability_(uniform_probability),
+                  leaf_probability_(leaf_probability),
+                  revisit_(revisit) {
+                assureParamsValid();
             }
 
-            TrajectorySegment* selectSegment(TrajectorySegment &root){
+            bool selectSegment(TrajectorySegment *result, TrajectorySegment *root) {
+                // Get all candidates
                 std::vector<TrajectorySegment*> candidates;
                 if ((double)rand() / RAND_MAX <= leaf_probability_) {
-                    root.getLeaves(candidates);
+                    root->getLeaves(candidates);
                 } else {
-                    root.getTree(candidates);
+                    root->getTree(candidates);
                 }
                 if (!revisit_){
                     candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
@@ -59,9 +62,11 @@ namespace mav_active_3d_planning {
                 }
                 if (candidates.empty()){
                     // exception catching
-                    return &root;
+                    result = root;
+                    return false;
                 }
                 if (factor_ > 0.0 && (double)rand() / RAND_MAX > uniform_probability_){
+                    // Weighted selection, cdf of every element's value ^ factor
                     std::vector<double> values(candidates.size());
                     double value_sum = 0.0;
                     // shift to 0 to compensate for negative values
@@ -76,18 +81,45 @@ namespace mav_active_3d_planning {
                     double realization = (double) rand() / RAND_MAX * value_sum;
                     for (int i = 0; i < candidates.size(); ++i) {
                         if (values[i] >= realization) {
-                            return candidates[i];
+                            result = candidates[i];
+                            return true;
                         }
                     }
                 }
-                return candidates[rand() % candidates.size()];
+                // uniform selection
+                result = candidates[rand() % candidates.size()];
+                return true;
             }
 
         protected:
-            double leaf_probability_;
-            bool revisit_;
-            double factor_;
-            double uniform_probability_;
+            friend ModuleFactory;
+
+            RandomWeighted() {}
+
+            void setupFromParamMap(Module::ParamMap *param_map){
+                setParam<double>(param_map, "factor", &factor_, 1.0);
+                setParam<double>(param_map, "uniform_probability", &uniform_probability_, 0.0);
+                setParam<double>(param_map, "leaf_probability", &leaf_probability_, 0.0);
+                setParam<bool>(param_map, "revisit", &revisit_, false);
+            }
+
+            bool checkParamsValid(std::string *error_message) {
+                if (uniform_probability_ > 1.0 || uniform_probability_ < 0.0){
+                    *error_message = "uniform_probability expected in [0.0, 1.0]";
+                    return false;
+                } else if (leaf_probability_ > 1.0 || leaf_probability_ < 0.0){
+                    *error_message = "leaf_probability expected in [0.0, 1.0]";
+                    return false;
+                }
+                return true;
+            }
+
+            // variables
+            double leaf_probability_;    // Probability to select a leaf (set to 1 for leaves only)
+            bool revisit_;  // only unchecked segments
+            double factor_; // weighting (potency), 0 for uniform
+            double uniform_probability_;// part of probability mass that is distributed uniformly (to guarantee non-zero
+            // probability for all candidates)
         };
 
     } // namespace segment_selectors

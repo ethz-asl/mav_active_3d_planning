@@ -1,94 +1,117 @@
 #include "mav_active_3d_planning/trajectory_evaluator.h"
 #include "mav_active_3d_planning/module_factory.h"
 
-#include <ros/param.h>
 #include <ros/time.h>
 
 #include <vector>
 #include <algorithm>
 #include <random>
+#include <memory>
 
 namespace mav_active_3d_planning {
     namespace evaluator_updaters {
 
         // Don't perform any specific update operations
-        class Void : public EvaluatorUpdater {
+        class UpdateNothing : public EvaluatorUpdater {
         public:
-            Void() {}
+            UpdateNothing() {}
 
-            bool updateSegments(TrajectorySegment &root) {
+            bool updateSegments(TrajectorySegment *root) {
                 return true;
             }
+
+        protected:
+            friend ModuleFactory;
+
+            void setupFromParamMap(Module::ParamMap *param_map) {}
         };
 
         // Discard all segments and start from scratch
-        class Clear : public EvaluatorUpdater {
+        class ResetTree : public EvaluatorUpdater {
         public:
-            Clear() {}
+            ResetTree() {}
 
-            bool updateSegments(TrajectorySegment &root) {
-                root.children.clear();
+            bool updateSegments(TrajectorySegment *root) {
+                root->children.clear();
                 return true;
             }
+        protected:
+            friend ModuleFactory;
+
+            void setupFromParamMap(Module::ParamMap *param_map){}
         };
 
         // Update gain/cost/value for the complete trajectory tree
         class UpdateAll : public EvaluatorUpdater {
         public:
-            UpdateAll(std::string param_ns, TrajectoryEvaluator* parent) : EvaluatorUpdater(parent) {
-                ros::param::param<bool>(param_ns + "/update_gain", update_gain_, true);
-                ros::param::param<bool>(param_ns + "/update_cost", update_cost_, true);
-                ros::param::param<bool>(param_ns + "/update_value", update_value_, true);
-
-                // Following Updater (Default is Void)
-                following_updater_ = ModuleFactory::createEvaluatorUpdater(param_ns+"/following_updater", parent);
+            UpdateAll(bool update_gain, bool update_cost, bool update_value,
+                      std::unique_ptr<EvaluatorUpdater> following_updater)
+                : update_gain_(update_gain),
+                  update_cost_(update_cost),
+                  update_value_(update_value) {
+                following_updater_ = std::move(following_updater);
             }
 
-            bool updateSegments(TrajectorySegment &root) {
+            bool updateSegments(TrajectorySegment *root) {
                 // recursively update all segments from root to leaves (as in the planner)
                 updateSingle(root);
                 return following_updater_->updateSegments(root);
             }
+        protected:
+            friend ModuleFactory;
 
-            void updateSingle(TrajectorySegment &segment){
+            UpdateAll() {}
+
+            void setupFromParamMap(Module::ParamMap *param_map){
+                setParam<bool>(param_map, "update_gain", &update_gain_, true);
+                setParam<bool>(param_map, "update_cost", &update_cost_, true);
+                setParam<bool>(param_map, "update_value", &update_value_, true);
+
+                // Create Following updater (default does nothing)
+                std::string args;   // default args extends the parent namespace
+                std::string param_ns;
+                setParam<std::string>(param_map, "param_namespace", &param_ns, "");
+                setParam<std::string>(param_map, "following_updater_args", &args, param_ns + "/following_updater");
+                following_updater_ = ModuleFactory::Instance()->createEvaluatorUpdater(args, parent_, verbose_modules_);
+            }
+
+            void updateSingle(TrajectorySegment *segment){
                 if (update_gain_) { parent_->computeGain(segment); }
                 if (update_cost_) { parent_->computeCost(segment); }
                 if (update_value_) { parent_->computeValue(segment); }
-                for (int i = 0; i < segment.children.size(); ++i) {
-                    updateSingle(*(segment.children[i]));
+                for (int i = 0; i < segment->children.size(); ++i) {
+                    updateSingle(segment->children[i].get());
                 }
             }
 
-        protected:
+            // variables
             bool update_gain_;
             bool update_cost_;
             bool update_value_;
-            EvaluatorUpdater* following_updater_;
+            std::unique_ptr<EvaluatorUpdater> following_updater_;
         };
 
         // Remove all segments that dont have a minimum value, can then call another updater
         class PruneByValue : public EvaluatorUpdater {
         public:
-            PruneByValue(std::string param_ns, TrajectoryEvaluator* parent) : EvaluatorUpdater(parent) {
-                // Params
-                ros::param::param<double>(param_ns + "/minimum_value", minimum_value_, 0.0);
-                ros::param::param<bool>(param_ns + "/use_relative_values", use_relative_values_, false);
-                ros::param::param<bool>(param_ns + "/include_subsequent", include_subsequent_, false);
-
-                // Following Updater (Default is Void)
-                following_updater_ = ModuleFactory::createEvaluatorUpdater(param_ns+"/following_updater", parent);
+            PruneByValue(double minimum_value, bool use_relative_values, bool include_subsequent,
+                         std::unique_ptr<EvaluatorUpdater> following_updater)
+                         : minimum_value_(minimum_value),
+                           use_relative_values_(use_relative_values),
+                           include_subsequent_(include_subsequent) {
+                following_updater_ = std::move(following_updater);
             }
 
-            bool updateSegments(TrajectorySegment &root) {
+            bool updateSegments(TrajectorySegment *root) {
                 double absolute_minimum = minimum_value_;
                 if (use_relative_values_){
                     // Scale to 0 at minimum, 1 at maximum
                     std::vector<TrajectorySegment*> segments;
                     if (include_subsequent_){
-                        root.getTree(segments);
+                        root->getTree(segments);
                         segments.erase(segments.begin());   // Exclude root itself
                     } else {
-                        root.getChildren(segments);
+                        root->getChildren(segments);
                     }
                     double min_value = (*std::min_element(segments.begin(), segments.end(),
                                                    TrajectorySegment::comparePtr))->value;
@@ -101,9 +124,9 @@ namespace mav_active_3d_planning {
                     removeSingle(root, absolute_minimum);
                 } else {
                     int j = 0;
-                    for (int i = 0; i < root.children.size(); ++i) {
-                        if (root.children[j]->value < absolute_minimum){
-                            root.children.erase(root.children.begin() + j);
+                    for (int i = 0; i < root->children.size(); ++i) {
+                        if (root->children[j]->value < absolute_minimum){
+                            root->children.erase(root->children.begin() + j);
                         } else {
                             j++;
                         }
@@ -112,45 +135,59 @@ namespace mav_active_3d_planning {
                 return following_updater_->updateSegments(root);
             }
 
-            bool removeSingle(TrajectorySegment &segment, double min_value){
-                if (segment.children.empty()){
-                    return (segment.value < min_value);
+        protected:
+            friend ModuleFactory;
+
+            PruneByValue() {}
+
+            void setupFromParamMap(Module::ParamMap *param_map){
+                setParam<double>(param_map, "minimum_value", &minimum_value_, 0.0);
+                setParam<bool>(param_map, "use_relative_values", &use_relative_values_, false);
+                setParam<bool>(param_map, "include_subsequent", &include_subsequent_, true);
+
+                // Create Following updater (default does nothing)
+                std::string args;   // default args extends the parent namespace
+                std::string param_ns;
+                setParam<std::string>(param_map, "param_namespace", &param_ns, "");
+                setParam<std::string>(param_map, "following_updater_args", &args, param_ns + "/following_updater");
+                following_updater_ = ModuleFactory::Instance()->createEvaluatorUpdater(args, parent_, verbose_modules_);
+            }
+
+            bool removeSingle(TrajectorySegment *segment, double min_value){
+                if (segment->children.empty()){
+                    return (segment->value < min_value);
                 }
                 int j = 0;
-                for (int i = 0; i < segment.children.size(); ++i) {
-                    if (removeSingle(*segment.children[j], min_value)) {
-                        segment.children.erase(segment.children.begin() + j);
+                for (int i = 0; i < segment->children.size(); ++i) {
+                    if (removeSingle(segment->children[j].get(), min_value)) {
+                        segment->children.erase(segment->children.begin() + j);
                     } else {
                         j++;
                     }
                 }
-                return (segment.children.empty() & segment.value < min_value);
+                return (segment->children.empty() & segment->value < min_value);
             }
 
-        protected:
+            // variables
             double minimum_value_;
             bool use_relative_values_;
             bool include_subsequent_;
-            EvaluatorUpdater* following_updater_;
+            std::unique_ptr<EvaluatorUpdater> following_updater_;
         };
 
         // Only periodically call another updater
         class Periodic : public EvaluatorUpdater {
         public:
-            Periodic(std::string param_ns, TrajectoryEvaluator* parent)
-                : EvaluatorUpdater(parent),
-                  waited_calls_(0) {
-                // Params
-                ros::param::param<double>(param_ns + "/minimum_wait_time", p_minimum_wait_time_, 0.0);  // seconds
-                ros::param::param<int>(param_ns + "/minimum_wait_calls", p_minimum_wait_calls_, 0);
-
+            Periodic(double minimum_wait_time, int minimum_wait_calls,
+                     std::unique_ptr<EvaluatorUpdater> following_updater)
+                     : p_minimum_wait_time_(minimum_wait_time),
+                       p_minimum_wait_calls_(minimum_wait_calls),
+                       waited_calls_(0) {
                 previous_time_ = ros::Time::now();
-
-                // Following Updater (Default is Void)
-                following_updater_ = ModuleFactory::createEvaluatorUpdater(param_ns+"/following_updater", parent);
+                following_updater_ = std::move(following_updater);
             }
 
-            bool updateSegments(TrajectorySegment &root) {
+            bool updateSegments(TrajectorySegment *root) {
                 // Both conditions need to be met
                 if ((ros::Time::now() - previous_time_).toSec() >= p_minimum_wait_time_ &&
                     waited_calls_ >= p_minimum_wait_calls_) {
@@ -163,11 +200,30 @@ namespace mav_active_3d_planning {
             }
 
         protected:
+            friend ModuleFactory;
+
+            Periodic() {}
+
+            void setupFromParamMap(Module::ParamMap *param_map){
+                setParam<double>(param_map, "minimum_wait_time", &p_minimum_wait_time_, 0.0);
+                setParam<int>(param_map, "minimum_wait_calls", &p_minimum_wait_calls_, 0);
+                waited_calls_ = 0;
+                previous_time_ = ros::Time::now();
+
+                // Create Following updater (default does nothing)
+                std::string args;   // default args extends the parent namespace
+                std::string param_ns;
+                setParam<std::string>(param_map, "param_namespace", &param_ns, "");
+                setParam<std::string>(param_map, "following_updater_args", &args, param_ns + "/following_updater");
+                following_updater_ = ModuleFactory::Instance()->createEvaluatorUpdater(args, parent_, verbose_modules_);
+            }
+
+            // variables
             double p_minimum_wait_time_;
             int p_minimum_wait_calls_;
-            ros::Time previous_time_;
+            ros::Time previous_time_;   // Need to use simulated time here
             int waited_calls_;
-            EvaluatorUpdater* following_updater_;
+            std::unique_ptr<EvaluatorUpdater> following_updater_;
         };
 
     } // namespace evaluator_updaters

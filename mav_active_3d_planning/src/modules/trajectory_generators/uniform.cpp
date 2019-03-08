@@ -3,7 +3,6 @@
 #include "mav_active_3d_planning/defaults.h"
 
 #include <mav_msgs/eigen_mav_msgs.h>
-#include <ros/param.h>
 
 #include <random>
 #include <cmath>
@@ -13,12 +12,16 @@ namespace mav_active_3d_planning {
 
         class Uniform : public TrajectoryGenerator {
         public:
-            Uniform(voxblox::EsdfServer *voxblox_ptr, std::string param_ns);
-
             // Overwrite virtual functions
-            bool expandSegment(TrajectorySegment &target);
+            bool expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment*> *new_segments);
 
         protected:
+            friend ModuleFactory;
+
+            Uniform() {}
+
+            void setupFromParamMap(Module::ParamMap *param_map);
+
             // parameters
             double p_distance_;         // m
             double p_velocity_;         // m/s
@@ -29,24 +32,37 @@ namespace mav_active_3d_planning {
             double c_yaw_rate_;
         };
 
-        Uniform::Uniform(voxblox::EsdfServer *voxblox_ptr, std::string param_ns)
-                : TrajectoryGenerator(voxblox_ptr, param_ns) {
-            // params
-            ros::param::param<double>(param_ns + "/distance", p_distance_, 1.0);
-            ros::param::param<double>(param_ns + "/velocity", p_velocity_, 0.33);
-            ros::param::param<double>(param_ns + "/yaw_angle", p_yaw_angle_, 1.571);
-            ros::param::param<double>(param_ns + "/ascent_angle", p_ascent_angle_, 0.523);
-            ros::param::param<double>(param_ns + "/p_sampling_rate", p_sampling_rate_, 20.0);
-            ros::param::param<int>(param_ns + "/n_segments", p_n_segments_, 5);
+//        Uniform::Uniform(voxblox::EsdfServer *voxblox_ptr, std::string param_ns)
+//                : TrajectoryGenerator(voxblox_ptr, param_ns) {
+//            // params
+//            ros::param::param<double>(param_ns + "/distance", p_distance_, 1.0);
+//            ros::param::param<double>(param_ns + "/velocity", p_velocity_, 0.33);
+//            ros::param::param<double>(param_ns + "/yaw_angle", p_yaw_angle_, 1.571);
+//            ros::param::param<double>(param_ns + "/ascent_angle", p_ascent_angle_, 0.523);
+//            ros::param::param<double>(param_ns + "/p_sampling_rate", p_sampling_rate_, 20.0);
+//            ros::param::param<int>(param_ns + "/n_segments", p_n_segments_, 5);
+//
+//            c_yaw_rate_ = p_yaw_angle_ * p_velocity_ / p_distance_ / 2.0;
+//        }
+
+        void Uniform::setupFromParamMap(Module::ParamMap *param_map){
+            setParam<double>(param_map, "distance", &p_distance_, 1.0);
+            setParam<double>(param_map, "velocity", &p_velocity_, 0.5);
+            setParam<double>(param_map, "yaw_angle", &p_yaw_angle_, 1.571);
+            setParam<double>(param_map, "ascent_angle", &p_ascent_angle_, 0.523);
+            setParam<double>(param_map, "p_sampling_rate", &p_sampling_rate_, 20.);
+            setParam<int>(param_map, "n_segments", &p_n_segments_, 5);
 
             c_yaw_rate_ = p_yaw_angle_ * p_velocity_ / p_distance_ / 2.0;
+            TrajectoryGenerator::setupFromParamMap(param_map);
         }
 
-        bool Uniform::expandSegment(TrajectorySegment &target) {
+
+        bool Uniform::expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment*> *new_segments) {
             // Create and add new adjacent trajectories to target segment
-            target.tg_visited = true;
+            target->tg_visited = true;
             int valid_segments = 0;
-            TrajectorySegment *new_segment = target.spawnChild();
+            TrajectorySegment *new_segment = target->spawnChild();
             int n_heights = 0;
             if (p_ascent_angle_ != 0.0) {
                 n_heights = 2;
@@ -60,9 +76,9 @@ namespace mav_active_3d_planning {
                 for (int i = 0; i < p_n_segments_; ++i) {
                     // Initialization
                     new_segment->trajectory.clear();
-                    Eigen::Vector3d current_pos = target.trajectory.back().position_W;
+                    Eigen::Vector3d current_pos = target->trajectory.back().position_W;
                     double yaw_rate = ((double) i - (double) p_n_segments_ / 2.0 + 0.5) * c_yaw_rate_;
-                    double current_yaw = target.trajectory.back().getYaw();
+                    double current_yaw = target->trajectory.back().getYaw();
                     double current_distance = 0.0;
                     double current_time = 0.0;
                     bool collided = false;
@@ -87,11 +103,13 @@ namespace mav_active_3d_planning {
                     }
                     if (!collided) {
                         valid_segments++;
-                        new_segment = target.spawnChild();
+                        new_segments->push_back(new_segment);
+                        new_segment = target->spawnChild();
                     }
                 }
             }
-            target.children.pop_back();
+            target->children.pop_back();
+
             // Feasible solution found?
             return (valid_segments > 0);
         }

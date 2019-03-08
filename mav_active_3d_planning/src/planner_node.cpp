@@ -54,13 +54,13 @@ namespace mav_active_3d_planning {
         ros::ServiceServer get_cpu_time_srv_;
 
         // members
-        voxblox::EsdfServer voxblox_server_;
-        TrajectoryGenerator* trajectory_generator_;
-        TrajectoryEvaluator* trajectory_evaluator_;
-        BackTracker* back_tracker_;
+        std::shared_ptr<voxblox::EsdfServer> voxblox_server_;
+        std::unique_ptr<TrajectoryGenerator> trajectory_generator_;
+        std::unique_ptr<TrajectoryEvaluator> trajectory_evaluator_;
+        std::unique_ptr<BackTracker> back_tracker_;
 
         // variables
-        std::shared_ptr<TrajectorySegment> current_segment_;        // root node of full trajectory tree
+        std::unique_ptr<TrajectorySegment> current_segment_;        // root node of full trajectory tree
         bool running_;                      // whether to run the main loop
         Eigen::Vector3d target_position_;   // current movement goal
         double target_yaw_;
@@ -104,7 +104,6 @@ namespace mav_active_3d_planning {
     PlannerNode::PlannerNode(const ros::NodeHandle &nh, const ros::NodeHandle &nh_private)
             : nh_(nh),
               nh_private_(nh_private),
-              voxblox_server_(nh_, nh_private_),
               running_(false),
               vis_num_previous_trajectories_(0),
               vis_completed_count_(0) {
@@ -127,9 +126,14 @@ namespace mav_active_3d_planning {
 
         // Setup members
         std::string ns = ros::this_node::getName();
-        trajectory_generator_ = ModuleFactory::createTrajectoryGenerator(&voxblox_server_, ns + "/trajectory_generator");
-        trajectory_evaluator_ = ModuleFactory::createTrajectoryEvaluator(&voxblox_server_, ns + "/trajectory_evaluator");
-        back_tracker_ = ModuleFactory::createBackTracker(ns + "/back_tracker");
+        bool verbose_modules;
+        nh_private_.param("verbose_modules", verbose_modules, false);
+        voxblox_server_ = std::shared_ptr<voxblox::EsdfServer>( new voxblox::EsdfServer(nh_, nh_private_));
+        trajectory_generator_ = ModuleFactory::Instance()->createTrajectoryGenerator(
+                ns + "/trajectory_generator", voxblox_server_, verbose_modules);
+        trajectory_evaluator_ = ModuleFactory::Instance()->createTrajectoryEvaluator(
+                ns + "/trajectory_evaluator", voxblox_server_, verbose_modules);
+        back_tracker_ = ModuleFactory::Instance()->createBackTracker(ns + "/back_tracker", verbose_modules);
 
         // Subscribers and publishers
         target_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
@@ -180,7 +184,7 @@ namespace mav_active_3d_planning {
         target_yaw_ = 0.0;
 
         // Setup initial trajectory Segment
-        current_segment_ = std::make_shared<TrajectorySegment>();
+        current_segment_ = std::unique_ptr<TrajectorySegment>(new TrajectorySegment());
         mav_msgs::EigenTrajectoryPoint trajectory_point;
         trajectory_point.position_W = target_position_;
         trajectory_point.setFromYaw(target_yaw_);
@@ -213,7 +217,7 @@ namespace mav_active_3d_planning {
     void PlannerNode::requestNextTrajectory() {
         if (current_segment_->children.empty()) {
             // No trajectories available: call the backtracker
-            back_tracker_->trackBack(*current_segment_);
+            back_tracker_->trackBack(current_segment_.get());
             return;
         }
 
@@ -250,7 +254,7 @@ namespace mav_active_3d_planning {
 
         // Select best next trajectory and update root
         int next_segment = trajectory_evaluator_->selectNextBest(*current_segment_);
-        current_segment_ = current_segment_->children[next_segment];
+        current_segment_ = std::move(current_segment_->children[next_segment]);
         current_segment_->parent = nullptr;
         current_segment_->gain = 0.0;
         current_segment_->cost = 0.0;
@@ -261,17 +265,17 @@ namespace mav_active_3d_planning {
 
         // Move
         requestMovement(*current_segment_);
-        back_tracker_->segmentIsExecuted(*current_segment_);
+        back_tracker_->segmentIsExecuted(*current_segment_.get());
 
         // Force Esdf update, so next trajectories can be evaluated
-        voxblox_server_.updateEsdf();
+        voxblox_server_->updateEsdf();
 
         // Visualize
         if (p_log_performance_) {
             timer = std::clock();
         }
         if (p_visualize_candidates_) {
-            voxblox_server_.publishTraversable();
+            voxblox_server_->publishTraversable();
             publishEvalVisualization(*current_segment_);
         }
         publishCompletedTrajectoryVisualization(*current_segment_);
@@ -281,12 +285,12 @@ namespace mav_active_3d_planning {
         }
 
         // Update tree
-        trajectory_generator_->updateSegments(*current_segment_);
+        trajectory_generator_->updateSegments(current_segment_.get());
         if (p_log_performance_) {
             perf_uptg = (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
-        trajectory_evaluator_->updateSegments(*current_segment_);
+        trajectory_evaluator_->updateSegments(current_segment_.get());
         if (p_log_performance_) {
             perf_upte = (double) (std::clock() - timer) / CLOCKS_PER_SEC;
         }
@@ -324,15 +328,16 @@ namespace mav_active_3d_planning {
         if (p_log_performance_) {
             timer = std::clock();
         }
-        TrajectorySegment *expansion_target = trajectory_generator_->selectSegment(*current_segment_);
+        TrajectorySegment *expansion_target;
+        trajectory_generator_->selectSegment(expansion_target, current_segment_.get());
         if (p_log_performance_) {
             perf_log_data_[0] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
 
         // Expand the target
-        int previous_children = expansion_target->children.size();
-        bool success = trajectory_generator_->expandSegment(*expansion_target);
+        std::vector<TrajectorySegment*> created_segments;
+        bool success = trajectory_generator_->expandSegment(expansion_target, &created_segments);
         if (p_log_performance_) {
             perf_log_data_[1] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
@@ -341,8 +346,8 @@ namespace mav_active_3d_planning {
         if (success) { new_segments_++; }
 
         // Evaluate newly added segments: Gain
-        for (int i = previous_children; i < expansion_target->children.size(); ++i) {
-            trajectory_evaluator_->computeGain(*(expansion_target->children[i]));
+        for (int i = 0; i < created_segments.size(); ++i) {
+            trajectory_evaluator_->computeGain(created_segments[i]);
         }
         if (p_log_performance_) {
             perf_log_data_[2] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
@@ -350,8 +355,8 @@ namespace mav_active_3d_planning {
         }
 
         // Costs
-        for (int i = previous_children; i < expansion_target->children.size(); ++i) {
-            trajectory_evaluator_->computeCost(*(expansion_target->children[i]));
+        for (int i = 0; i < created_segments.size(); ++i) {
+            trajectory_evaluator_->computeCost(created_segments[i]);
         }
         if (p_log_performance_) {
             perf_log_data_[3] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
@@ -359,8 +364,8 @@ namespace mav_active_3d_planning {
         }
 
         // Final value
-        for (int i = previous_children; i < expansion_target->children.size(); ++i) {
-            trajectory_evaluator_->computeValue(*(expansion_target->children[i]));
+        for (int i = 0; i < created_segments.size(); ++i) {
+            trajectory_evaluator_->computeValue(created_segments[i]);
         }
         if (p_log_performance_) {
             perf_log_data_[4] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
@@ -504,8 +509,8 @@ namespace mav_active_3d_planning {
         msg.pose.orientation.w = 1.0;
         msg.type = visualization_msgs::Marker::CUBE_LIST;
         msg.ns = "evaluation";
-        voxblox::FloatingPoint voxel_size = voxblox_server_.getEsdfMapPtr()->voxel_size();
-        voxblox::FloatingPoint block_size = voxblox_server_.getEsdfMapPtr()->block_size();
+        voxblox::FloatingPoint voxel_size = voxblox_server_->getEsdfMapPtr()->voxel_size();
+        voxblox::FloatingPoint block_size = voxblox_server_->getEsdfMapPtr()->block_size();
         msg.scale.x = (double) voxel_size;
         msg.scale.y = (double) voxel_size;
         msg.scale.z = (double) voxel_size;

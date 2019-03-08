@@ -3,7 +3,6 @@
 #include "mav_active_3d_planning/ray_caster.h"
 
 #include <mav_msgs/eigen_mav_msgs.h>
-#include <ros/param.h>
 
 #include <vector>
 #include <algorithm>

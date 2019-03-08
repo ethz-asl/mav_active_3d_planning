@@ -2,8 +2,6 @@
 #include "mav_active_3d_planning/back_tracker.h"
 #include "mav_active_3d_planning/defaults.h"
 
-#include <ros/param.h>
-#include <ros/console.h>
 #include <mav_msgs/eigen_mav_msgs.h>
 
 #include <vector>
@@ -13,48 +11,75 @@ namespace mav_active_3d_planning {
     namespace back_trackers {
 
         // Try rotating in place until trajectories were found
-        class Rotate : public BackTracker {
+        class RotateInPlace : public BackTracker {
+            friend ModuleFactory;
+
         public:
-            Rotate(std::string param_ns) {
-                ros::param::param<double>(param_ns + "/turn_rate", turn_rate_, 0.79);
-                ros::param::param<double>(param_ns + "/update_rate", update_rate_, 2.0);
-                ros::param::param<double>(param_ns + "/sampling_rate", sampling_rate_, 20.0);
+            RotateInPlace(double turn_rate, double sampling_rate, double update_rate)
+                : turn_rate_(turn_rate),
+                  sampling_rate_(sampling_rate),
+                  update_rate_(update_rate) {
+                assureParamsValid();
             }
 
-            bool trackBack(TrajectorySegment &target){
+            bool trackBack(TrajectorySegment *target){
                 // Just rotate the specified amount
-                TrajectorySegment *new_segment = target.spawnChild();
-                double yaw = target.trajectory.back().getYaw();
+                TrajectorySegment *new_segment = target->spawnChild();
+                double yaw = target->trajectory.back().getYaw();
                 for (int i = 0; i < (int)std::ceil(sampling_rate_ / update_rate_); ++i){
                     mav_msgs::EigenTrajectoryPoint trajectory_point;
-                    trajectory_point.position_W = target.trajectory.back().position_W;
+                    trajectory_point.position_W = target->trajectory.back().position_W;
                     yaw += turn_rate_ / sampling_rate_;
                     trajectory_point.setFromYaw(defaults::angleScaled(yaw));
                     trajectory_point.time_from_start_ns = static_cast<int64_t>((double)i / sampling_rate_ * 1.0e9);
                     new_segment->trajectory.push_back(trajectory_point);
                 }
+                return true;
             }
 
         protected:
-            double turn_rate_;  // rad
-            double update_rate_;   // Hz (how often the turn movement is checked for new trajectories)
-            double sampling_rate_;  // Hz
+            RotateInPlace() {}
+
+            void setupFromParamMap(Module::ParamMap *param_map){
+                setParam<double>(param_map, "turn_rate", &turn_rate_, 0.79);
+                setParam<double>(param_map, "sampling_rate", &sampling_rate_, 20.0);
+                setParam<double>(param_map, "update_rate", &update_rate_, 2.0);
+            }
+
+            bool checkParamsValid(std::string *error_message) {
+                if (sampling_rate_ <= 0.0) {
+                    *error_message = "sampling_rate expected > 0";
+                    return false;
+                } else if (update_rate_ <= 0.0) {
+                    *error_message = "update_rate expected > 0";
+                    return false;
+                }
+                return true;
+            }
+
+            // params
+            double turn_rate_;  // rad/s
+            double update_rate_;   // Hz, determines length of rotation arc (after which we check for new trajectories)
+            double sampling_rate_;  // Hz, trajectory is sampled with sample_rate
         };
 
         // Try rotating in place, if nothing found reverse most recent segments
         class RotateReverse : public BackTracker {
-        public:
-            RotateReverse(std::string param_ns) {
-                ros::param::param<double>(param_ns + "/turn_rate", turn_rate_, 0.79);
-                ros::param::param<double>(param_ns + "/update_rate", update_rate_, 2.0);
-                ros::param::param<double>(param_ns + "/sampling_rate", sampling_rate_, 20.0);
-                ros::param::param<double>(param_ns + "/n_rotations", n_rotations_, 2.0);
-                ros::param::param<int>(param_ns + "/stack_size", stack_size_, 10);
+            friend ModuleFactory;
 
+        public:
+            RotateReverse(double turn_rate, double update_rate, double sampling_rate, double n_rotations,
+                          int stack_size)
+                          : turn_rate_(turn_rate),
+                            update_rate_(update_rate),
+                            sampling_rate_(sampling_rate),
+                            n_rotations_(n_rotations),
+                            stack_size_(stack_size) {
+                assureParamsValid();
                 stack_.reserve(stack_size_);
             }
 
-             bool segmentIsExecuted(TrajectorySegment segment) {
+             bool segmentIsExecuted(const TrajectorySegment &segment) {
                  // Don't track backtracking segments
                  if (segment.trajectory.back().position_W == last_position_
                     && segment.trajectory.back().getYaw() == last_yaw_ ) {
@@ -72,29 +97,47 @@ namespace mav_active_3d_planning {
                 return true;
             }
 
-            bool trackBack(TrajectorySegment &target) {
+            bool trackBack(TrajectorySegment *target) {
                 // Check wether this is the first backtracking step
-                if (target.trajectory.back().position_W != last_position_
-                    || target.trajectory.back().getYaw() != last_yaw_ ) {
+                if (target->trajectory.back().position_W != last_position_
+                    || target->trajectory.back().getYaw() != last_yaw_ ) {
                     current_rotation_ = 0.0;
                 }
-                if (current_rotation_ > n_rotations_ * 2.0 * M_PI) {
+                if (current_rotation_ < n_rotations_ * 2.0 * M_PI) {
+                    // Rotate in place
+                    TrajectorySegment *new_segment = target->spawnChild();
+                    double yaw = target->trajectory.back().getYaw();
+                    for (int i = 0; i < (int) std::ceil(sampling_rate_ / update_rate_); ++i) {
+                        mav_msgs::EigenTrajectoryPoint trajectory_point;
+                        trajectory_point.position_W = target->trajectory.back().position_W;
+                        yaw += turn_rate_ / sampling_rate_;
+                        trajectory_point.setFromYaw(yaw);
+                        trajectory_point.time_from_start_ns =
+                                static_cast<int64_t>((double) i / sampling_rate_ * 1.0e9);
+                        new_segment->trajectory.push_back(trajectory_point);
+                    }
+                    current_rotation_ += turn_rate_ / update_rate_;
+                    last_yaw_ = new_segment->trajectory.back().getYaw();
+                    last_position_ = new_segment->trajectory.back().position_W;
+                    return true;
+                } else {
+                    // Maximum rotations in place reached, time to reverse last segment
                     if (stack_.empty()){
-                        ROS_INFO("Backtracker: No trajectories to reverse, rotating again.");
+                        // Nothing to reverse: rotate again
                         current_rotation_ = 0.0;
                     } else {
                         // Reverse last trajectory
                         mav_msgs::EigenTrajectoryPointVector to_reverse = stack_.back();
-                        int size = to_reverse.size() - 1;
+                        std::reverse(to_reverse.begin(), to_reverse.end());
                         int64_t current_time = 0;
-                        TrajectorySegment *new_segment = target.spawnChild();
-                        for (int i = 0; i <= size; ++i) {
+                        TrajectorySegment *new_segment = target->spawnChild();
+                        for (int i = 1; i < to_reverse.size(); ++i) {
                             mav_msgs::EigenTrajectoryPoint trajectory_point;
-                            trajectory_point.position_W = to_reverse[size - i].position_W;
-                            trajectory_point.setFromYaw(defaults::angleScaled(to_reverse[size - i].getYaw() + M_PI));
+                            trajectory_point.position_W = to_reverse[i].position_W;
+                            trajectory_point.setFromYaw(defaults::angleScaled(to_reverse[i].getYaw() + M_PI));
+                            current_time += to_reverse[i].time_from_start_ns -
+                                            to_reverse[i - 1].time_from_start_ns;
                             trajectory_point.time_from_start_ns = current_time;
-                            current_time += to_reverse[size - i].time_from_start_ns -
-                                            to_reverse[size - i - 1].time_from_start_ns;
                             new_segment->trajectory.push_back(trajectory_point);
                         }
                         last_yaw_ = new_segment->trajectory.back().getYaw();
@@ -103,33 +146,43 @@ namespace mav_active_3d_planning {
                         return true;
                     }
                 }
-                // Just rotate
-                TrajectorySegment *new_segment = target.spawnChild();
-                double yaw = target.trajectory.back().getYaw();
-                for (int i = 0; i < (int)std::ceil(sampling_rate_ / update_rate_); ++i){
-                    mav_msgs::EigenTrajectoryPoint trajectory_point;
-                    trajectory_point.position_W = target.trajectory.back().position_W;
-                    yaw += turn_rate_ / sampling_rate_;
-                    trajectory_point.setFromYaw(defaults::angleScaled(yaw));
-                    trajectory_point.time_from_start_ns = static_cast<int64_t>((double)i / sampling_rate_ * 1.0e9);
-                    new_segment->trajectory.push_back(trajectory_point);
-                }
-                current_rotation_ += turn_rate_ / update_rate_;
-                last_yaw_ = new_segment->trajectory.back().getYaw();
-                last_position_ = new_segment->trajectory.back().position_W;
-                return true;
             }
 
         protected:
+            RotateReverse() {}
+
+            void setupFromParamMap(Module::ParamMap *param_map){
+                setParam<double>(param_map, "turn_rate", &turn_rate_, 0.79);
+                setParam<double>(param_map, "sampling_rate", &sampling_rate_, 20.0);
+                setParam<double>(param_map, "update_rate", &update_rate_, 2.0);
+                setParam<double>(param_map, "n_rotations", &n_rotations_, 2.0);
+                setParam<int>(param_map, "stack_size", &stack_size_, 10);
+                stack_.reserve(stack_size_);
+            }
+
+            bool checkParamsValid(std::string *error_message) {
+                if (sampling_rate_ <= 0.0) {
+                    *error_message = "sampling_rate expected > 0";
+                    return false;
+                } else if (update_rate_ <= 0.0) {
+                    *error_message = "update_rate expected > 0";
+                    return false;
+                } else if (stack_size_ <= 0) {
+                    *error_message = "stack_size expected > 0";
+                    return false;
+                }
+                return true;
+            }
+
             // params
-            double turn_rate_;  // rad
+            double turn_rate_;  // rad/s
             double update_rate_;   // Hz (how often the turn movement is checked for new trajectories)
             double sampling_rate_;  // Hz
             double n_rotations_;
             int stack_size_;
 
             // variables
-            std::vector<mav_msgs::EigenTrajectoryPointVector> stack_;
+            std::vector<mav_msgs::EigenTrajectoryPointVector> stack_; // We use a vector for fixed stack size
             Eigen::Vector3d last_position_;
             double last_yaw_;
             double current_rotation_;

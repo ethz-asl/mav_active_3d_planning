@@ -15,6 +15,7 @@ namespace mav_active_3d_planning {
         // Utility class that finds visible voxels. Available for all trajectory generators. (improve performance here.)
         class RayCaster {
         public:
+            RayCaster() {}
             RayCaster(voxblox::EsdfServer *voxblox_ptr, std::string param_ns);
 
             virtual ~RayCaster() {}

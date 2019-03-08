@@ -4,23 +4,31 @@
 #include <mav_trajectory_generation/polynomial_optimization_nonlinear.h>
 #include <mav_trajectory_generation_ros/feasibility_analytic.h>
 #include <mav_trajectory_generation/trajectory_sampling.h>
-#include <ros/param.h>
 
 #include <random>
 
 namespace mav_active_3d_planning {
     namespace trajectory_generators {
 
+        // TODO: this is a try out class (works but needs some clean up)
         // Create random trajectories using the mav_trajectory_generation tools and check for MAV constraints (such as max
         // yaw rate, thrusts, ...)
         class MavTrajectoryGeneration : public TrajectoryGenerator {
         public:
-            MavTrajectoryGeneration(voxblox::EsdfServer *voxblox_ptr, std::string param_ns);
-
             // Overwrite virtual functions
-            bool expandSegment(TrajectorySegment &target);
+            bool expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment*> *new_segments);
 
         protected:
+            friend ModuleFactory;
+
+            MavTrajectoryGeneration() {}
+
+            void setupFromParamMap(Module::ParamMap *param_map);
+
+            bool checkParamsValid(std::string *error_message);
+
+            void initializeConstraints();
+
             // parameters
             double p_distance_max_;
             double p_distance_min_;
@@ -34,18 +42,37 @@ namespace mav_active_3d_planning {
             mav_trajectory_generation::NonlinearOptimizationParameters parameters_;
         };
 
-        MavTrajectoryGeneration::MavTrajectoryGeneration(voxblox::EsdfServer *voxblox_ptr, std::string param_ns)
-                : TrajectoryGenerator(voxblox_ptr, param_ns) {
-            // Params
-            ros::param::param<double>(param_ns + "/distance_max", p_distance_max_, 3.0);
-            ros::param::param<double>(param_ns + "/distance_min", p_distance_min_, 0.5);
-            ros::param::param<double>(param_ns + "/a_max", p_a_max_, 1.0);
-            ros::param::param<double>(param_ns + "/v_max", p_v_max_, 1.0);
-            ros::param::param<int>(param_ns + "/n_segments", p_n_segments_, 5);
-            ros::param::param<int>(param_ns + "/max_tries", p_max_tries_, 100);
+        void MavTrajectoryGeneration::setupFromParamMap(Module::ParamMap *param_map) {
+            setParam<double>(param_map, "distance_max", &p_distance_max_, 3.0);
+            setParam<double>(param_map, "distance_min", &p_distance_min_, 0.5);
+            setParam<double>(param_map, "a_max", &p_a_max_, 1.0);
+            setParam<double>(param_map, "v_max", &p_v_max_, 1.0);
+            setParam<int>(param_map, "n_segments", &p_n_segments_, 5);
+            setParam<int>(param_map, "max_tries", &p_max_tries_, 100);
+            initializeConstraints();
+            TrajectoryGenerator::setupFromParamMap(param_map);
+        }
 
+        bool MavTrajectoryGeneration::checkParamsValid(std::string *error_message) {
+            if (p_distance_max_ <= 0.0 ){
+                *error_message = "distance_max expected > 0.0";
+                return false;
+            } else if (p_distance_max_ < p_distance_min_ ){
+                *error_message = "distance_max needs to be larger than distance_min";
+                return false;
+            } else if (p_n_segments_ < 1 ){
+                *error_message = "n_segments expected > 0";
+                return false;
+            } else if (p_max_tries_ < 1 ){
+                *error_message = "max_tries expected > 0";
+                return false;
+            }
+            return true;
+        }
+
+        void MavTrajectoryGeneration::initializeConstraints() {
             // Create input constraints.for feasibility check
-            // todo: set this from params or config
+            // todo: set this from params or config?
             typedef mav_trajectory_generation::InputConstraintType ICT;
             mav_trajectory_generation::InputConstraints input_constraints;
             input_constraints.addConstraint(ICT::kFMin, 0.5 * 9.81); // minimum acceleration in [m/s/s].
@@ -68,11 +95,11 @@ namespace mav_active_3d_planning {
             parameters_ = mav_trajectory_generation::NonlinearOptimizationParameters();
         }
 
-        bool MavTrajectoryGeneration::expandSegment(TrajectorySegment &target) {
+        bool MavTrajectoryGeneration::expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment*> *new_segments) {
             // Create and add new adjacent trajectories to target segment
-            target.tg_visited = true;
+            target->tg_visited = true;
             int valid_segments = 0;
-            Eigen::Vector3d start_pos = target.trajectory.back().position_W;
+            Eigen::Vector3d start_pos = target->trajectory.back().position_W;
             srand(time(NULL));
             int counter = 0;
 
@@ -87,10 +114,10 @@ namespace mav_active_3d_planning {
 
                 // create trajectory (4D)
                 Eigen::Vector4d start4, goal4, vel4, acc4;
-                start4 << start_pos, target.trajectory.back().getYaw();
+                start4 << start_pos, target->trajectory.back().getYaw();
                 goal4 << goal_pos, yaw;
-                vel4 << target.trajectory.back().velocity_W, target.trajectory.back().getYawRate();
-                acc4 << target.trajectory.back().acceleration_W, target.trajectory.back().getYawAcc();
+                vel4 << target->trajectory.back().velocity_W, target->trajectory.back().getYawRate();
+                acc4 << target->trajectory.back().acceleration_W, target->trajectory.back().getYawAcc();
 
                 mav_trajectory_generation::Vertex::Vector vertices;
                 const int derivative_to_optimize = mav_trajectory_generation::derivative_order::ACCELERATION;
@@ -149,12 +176,14 @@ namespace mav_active_3d_planning {
                 if (collided) { continue; }
 
                 // Build result
-                TrajectorySegment *new_segment = target.spawnChild();
+                TrajectorySegment *new_segment = target->spawnChild();
                 new_segment->trajectory = states;
+                new_segments->push_back(new_segment);
                 valid_segments++;
             }
             // Feasible solution found?
             return (valid_segments > 0);
         }
+
     } // namespace trajectory_generators
 }  // namespace mav_active_3d_planning
