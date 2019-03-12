@@ -20,7 +20,7 @@ cs_add_library(${PROJECT_NAME}
     src/modules/trajectory_evaluators/evaluator_updaters/default_evaluator_updaters.cpp
     src/modules/trajectory_evaluators/next_selectors/default_next_selectors.cpp
     src/modules/trajectory_evaluators/value_computers/default_value_computers.cpp
-    src/modules/trajectory_evaluators/sensor_models/ray_caster.cpp
+	src/modules/trajectory_evaluators/sensor_models/camera_models.cpp
     src/modules/trajectory_generators/generator_updaters/default_generator_updaters.cpp
     src/modules/trajectory_generators/segment_selectors/default_segment_selectors.cpp
     # Other modules
@@ -28,7 +28,10 @@ cs_add_library(${PROJECT_NAME}
     src/modules/trajectory_generators/random_linear.cpp
     src/modules/trajectory_generators/rrt.cpp
     src/modules/trajectory_generators/uniform.cpp
-    )
+	src/modules/trajectory_evaluators/simulated_sensor.cpp
+    src/modules/trajectory_evaluators/sensor_models/sensor_model.cpp
+    src/modules/trajectory_evaluators/sensor_models/camera_models.cpp
+	)
 
     ############
     # BINARIES #

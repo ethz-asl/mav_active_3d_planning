@@ -7,6 +7,7 @@
 
 #include <voxblox_ros/esdf_server.h>
 #include <Eigen/Core>
+#include <visualization_msgs/Marker.h>
 
 #include <string>
 #include <memory>
@@ -41,6 +42,9 @@ namespace mav_active_3d_planning {
         // Whether and how to update existing segments when a new trajectory is executed
         virtual bool updateSegments(TrajectorySegment *root);
 
+        // Implement this method to allow visualization of the information gain during simulation
+        virtual void visualizeTrajectoryValue(visualization_msgs::Marker* msg, const TrajectorySegment &trajectory) {}
+
     protected:
         friend class ModuleFactory;
 
@@ -67,7 +71,6 @@ namespace mav_active_3d_planning {
 
         // factory accessors
         void setVoxbloxPtr(const std::shared_ptr<voxblox::EsdfServer> &voxblox_ptr);
-
         virtual void setupFromParamMap(Module::ParamMap *param_map);
     };
 

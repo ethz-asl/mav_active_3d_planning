@@ -502,34 +502,11 @@ namespace mav_active_3d_planning {
     }
 
     void PlannerNode::publishEvalVisualization(const TrajectorySegment &trajectory) {
-        // Setup marker message
+        // Visualize the gain of the current segment
         visualization_msgs::Marker msg;
-        msg.header.frame_id = "/world";
-        msg.header.stamp = ros::Time::now();
-        msg.pose.orientation.w = 1.0;
-        msg.type = visualization_msgs::Marker::CUBE_LIST;
+        trajectory_evaluator_->visualizeTrajectoryValue(&msg, trajectory);
         msg.ns = "evaluation";
-        voxblox::FloatingPoint voxel_size = voxblox_server_->getEsdfMapPtr()->voxel_size();
-        voxblox::FloatingPoint block_size = voxblox_server_->getEsdfMapPtr()->block_size();
-        msg.scale.x = (double) voxel_size;
-        msg.scale.y = (double) voxel_size;
-        msg.scale.z = (double) voxel_size;
-        msg.color.r = 1.0;
-        msg.color.g = 0.8;
-        msg.color.b = 0.0;
-        msg.color.a = 0.5;
-
-        // points
-        int voxels_per_side = (int) std::round(block_size / voxel_size);
-        voxblox::BlockIndex block_id;
-        voxblox::VoxelIndex voxel_id;
-        for (int i = 0; i < trajectory.info.size(); ++i) {
-            geometry_msgs::Point point;
-            point.x = (double) trajectory.info[i].x();
-            point.y = (double) trajectory.info[i].y();
-            point.z = (double) trajectory.info[i].z();
-            msg.points.push_back(point);
-        }
+        msg.header.stamp = ros::Time::now();
         trajectory_vis_pub_.publish(msg);
     }
 

@@ -19,8 +19,8 @@
 #include "mav_active_3d_planning/modules/trajectory_generators/random_linear.h"
 #include "mav_active_3d_planning/modules/trajectory_generators/rrt.h"
 #include "mav_active_3d_planning/modules/trajectory_generators/mav_trajectory_generation.h"
-#include "modules/trajectory_evaluators/naive.cpp"
-#include "modules/trajectory_evaluators/frontier.cpp"
+#include "mav_active_3d_planning/modules/trajectory_evaluators/simulated_sensor.h"
+#include "mav_active_3d_planning/modules/trajectory_evaluators/sensor_models/camera_models.h"
 
 
 namespace mav_active_3d_planning {
@@ -47,7 +47,7 @@ namespace mav_active_3d_planning {
         } else if (type == "Frontier") {
             return new trajectory_evaluators::Frontier();
         } else if (type == "VoxelType") {
-//            return new trajectory_evaluators::VoxelType();
+            return new trajectory_evaluators::VoxelType();
         } else {
             printError("Unknown TrajectoryEvaluator type '" + type + "'.");
             return nullptr;
@@ -141,6 +141,17 @@ namespace mav_active_3d_planning {
         }
     }
 
+    SensorModel *ModuleFactory::parseSensorModels(std::string type) {
+        if (type == "SimpleRayCaster") {
+            return new sensor_models::SimpleRayCaster();
+        } else if (type == "IterativeRayCaster") {
+            return new sensor_models::IterativeRayCaster();
+        } else {
+            printError("Unknown SensorModel type '" + type + "'.");
+            return nullptr;
+        }
+    }
+
     // Module factory core functionality
     ModuleFactory *ModuleFactory::instance_ = nullptr;
 
@@ -175,14 +186,20 @@ namespace mav_active_3d_planning {
     std::unique_ptr <TrajectoryEvaluator> ModuleFactory::createTrajectoryEvaluator(std::string args,
                                                                                    std::shared_ptr <voxblox::EsdfServer> voxblox_ptr,
                                                                                    bool verbose) {
-        std::unique_ptr <TrajectoryEvaluator> result = createCommon<TrajectoryEvaluator>(std::string("Naive"),
-                                                                                         args,
-                                                                                         &ModuleFactory::parseTrajectoryEvaluators,
-                                                                                         verbose);
-        if (result) {
-            result->setVoxbloxPtr(voxblox_ptr);
+        Module::ParamMap map;
+        std::string type = std::string("Naive");
+        getParamMapAndType(&map, &type, args);
+        TrajectoryEvaluator *result = parseTrajectoryEvaluators(type);
+        if (!result) {
+            // parsing failed
+            return nullptr;
         }
-        return result;
+        result->setVoxbloxPtr(voxblox_ptr); // Set voxblox pointer early
+        result->setupFromParamMap(&map);
+        result->verbose_modules_ = verbose;
+        result->assureParamsValid();
+        if (verbose) { printVerbose(map); }
+        return std::unique_ptr<TrajectoryEvaluator>(result);
     }
 
     std::unique_ptr <SegmentSelector> ModuleFactory::createSegmentSelector(std::string args, bool verbose) {
@@ -234,6 +251,19 @@ namespace mav_active_3d_planning {
     std::unique_ptr <BackTracker> ModuleFactory::createBackTracker(std::string args, bool verbose) {
         return createCommon<BackTracker>(std::string("RotateInPlace"), args, &ModuleFactory::parseBackTrackers,
                                          verbose);
+    }
+
+    std::unique_ptr <SensorModel> ModuleFactory::createSensorModel(std::string args,
+                                                                   std::shared_ptr <voxblox::EsdfServer> voxblox_ptr,
+                                                                   bool verbose) {
+        std::unique_ptr <SensorModel> result = createCommon<SensorModel>(std::string("SimpleRayCaster"),
+                                                                         args,
+                                                                         &ModuleFactory::parseSensorModels,
+                                                                         verbose);
+        if (result) {
+            result->setVoxbloxPtr(voxblox_ptr);
+        }
+        return result;
     }
 
     // ROS factory

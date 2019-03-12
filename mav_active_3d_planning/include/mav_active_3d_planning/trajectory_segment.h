@@ -8,6 +8,11 @@
 
 namespace mav_active_3d_planning {
 
+    // Base struct that contains trajectory evaluator information associated with the segment.
+    struct TrajectoryInfo {
+        virtual ~TrajectoryInfo() {}
+    };
+
     // Struct to store trajectory tree data
     struct TrajectorySegment {
         TrajectorySegment() : parent(nullptr), tg_visited(false), gain(0.0), cost(0.0), value(0.0) {};
@@ -29,9 +34,8 @@ namespace mav_active_3d_planning {
         // Pointers to successive trajectory nodes, all nodes are owned by the parent
         std::vector<std::unique_ptr<TrajectorySegment>> children;
 
-        // TODO: make this a template variable?
         // Information to be carried with this segment, e.g. virtual voxels
-        std::vector<Eigen::Vector3d> info;
+        std::unique_ptr<TrajectoryInfo> info;
 
         // compare function for sorting etc
         static bool compare(TrajectorySegment a, TrajectorySegment b) {

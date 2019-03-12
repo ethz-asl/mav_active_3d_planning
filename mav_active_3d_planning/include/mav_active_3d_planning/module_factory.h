@@ -5,6 +5,7 @@
 #include "mav_active_3d_planning/trajectory_generator.h"
 #include "mav_active_3d_planning/trajectory_evaluator.h"
 #include "mav_active_3d_planning/back_tracker.h"
+#include "mav_active_3d_planning/modules/trajectory_evaluators/sensor_models/sensor_model.h"
 
 #include <voxblox_ros/esdf_server.h>
 
@@ -22,7 +23,7 @@ namespace mav_active_3d_planning {
         // Singleton accessor
         static ModuleFactory *Instance();
 
-        // Method to allow structs to parametrize themselves
+        // Method to allow non-standard structs/modules to parametrize themselves (pass as delegate)
         void parametrizeModule(std::string args, Module* module);
 
         // Module creation accessors
@@ -59,6 +60,9 @@ namespace mav_active_3d_planning {
         // BackTrackers
         std::unique_ptr <BackTracker> createBackTracker(std::string args, bool verbose);
 
+        // SensorModels
+        std::unique_ptr <SensorModel> createSensorModel(std::string args, std::shared_ptr <voxblox::EsdfServer> voxblox_ptr, bool verbose);
+
     protected:
         ModuleFactory() {}
 
@@ -92,6 +96,8 @@ namespace mav_active_3d_planning {
         EvaluatorUpdater *parseEvaluatorUpdaters(std::string type);
 
         BackTracker *parseBackTrackers(std::string type);
+
+        SensorModel *parseSensorModels(std::string type);
 
         // Base routine for creating modules
         template<class T>
