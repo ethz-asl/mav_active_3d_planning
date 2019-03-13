@@ -110,11 +110,13 @@ namespace mav_active_3d_planning {
             // params
             double p_minimum_wait_time_;
             int p_minimum_wait_calls_;
-            std::unique_ptr<EvaluatorUpdater> following_updater_;
 
             // variables
             ros::Time previous_time_;   // Need to use simulated time here
             int waited_calls_;
+
+            // members
+            std::unique_ptr<EvaluatorUpdater> following_updater_;
         };
 
     } // namespace evaluator_updaters

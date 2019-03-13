@@ -108,13 +108,21 @@ namespace mav_active_3d_planning {
               vis_num_previous_trajectories_(0),
               vis_completed_count_(0) {
 
+        // Initialize a random seed once
+        srand(time(NULL));
+
         // Params
+        bool verbose_modules;
+        bool build_modules_on_init;
+
         // When to start next trajectory, use 0 for not relevant
         nh_private_.param("replan_pos_threshold", p_replan_pos_threshold_, 0.1);
         nh_private_.param("replan_yaw_threshold", p_replan_yaw_threshold_, 0.2);
 
         // Logging and printing
         nh_private_.param("verbose", p_verbose_, true);
+        nh_private_.param("verbose_modules", verbose_modules, false);
+        nh_private_.param("build_modules_on_init", build_modules_on_init, false);
         nh_private_.param("visualize_candidates", p_visualize_candidates_, true);
         nh_private_.param("log_performance", p_log_performance_, false);
 
@@ -124,10 +132,11 @@ namespace mav_active_3d_planning {
         nh_private_.param("max_new_tries", p_max_new_tries_, 0);  // set 0 for infinite
         nh_private_.param("min_new_tries", p_min_new_tries_, 0);
 
+        // Wait for voxblox to setup and receive first map
+        ros::topic::waitForMessage<voxblox_msgs::Layer>("esdf_map_in", nh_private_);
+
         // Setup members
         std::string ns = ros::this_node::getName();
-        bool verbose_modules;
-        nh_private_.param("verbose_modules", verbose_modules, false);
         voxblox_server_ = std::shared_ptr<voxblox::EsdfServer>( new voxblox::EsdfServer(nh_, nh_private_));
         trajectory_generator_ = ModuleFactory::Instance()->createTrajectoryGenerator(
                 ns + "/trajectory_generator", voxblox_server_, verbose_modules);
@@ -135,17 +144,50 @@ namespace mav_active_3d_planning {
                 ns + "/trajectory_evaluator", voxblox_server_, verbose_modules);
         back_tracker_ = ModuleFactory::Instance()->createBackTracker(ns + "/back_tracker", verbose_modules);
 
+        // Force lazy initialization of modules (call every function once)
+        if (build_modules_on_init) {
+            // Empty set of arguments required to run everything
+            TrajectorySegment temp_segment;
+            TrajectorySegment* temp_pointer;
+            std::vector<TrajectorySegment*> temp_vector;
+            mav_msgs::EigenTrajectoryPoint trajectory_point;
+            trajectory_point.position_W = Eigen::Vector3d(0, 0, 0);
+            trajectory_point.setFromYaw(0);
+            temp_segment.trajectory.push_back(trajectory_point);
+            temp_segment.spawnChild()->trajectory.push_back(trajectory_point);
+//            auto resetTemps = [](TrajectorySegment* temp_segment, TrajectorySegment** temp_pointer,
+//                    std::vector<TrajectorySegment*> *temp_vector) {
+//                // Empty set of arguments required to run everything
+//                *temp_segment = TrajectorySegment();
+//                mav_msgs::EigenTrajectoryPoint trajectory_point;
+//                trajectory_point.position_W = Eigen::Vector3d(0, 0, 0);
+//                trajectory_point.setFromYaw(0);
+//                temp_segment->trajectory.push_back(trajectory_point);
+//                *temp_pointer = temp_segment->spawnChild();
+//                (*temp_pointer)->trajectory.push_back(trajectory_point);
+//                temp_vector->clear();
+//            };
+//            resetTemps(&temp_segment, &temp_pointer, &temp_vector);
+            trajectory_generator_->selectSegment(&temp_pointer, &temp_segment);
+            trajectory_generator_->expandSegment(temp_pointer, &temp_vector);
+            trajectory_generator_->updateSegments(&temp_segment);
+
+            temp_segment = TrajectorySegment();
+            temp_segment.trajectory.push_back(trajectory_point);
+            trajectory_evaluator_->computeGain(&temp_segment);
+            trajectory_evaluator_->computeCost(&temp_segment);
+            trajectory_evaluator_->computeValue(&temp_segment);
+            trajectory_evaluator_->updateSegments(&temp_segment);
+
+            temp_segment.spawnChild()->trajectory.push_back(trajectory_point);
+            trajectory_evaluator_->selectNextBest(temp_segment);
+        }
+
         // Subscribers and publishers
         target_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
                 mav_msgs::default_topics::COMMAND_TRAJECTORY, 10);
         trajectory_vis_pub_ = nh_.advertise<visualization_msgs::Marker>("trajectory_visualization", 1000);
         odom_sub_ = nh_.subscribe("odometry", 2, &PlannerNode::odomCallback, this);
-
-        // Initialize a random seed once
-        srand(time(NULL));
-
-        // Wait for voxblox to setup and receive first map
-        ros::topic::waitForMessage<voxblox_msgs::Layer>("esdf_map_in", nh_private_);
 
         // Finish
         run_srv_ = nh_private_.advertiseService("toggle_running", &PlannerNode::runSrvCallback, this);
@@ -234,7 +276,7 @@ namespace mav_active_3d_planning {
 
         // Visualize candidates
         std::vector < TrajectorySegment * > trajectories_to_vis;
-        current_segment_->getTree(trajectories_to_vis);
+        current_segment_->getTree(&trajectories_to_vis);
         if (p_visualize_candidates_){
             publishTrajectoryVisualization(trajectories_to_vis);
         }
@@ -298,7 +340,7 @@ namespace mav_active_3d_planning {
         // Performance log
         if (p_verbose_ || p_log_performance_) {
             std::vector < TrajectorySegment * > trajectory_count;
-            current_segment_->getTree(trajectory_count);
+            current_segment_->getTree(&trajectory_count);
             info_count_ = trajectory_count.size();
 
             if (p_log_performance_) {
@@ -329,7 +371,7 @@ namespace mav_active_3d_planning {
             timer = std::clock();
         }
         TrajectorySegment *expansion_target;
-        trajectory_generator_->selectSegment(expansion_target, current_segment_.get());
+        trajectory_generator_->selectSegment(&expansion_target, current_segment_.get());
         if (p_log_performance_) {
             perf_log_data_[0] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();

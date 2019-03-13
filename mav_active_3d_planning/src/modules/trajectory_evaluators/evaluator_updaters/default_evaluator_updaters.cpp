@@ -35,8 +35,7 @@ namespace mav_active_3d_planning {
 
             // Create Following updater (default does nothing)
             std::string args;   // default args extends the parent namespace
-            std::string param_ns;
-            setParam<std::string>(param_map, "param_namespace", &param_ns, "");
+            std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_updater_args", &args, param_ns + "/following_updater");
             following_updater_ = ModuleFactory::Instance()->createEvaluatorUpdater(args, parent_, verbose_modules_);
         }
@@ -65,10 +64,10 @@ namespace mav_active_3d_planning {
                 // Scale to 0 at minimum, 1 at maximum
                 std::vector < TrajectorySegment * > segments;
                 if (include_subsequent_) {
-                    root->getTree(segments);
+                    root->getTree(&segments);
                     segments.erase(segments.begin());
                 } else {
-                    root->getChildren(segments);
+                    root->getChildren(&segments);
                 }
                 double min_value = (*std::min_element(segments.begin(), segments.end(),
                                                       TrajectorySegment::comparePtr))->value;
@@ -99,8 +98,7 @@ namespace mav_active_3d_planning {
 
             // Create Following updater (default does nothing)
             std::string args;   // default args extends the parent namespace
-            std::string param_ns;
-            setParam<std::string>(param_map, "param_namespace", &param_ns, "");
+            std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_updater_args", &args, param_ns + "/following_updater");
             following_updater_ = ModuleFactory::Instance()->createEvaluatorUpdater(args, parent_, verbose_modules_);
         }
@@ -150,8 +148,7 @@ namespace mav_active_3d_planning {
 
             // Create Following updater (default does nothing)
             std::string args;   // default args extends the parent namespace
-            std::string param_ns;
-            setParam<std::string>(param_map, "param_namespace", &param_ns, "");
+            std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_updater_args", &args, param_ns + "/following_updater");
             following_updater_ = ModuleFactory::Instance()->createEvaluatorUpdater(args, parent_, verbose_modules_);
         }

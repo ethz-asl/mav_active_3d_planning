@@ -12,8 +12,7 @@ namespace mav_active_3d_planning {
 
     void TrajectoryEvaluator::setupFromParamMap(Module::ParamMap *param_map){
         // Get the args to build the modules, default is a namespace extension
-        std::string ns;
-        setParam<std::string>(param_map, "param_namespace", &ns, std::string(""));
+        std::string ns = (*param_map)["param_namespace"];
         setParam<std::string>(param_map, "cost_computer_args", &p_cost_args_, ns + "/cost_computer");
         setParam<std::string>(param_map, "value_computer_args", &p_value_args_, ns + "/value_computer");
         setParam<std::string>(param_map, "next_selector_args", &p_next_args_, ns + "/next_selector");

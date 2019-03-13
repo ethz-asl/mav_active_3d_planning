@@ -8,30 +8,39 @@ namespace mav_active_3d_planning {
 
         // ImmediateBest
         int ImmediateBest::selectNextBest(const TrajectorySegment &traj_in) {
-            int current_index = 0;
-            double current_value = traj_in.children[0]->value;
-            for (int i = 1; i < traj_in.children.size(); ++i) {
-                if (traj_in.children[i]->value > current_value) {
-                    current_value = traj_in.children[i]->value;
-                    current_index = i;
+            std::vector<int> candidates = {0};
+            double current_max = traj_in.children[0]->value;
+            for (int i = 1; i < traj_in.children.size(); ++i){
+                if (traj_in.children[i]->value > current_max){
+                    current_max = traj_in.children[i]->value;
+                    candidates.clear();
+                    candidates.push_back(i);
+                } else if (traj_in.children[i]->value == current_max){
+                    candidates.push_back(i);
                 }
             }
-            return current_index;
+            // randomize if multiple maxima
+            std::random_shuffle(candidates.begin(), candidates.end());
+            return candidates[0];
         }
 
         // SubsequentBest
         int SubsequentBest::selectNextBest(const TrajectorySegment &traj_in) {
-            int current_index = 0;
-            double current_value = evaluateSingle(traj_in.children[0].get());
-            double best_value = current_value;
-            for (int i = 1; i < traj_in.children.size(); ++i) {
-                current_value = evaluateSingle(traj_in.children[i].get());
-                if (current_value > best_value) {
-                    best_value = current_value;
-                    current_index = i;
+            std::vector<int> candidates = {0};
+            double current_max = evaluateSingle(traj_in.children[0].get());
+            for (int i = 1; i < traj_in.children.size(); ++i){
+                double current_value = evaluateSingle(traj_in.children[i].get());
+                if (current_value > current_max){
+                    current_max = current_value;
+                    candidates.clear();
+                    candidates.push_back(i);
+                } else if (current_value == current_max){
+                    candidates.push_back(i);
                 }
             }
-            return current_index;
+            // randomize if multiple maxima
+            std::random_shuffle(candidates.begin(), candidates.end());
+            return candidates[0];
         }
 
         double SubsequentBest::evaluateSingle(TrajectorySegment *traj_in) {

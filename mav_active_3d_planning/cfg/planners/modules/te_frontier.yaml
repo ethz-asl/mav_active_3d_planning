@@ -1,12 +1,11 @@
 trajectory_evaluator:
-  type: "Naive"
+  type: "Frontier"
   clear_from_parents: false 
-  sampling_time: 0.0
     
   value_computer:
     type: "Accumulate"
     following_value_computer:
-      type: "Linear"
+      type: "LinearValue"
       cost_weight: 1.0
       gain_weight: 1.0
     
@@ -22,7 +21,7 @@ trajectory_evaluator:
       type: "Periodic"
       minimum_wait_calls: 5
       following_updater:
-        type: "Clear"
+        type: "ResetTree"
 #        type: "PruneByValue"
 #        minimum_value: 0.0
 #        use_relative_values: false

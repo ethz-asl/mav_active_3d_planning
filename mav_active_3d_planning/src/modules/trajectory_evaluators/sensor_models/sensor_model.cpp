@@ -9,6 +9,7 @@ namespace mav_active_3d_planning {
             // Cache constants from voxblox
             c_voxel_size_ = voxblox_ptr_->getEsdfMapPtr()->voxel_size();
             c_block_size_ = voxblox_ptr_->getEsdfMapPtr()->block_size();
+            voxblox_ptr_->getEsdfMapPtr();
         }
 
         bool SensorModel::getVoxelCenter(Eigen::Vector3d *point) {

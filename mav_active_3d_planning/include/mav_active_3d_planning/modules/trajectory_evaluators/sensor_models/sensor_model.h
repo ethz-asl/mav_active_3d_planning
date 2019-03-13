@@ -30,7 +30,7 @@ namespace mav_active_3d_planning {
             virtual void setupFromParamMap(Module::ParamMap *param_map) {}
 
             // override this function if voxblox specific initialization is needed, call parent implementation fist!
-            virtual void setVoxbloxPtr(const std::shared_ptr <voxblox::EsdfServer> &voxblox_ptr);
+            void setVoxbloxPtr(const std::shared_ptr <voxblox::EsdfServer> &voxblox_ptr);
 
             // voxblox map
             std::shared_ptr <voxblox::EsdfServer> voxblox_ptr_;

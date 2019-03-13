@@ -76,12 +76,10 @@ namespace mav_active_3d_planning {
 
         // SimpleRayCaster
         void SimpleRayCaster::setupFromParamMap(Module::ParamMap *param_map) {
-            setParam<double>(param_map, "ray_step", &p_ray_step_, 0.0);
-            CameraModel::setupFromParamMap(param_map);
-        }
+            setParam<double>(param_map, "ray_step", &p_ray_step_, (double) c_voxel_size_);
 
-        void SimpleRayCaster::setVoxbloxPtr(const std::shared_ptr <voxblox::EsdfServer> &voxblox_ptr) {
-            SensorModel::setVoxbloxPtr(voxblox_ptr);
+            // setup parent
+            CameraModel::setupFromParamMap(param_map);
 
             // Downsample to voxel size resolution at max range
             c_res_x_ = std::min((int) ceil(p_ray_length_ * c_field_of_view_x_ / (double) c_voxel_size_),
@@ -89,10 +87,6 @@ namespace mav_active_3d_planning {
             c_res_y_ = std::min((int) ceil(p_ray_length_ * c_field_of_view_y_ / (double) c_voxel_size_),
                                 p_resolution_y_);
 
-            // If not set, default the ray step to voxel size
-            if (p_ray_step_ <= 0.0) {
-                p_ray_step_ = (double) c_voxel_size_;
-            }
         }
 
         bool SimpleRayCaster::getVisibleVoxels(std::vector <Eigen::Vector3d> *result, const Eigen::Vector3d &position,
@@ -129,23 +123,16 @@ namespace mav_active_3d_planning {
 
         // IterativeRayCaster
         void IterativeRayCaster::setupFromParamMap(Module::ParamMap *param_map) {
-            setParam<double>(param_map, "ray_step", &p_ray_step_, 0.0);
-            CameraModel::setupFromParamMap(param_map);
-        }
+            setParam<double>(param_map, "ray_step", &p_ray_step_, (double) c_voxel_size_);
 
-        void IterativeRayCaster::setVoxbloxPtr(const std::shared_ptr <voxblox::EsdfServer> &voxblox_ptr) {
-            SensorModel::setVoxbloxPtr(voxblox_ptr);
+            // setup parent
+            CameraModel::setupFromParamMap(param_map);
 
             // Downsample to voxel size resolution at max range
             c_res_x_ = std::min((int) ceil(p_ray_length_ * c_field_of_view_x_ / (double) c_voxel_size_),
                                 p_resolution_x_);
             c_res_y_ = std::min((int) ceil(p_ray_length_ * c_field_of_view_y_ / (double) c_voxel_size_),
                                 p_resolution_y_);
-
-            // If not set, default the ray step to voxel size
-            if (p_ray_step_ <= 0.0) {
-                p_ray_step_ = (double) c_voxel_size_;
-            }
 
             // Determine number of splits + split distances
             c_n_sections_ = (int) std::floor(std::log2(std::min((double) c_res_x_, (double) c_res_y_)));
@@ -159,9 +146,8 @@ namespace mav_active_3d_planning {
             std::reverse(c_split_widths_.begin(), c_split_widths_.end());
         }
 
-        bool
-        IterativeRayCaster::getVisibleVoxels(std::vector <Eigen::Vector3d> *result, const Eigen::Vector3d &position,
-                                             const Eigen::Quaterniond &orientation) {
+        bool IterativeRayCaster::getVisibleVoxels(std::vector <Eigen::Vector3d> *result, const Eigen::Vector3d &position,
+                                                  const Eigen::Quaterniond &orientation) {
             // Setup ray table (contains at which segment to start, -1 if occluded
             ray_table_ = Eigen::ArrayXXi::Zero(c_res_x_, c_res_y_);
 
@@ -228,6 +214,7 @@ namespace mav_active_3d_planning {
         }
 
         // Timing functionalities if other models are to be implemented / timed
+        // TODO: remove in final version
 //    std::vector<Eigen::Vector3d> RayCaster::getVisibleVoxels(Eigen::Vector3d position, Eigen::Quaterniond orientation) {
 //        if (!p_test_) {
 //            return (this->*impl_)(position, orientation);

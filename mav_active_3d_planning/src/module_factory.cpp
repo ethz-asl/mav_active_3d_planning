@@ -4,6 +4,7 @@
 #include <ros/param.h>
 #include <ros/node_handle.h>
 #include <ros/console.h>
+#include <XmlRpcValue.h>
 
 // Default modules
 #include "mav_active_3d_planning/modules/trajectory_generators/segment_selectors/default_segment_selectors.h"
@@ -21,6 +22,8 @@
 #include "mav_active_3d_planning/modules/trajectory_generators/mav_trajectory_generation.h"
 #include "mav_active_3d_planning/modules/trajectory_evaluators/simulated_sensor.h"
 #include "mav_active_3d_planning/modules/trajectory_evaluators/sensor_models/camera_models.h"
+#include "mav_active_3d_planning/modules/trajectory_evaluators/evaluator_updaters/simulated_sensor_updaters.h"
+
 
 
 namespace mav_active_3d_planning {
@@ -42,8 +45,8 @@ namespace mav_active_3d_planning {
     }
 
     TrajectoryEvaluator *ModuleFactory::parseTrajectoryEvaluators(std::string type) {
-        if (type == "Naive") {
-            return new trajectory_evaluators::Naive();
+        if (type == "NaiveEvaluator") {
+            return new trajectory_evaluators::NaiveEvaluator();
         } else if (type == "Frontier") {
             return new trajectory_evaluators::Frontier();
         } else if (type == "VoxelType") {
@@ -124,6 +127,8 @@ namespace mav_active_3d_planning {
             return new evaluator_updaters::PruneByValue();
         } else if (type == "Periodic") {
             return new evaluator_updaters::Periodic();
+        } if (type == "SimulatedSensorUpdater") {
+            return new evaluator_updaters::SimulatedSensorUpdater();
         } else {
             printError("Unknown EvaluatorUpdater type '" + type + "'.");
             return nullptr;
@@ -170,120 +175,169 @@ namespace mav_active_3d_planning {
         module->setupFromParamMap(&map);
     }
 
+    bool ModuleFactory::setupCommon(Module::ParamMap *map, Module *module, bool verbose) {
+        module->setupFromParamMap(map);
+        module->assureParamsValid();
+        if (verbose) { printVerbose(*map); }
+        return true;
+    }
+
     std::unique_ptr <TrajectoryGenerator> ModuleFactory::createTrajectoryGenerator(std::string args,
                                                                                    std::shared_ptr <voxblox::EsdfServer> voxblox_ptr,
                                                                                    bool verbose) {
-        std::unique_ptr <TrajectoryGenerator> result = createCommon<TrajectoryGenerator>(std::string("Uniform"),
-                                                                                         args,
-                                                                                         &ModuleFactory::parseTrajectoryGenerators,
-                                                                                         verbose);
-        if (result) {
-            result->setVoxbloxPtr(voxblox_ptr);
+        std::unique_ptr <TrajectoryGenerator> result;
+        Module::ParamMap map;
+        if (!createCommon<TrajectoryGenerator>(&map, &result, std::string("Uniform"), args,
+                                               &ModuleFactory::parseTrajectoryGenerators, verbose)) {
+            return nullptr;
         }
+        result->setVoxbloxPtr(voxblox_ptr);
+        setupCommon(&map, result.get(), verbose);
         return result;
     }
 
     std::unique_ptr <TrajectoryEvaluator> ModuleFactory::createTrajectoryEvaluator(std::string args,
                                                                                    std::shared_ptr <voxblox::EsdfServer> voxblox_ptr,
                                                                                    bool verbose) {
+        std::unique_ptr <TrajectoryEvaluator> result;
         Module::ParamMap map;
-        std::string type = std::string("Naive");
-        getParamMapAndType(&map, &type, args);
-        TrajectoryEvaluator *result = parseTrajectoryEvaluators(type);
-        if (!result) {
-            // parsing failed
+        if (!createCommon<TrajectoryEvaluator>(&map, &result, std::string("NaiveEvaluator"), args,
+                                               &ModuleFactory::parseTrajectoryEvaluators, verbose)) {
             return nullptr;
         }
-        result->setVoxbloxPtr(voxblox_ptr); // Set voxblox pointer early
-        result->setupFromParamMap(&map);
-        result->verbose_modules_ = verbose;
-        result->assureParamsValid();
-        if (verbose) { printVerbose(map); }
-        return std::unique_ptr<TrajectoryEvaluator>(result);
+        result->setVoxbloxPtr(voxblox_ptr);
+        setupCommon(&map, result.get(), verbose);
+        return result;
     }
 
     std::unique_ptr <SegmentSelector> ModuleFactory::createSegmentSelector(std::string args, bool verbose) {
-        return createCommon<SegmentSelector>(std::string("Greedy"), args,
-                                             &ModuleFactory::parseSegmentSelectors, verbose);
+        std::unique_ptr <SegmentSelector> result;
+        Module::ParamMap map;
+        if (!createCommon<SegmentSelector>(&map, &result, std::string("Greedy"), args,
+                                           &ModuleFactory::parseSegmentSelectors, verbose)) {
+            return nullptr;
+        }
+        setupCommon(&map, result.get(), verbose);
+        return result;
     }
 
     std::unique_ptr <GeneratorUpdater>
-    ModuleFactory::createGeneratorUpdater(std::string args, TrajectoryGenerator *parent,
-                                          bool verbose) {
-        std::unique_ptr <GeneratorUpdater> result = createCommon<GeneratorUpdater>(std::string("ResetTree"),
-                                                                                   args,
-                                                                                   &ModuleFactory::parseGeneratorUpdaters,
-                                                                                   verbose);
-        if (result) {
-            result->setParent(parent);
+    ModuleFactory::createGeneratorUpdater(std::string args, TrajectoryGenerator *parent, bool verbose) {
+        std::unique_ptr <GeneratorUpdater> result;
+        Module::ParamMap map;
+        if (!createCommon<GeneratorUpdater>(&map, &result, std::string("ResetTree"), args,
+                                            &ModuleFactory::parseGeneratorUpdaters, verbose)) {
+            return nullptr;
         }
+        result->setParent(parent);
+        setupCommon(&map, result.get(), verbose);
         return result;
     }
 
     std::unique_ptr <CostComputer> ModuleFactory::createCostComputer(std::string args, bool verbose) {
-        return createCommon<CostComputer>(std::string("SegmentTime"), args, &ModuleFactory::parseCostComputers,
-                                          verbose);
+        std::unique_ptr <CostComputer> result;
+        Module::ParamMap map;
+        if (!createCommon<CostComputer>(&map, &result, std::string("SegmentTime"), args,
+                                        &ModuleFactory::parseCostComputers, verbose)) {
+            return nullptr;
+        }
+        setupCommon(&map, result.get(), verbose);
+        return result;
     }
 
     std::unique_ptr <ValueComputer> ModuleFactory::createValueComputer(std::string args, bool verbose) {
-        return createCommon<ValueComputer>(std::string("LinearValue"), args, &ModuleFactory::parseValueComputers,
-                                           verbose);
+        std::unique_ptr <ValueComputer> result;
+        Module::ParamMap map;
+        if (!createCommon<ValueComputer>(&map, &result, std::string("LinearValue"), args,
+                                         &ModuleFactory::parseValueComputers, verbose)) {
+            return nullptr;
+        }
+        setupCommon(&map, result.get(), verbose);
+        return result;
     }
 
     std::unique_ptr <NextSelector> ModuleFactory::createNextSelector(std::string args, bool verbose) {
-        return createCommon<NextSelector>(std::string("ImmediateBest"), args, &ModuleFactory::parseNextSelectors,
-                                          verbose);
+        std::unique_ptr <NextSelector> result;
+        Module::ParamMap map;
+        if (!createCommon<NextSelector>(&map, &result, std::string("ImmediateBest"), args,
+                                        &ModuleFactory::parseNextSelectors, verbose)) {
+            return nullptr;
+        }
+        setupCommon(&map, result.get(), verbose);
+        return result;
     }
 
     std::unique_ptr <EvaluatorUpdater>
-    ModuleFactory::createEvaluatorUpdater(std::string args, TrajectoryEvaluator *parent,
-                                          bool verbose) {
-        std::unique_ptr <EvaluatorUpdater> result = createCommon<EvaluatorUpdater>(std::string("UpdateNothing"),
-                                                                                   args,
-                                                                                   &ModuleFactory::parseEvaluatorUpdaters,
-                                                                                   verbose);
-        if (result) {
-            result->setParent(parent);
+    ModuleFactory::createEvaluatorUpdater(std::string args, TrajectoryEvaluator *parent, bool verbose) {
+        std::unique_ptr <EvaluatorUpdater> result;
+        Module::ParamMap map;
+        if (!createCommon<EvaluatorUpdater>(&map, &result, std::string("UpdateNothing"), args,
+                                            &ModuleFactory::parseEvaluatorUpdaters, verbose)) {
+            return nullptr;
         }
+        result->setParent(parent);
+        setupCommon(&map, result.get(), verbose);
         return result;
     }
 
     std::unique_ptr <BackTracker> ModuleFactory::createBackTracker(std::string args, bool verbose) {
-        return createCommon<BackTracker>(std::string("RotateInPlace"), args, &ModuleFactory::parseBackTrackers,
-                                         verbose);
+        std::unique_ptr <BackTracker> result;
+        Module::ParamMap map;
+        if (!createCommon<BackTracker>(&map, &result, std::string("RotateInPlace"), args,
+                                       &ModuleFactory::parseBackTrackers, verbose)) {
+            return nullptr;
+        }
+        setupCommon(&map, result.get(), verbose);
+        return result;
     }
 
     std::unique_ptr <SensorModel> ModuleFactory::createSensorModel(std::string args,
                                                                    std::shared_ptr <voxblox::EsdfServer> voxblox_ptr,
                                                                    bool verbose) {
-        std::unique_ptr <SensorModel> result = createCommon<SensorModel>(std::string("SimpleRayCaster"),
-                                                                         args,
-                                                                         &ModuleFactory::parseSensorModels,
-                                                                         verbose);
-        if (result) {
-            result->setVoxbloxPtr(voxblox_ptr);
+        std::unique_ptr <SensorModel> result;
+        Module::ParamMap map;
+        if (!createCommon<SensorModel>(&map, &result, std::string("SimpleRayCaster"), args,
+                                       &ModuleFactory::parseSensorModels, verbose)) {
+            return nullptr;
         }
+        result->setVoxbloxPtr(voxblox_ptr);
+        setupCommon(&map, result.get(), verbose);
         return result;
     }
 
     // ROS factory
     bool ModuleFactoryROS::getParamMapAndType(Module::ParamMap *map, std::string *type, std::string args) {
         // For the ros factory, args is the namespace of the module
-        ros::NodeHandle nh(args);
         std::vector <std::string> keys;
-        std::string value;
+        std::string key;
+        XmlRpc::XmlRpcValue value;
+        ros::NodeHandle nh(args);
         nh.getParamNames(keys);
-        for (int i = 0; i > keys.size(); ++i) {
-            nh.getParam(keys[i], value);
-            (*map)[keys[i]] = value;
+
+        // parse all params
+        for (int i = 0; i < keys.size(); ++i) {
+            key = keys[i];
+            if (key.find(args) != 0) {
+                continue;
+            }
+            key = key.substr(args.length() + 1);
+            if (key.find(std::string("/")) != std::string::npos) {
+                continue;
+            }
+            nh.getParam(key, value);
+            std::stringstream ss("");
+            ss << value;
+            (*map)[key] = ss.str();
         }
+
+        // get type + verbose
         std::string type_default("");
         if (!nh.getParam("type", *type)) {
             type_default = " (default)";
         }
-        (*map)["verbose_text"] = "Creating Module '" + *type + type_default + "' from namespace '"
-                                 + args + "' with parameters:";
-        (*map)["param_namespace"] = args;   // also log the namespace
+        (*map)["verbose_text"] = "Creating Module '" + *type + "'" + type_default + " from namespace '" + args +
+                                 "' with parameters:";
+        (*map)["param_namespace"] = args;   // also log the namespace for other modules as default
         return true;
     }
 
@@ -291,7 +345,7 @@ namespace mav_active_3d_planning {
         ROS_INFO("%s", map.at("verbose_text").c_str()); // Will warn about formatting otherwise
     }
 
-    void ModuleFactoryROS::printError(std::string message) {
+    void ModuleFactoryROS::printError(const std::string &message) {
         ROS_ERROR("%s", message.c_str());   // Will warn about formatting otherwise
     }
 

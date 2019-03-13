@@ -8,6 +8,7 @@
 
 namespace mav_active_3d_planning {
     class ModuleFactory;
+    namespace evaluator_updaters{ class SimulatedSensorUpdater; }
 
     namespace trajectory_evaluators {
 
@@ -22,6 +23,7 @@ namespace mav_active_3d_planning {
             virtual void visualizeTrajectoryValue(visualization_msgs::Marker *msg, const TrajectorySegment &trajectory);
 
         protected:
+            friend mav_active_3d_planning::evaluator_updaters::SimulatedSensorUpdater;
             // factory access
             SimulatedSensorEvaluator() {}
 
@@ -33,9 +35,9 @@ namespace mav_active_3d_planning {
             // parameters
             bool p_clear_from_parents_;
 
-            // compute the gain and store the visible voxel information
+            // store the visible voxel information, asign correct TrajectoryData type here
             virtual bool storeTrajectoryInformation(TrajectorySegment *traj_in,
-                                                    const std::vector <Eigen::Vector3d> &new_voxels) = 0;
+                                                    const std::vector <Eigen::Vector3d> &new_voxels);
 
             // compute the gain from Trajectory information
             virtual bool computeGainFromVisibleVoxels(TrajectorySegment *traj_in) = 0;
@@ -48,20 +50,17 @@ namespace mav_active_3d_planning {
             std::vector <Eigen::Vector3d> visible_voxels;
         };
 
-        // Naive just counts the number of yet unobserved visible voxels.
-        class Naive : public SimulatedSensorEvaluator {
+        // NaiveEvaluator just counts the number of yet unobserved visible voxels.
+        class NaiveEvaluator : public SimulatedSensorEvaluator {
         protected:
             friend ModuleFactory;
 
             // factory access
-            Naive() {}
+            NaiveEvaluator() {}
 
             void setupFromParamMap(Module::ParamMap *param_map);
 
             // Override virtual methods
-            bool storeTrajectoryInformation(TrajectorySegment *traj_in,
-                                            const std::vector <Eigen::Vector3d> &new_voxels);
-
             bool computeGainFromVisibleVoxels(TrajectorySegment *traj_in);
         };
 
@@ -120,9 +119,6 @@ namespace mav_active_3d_planning {
             double c_max_gain_;
 
             // Override virtual methods
-            bool
-            storeTrajectoryInformation(TrajectorySegment *traj_in, const std::vector <Eigen::Vector3d> &new_voxels);
-
             bool computeGainFromVisibleVoxels(TrajectorySegment *traj_in);
         };
 

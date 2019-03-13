@@ -25,7 +25,7 @@ namespace mav_active_3d_planning {
         virtual ~TrajectoryGenerator() {}
 
         // Expansion policy where to expand (from full tree)
-        virtual bool selectSegment(TrajectorySegment *result, TrajectorySegment *root);
+        virtual bool selectSegment(TrajectorySegment **result, TrajectorySegment *root);
 
         // Expand a selected trajectory segment. Return true for successful expansion.
         virtual bool expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment*> *new_segments) = 0;
@@ -65,7 +65,7 @@ namespace mav_active_3d_planning {
     // Abstract encapsulation for default/modular implementations of the selectSegment method
     class SegmentSelector : public Module {
     public:
-        virtual bool selectSegment(TrajectorySegment *result, TrajectorySegment *root) = 0;
+        virtual bool selectSegment(TrajectorySegment **result, TrajectorySegment *root) = 0;
     };
 
     // Abstract encapsulation for default/modular implementations of the updateSegments method

@@ -11,14 +11,14 @@ namespace mav_active_3d_planning {
         // Greedy
         Greedy::Greedy(bool leaves_only) : leaves_only_(leaves_only) {}
 
-        bool Greedy::selectSegment(TrajectorySegment *result, TrajectorySegment *root) {
+        bool Greedy::selectSegment(TrajectorySegment **result, TrajectorySegment *root) {
             std::vector < TrajectorySegment * > candidates;
             if (leaves_only_) {
-                root->getLeaves(candidates);
+                root->getLeaves(&candidates);
             } else {
-                root->getTree(candidates);
+                root->getTree(&candidates);
             }
-            result = *std::max_element(candidates.begin(), candidates.end(), TrajectorySegment::comparePtr);
+            *result = *std::max_element(candidates.begin(), candidates.end(), TrajectorySegment::comparePtr);
             return true;
         }
 
@@ -35,13 +35,13 @@ namespace mav_active_3d_planning {
             assureParamsValid();
         }
 
-        bool RandomWeighted::selectSegment(TrajectorySegment *result, TrajectorySegment *root) {
+        bool RandomWeighted::selectSegment(TrajectorySegment **result, TrajectorySegment *root) {
             // Get all candidates
             std::vector < TrajectorySegment * > candidates;
             if ((double) rand() / RAND_MAX <= leaf_probability_) {
-                root->getLeaves(candidates);
+                root->getLeaves(&candidates);
             } else {
-                root->getTree(candidates);
+                root->getTree(&candidates);
             }
             if (!revisit_) {
                 candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
@@ -50,7 +50,7 @@ namespace mav_active_3d_planning {
             }
             if (candidates.empty()) {
                 // exception catching
-                result = root;
+                *result = root;
                 return false;
             }
             if (factor_ > 0.0 && (double) rand() / RAND_MAX > uniform_probability_) {
@@ -69,13 +69,13 @@ namespace mav_active_3d_planning {
                 double realization = (double) rand() / RAND_MAX * value_sum;
                 for (int i = 0; i < candidates.size(); ++i) {
                     if (values[i] >= realization) {
-                        result = candidates[i];
+                        *result = candidates[i];
                         return true;
                     }
                 }
             }
             // uniform selection
-            result = candidates[rand() % candidates.size()];
+            *result = candidates[rand() % candidates.size()];
             return true;
         }
 

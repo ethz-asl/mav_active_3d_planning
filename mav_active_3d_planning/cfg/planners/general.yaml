@@ -9,16 +9,25 @@ min_new_segments: 0
 max_new_tries: 0
 min_new_tries: 0
 
+visualize_candidates: true
+verbose_modules: true
+build_modules_on_init: true
+
 # Common values for all
 trajectory_generator:
   collision_optimistic: false 
   collision_radius: 0.7
   
 trajectory_evaluator:
-  camera_params_ns: "/unreal/unreal_ros_client/camera_params"
+  sensor_model:
+    type: "IterativeRayCaster"
+    sampling_time: 0.0
+    focal_length: 320.0
+    resolution_x: 640
+    resolution_y: 480
   
   cost_computer:
-    type: "Time"
+    type: "SegmentTime"
     
 back_tracker:
   type: "RotateReverse"

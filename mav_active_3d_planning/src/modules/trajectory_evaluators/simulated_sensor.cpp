@@ -12,8 +12,7 @@ namespace mav_active_3d_planning {
 
             // Create sensor model
             std::string args;   // default args extends the parent namespace
-            std::string param_ns;
-            setParam<std::string>(param_map, "param_namespace", &param_ns, "");
+            std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "sensor_model_args", &args,
                                   param_ns + "/sensor_model");
             sensor_model_ = ModuleFactory::Instance()->createSensorModel(args, voxblox_ptr_, verbose_modules_);
@@ -39,7 +38,7 @@ namespace mav_active_3d_planning {
                 TrajectorySegment *previous = traj_in->parent;
                 while (previous) {
                     std::vector <Eigen::Vector3d> old_voxels =
-                            static_cast<SimulatedSensorInfo *>(previous->info.get())->visible_voxels;
+                            dynamic_cast<SimulatedSensorInfo *>(previous->info.get())->visible_voxels;
                     new_voxels.erase(std::remove_if(new_voxels.begin(), new_voxels.end(),
                                                     [&old_voxels](const Eigen::Vector3d &voxel) {
                                                         auto it = std::find(old_voxels.begin(), old_voxels.end(),
@@ -56,14 +55,22 @@ namespace mav_active_3d_planning {
             return true;
         }
 
+        bool SimulatedSensorEvaluator::storeTrajectoryInformation(TrajectorySegment *traj_in,
+                                                                  const std::vector <Eigen::Vector3d> &new_voxels) {
+            SimulatedSensorInfo *new_info = new SimulatedSensorInfo();
+            new_info->visible_voxels.assign(new_voxels.begin(), new_voxels.end());
+            traj_in->info.reset(new_info);
+            return true;
+        }
+
         void SimulatedSensorEvaluator::visualizeTrajectoryValue(visualization_msgs::Marker *msg,
                                                                 const TrajectorySegment &trajectory) {
+            if(!trajectory.info) { return; }
             // Default implementation displays all visible voxels
             msg->header.frame_id = "/world";
             msg->pose.orientation.w = 1.0;
             msg->type = visualization_msgs::Marker::CUBE_LIST;
             voxblox::FloatingPoint voxel_size = voxblox_ptr_->getEsdfMapPtr()->voxel_size();
-            voxblox::FloatingPoint block_size = voxblox_ptr_->getEsdfMapPtr()->block_size();
             msg->scale.x = (double) voxel_size;
             msg->scale.y = (double) voxel_size;
             msg->scale.z = (double) voxel_size;
@@ -73,8 +80,7 @@ namespace mav_active_3d_planning {
             msg->color.a = 0.4;
 
             // points
-            int voxels_per_side = (int) std::round(block_size / voxel_size);
-            SimulatedSensorInfo *info = static_cast<SimulatedSensorInfo *>(trajectory.info.get());
+            SimulatedSensorInfo *info = dynamic_cast<SimulatedSensorInfo *>(trajectory.info.get());
             for (int i = 0; i < info->visible_voxels.size(); ++i) {
                 geometry_msgs::Point point;
                 point.x = (double) info->visible_voxels[i].x();
@@ -84,23 +90,19 @@ namespace mav_active_3d_planning {
             }
         }
 
-        // Naive
-        void Naive::setupFromParamMap(Module::ParamMap *param_map) {
+        // NaiveEvaluator
+        void NaiveEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
             // setup parent
             SimulatedSensorEvaluator::setupFromParamMap(param_map);
         }
 
-        bool
-        Naive::storeTrajectoryInformation(TrajectorySegment *traj_in, const std::vector <Eigen::Vector3d> &new_voxels) {
-            SimulatedSensorInfo *new_info = new SimulatedSensorInfo();
-            new_info->visible_voxels = new_voxels;
-            traj_in->info = std::unique_ptr<TrajectoryInfo>(new_info);
-            return true;
-        }
-
-        bool Naive::computeGainFromVisibleVoxels(TrajectorySegment *traj_in) {
+        bool NaiveEvaluator::computeGainFromVisibleVoxels(TrajectorySegment *traj_in) {
+            if (!traj_in->info) {
+                traj_in->gain = 0.0;
+                return false;
+            }
             // remove all already observed voxels, count number of new voxels
-            SimulatedSensorInfo *info = static_cast<SimulatedSensorInfo *>(traj_in->info.get());
+            SimulatedSensorInfo *info = dynamic_cast<SimulatedSensorInfo *>(traj_in->info.get());
             info->visible_voxels.erase(
                     std::remove_if(info->visible_voxels.begin(), info->visible_voxels.end(),
                                    [this](const Eigen::Vector3d &voxel) {
@@ -146,13 +148,17 @@ namespace mav_active_3d_planning {
         bool Frontier::storeTrajectoryInformation(TrajectorySegment *traj_in,
                                                   const std::vector <Eigen::Vector3d> &new_voxels) {
             FrontierInfo *new_info = new FrontierInfo();
-            new_info->visible_voxels = new_voxels;
-            traj_in->info = std::unique_ptr<TrajectoryInfo>(new_info);
+            new_info->visible_voxels.assign(new_voxels.begin(), new_voxels.end());
+            traj_in->info.reset(new_info);
             return true;
         }
 
         bool Frontier::computeGainFromVisibleVoxels(TrajectorySegment *traj_in) {
-            FrontierInfo *info = static_cast<FrontierInfo *>(traj_in->info.get());
+            if (!traj_in->info) {
+                traj_in->gain = 0.0;
+                return false;
+            }
+            FrontierInfo *info = dynamic_cast<FrontierInfo *>(traj_in->info.get());
 
             // Remove observed voxels
             info->visible_voxels.erase(
@@ -175,22 +181,21 @@ namespace mav_active_3d_planning {
 
         void Frontier::visualizeTrajectoryValue(visualization_msgs::Marker *msg, const TrajectorySegment &trajectory) {
             // Default implementation displays all frontier voxels
+            if (!trajectory.info) { return; }
             msg->header.frame_id = "/world";
             msg->pose.orientation.w = 1.0;
             msg->type = visualization_msgs::Marker::CUBE_LIST;
             voxblox::FloatingPoint voxel_size = voxblox_ptr_->getEsdfMapPtr()->voxel_size();
-            voxblox::FloatingPoint block_size = voxblox_ptr_->getEsdfMapPtr()->block_size();
             msg->scale.x = (double) voxel_size;
             msg->scale.y = (double) voxel_size;
             msg->scale.z = (double) voxel_size;
             msg->color.r = 1.0;
-            msg->color.g = 0.0;
+            msg->color.g = 0.8;
             msg->color.b = 0.0;
-            msg->color.a = 0.8;
+            msg->color.a = 1.0;
 
             // points
-            int voxels_per_side = (int) std::round(block_size / voxel_size);
-            FrontierInfo *info = static_cast<FrontierInfo *>(trajectory.info.get());
+            FrontierInfo *info = dynamic_cast<FrontierInfo *>(trajectory.info.get());
             for (int i = 0; i < info->frontier_voxels.size(); ++i) {
                 geometry_msgs::Point point;
                 point.x = (double) info->frontier_voxels[i].x();
@@ -211,8 +216,7 @@ namespace mav_active_3d_planning {
             setParam<double>(param_map, "gain_free_outer", &p_gain_free_outer_, 0.0);
 
             // outer volume (if not specified will not be counted)
-            std::string ns;
-            setParam<std::string>(param_map, "param_namespace", &ns, std::string(""));
+            std::string ns = (*param_map)["param_namespace"];
             std::string outer_volume_args;
             setParam<std::string>(param_map, "outer_volume_args", &outer_volume_args, ns + "/outer_volume");
             outer_volume_ = defaults::BoundingVolume(outer_volume_args);
@@ -227,17 +231,10 @@ namespace mav_active_3d_planning {
             SimulatedSensorEvaluator::setupFromParamMap(param_map);
         }
 
-        bool VoxelType::storeTrajectoryInformation(TrajectorySegment *traj_in,
-                                                   const std::vector <Eigen::Vector3d> &new_voxels) {
-            SimulatedSensorInfo *new_info = new SimulatedSensorInfo();
-            new_info->visible_voxels = new_voxels;
-            traj_in->info = std::unique_ptr<TrajectoryInfo>(new_info);
-            return true;
-        }
-
         bool VoxelType::computeGainFromVisibleVoxels(TrajectorySegment *traj_in) {
             traj_in->gain = 0.0;
-            SimulatedSensorInfo *info = static_cast<SimulatedSensorInfo *>(traj_in->info.get());
+            if (!traj_in->info) { return false; }
+            SimulatedSensorInfo *info = dynamic_cast<SimulatedSensorInfo *>(traj_in->info.get());
             for (int i = 0; i < info->visible_voxels.size(); ++i) {
                 double distance = 0.0;
                 if (bounding_volume_.contains(info->visible_voxels[i])) {

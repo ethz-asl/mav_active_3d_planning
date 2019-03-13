@@ -48,8 +48,7 @@ namespace mav_active_3d_planning {
         void Accumulate::setupFromParamMap(Module::ParamMap *param_map) {
             // Create Following value computer
             std::string args;   // default args extends the parent namespace
-            std::string param_ns;
-            setParam<std::string>(param_map, "param_namespace", &param_ns, "");
+            std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_value_computer_args", &args,
                                   param_ns + "/following_value_computer");
             following_value_computer_ = ModuleFactory::Instance()->createValueComputer(args, verbose_modules_);

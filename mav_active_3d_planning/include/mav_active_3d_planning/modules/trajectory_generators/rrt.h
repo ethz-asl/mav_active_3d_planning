@@ -41,7 +41,7 @@ namespace mav_active_3d_planning {
                     TreeData, 3> KDTree;
 
             // override virtual functions
-            bool selectSegment(TrajectorySegment *result, TrajectorySegment *root);
+            bool selectSegment(TrajectorySegment **result, TrajectorySegment *root);
             bool expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment*> *new_segments);
 
         protected:

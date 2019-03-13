@@ -1,5 +1,7 @@
 # Config that builds the mav_active_3d_planning implementation of the nbvp planner (bircher paper)
 visualize_candidates: true
+verbose_modules: true
+build_modules_on_init: true
 
 max_new_segments: 15
 min_new_segments: 15
@@ -15,31 +17,26 @@ trajectory_generator:
   
   type: "RRT"
   velocity: 0.5
-  extension_range: 1.0
+  max_extension_range: 1.0
   use_spheric_sampling: true
   maximum_tries: 1000
   sampling_rate: 20.0
   
   generator_updater:
-    type: "Void"
+    type: "UpdateNothing"
   
 trajectory_evaluator:
-  type: "Naive"
-  sampling_time: 0.0
+  type: "NaiveEvaluator"
   clear_from_parents: false
-#  type: "VoxelType"
-#  sampling_time: 0.0
-#  clear_from_parents: false
-#  outer_volume_namespace: "/planner/planner_node/trajectory_generator/bounding_volume"
-#  gain_unknown: 1.0
-#  gain_occupied: 0.0
-#  gain_free: 0.0
-#  gain_unknown_outer: 0.1
-#  gain_occupied_outer: 0.0
-#  gain_free_outer: 0.0
+  sensor_model:
+    type: "IterativeRayCaster"
+    sampling_time: 0.0
+    focal_length: 320.0
+    resolution_x: 640
+    resolution_y: 480
 
   cost_computer:
-    type: "Distance"
+    type: "SegmentLength"
     
   value_computer:
     type: "Accumulate"
@@ -51,16 +48,12 @@ trajectory_evaluator:
     type: "SubsequentBest"
     
   evaluator_updater:
-    type: "UpdateAll"
-    update_gain: true
-    update_cost: false
-    update_value: true
-#    type: "PruneByValue"
-#    minimum_value: 0.99
-#    use_relative_values: true
-#    include_subsequent: true
-#    following_updater:
-#      type: "EvaluateFromScratch"
+    type: "SimulatedSensorUpdater"
+    following_updater:
+      type: "UpdateAll"
+      update_gain: false
+      update_cost: false
+      update_value: true
     
 back_tracker:
   type: "RotateReverse"

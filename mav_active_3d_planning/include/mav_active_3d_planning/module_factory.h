@@ -99,24 +99,24 @@ namespace mav_active_3d_planning {
 
         SensorModel *parseSensorModels(std::string type);
 
-        // Base routine for creating modules
+        // Base routine for creating modules (2 part scheme so members can per configured before producing follow up
+        // modules)
         template<class T>
-        std::unique_ptr <T> createCommon(std::string default_type, std::string args,
-                                         T *(ModuleFactory::*parse_function)(std::string), bool verbose) {
-            Module::ParamMap map;
+        bool createCommon(Module::ParamMap* map, std::unique_ptr <T> *result, std::string default_type, std::string args,
+                          T *(ModuleFactory::*parse_function)(std::string), bool verbose) {
             std::string type = default_type;
-            getParamMapAndType(&map, &type, args);
-            T *result = (this->*parse_function)(type);
-            if (!result) {
+            getParamMapAndType(map, &type, args);
+            T *module = (this->*parse_function)(type);
+            if (!module) {
                 // parsing failed
-                return nullptr;
+                return false;
             }
-            result->setupFromParamMap(&map);
-            result->verbose_modules_ = verbose;
-            result->assureParamsValid();
-            if (verbose) { printVerbose(map); }
-            return std::unique_ptr<T>(result);
+            module->verbose_modules_ = verbose;
+            result->reset(module);
+            return true;
         }
+
+        bool setupCommon(Module::ParamMap* map, Module *module, bool verbose);
     };
 
     // Concrete factory for ros param server
@@ -134,7 +134,7 @@ namespace mav_active_3d_planning {
 
         void printVerbose(const Module::ParamMap &map);
 
-        void printError(std::string message);
+        void printError(const std::string &message);
     };
 
 } // namepsace mav_active_3d_planning

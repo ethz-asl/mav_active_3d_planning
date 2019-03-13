@@ -14,7 +14,7 @@ namespace mav_active_3d_planning {
             Greedy(bool leaves_only);
 
             // override virtual functions
-            bool selectSegment(TrajectorySegment *result, TrajectorySegment *root);
+            bool selectSegment(TrajectorySegment **result, TrajectorySegment *root);
 
         protected:
             friend ModuleFactory;
@@ -34,7 +34,7 @@ namespace mav_active_3d_planning {
 
             // override virtual functions
 
-            bool selectSegment(TrajectorySegment *result, TrajectorySegment *root);
+            bool selectSegment(TrajectorySegment **result, TrajectorySegment *root);
 
         protected:
             friend ModuleFactory;

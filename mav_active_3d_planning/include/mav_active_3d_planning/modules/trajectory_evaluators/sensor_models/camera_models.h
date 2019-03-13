@@ -37,9 +37,6 @@ namespace mav_active_3d_planning {
 
             virtual bool checkParamsValid(std::string *error_message);
 
-            // voxblox map
-            std::unique_ptr <voxblox::EsdfServer> voxblox_ptr_;
-
             // parameters
             double p_ray_length_;       // params for camera model
             double p_focal_length_;
@@ -54,7 +51,7 @@ namespace mav_active_3d_planning {
 
         // Get minimum resolution reuqired for 1 ray per voxel at max distance, then cast a ray through every
         // such voxel to detect visible voxels (timed at 90 +/- 30 ms)
-        class SimpleRayCaster : CameraModel {
+        class SimpleRayCaster : public CameraModel {
         public:
             virtual ~SimpleRayCaster() {}
 
@@ -70,8 +67,6 @@ namespace mav_active_3d_planning {
 
             void setupFromParamMap(Module::ParamMap *param_map);
 
-            void setVoxbloxPtr(const std::shared_ptr <voxblox::EsdfServer> &voxblox_ptr);
-
             // params
             double p_ray_step_;
 
@@ -82,7 +77,7 @@ namespace mav_active_3d_planning {
 
         // Cast Rays until they span 1 full voxel, then duplicate them to omit redundancies
         // (timed at 55 +/- 25 ms)
-        class IterativeRayCaster : CameraModel {
+        class IterativeRayCaster : public CameraModel {
         public:
             virtual ~IterativeRayCaster() {}
 
@@ -97,8 +92,6 @@ namespace mav_active_3d_planning {
             IterativeRayCaster() {}
 
             void setupFromParamMap(Module::ParamMap *param_map);
-
-            void setVoxbloxPtr(const std::shared_ptr <voxblox::EsdfServer> &voxblox_ptr);
 
             // params
             double p_ray_step_;

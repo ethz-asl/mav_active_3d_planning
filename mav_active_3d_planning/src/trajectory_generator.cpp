@@ -21,8 +21,7 @@ namespace mav_active_3d_planning {
     void TrajectoryGenerator::setupFromParamMap(Module::ParamMap *param_map) {
         setParam<bool>(param_map, "collision_optimistic", &p_collision_optimistic_, false);
         setParam<double>(param_map, "collision_radius", &p_collision_radius_, 0.35);
-        std::string ns;
-        setParam<std::string>(param_map, "param_namespace", &ns, std::string(""));
+        std::string ns = (*param_map)["param_namespace"];
         setParam<std::string>(param_map, "segment_selector_args", &p_selector_args_, ns + "/segment_selector");
         setParam<std::string>(param_map, "generator_updater_args", &p_updater_args_, ns + "/generator_updater");
         std::string temp_args;
@@ -43,7 +42,7 @@ namespace mav_active_3d_planning {
         return p_collision_optimistic_;
     }
 
-    bool TrajectoryGenerator::selectSegment(TrajectorySegment *result, TrajectorySegment *root) {
+    bool TrajectoryGenerator::selectSegment(TrajectorySegment **result, TrajectorySegment *root) {
         // If not implemented use a (default) module
         if (!segment_selector_) {
             segment_selector_ = ModuleFactory::Instance()->createSegmentSelector(p_selector_args_, verbose_modules_);

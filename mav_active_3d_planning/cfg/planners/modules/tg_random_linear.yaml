@@ -18,4 +18,4 @@ trajectory_generator:
     uniform_probability: 0.1
     
   generator_updater:
-    type: "CheckCollision"
+    type: "RecheckCollision"

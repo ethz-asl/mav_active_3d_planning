@@ -36,11 +36,11 @@ namespace mav_active_3d_planning {
             TrajectoryGenerator::setupFromParamMap(param_map);
         }
 
-        bool RRT::selectSegment(TrajectorySegment *result, TrajectorySegment *root) {
+        bool RRT::selectSegment(TrajectorySegment **result, TrajectorySegment *root) {
             // If the root has changed, reset the kdtree and populate with the current trajectory tree
             if (previous_root_ != root) {
                 std::vector < TrajectorySegment * > currrent_tree;
-                root->getTree(currrent_tree);
+                root->getTree(&currrent_tree);
                 tree_data_.clear();
                 for (int i = 0; i < currrent_tree.size(); ++i) {
                     tree_data_.addSegment(currrent_tree[i]);
@@ -70,7 +70,7 @@ namespace mav_active_3d_planning {
                 goal_found = true;
             }
             if (!goal_found) {
-                result = nullptr;
+                *result = nullptr;
                 return false;
             }
 
@@ -81,13 +81,13 @@ namespace mav_active_3d_planning {
             nanoflann::KNNResultSet<double> resultSet(1);
             resultSet.init(&ret_index, &out_dist_sqr);
             if (!kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10))) {
-                result = nullptr;
+                *result = nullptr;
                 return false;
             }
 
             // Valid target found
             goal_pos_ = goal_pos;
-            result = tree_data_.data[ret_index];
+            *result = tree_data_.data[ret_index];
             return true;
         }
 
