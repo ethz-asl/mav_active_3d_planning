@@ -1,13 +1,12 @@
+#define _USE_MATH_DEFINES
+
 #include "mav_active_3d_planning/trajectory_segment.h"
 #include "mav_active_3d_planning/trajectory_generator.h"
-#include "tg_random_linear.cpp"
-#include "tg_mav_trajectory_generation.cpp"
-#include "tg_uniform.cpp"
 #include "mav_active_3d_planning/trajectory_evaluator.h"
-#include "te_naive.cpp"
+#include "mav_active_3d_planning/back_tracker.h"
+#include "mav_active_3d_planning/module_factory.h"
 
 #include <ros/ros.h>
-#include <ros/console.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Point.h>
@@ -17,12 +16,13 @@
 #include <mav_msgs/conversions.h>
 #include <std_srvs/SetBool.h>
 #include <visualization_msgs/Marker.h>
-
 #include <voxblox_ros/esdf_server.h>
 
 #include <random>
 #include <algorithm>
 #include <memory>
+#include <string>
+#include <cmath>
 
 namespace mav_active_3d_planning {
 
@@ -45,47 +45,60 @@ namespace mav_active_3d_planning {
         ros::ServiceServer run_srv_;
 
         // members
-        voxblox::EsdfServer voxblox_server_;
-        TrajectoryGenerator* trajectory_generator_;
-        TrajectoryEvaluator* trajectory_evaluator_;
+        std::shared_ptr<voxblox::EsdfServer> voxblox_server_;
+        std::unique_ptr<TrajectoryGenerator> trajectory_generator_;
+        std::unique_ptr<TrajectoryEvaluator> trajectory_evaluator_;
+        std::unique_ptr<BackTracker> back_tracker_;
 
         // variables
-        std::shared_ptr<TrajectorySegment> current_segment_;        // root node to full tree
+        std::shared_ptr<TrajectorySegment> current_segment_;        // root node of full trajectory tree
         bool running_;
         Eigen::Vector3d target_position_;
+        double target_yaw_;
         int vis_num_previous_trajectories_;
         int vis_completed_count_;
         ros::Time info_timing_;
 
         // params
-        double p_replan_threshold_;
-        std::string p_TG_name_;
-        std::string p_TE_name_;
-        bool p_coll_optimistic_;
-        double p_coll_radius_;
+        double p_replan_pos_threshold_;     // m
+        double p_replan_yaw_threshold_;     // rad
         bool p_verbose_;
+        bool p_verbose_modules_;
+        // ideas: use fixed sampling size, take images only on points,
 
         // methods
-        void setParamsFromRos();
         void initializePlanning();
         void requestNextTrajectory();
         void expandTrajectories();
         void requestMovement(const TrajectorySegment &req);
+
+        // visualization
         void publishTrajectoryVisualization(const std::vector<TrajectorySegment*> &trajectories);
-        void publishCompletedTrajectoryVisualization(TrajectorySegment &trajectories);
+        void publishCompletedTrajectoryVisualization(const TrajectorySegment &trajectories);
         void publishEvalVisualization(const TrajectorySegment &trajectory);
     };
 
     PlannerNode::PlannerNode(const ros::NodeHandle &nh, const ros::NodeHandle &nh_private)
             : nh_(nh),
               nh_private_(nh_private),
-              voxblox_server_(nh_, nh_private_) {
+              running_(false),
+              vis_num_previous_trajectories_(0),
+              vis_completed_count_(0) {
 
-        // initial values and params
-        setParamsFromRos();
-        running_ = false;
-        vis_num_previous_trajectories_ = 0;
-        vis_completed_count_ = 0;
+        // Get params
+        // When to start next trajectory, use 0 for not relevant
+        nh_private_.param("replan_pos_threshold", p_replan_pos_threshold_, 0.1);
+        nh_private_.param("replan_yaw_threshold", p_replan_yaw_threshold_, 0.2);
+        nh_private_.param("verbose_modules", p_verbose_modules_, false);
+
+        // Setup members
+        std::string ns = ros::this_node::getName();
+        voxblox_server_ = std::shared_ptr<voxblox::EsdfServer>( new voxblox::EsdfServer(nh_, nh_private_));
+        trajectory_generator_ = ModuleFactory::Instance()->createTrajectoryGenerator(
+                ns + "/trajectory_generator", voxblox_server_, p_verbose_modules_);
+        trajectory_evaluator_ = ModuleFactory::Instance()->createTrajectoryEvaluator(
+                ns + "/trajectory_evaluator", voxblox_server_, p_verbose_modules_);
+        back_tracker_ = ModuleFactory::Instance()->createBackTracker(ns + "/back_tracker", p_verbose_modules_);
 
         // Subscribers and publishers
         target_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
@@ -93,52 +106,24 @@ namespace mav_active_3d_planning {
         trajectory_vis_pub_ = nh_.advertise<visualization_msgs::Marker>("trajectory_visualization", 100);
         odom_sub_ = nh_.subscribe("odometry", 1, &PlannerNode::odomCallback, this);
 
-        // Setup trajectory generator
-        if (p_TG_name_ == "RandomLinear") {
-            trajectory_generator_ = new TGRandomLinear(&voxblox_server_, p_coll_optimistic_, p_coll_radius_);
-        } else if (p_TG_name_ == "MavTrajectoryGeneration") {
-            trajectory_generator_ = new TGMavTrajectoryGeneration(&voxblox_server_, p_coll_optimistic_, p_coll_radius_);
-        } else if (p_TG_name_ == "Uniform") {
-            trajectory_generator_ = new TGUniform(&voxblox_server_, p_coll_optimistic_, p_coll_radius_);
-        } else{
-            ROS_ERROR("Unknown trajectory generator '%s'.", p_TG_name_.c_str());
-        }
-        trajectory_generator_->setParamsFromRos(nh_private_);
+        // Initialize a random seed once
+        srand(time(NULL));
 
-        // Setup trajectory evaluator
-        if (p_TE_name_ == "Naive") {
-            trajectory_evaluator_ = new TENaive(&voxblox_server_);
-        } else {
-            ROS_ERROR("Unknown trajectory evaluator '%s'.", p_TE_name_.c_str());
-        }
-        trajectory_evaluator_->setParamsFromRos(nh_private_);
-
-        // setup voxblox collision checking and wait for first map
+        // Wait for voxblox to setup and receive first map
         ros::topic::waitForMessage<voxblox_msgs::Layer>("esdf_map_in", nh_private_);
-        voxblox_server_.setTraversabilityRadius(p_coll_radius_);
-        voxblox_server_.publishTraversable();
 
         // Finish
         run_srv_ = nh_private_.advertiseService("toggle_running", &PlannerNode::runService, this);
     }
 
-    void PlannerNode::setParamsFromRos() {
-        nh_private_.param("verbose", p_verbose_, true);
-        nh_private_.param("trajectory_generator", p_TG_name_, std::string("RandomLinear"));
-        nh_private_.param("trajectory_evaluator", p_TE_name_, std::string("Naive"));
-        nh_private_.param("collision_optimistic", p_coll_optimistic_, false);
-        nh_private_.param("collision_radius", p_coll_radius_, 0.35);
-        nh_private_.param("replan_threshold", p_replan_threshold_, 0.05);
-    }
-
     void PlannerNode::odomCallback(const nav_msgs::Odometry &msg) {
         // This is the main loop, high odom message frequency is expected to continuously run
         if (!running_) { return; }
-        geometry_msgs::Point pos = msg.pose.pose.position;
-        Eigen::Vector3d position(pos.x, pos.y, pos.z);
-        double distance = (target_position_ - position).squaredNorm();
-        if (distance < p_replan_threshold_ && !current_segment_->children.empty()) {
-            // After finishing current segment execute next one
+        Eigen::Vector3d position(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
+        double yaw = tf::getYaw(msg.pose.pose.orientation);
+        if ((p_replan_pos_threshold_ <= 0 || (target_position_ - position).squaredNorm() < p_replan_pos_threshold_ )
+            && (p_replan_yaw_threshold_ <= 0 || std::abs(std::fmod(target_yaw_ - yaw, M_PI))  < p_replan_yaw_threshold_)) {
+            // After finishing the current segment execute next one
             requestNextTrajectory();
         } else {
             // Continuosly expand the trajectory space
@@ -147,61 +132,70 @@ namespace mav_active_3d_planning {
     }
 
     void PlannerNode::initializePlanning() {
-        // Initialize and start planning (Currently assumes MAV starts at {0,0,0}!)
+        // Initialize and start planning (Currently assumes MAV starts at {0,0,0} with 0 yaw!)
         target_position_ = Eigen::Vector3d(0, 0, 0);
+        target_yaw_ = 0.0;
 
         // Setup initial trajectory Segment
         current_segment_ = std::make_shared<TrajectorySegment>();
         mav_msgs::EigenTrajectoryPoint trajectory_point;
         trajectory_point.position_W = target_position_;
-        trajectory_point.setFromYaw(0);
+        trajectory_point.setFromYaw(target_yaw_);
         current_segment_->trajectory.push_back(trajectory_point);
 
         info_timing_ = ros::Time::now();
     }
 
     void PlannerNode::requestNextTrajectory() {
-        // Select best next trajectory (Note: current_segment->children must not be empty!)
-        int next_segment = trajectory_evaluator_ -> selectNextBest(*current_segment_);
+        if (current_segment_->children.empty()){
+            // No trajectories available: call the backtracker
+            back_tracker_->trackBack(current_segment_.get());
+            return;
+        }
+        // Select best next trajectory
+        int next_segment = trajectory_evaluator_->selectNextBest(*current_segment_);
 
-        // Visualize trajectories
+        // Visualize candiate trajectories
         std::vector<TrajectorySegment*> trajectories_to_vis;
         current_segment_->getTree(trajectories_to_vis);
         publishTrajectoryVisualization(trajectories_to_vis);
         publishCompletedTrajectoryVisualization(*current_segment_);
         if (p_verbose_){
-            ROS_INFO("Replanning! (Evaluated %i segments in %.3f seconds)", (int)trajectories_to_vis.size()-1,
+            ROS_INFO("Replanning! (Found %i segments in %.3f seconds)", (int)trajectories_to_vis.size()-1,
                     (ros::Time::now()-info_timing_).toSec());
             info_timing_ = ros::Time::now();
         }
 
-        // Reset tree (Note: could also keep subtree and reevaluate but doesnt matter for this first case)
+        // Move
         current_segment_ = current_segment_->children[next_segment];
         current_segment_->parent = nullptr;
-        current_segment_->children.clear();
-
-        // Move
         requestMovement(*current_segment_);
+        back_tracker_->segmentIsExecuted(*current_segment_);
 
         // Force Esdf update, so next trajectories can be evaluated
-        voxblox_server_.updateEsdf();
+        voxblox_server_->updateEsdf();
 
         // Visualize new info
-        voxblox_server_.publishTraversable();
+        voxblox_server_->publishTraversable();
         publishEvalVisualization(*current_segment_);
+
+        // Update tree
+        trajectory_generator_->updateSegments(current_segment_.get());
+        trajectory_evaluator_->updateSegments(current_segment_.get());
     }
 
     void PlannerNode::expandTrajectories() {
         // Select and expand a segment
-        TrajectorySegment* expansion_target = trajectory_generator_->selectSegment(*current_segment_);
+        TrajectorySegment* expansion_target;
+        trajectory_generator_->selectSegment(expansion_target, current_segment_.get());
         int previous_children = expansion_target->children.size();
-        trajectory_generator_->expandSegment(*expansion_target);
+        trajectory_generator_->expandSegment(expansion_target);
 
         // Evaluate newly added segments
         for (int i=previous_children; i < expansion_target->children.size(); ++i) {
-            trajectory_evaluator_->computeGain(*(expansion_target->children[i]));
-            trajectory_evaluator_->computeCost(*(expansion_target->children[i]));
-            trajectory_evaluator_->computeValue(*(expansion_target->children[i]));
+            trajectory_evaluator_->computeGain(expansion_target->children[i].get());
+            trajectory_evaluator_->computeCost(expansion_target->children[i].get());
+            trajectory_evaluator_->computeValue(expansion_target->children[i].get());
         }
     }
 
@@ -216,6 +210,7 @@ namespace mav_active_3d_planning {
         }
         target_pub_.publish(msg);
         target_position_ = req.trajectory.back().position_W;
+        target_yaw_ = req.trajectory.back().getYaw();
     }
 
     void PlannerNode::publishTrajectoryVisualization(const std::vector<TrajectorySegment*> &trajectories) {
@@ -266,7 +261,7 @@ namespace mav_active_3d_planning {
         vis_num_previous_trajectories_ = trajectories.size();
     }
 
-    void PlannerNode::publishCompletedTrajectoryVisualization(TrajectorySegment &trajectories){
+    void PlannerNode::publishCompletedTrajectoryVisualization(const TrajectorySegment &trajectories) {
         // Continuously increment the already traveled path
         visualization_msgs::Marker msg;
         msg.header.frame_id = "/world";
@@ -303,8 +298,8 @@ namespace mav_active_3d_planning {
         msg.pose.orientation.w = 1.0;
         msg.type = visualization_msgs::Marker::CUBE_LIST;
         msg.ns = "evaluation";
-        voxblox::FloatingPoint voxel_size = voxblox_server_.getEsdfMapPtr()->voxel_size();
-        voxblox::FloatingPoint block_size = voxblox_server_.getEsdfMapPtr()->block_size();
+        voxblox::FloatingPoint voxel_size = voxblox_server_->getEsdfMapPtr()->voxel_size();
+        voxblox::FloatingPoint block_size = voxblox_server_->getEsdfMapPtr()->block_size();
         msg.scale.x = (double) voxel_size;
         msg.scale.y = (double) voxel_size;
         msg.scale.z = (double) voxel_size;
@@ -318,14 +313,10 @@ namespace mav_active_3d_planning {
         voxblox::BlockIndex block_id;
         voxblox::VoxelIndex voxel_id;
         for (int i = 0; i < trajectory.info.size(); ++i) {
-            voxblox::getBlockAndVoxelIndexFromGlobalVoxelIndex(trajectory.info[i], voxels_per_side, &block_id,
-                                                               &voxel_id);
-            voxblox::Point voxbloxpoint = voxblox::getOriginPointFromGridIndex(block_id, block_size) +
-                                          voxblox::getCenterPointFromGridIndex(voxel_id, voxel_size);
             geometry_msgs::Point point;
-            point.x = (double) voxbloxpoint.x();
-            point.y = (double) voxbloxpoint.y();
-            point.z = (double) voxbloxpoint.z();
+            point.x = (double) trajectory.info[i].x();
+            point.y = (double) trajectory.info[i].y();
+            point.z = (double) trajectory.info[i].z();
             msg.points.push_back(point);
         }
         trajectory_vis_pub_.publish(msg);

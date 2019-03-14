@@ -1,0 +1,18 @@
+trajectory_generator:
+  type: "Uniform"
+  n_segments: 7
+  distance: 1.2  
+  velocity: 0.4  
+  yaw_rate_max: 0.3
+  planar: true
+  sampling_rate: 20
+  
+  segment_selector:
+    type: "RandomWeighted"
+    leaves_only: true
+    revisit: false
+    factor: 3.0
+    uniform_weight: 0.1
+    
+  generator_updater:
+    type: "CheckCollision"

@@ -1,0 +1,46 @@
+# General parameters for planner node
+update_segments: false
+
+# Specifying a trajectory generator
+trajectory_generator:
+  collision_optimistic: true 
+  collision_radius: 0.7
+  type: "Uniform"
+  
+  # Generator Params
+  n_segments: 7
+  distance: 1.2  
+  velocity: 0.3  
+  yaw_rate_max: 0.18
+  planar: true
+  sampling_rate: 20
+  
+  # Specify a expansion suite selection policy
+  segment_selector:
+    type: "RandomWeighted"
+    leaves_only: true
+    factor: 0.0
+  
+# Specifying a trajectory evaluator
+trajectory_evaluator:
+  type: "Naive"
+  
+  # Evaluator params
+  sampling_time: 0.0
+  clear_from_parents: false
+  camera_params_ns: "/unreal/unreal_ros_client/camera_params"
+  ray_length: 5.0
+  
+  # Choose a cost
+  cost_computer:
+    type: "Time"
+    
+  # How to compute the values
+  value_computer:
+    type: "LinearAccumulated"
+    cost_weight: 1.0
+    gain_weight: 0.1
+    
+  # Execution policy for available segments
+  next_selector:
+    type: "SubsequentBest"

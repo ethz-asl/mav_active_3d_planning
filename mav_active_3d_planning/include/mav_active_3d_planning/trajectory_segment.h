@@ -1,25 +1,27 @@
 #ifndef MAV_ACTIVE_3D_PLANNING_TRAJECTORY_SEGMENT_H_
 #define MAV_ACTIVE_3D_PLANNING_TRAJECTORY_SEGMENT_H_
 
+#include <mav_msgs/eigen_mav_msgs.h>
+
 #include <vector>
 #include <memory>
-
-#include <mav_msgs/eigen_mav_msgs.h>
-#include <voxblox/core/common.h>
 
 namespace mav_active_3d_planning {
 
     // Struct to store trajectory tree data
     struct TrajectorySegment {
-        TrajectorySegment() : parent(nullptr) {};
+        TrajectorySegment() : parent(nullptr), tg_visited(false) {};
 
         // All trajectory points
         mav_msgs::EigenTrajectoryPointVector trajectory;
 
-        // Associated costs
+        // Associated cost_computers
         double cost;
         double gain;
         double value;
+
+        // trajectory generator flag
+        bool tg_visited;
 
         // pointer to parent trajectory, nullptr for currently active segment (root)
         TrajectorySegment* parent;
@@ -29,7 +31,7 @@ namespace mav_active_3d_planning {
 
         // TODO: make this a template variable?
         // Information to be carried with this segment, e.g. virtual voxels
-        std::vector<voxblox::GlobalIndex> info;
+        std::vector<Eigen::Vector3d> info;
 
         // compare function for sorting etc
         static bool compare(TrajectorySegment a, TrajectorySegment b) {

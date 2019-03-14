@@ -3,33 +3,67 @@
 
 #include "mav_active_3d_planning/trajectory_segment.h"
 
-#include <random>
-#include <vector>
+#include <Eigen/Core>
+#include <ros/node_handle.h>
 
+#include <functional>
+#include <vector>
+#include <string>
 
 namespace mav_active_3d_planning {
+
+    // Contains default methods and utility functions that can be used by various classes
     namespace defaults {
-        /* Contains default methods and utility functions that can be used by various trajectory generators and/or
-         * evaluators. */
 
-        /* Trajectory Generators: selectSegment functions */
-        // Select uniform random segment from candidates
-        TrajectorySegment *selectRandomUniform(std::vector<TrajectorySegment *> &candidates);
+        // struct for bounding volumes (simple box atm, might include z-rotation, sphere, set of planes, ...)
+        struct BoundingVolume {
+            BoundingVolume() : is_setup(false) {}
 
-        // Select random segment weighted with the segment value
-        TrajectorySegment *selectRandomWeighted(std::vector<TrajectorySegment *> &candidates);
+            BoundingVolume(std::string param_ns) {
+                ros::NodeHandle nh(param_ns);
+                setupFromRos(nh);
+            }
 
-        // Select a random leaf of the trajectory tree
-        TrajectorySegment *selectRandomLeafUniform(TrajectorySegment &root);
+            virtual ~BoundingVolume() {}
 
-        // Select a random leaf of the trajectory tree, every leaf is weighted with its value
-        TrajectorySegment *selectRandomLeafWeighted(TrajectorySegment &root);
+            // populate the bounding volume from ros params
+            bool setupFromRos(const ros::NodeHandle &nh);
 
-        // Select a random segment of the trajectory tree
-        TrajectorySegment *selectRandomSegmentUniform(TrajectorySegment &root);
+            // check wether point is in bounding box, if bounding box is setup
+            bool contains(const Eigen::Vector3d &point);
 
-        // Select a random segment of the trajectory tree weighted by value
-        TrajectorySegment *selectRandomSegmentWeighted(TrajectorySegment &root);
+            // variables
+            bool is_setup;
+            double x_min, x_max, y_min, y_max, z_min, z_max;
+        };
+
+        // struct for high level system constraints (might add methods for generating these from max thrusts or so)
+        struct SystemConstraints {
+            SystemConstraints() : is_setup(false) {}
+
+            SystemConstraints(std::string param_ns) {
+                ros::NodeHandle nh(param_ns);
+                setupFromRos(nh);
+            }
+
+            virtual ~SystemConstraints() {}
+
+            // populate the system constraints from ros params
+            bool setupFromRos(const ros::NodeHandle &nh);
+
+            // populate the system constraints with reasonable (conservative) defaults
+            bool setupFromDefaults();
+
+            // variables
+            bool is_setup;
+            double v_max;           // m/s, maximum absolute velocity
+            double a_max ;          // m/s2, maximum absolute acceleration
+            double yaw_rate_max;    // rad/s, maximum yaw rate
+        };
+
+        // Return the indices of the EigenTrajectoryPoints in the segment to be evaluated
+        std::vector<int> samplePointsFromSegment(const TrajectorySegment &segment, double sampling_rate,
+                                                    bool include_first = false);
 
     } // namespace defaults
 } // namepsace mav_active_3d_planning

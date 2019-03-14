@@ -1,0 +1,15 @@
+trajectory_evaluator:
+  type: "Naive"
+  sampling_time: 0.0
+  clear_from_parents: false
+    
+  value_computer:
+    type: "LinearValue"
+    cost_weight: 1.0
+    gain_weight: 0.1
+    
+  next_selector:
+    type: "SubsequentBest"
+    
+  evaluator_updater:
+    type: "EvaluateFromScratch"

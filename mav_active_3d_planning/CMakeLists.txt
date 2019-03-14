@@ -11,6 +11,9 @@ add_definitions(-std=c++11)
 #############
 cs_add_library(${PROJECT_NAME} 
 	src/defaults.cpp
+	src/module_factory.cpp
+	src/trajectory_generator.cpp
+	src/trajectory_evaluator.cpp
 )
 
 ############
@@ -20,6 +23,10 @@ cs_add_executable(planner_node
   src/planner_node.cpp
 )
 target_link_libraries(planner_node ${PROJECT_NAME})
+
+cs_add_executable(eval_voxblox_node
+		src/experiments/eval_voxblox_node.cpp
+)
 
 
 #############
