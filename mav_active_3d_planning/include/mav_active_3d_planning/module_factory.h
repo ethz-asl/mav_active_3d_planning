@@ -23,8 +23,8 @@ namespace mav_active_3d_planning {
         // Singleton accessor
         static ModuleFactory *Instance();
 
-        // Method to allow non-standard structs/modules to parametrize themselves (pass as delegate)
-        void parametrizeModule(std::string args, Module* module);
+        // Method to allow non-standard structs/modules to parametrize themselves via the factory
+        void parametrizeModule(std::string args, Module* module, std::string default_type, bool verbose);
 
         // Module creation accessors
         // Trajectory Generators

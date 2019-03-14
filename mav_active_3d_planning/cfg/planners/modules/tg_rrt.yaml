@@ -1,0 +1,11 @@
+trajectory_generator:
+  type: "RRT"
+  velocity: 0.5
+  max_extension_range: 1.5
+  use_spheric_sampling: true
+  maximum_tries: 1000
+  sampling_rate: 20.0
+
+  generator_updater:
+    type: "UpdateNothing"
+

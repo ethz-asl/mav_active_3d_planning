@@ -18,10 +18,10 @@ namespace mav_active_3d_planning {
         struct BoundingVolume : public Module {
             BoundingVolume() : is_setup(false) {}
 
-            // factory constructor
-            BoundingVolume(std::string args);
-
             virtual ~BoundingVolume() {}
+
+            // factory parametrization
+            void setupFromFactory(std::string args, bool verbose);
 
             // populate the bounding volume
             void setupFromParamMap(Module::ParamMap *param_map);
@@ -37,20 +37,19 @@ namespace mav_active_3d_planning {
         // struct for high level system constraints (might add methods for generating these from max thrusts or so)
         struct SystemConstraints : public Module {
             SystemConstraints();
-
-            // factory constructor
-            SystemConstraints(std::string args);
-
             virtual ~SystemConstraints() {}
 
-            // populate the system constraints from ros params
+            // factory setup
+            void setupFromFactory(std::string args, bool verbose);
+
+            // populate the system constraints
             void setupFromParamMap(Module::ParamMap *param_map);
+            bool checkParamsValid(std::string *error_message);
 
             // populate the system constraints with reasonable (conservative) defaults
             bool setupFromDefaults();
 
             // variables
-            bool is_setup;
             double v_max;           // m/s, maximum absolute velocity
             double a_max ;          // m/s2, maximum absolute acceleration
             double yaw_rate_max;    // rad/s, maximum yaw rate

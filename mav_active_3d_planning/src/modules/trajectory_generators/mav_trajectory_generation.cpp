@@ -8,14 +8,12 @@ namespace mav_active_3d_planning {
     namespace trajectory_generators {
 
         void MavTrajectoryGeneration::setupFromParamMap(Module::ParamMap *param_map) {
+            TrajectoryGenerator::setupFromParamMap(param_map);
             setParam<double>(param_map, "distance_max", &p_distance_max_, 3.0);
             setParam<double>(param_map, "distance_min", &p_distance_min_, 0.5);
-            setParam<double>(param_map, "a_max", &p_a_max_, 1.0);
-            setParam<double>(param_map, "v_max", &p_v_max_, 1.0);
             setParam<int>(param_map, "n_segments", &p_n_segments_, 5);
             setParam<int>(param_map, "max_tries", &p_max_tries_, 100);
             initializeConstraints();
-            TrajectoryGenerator::setupFromParamMap(param_map);
         }
 
         bool MavTrajectoryGeneration::checkParamsValid(std::string *error_message) {
@@ -42,9 +40,9 @@ namespace mav_active_3d_planning {
             mav_trajectory_generation::InputConstraints input_constraints;
             input_constraints.addConstraint(ICT::kFMin, 0.5 * 9.81); // minimum acceleration in [m/s/s].
             input_constraints.addConstraint(ICT::kFMax, 1.5 * 9.81); // maximum acceleration in [m/s/s].
-            input_constraints.addConstraint(ICT::kVMax, 3.5); // maximum velocity in [m/s].
+            input_constraints.addConstraint(ICT::kVMax, system_constraints_.v_max); // maximum velocity in [m/s].
             input_constraints.addConstraint(ICT::kOmegaXYMax, M_PI / 2.0); // maximum roll/pitch rates in [rad/s].
-            input_constraints.addConstraint(ICT::kOmegaZMax, M_PI / 2.0); // maximum yaw rates in [rad/s].
+            input_constraints.addConstraint(ICT::kOmegaZMax, system_constraints_.yaw_rate_max); // maximum yaw rates in [rad/s].
             input_constraints.addConstraint(ICT::kOmegaZDotMax, M_PI); // maximum yaw acceleration in [rad/s/s]..
             feasibility_check_ = mav_trajectory_generation::FeasibilityAnalytic(input_constraints);
             feasibility_check_.settings_.setMinSectionTimeS(0.01);
@@ -100,8 +98,8 @@ namespace mav_active_3d_planning {
                 vertices.push_back(goal);
 
                 // Optimize
-                std::vector<double> segment_times = mav_trajectory_generation::estimateSegmentTimes(vertices, p_v_max_,
-                                                                                                    p_a_max_);
+                std::vector<double> segment_times = mav_trajectory_generation::estimateSegmentTimes(vertices, system_constraints_.v_max,
+                                                                                                    system_constraints_.a_max);
                 mav_trajectory_generation::PolynomialOptimizationNonLinear<10> opt(4, parameters_);
                 opt.setupFromVertices(vertices, segment_times, derivative_to_optimize);
                 opt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::VELOCITY, p_v_max_);

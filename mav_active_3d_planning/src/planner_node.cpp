@@ -17,7 +17,7 @@
 #include <mav_msgs/default_topics.h>
 #include <mav_msgs/conversions.h>
 #include <std_srvs/SetBool.h>
-#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
 #include <voxblox_ros/esdf_server.h>
 
 #include <random>
@@ -82,6 +82,7 @@ namespace mav_active_3d_planning {
         double p_replan_yaw_threshold_;     // rad
         bool p_verbose_;
         bool p_visualize_candidates_;
+        int p_visualize_samples_;           // How many lines are created for every candidate segment
         bool p_log_performance_;            // Whether to write a performance log file
         int p_max_new_segments_;
         int p_min_new_segments_;
@@ -124,6 +125,7 @@ namespace mav_active_3d_planning {
         nh_private_.param("verbose_modules", verbose_modules, false);
         nh_private_.param("build_modules_on_init", build_modules_on_init, false);
         nh_private_.param("visualize_candidates", p_visualize_candidates_, true);
+        nh_private_.param("visualize_samples", p_visualize_samples_, 1);
         nh_private_.param("log_performance", p_log_performance_, false);
 
         // Sampling constraints
@@ -173,7 +175,7 @@ namespace mav_active_3d_planning {
         // Subscribers and publishers
         target_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
                 mav_msgs::default_topics::COMMAND_TRAJECTORY, 10);
-        trajectory_vis_pub_ = nh_.advertise<visualization_msgs::Marker>("trajectory_visualization", 1000);
+        trajectory_vis_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("trajectory_visualization", 100);
         odom_sub_ = nh_.subscribe("odometry", 2, &PlannerNode::odomCallback, this);
 
         // Finish
@@ -264,6 +266,7 @@ namespace mav_active_3d_planning {
         // Visualize candidates
         std::vector < TrajectorySegment * > trajectories_to_vis;
         current_segment_->getTree(&trajectories_to_vis);
+        trajectories_to_vis.erase(trajectories_to_vis.begin()); // remove current segment (root)
         if (p_visualize_candidates_){
             publishTrajectoryVisualization(trajectories_to_vis);
         }
@@ -272,8 +275,8 @@ namespace mav_active_3d_planning {
             perf_rostime = (ros::Time::now() - info_timing_).toSec();
             info_timing_ = ros::Time::now();
             if (p_verbose_) {
-                ROS_INFO("Replanning! Found %i new segments (%i total) in %.3f seconds.",
-                         num_trajectories - info_count_, num_trajectories, perf_rostime);
+                ROS_INFO("Replanning! Found %i new segments (%i total) in %.2f seconds.",
+                         num_trajectories - info_count_ + 1, num_trajectories, perf_rostime);
             }
         }
         if (p_log_performance_) {
@@ -420,9 +423,12 @@ namespace mav_active_3d_planning {
         // Display all trajectories in the input and erase previous ones
         double max_value = (*std::max_element(trajectories.begin(), trajectories.end(), TrajectorySegment::comparePtr))->value;
         double min_value = (*std::min_element(trajectories.begin(), trajectories.end(), TrajectorySegment::comparePtr))->value;
+
+        visualization_msgs::MarkerArray array_msg;
+        visualization_msgs::Marker msg;
         for (int i = 0; i < trajectories.size(); ++i) {
             // Setup marker message
-            visualization_msgs::Marker msg;
+            msg = visualization_msgs::Marker();
             msg.header.frame_id = "/world";
             msg.header.stamp = ros::Time::now();
             msg.pose.orientation.w = 1.0;
@@ -448,56 +454,57 @@ namespace mav_active_3d_planning {
                 point.z = trajectories[i]->trajectory[j].position_W[2];
                 msg.points.push_back(point);
             }
-            trajectory_vis_pub_.publish(msg);
+            array_msg.markers.push_back(msg);
 
             // Text
-            visualization_msgs::Marker msg2;
-            msg2.header.frame_id = "/world";
-            msg2.header.stamp = ros::Time::now();
-            msg2.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
-            msg2.id = i;
-            msg2.ns = "candidate_text";
-            msg2.scale.x = 0.2;
-            msg2.scale.y = 0.2;
-            msg2.scale.z = 0.2;
+            msg = visualization_msgs::Marker();
+            msg.header.frame_id = "/world";
+            msg.header.stamp = ros::Time::now();
+            msg.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+            msg.id = i;
+            msg.ns = "candidate_text";
+            msg.scale.x = 0.2;
+            msg.scale.y = 0.2;
+            msg.scale.z = 0.2;
 
-            msg2.color.r = 0.0f;
-            msg2.color.g = 0.0f;
-            msg2.color.b = 0.0f;
-            msg2.color.a = 1.0;
-            msg2.pose.position.x = trajectories[i]->trajectory.back().position_W[0];
-            msg2.pose.position.y = trajectories[i]->trajectory.back().position_W[1];
-            msg2.pose.position.z = trajectories[i]->trajectory.back().position_W[2];
+            msg.color.r = 0.0f;
+            msg.color.g = 0.0f;
+            msg.color.b = 0.0f;
+            msg.color.a = 1.0;
+            msg.pose.position.x = trajectories[i]->trajectory.back().position_W[0];
+            msg.pose.position.y = trajectories[i]->trajectory.back().position_W[1];
+            msg.pose.position.z = trajectories[i]->trajectory.back().position_W[2];
             std::stringstream stream;
             stream << std::fixed << std::setprecision(2) << trajectories[i]->gain << "/" << std::fixed <<
                    std::setprecision(2) << trajectories[i]->cost << "/" << std::fixed << std::setprecision(2) <<
                    trajectories[i]->value;
-            msg2.text = stream.str();
-            msg2.action = visualization_msgs::Marker::ADD;
-            trajectory_vis_pub_.publish(msg2);
+            msg.text = stream.str();
+            msg.action = visualization_msgs::Marker::ADD;
+            array_msg.markers.push_back(msg);
         }
         for (int i = trajectories.size(); i < vis_num_previous_trajectories_; ++i) {
             // Setup marker message
-            visualization_msgs::Marker msg;
+            msg = visualization_msgs::Marker();
             msg.header.frame_id = "/world";
             msg.header.stamp = ros::Time::now();
             msg.type = visualization_msgs::Marker::POINTS;
             msg.id = i;
             msg.ns = "candidate_trajectories";
             msg.action = visualization_msgs::Marker::DELETE;
-            trajectory_vis_pub_.publish(msg);
+            array_msg.markers.push_back(msg);
 
             // Text
-            visualization_msgs::Marker msg2;
-            msg2.header.frame_id = "/world";
-            msg2.header.stamp = ros::Time::now();
-            msg2.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
-            msg2.id = i;
-            msg2.ns = "candidate_text";
-            msg2.action = visualization_msgs::Marker::DELETE;
-            trajectory_vis_pub_.publish(msg2);
+            msg = visualization_msgs::Marker();
+            msg.header.frame_id = "/world";
+            msg.header.stamp = ros::Time::now();
+            msg.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+            msg.id = i;
+            msg.ns = "candidate_text";
+            msg.action = visualization_msgs::Marker::DELETE;
+            array_msg.markers.push_back(msg);
 
         }
+        trajectory_vis_pub_.publish(array_msg);
         vis_num_previous_trajectories_ = trajectories.size();
     }
 
@@ -526,7 +533,9 @@ namespace mav_active_3d_planning {
             point.z = trajectories.trajectory[i].position_W[2];
             msg.points.push_back(point);
         }
-        trajectory_vis_pub_.publish(msg);
+        visualization_msgs::MarkerArray array_msg;
+        array_msg.markers.push_back(msg);
+        trajectory_vis_pub_.publish(array_msg);
         vis_completed_count_++;
     }
 
@@ -536,7 +545,9 @@ namespace mav_active_3d_planning {
         trajectory_evaluator_->visualizeTrajectoryValue(&msg, trajectory);
         msg.ns = "evaluation";
         msg.header.stamp = ros::Time::now();
-        trajectory_vis_pub_.publish(msg);
+        visualization_msgs::MarkerArray array_msg;
+        array_msg.markers.push_back(msg);
+        trajectory_vis_pub_.publish(array_msg);
     }
 
     bool PlannerNode::runSrvCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) {

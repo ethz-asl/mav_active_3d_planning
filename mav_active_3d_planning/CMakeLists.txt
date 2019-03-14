@@ -12,6 +12,7 @@ add_definitions(-std=c++11)
 cs_add_library(${PROJECT_NAME}
         src/defaults.cpp
         src/module_factory.cpp
+        src/trajectory_segment.cpp
         src/trajectory_generator.cpp
         src/trajectory_evaluator.cpp
         # Default Modules
@@ -32,6 +33,7 @@ cs_add_library(${PROJECT_NAME}
         src/modules/trajectory_evaluators/sensor_models/sensor_model.cpp
         src/modules/trajectory_evaluators/sensor_models/camera_models.cpp
         src/modules/trajectory_evaluators/evaluator_updaters/simulated_sensor_updaters.cpp
+        src/modules/trajectory_evaluators/yaw_planning_evaluators.cpp
         )
 
 ############

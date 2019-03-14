@@ -23,6 +23,7 @@
 #include "mav_active_3d_planning/modules/trajectory_evaluators/simulated_sensor_evaluators.h"
 #include "mav_active_3d_planning/modules/trajectory_evaluators/sensor_models/camera_models.h"
 #include "mav_active_3d_planning/modules/trajectory_evaluators/evaluator_updaters/simulated_sensor_updaters.h"
+#include "mav_active_3d_planning/modules/trajectory_evaluators/yaw_planning_evaluators.h"
 
 
 
@@ -51,6 +52,8 @@ namespace mav_active_3d_planning {
             return new trajectory_evaluators::Frontier();
         } else if (type == "VoxelType") {
             return new trajectory_evaluators::VoxelType();
+        } else if (type == "SimpleYawPlanningEvaluator") {
+            return new trajectory_evaluators::SimpleYawPlanningEvaluator();
         } else {
             printError("Unknown TrajectoryEvaluator type '" + type + "'.");
             return nullptr;
@@ -99,6 +102,8 @@ namespace mav_active_3d_planning {
             return new value_computers::ExponentialDiscount();
         } else if (type == "Accumulate") {
             return new value_computers::Accumulate();
+        } else if (type == "RelativeGain") {
+            return new value_computers::RelativeGain();
         } else {
             ModuleFactory::Instance()->printError("Unknown ValueComputer type '" + type + "'.");
             return nullptr;
@@ -168,11 +173,13 @@ namespace mav_active_3d_planning {
         return instance_;
     }
 
-    void ModuleFactory::parametrizeModule(std::string args, Module *module) {
+    void ModuleFactory::parametrizeModule(std::string args, Module *module, std::string default_type, bool verbose) {
         Module::ParamMap map;
-        std::string type;
+        std::string type = default_type;
         getParamMapAndType(&map, &type, args);
         module->setupFromParamMap(&map);
+        module->assureParamsValid();
+        if (verbose) { printVerbose(map); }
     }
 
     bool ModuleFactory::setupCommon(Module::ParamMap *map, Module *module, bool verbose) {

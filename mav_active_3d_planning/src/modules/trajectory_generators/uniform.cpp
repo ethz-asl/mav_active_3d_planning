@@ -12,15 +12,14 @@ namespace mav_active_3d_planning {
     namespace trajectory_generators {
 
         void Uniform::setupFromParamMap(Module::ParamMap *param_map) {
+            TrajectoryGenerator::setupFromParamMap(param_map);
             setParam<double>(param_map, "distance", &p_distance_, 1.0);
-            setParam<double>(param_map, "velocity", &p_velocity_, 0.5);
             setParam<double>(param_map, "yaw_angle", &p_yaw_angle_, 1.571);
             setParam<double>(param_map, "ascent_angle", &p_ascent_angle_, 0.523);
             setParam<double>(param_map, "p_sampling_rate", &p_sampling_rate_, 20.0);
             setParam<int>(param_map, "n_segments", &p_n_segments_, 5);
 
-            c_yaw_rate_ = p_yaw_angle_ * p_velocity_ / p_distance_ / 2.0;
-            TrajectoryGenerator::setupFromParamMap(param_map);
+            c_yaw_rate_ = std::min(p_yaw_angle_ * system_constraints_.v_max / p_distance_ / 2.0, system_constraints_.yaw_rate_max);
         }
 
         bool Uniform::expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment *> *new_segments) {
@@ -51,9 +50,9 @@ namespace mav_active_3d_planning {
                     while (current_distance < p_distance_) {
                         // Advance trajectory for every timestep
                         current_yaw += yaw_rate / p_sampling_rate_;
-                        current_distance += p_velocity_ / p_sampling_rate_;
+                        current_distance += system_constraints_.v_max / p_sampling_rate_;
                         current_time += 1.0 / p_sampling_rate_;
-                        current_pos += p_velocity_ / p_sampling_rate_ *
+                        current_pos += system_constraints_.v_max / p_sampling_rate_ *
                                        Eigen::Vector3d(cos(current_yaw) * cos(current_ascent),
                                                        sin(current_yaw) * cos(current_ascent), sin(current_ascent));
                         if (!checkTraversable(current_pos)) {

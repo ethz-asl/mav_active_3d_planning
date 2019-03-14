@@ -219,7 +219,7 @@ namespace mav_active_3d_planning {
             std::string ns = (*param_map)["param_namespace"];
             std::string outer_volume_args;
             setParam<std::string>(param_map, "outer_volume_args", &outer_volume_args, ns + "/outer_volume");
-            outer_volume_ = defaults::BoundingVolume(outer_volume_args);
+            outer_volume_.setupFromFactory(outer_volume_args, verbose_modules_);
 
             // constants
             c_min_gain_ = std::min({p_gain_unknown_, p_gain_occupied_, p_gain_free_, p_gain_unknown_outer_,

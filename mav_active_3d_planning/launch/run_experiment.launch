@@ -17,16 +17,16 @@
   <arg name="delay" default="3.0"/>  
   <arg name="remove_freespace_points" default="false"/>
   
-  <!--  Planner arguments (tg_uniform, tg_random_linear, general, nbvp_bircher)-->
-  <arg name="use_separate_configs" default="false"/>
-  <arg name="planner_general_config" default="planners/nbvp_bircher.yaml"/>
-  <arg name="planner_generator_config" default="planners/modules/tg_random_linear.yaml"/>
-  <arg name="planner_evaluator_config" default="planners/modules/te_frontier.yaml"/>
+  <!--  Planner arguments (tg_uniform, tg_random_linear, tg_rrt, general, nbvp_bircher, te_frontier, te_yaw)-->
+  <arg name="use_separate_configs" default="true"/>
+  <arg name="planner_general_config" default="planners/general.yaml"/>
+  <arg name="planner_generator_config" default="planners/modules/tg_rrt.yaml"/>
+  <arg name="planner_evaluator_config" default="planners/modules/te_yaw.yaml"/>
   <arg name="verbose_planner" default="true"/>
   
   <!--  Experiment arguments -->  
   <arg name="experiment_config" default="experiment1.yaml"/>
-  <arg name="record_data" default="true"/>
+  <arg name="record_data" default="false"/>
   <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
   <arg name="data_frequency" default="15.0" />
   <arg name="time_limit" default="30.0" />
@@ -163,6 +163,7 @@
       <param name="trajectory_evaluator/sensor_model/ray_length" value="$(arg ray_length)" />
       <param name="trajectory_evaluator/bounding_volume_args" value="/target_bounding_volume" />
       <param name="trajectory_generator/bounding_volume_args" value="/map_bounding_volume" />
+      <param name="trajectory_generator/system_contraints_args" value="/planner/sysmtem_contraints" />
       
       <!-- General Config -->    
       <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_general_config)"/>

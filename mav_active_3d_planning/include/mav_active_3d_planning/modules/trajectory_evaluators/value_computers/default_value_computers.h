@@ -11,8 +11,6 @@ namespace mav_active_3d_planning {
         // Linear combination of cost and gain
         class LinearValue : public ValueComputer {
         public:
-            LinearValue(double cost_weight, double gain_weight);
-
             // override virtual functions
             bool computeValue(TrajectorySegment *traj_in);
 
@@ -31,8 +29,6 @@ namespace mav_active_3d_planning {
         // Discount the gain with an exponential term of the cost
         class ExponentialDiscount : public ValueComputer {
         public:
-            ExponentialDiscount(double cost_scale);
-
             // override virtual functions
             bool computeValue(TrajectorySegment *traj_in);
 
@@ -50,8 +46,6 @@ namespace mav_active_3d_planning {
         // Accumulates the values up to the root, use another value computer for individual values (Decorator pattern)
         class Accumulate : public ValueComputer {
         public:
-            Accumulate(std::unique_ptr <ValueComputer> following_value_computer);
-
             // override virtual functions
             bool computeValue(TrajectorySegment *traj_in);
 
@@ -64,6 +58,23 @@ namespace mav_active_3d_planning {
 
             // params
             std::unique_ptr <ValueComputer> following_value_computer_;
+        };
+
+        // Computes efficiency as gain divided by cost
+        class RelativeGain : public ValueComputer {
+        public:
+            // override virtual functions
+            bool computeValue(TrajectorySegment *traj_in);
+
+        protected:
+            friend ModuleFactory;
+
+            // factory access
+            RelativeGain() {}
+            void setupFromParamMap(Module::ParamMap *param_map);
+
+            // params
+            bool p_accumulate_;     // true: return total gain divided by total cost
         };
 
     } // namespace value_computers

@@ -44,5 +44,29 @@ namespace mav_active_3d_planning {
             following_value_computer_ = ModuleFactory::Instance()->createValueComputer(args, verbose_modules_);
         }
 
+        // RelativeGain
+        bool RelativeGain::computeValue(TrajectorySegment *traj_in) {
+            double gain = traj_in->gain;
+            double cost = traj_in->cost;
+            if (p_accumulate_) {
+                TrajectorySegment *current = traj_in->parent;
+                while (current) {
+                    gain += current->gain;
+                    cost += current->cost;
+                    current = current->parent;
+                }
+            }
+            if (cost == 0.0) {
+                traj_in->value = 0.0;
+            } else {
+                traj_in->value = gain / cost;
+            }
+            return true;
+        }
+
+        void RelativeGain::setupFromParamMap(Module::ParamMap *param_map) {
+            setParam<bool>(param_map, "accumulate", &p_accumulate_, true);
+        }
+
     } // namespace value_computers
 } // namepsace mav_active_3d_planning

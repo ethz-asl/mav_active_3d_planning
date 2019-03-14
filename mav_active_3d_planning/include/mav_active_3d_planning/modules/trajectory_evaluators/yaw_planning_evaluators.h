@@ -37,6 +37,10 @@ namespace mav_active_3d_planning {
             // parameters
             int p_n_directions_;
             bool p_select_by_value_;    // false: only evaluate the gain, true: evaluate gain+cost+value
+
+            // methods
+            void setTrajectoryYaw(TrajectorySegment* segment, double start_yaw, double target_yaw);
+            double sampleYaw(double original_yaw, int sample);
         };
 
     } // namespace trajectory_evaluators

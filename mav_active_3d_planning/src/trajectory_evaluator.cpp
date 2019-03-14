@@ -5,11 +5,6 @@
 
 namespace mav_active_3d_planning {
 
-//    TrajectoryEvaluator::TrajectoryEvaluator(std::shared_ptr<voxblox::EsdfServer> voxblox_ptr, std::string param_ns)
-//            : voxblox_ptr_(voxblox_ptr),
-//              bounding_volume_(param_ns + "/bounding_volume"),
-//              p_namespace_(param_ns) {}
-
     void TrajectoryEvaluator::setupFromParamMap(Module::ParamMap *param_map){
         // Get the args to build the modules, default is a namespace extension
         std::string ns = (*param_map)["param_namespace"];
@@ -19,7 +14,7 @@ namespace mav_active_3d_planning {
         setParam<std::string>(param_map, "evaluator_updater_args", &p_updater_args_, ns + "/evaluator_updater");
         std::string bounding_volume_args;
         setParam<std::string>(param_map, "bounding_volume_args", &bounding_volume_args, ns + "/bounding_volume");
-        bounding_volume_ = defaults::BoundingVolume(bounding_volume_args);
+        bounding_volume_.setupFromFactory(bounding_volume_args, verbose_modules_);
     }
 
     bool TrajectoryEvaluator::computeCost(TrajectorySegment *traj_in) {
