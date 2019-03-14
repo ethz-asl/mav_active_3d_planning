@@ -6,10 +6,6 @@ namespace mav_active_3d_planning {
     namespace value_computers {
 
         // LinearValue
-        LinearValue::LinearValue(double cost_weight, double gain_weight)
-                : cost_weight_(cost_weight),
-                  gain_weight_(gain_weight) {}
-
         bool LinearValue::computeValue(TrajectorySegment *traj_in) {
             traj_in->value = gain_weight_ * traj_in->gain - cost_weight_ * traj_in->cost;
             return true;
@@ -21,8 +17,6 @@ namespace mav_active_3d_planning {
         }
 
         // ExponentialDiscount
-        ExponentialDiscount::ExponentialDiscount(double cost_scale) : cost_scale_(cost_scale) {}
-
         bool ExponentialDiscount::computeValue(TrajectorySegment *traj_in) {
             traj_in->value = traj_in->gain * std::exp(-1.0 * cost_scale_ * traj_in->cost);
             return true;
@@ -33,10 +27,6 @@ namespace mav_active_3d_planning {
         }
 
         // Accumulate
-        Accumulate::Accumulate(std::unique_ptr <ValueComputer> following_value_computer) {
-            following_value_computer_ = std::move(following_value_computer);
-        }
-
         bool Accumulate::computeValue(TrajectorySegment *traj_in) {
             following_value_computer_->computeValue(traj_in);
             if (traj_in->parent) {

@@ -155,19 +155,6 @@ namespace mav_active_3d_planning {
             trajectory_point.setFromYaw(0);
             temp_segment.trajectory.push_back(trajectory_point);
             temp_segment.spawnChild()->trajectory.push_back(trajectory_point);
-//            auto resetTemps = [](TrajectorySegment* temp_segment, TrajectorySegment** temp_pointer,
-//                    std::vector<TrajectorySegment*> *temp_vector) {
-//                // Empty set of arguments required to run everything
-//                *temp_segment = TrajectorySegment();
-//                mav_msgs::EigenTrajectoryPoint trajectory_point;
-//                trajectory_point.position_W = Eigen::Vector3d(0, 0, 0);
-//                trajectory_point.setFromYaw(0);
-//                temp_segment->trajectory.push_back(trajectory_point);
-//                *temp_pointer = temp_segment->spawnChild();
-//                (*temp_pointer)->trajectory.push_back(trajectory_point);
-//                temp_vector->clear();
-//            };
-//            resetTemps(&temp_segment, &temp_pointer, &temp_vector);
             trajectory_generator_->selectSegment(&temp_pointer, &temp_segment);
             trajectory_generator_->expandSegment(temp_pointer, &temp_vector);
             trajectory_generator_->updateSegments(&temp_segment);

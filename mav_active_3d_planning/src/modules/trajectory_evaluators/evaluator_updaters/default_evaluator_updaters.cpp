@@ -14,14 +14,6 @@ namespace mav_active_3d_planning {
         }
 
         // UpdateAll
-        UpdateAll::UpdateAll(bool update_gain, bool update_cost, bool update_value,
-                             std::unique_ptr <EvaluatorUpdater> following_updater)
-                : update_gain_(update_gain),
-                  update_cost_(update_cost),
-                  update_value_(update_value) {
-            following_updater_ = std::move(following_updater);
-        }
-
         bool UpdateAll::updateSegments(TrajectorySegment *root) {
             // recursively update all segments from root to leaves (as in the planner)
             updateSingle(root);
@@ -50,14 +42,6 @@ namespace mav_active_3d_planning {
         }
 
         // PruneByValue
-        PruneByValue::PruneByValue(double minimum_value, bool use_relative_values, bool include_subsequent,
-                                   std::unique_ptr <EvaluatorUpdater> following_updater)
-                : minimum_value_(minimum_value),
-                  use_relative_values_(use_relative_values),
-                  include_subsequent_(include_subsequent) {
-            following_updater_ = std::move(following_updater);
-        }
-
         bool PruneByValue::updateSegments(TrajectorySegment *root) {
             double absolute_minimum = minimum_value_;
             if (use_relative_values_) {
@@ -119,15 +103,6 @@ namespace mav_active_3d_planning {
         }
 
         // Periodic
-        Periodic::Periodic(double minimum_wait_time, int minimum_wait_calls,
-                           std::unique_ptr <EvaluatorUpdater> following_updater)
-                : p_minimum_wait_time_(minimum_wait_time),
-                  p_minimum_wait_calls_(minimum_wait_calls),
-                  waited_calls_(0) {
-            previous_time_ = ros::Time::now();
-            following_updater_ = std::move(following_updater);
-        }
-
         bool Periodic::updateSegments(TrajectorySegment *root) {
             // Both conditions need to be met
             if ((ros::Time::now() - previous_time_).toSec() >= p_minimum_wait_time_ &&

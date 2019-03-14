@@ -11,8 +11,6 @@ namespace mav_active_3d_planning {
         // Select segment with highest value
         class Greedy : public SegmentSelector {
         public:
-            Greedy(bool leaves_only);
-
             // override virtual functions
             bool selectSegment(TrajectorySegment **result, TrajectorySegment *root);
 
@@ -30,8 +28,6 @@ namespace mav_active_3d_planning {
         // Select segments at random, weighted with their value
         class RandomWeighted : public SegmentSelector {
         public:
-            RandomWeighted(double factor, double uniform_probability, double leaf_probability, bool revisit);
-
             // override virtual functions
 
             bool selectSegment(TrajectorySegment **result, TrajectorySegment *root);

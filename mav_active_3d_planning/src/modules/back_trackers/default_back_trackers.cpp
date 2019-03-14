@@ -9,13 +9,6 @@ namespace mav_active_3d_planning {
     namespace back_trackers {
 
         // RotateInPlace
-        RotateInPlace::RotateInPlace(double turn_rate, double sampling_rate, double update_rate)
-            : turn_rate_(turn_rate),
-              sampling_rate_(sampling_rate),
-              update_rate_(update_rate) {
-            assureParamsValid();
-        }
-
         bool RotateInPlace::trackBack(TrajectorySegment *target){
             // Just rotate the specified amount
             TrajectorySegment *new_segment = target->spawnChild();
@@ -49,17 +42,6 @@ namespace mav_active_3d_planning {
         }
 
         // RotateReverse
-        RotateReverse::RotateReverse(double turn_rate, double update_rate, double sampling_rate, double n_rotations,
-                      int stack_size)
-                      : turn_rate_(turn_rate),
-                        update_rate_(update_rate),
-                        sampling_rate_(sampling_rate),
-                        n_rotations_(n_rotations),
-                        stack_size_(stack_size) {
-            assureParamsValid();
-            stack_.reserve(stack_size_);
-        }
-
          bool RotateReverse::segmentIsExecuted(const TrajectorySegment &segment) {
              // Don't track backtracking segments
              if (segment.trajectory.back().position_W == last_position_

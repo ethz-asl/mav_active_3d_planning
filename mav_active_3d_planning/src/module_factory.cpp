@@ -20,7 +20,7 @@
 #include "mav_active_3d_planning/modules/trajectory_generators/random_linear.h"
 #include "mav_active_3d_planning/modules/trajectory_generators/rrt.h"
 #include "mav_active_3d_planning/modules/trajectory_generators/mav_trajectory_generation.h"
-#include "mav_active_3d_planning/modules/trajectory_evaluators/simulated_sensor.h"
+#include "mav_active_3d_planning/modules/trajectory_evaluators/simulated_sensor_evaluators.h"
 #include "mav_active_3d_planning/modules/trajectory_evaluators/sensor_models/camera_models.h"
 #include "mav_active_3d_planning/modules/trajectory_evaluators/evaluator_updaters/simulated_sensor_updaters.h"
 

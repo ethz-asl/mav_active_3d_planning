@@ -3,7 +3,7 @@ visualize_candidates: true
 verbose_modules: true
 build_modules_on_init: true
 
-max_new_segments: 15
+max_new_segments: 0
 min_new_segments: 15
 max_new_tries: 100
 min_new_tries: 0

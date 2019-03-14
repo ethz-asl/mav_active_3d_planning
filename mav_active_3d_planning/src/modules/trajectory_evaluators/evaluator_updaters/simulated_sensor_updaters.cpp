@@ -6,10 +6,6 @@ namespace mav_active_3d_planning {
     namespace evaluator_updaters {
 
         // SimulatedSensorUpdater
-        SimulatedSensorUpdater::SimulatedSensorUpdater(std::unique_ptr <EvaluatorUpdater> following_updater) {
-            following_updater_ = std::move(following_updater);
-        }
-
         bool SimulatedSensorUpdater::updateSegments(TrajectorySegment *root) {
             // recursively update all segments from root to leaves (as in the planner)
             updateSingle(root);

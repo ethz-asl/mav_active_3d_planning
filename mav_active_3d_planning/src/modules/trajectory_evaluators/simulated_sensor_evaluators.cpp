@@ -1,4 +1,4 @@
-#include "mav_active_3d_planning/modules/trajectory_evaluators/simulated_sensor.h"
+#include "mav_active_3d_planning/modules/trajectory_evaluators/simulated_sensor_evaluators.h"
 #include "mav_active_3d_planning/module_factory.h"
 
 #include <algorithm>

@@ -15,13 +15,13 @@ namespace mav_active_3d_planning {
         // Execution time of a single segment
         class SegmentTime : public CostComputer {
         public:
-            SegmentTime() {}
-
             // override virtual functions
             bool computeCost(TrajectorySegment *traj_in);
 
         protected:
             friend ModuleFactory;
+
+            SegmentTime() {}
 
             void setupFromParamMap(Module::ParamMap *param_map) {}
         };
@@ -29,13 +29,13 @@ namespace mav_active_3d_planning {
         // Travelled distance of a segment
         class SegmentLength : public CostComputer {
         public:
-            SegmentLength() {}
-
             // override virtual functions
             bool computeCost(TrajectorySegment *traj_in);
 
         protected:
             friend ModuleFactory;
+
+            SegmentLength() {}
 
             void setupFromParamMap(Module::ParamMap *param_map) {}
         };

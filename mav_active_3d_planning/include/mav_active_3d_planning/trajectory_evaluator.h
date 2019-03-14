@@ -62,7 +62,6 @@ namespace mav_active_3d_planning {
         std::string p_next_args_;
         std::string p_updater_args_;
 
-
         // default modules
         std::unique_ptr<CostComputer> cost_computer_;
         std::unique_ptr<ValueComputer> value_computer_;

@@ -9,8 +9,6 @@ namespace mav_active_3d_planning {
     namespace segment_selectors {
 
         // Greedy
-        Greedy::Greedy(bool leaves_only) : leaves_only_(leaves_only) {}
-
         bool Greedy::selectSegment(TrajectorySegment **result, TrajectorySegment *root) {
             std::vector < TrajectorySegment * > candidates;
             if (leaves_only_) {
@@ -27,14 +25,6 @@ namespace mav_active_3d_planning {
         }
 
         // RandomWeighted
-        RandomWeighted::RandomWeighted(double factor, double uniform_probability, double leaf_probability, bool revisit)
-                : factor_(factor),
-                  uniform_probability_(uniform_probability),
-                  leaf_probability_(leaf_probability),
-                  revisit_(revisit) {
-            assureParamsValid();
-        }
-
         bool RandomWeighted::selectSegment(TrajectorySegment **result, TrajectorySegment *root) {
             // Get all candidates
             std::vector < TrajectorySegment * > candidates;

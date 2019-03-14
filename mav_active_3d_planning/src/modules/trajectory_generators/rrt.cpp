@@ -13,18 +13,6 @@
 namespace mav_active_3d_planning {
     namespace trajectory_generators {
 
-//        RRT::RRT(voxblox::EsdfServer *voxblox_ptr, std::string param_ns)
-//                : TrajectoryGenerator(voxblox_ptr, param_ns),
-//                  previous_root_(nullptr) {
-//            // params
-//            ros::param::param<double>(param_ns + "/velocity", p_velocity_, 0.5);
-//            ros::param::param<double>(param_ns + "/sampling_rate", p_sampling_rate_, 20.0);
-//            ros::param::param<double>(param_ns + "/extension_range", p_extension_range_, 1.0);
-//            ros::param::param<bool>(param_ns + "/use_spheric_sampling", p_use_spheric_sampling_, false);
-//            ros::param::param<int>(param_ns + "/maximum_tries", p_maximum_tries_, 0);
-//            kdtree_= std::unique_ptr<KDTree>(new KDTree(3, tree_data_));
-//        }
-
         void RRT::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<double>(param_map, "velocity", &p_velocity_, 1.0);
             setParam<double>(param_map, "sampling_rate", &p_sampling_rate_, 1.0);
