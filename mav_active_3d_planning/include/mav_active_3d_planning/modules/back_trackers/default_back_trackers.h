@@ -59,6 +59,10 @@ namespace mav_active_3d_planning {
             Eigen::Vector3d last_position_;
             double last_yaw_;
             double current_rotation_;
+
+            // methods
+            bool rotate(TrajectorySegment *target);
+            bool reverse(TrajectorySegment *target);
         };
 
     } // namespace back_trackers
