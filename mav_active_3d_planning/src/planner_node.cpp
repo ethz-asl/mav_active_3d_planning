@@ -36,11 +36,14 @@ namespace mav_active_3d_planning {
     class PlannerNode {
     public:
         PlannerNode(const ros::NodeHandle &nh, const ros::NodeHandle &nh_private);
+
         virtual ~PlannerNode() {}
 
         // ros callbacks
         void odomCallback(const nav_msgs::Odometry &msg);
+
         bool runSrvCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
+
         bool cpuSrvCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
 
     protected:
@@ -54,17 +57,18 @@ namespace mav_active_3d_planning {
         ros::ServiceServer get_cpu_time_srv_;
 
         // members
-        std::shared_ptr<voxblox::EsdfServer> voxblox_server_;
-        std::unique_ptr<TrajectoryGenerator> trajectory_generator_;
-        std::unique_ptr<TrajectoryEvaluator> trajectory_evaluator_;
-        std::unique_ptr<BackTracker> back_tracker_;
+        std::shared_ptr <voxblox::EsdfServer> voxblox_server_;
+        std::unique_ptr <TrajectoryGenerator> trajectory_generator_;
+        std::unique_ptr <TrajectoryEvaluator> trajectory_evaluator_;
+        std::unique_ptr <BackTracker> back_tracker_;
 
         // variables
-        std::unique_ptr<TrajectorySegment> current_segment_;        // root node of full trajectory tree
+        std::unique_ptr <TrajectorySegment> current_segment_;        // root node of full trajectory tree
         bool running_;                      // whether to run the main loop
         Eigen::Vector3d target_position_;   // current movement goal
         double target_yaw_;
         int vis_num_previous_trajectories_; // Counter for visualization function
+        int vis_num_previous_evaluations_;
         int vis_completed_count_;
         int new_segments_;                  // keep track of min/max tries and segments
         int new_segment_tries_;
@@ -92,13 +96,18 @@ namespace mav_active_3d_planning {
 
         // methods
         void initializePlanning();
+
         void requestNextTrajectory();
+
         void expandTrajectories();
+
         void requestMovement(const TrajectorySegment &req);
 
         // visualization
-        void publishTrajectoryVisualization(const std::vector<TrajectorySegment*> &trajectories);
+        void publishTrajectoryVisualization(const std::vector<TrajectorySegment *> &trajectories);
+
         void publishCompletedTrajectoryVisualization(const TrajectorySegment &trajectories);
+
         void publishEvalVisualization(const TrajectorySegment &trajectory);
     };
 
@@ -139,7 +148,7 @@ namespace mav_active_3d_planning {
 
         // Setup members
         std::string ns = ros::this_node::getName();
-        voxblox_server_ = std::shared_ptr<voxblox::EsdfServer>( new voxblox::EsdfServer(nh_, nh_private_));
+        voxblox_server_ = std::shared_ptr<voxblox::EsdfServer>(new voxblox::EsdfServer(nh_, nh_private_));
         trajectory_generator_ = ModuleFactory::Instance()->createTrajectoryGenerator(
                 ns + "/trajectory_generator", voxblox_server_, verbose_modules);
         trajectory_evaluator_ = ModuleFactory::Instance()->createTrajectoryEvaluator(
@@ -150,8 +159,8 @@ namespace mav_active_3d_planning {
         if (build_modules_on_init) {
             // Empty set of arguments required to run everything
             TrajectorySegment temp_segment;
-            TrajectorySegment* temp_pointer;
-            std::vector<TrajectorySegment*> temp_vector;
+            TrajectorySegment *temp_pointer;
+            std::vector < TrajectorySegment * > temp_vector;
             mav_msgs::EigenTrajectoryPoint trajectory_point;
             trajectory_point.position_W = Eigen::Vector3d(0, 0, 0);
             trajectory_point.setFromYaw(0);
@@ -240,9 +249,11 @@ namespace mav_active_3d_planning {
         // Setup counters
         cpu_srv_timer_ = std::clock();
         info_timing_ = ros::Time::now();
-        info_count_ = 0;
+        info_count_ = 1;
         new_segments_ = 0;
         new_segment_tries_ = 0;
+        vis_num_previous_evaluations_ = 0;
+        vis_num_previous_trajectories_ = 0;
     }
 
     void PlannerNode::requestNextTrajectory() {
@@ -267,7 +278,7 @@ namespace mav_active_3d_planning {
         std::vector < TrajectorySegment * > trajectories_to_vis;
         current_segment_->getTree(&trajectories_to_vis);
         trajectories_to_vis.erase(trajectories_to_vis.begin()); // remove current segment (root)
-        if (p_visualize_candidates_){
+        if (p_visualize_candidates_) {
             publishTrajectoryVisualization(trajectories_to_vis);
         }
         int num_trajectories = trajectories_to_vis.size();
@@ -368,7 +379,7 @@ namespace mav_active_3d_planning {
         }
 
         // Expand the target
-        std::vector<TrajectorySegment*> created_segments;
+        std::vector < TrajectorySegment * > created_segments;
         bool success = trajectory_generator_->expandSegment(expansion_target, &created_segments);
         if (p_log_performance_) {
             perf_log_data_[1] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
@@ -419,10 +430,12 @@ namespace mav_active_3d_planning {
         target_yaw_ = req.trajectory.back().getYaw();
     }
 
-    void PlannerNode::publishTrajectoryVisualization(const std::vector<TrajectorySegment*> &trajectories) {
+    void PlannerNode::publishTrajectoryVisualization(const std::vector<TrajectorySegment *> &trajectories) {
         // Display all trajectories in the input and erase previous ones
-        double max_value = (*std::max_element(trajectories.begin(), trajectories.end(), TrajectorySegment::comparePtr))->value;
-        double min_value = (*std::min_element(trajectories.begin(), trajectories.end(), TrajectorySegment::comparePtr))->value;
+        double max_value = (*std::max_element(trajectories.begin(), trajectories.end(),
+                                              TrajectorySegment::comparePtr))->value;
+        double min_value = (*std::min_element(trajectories.begin(), trajectories.end(),
+                                              TrajectorySegment::comparePtr))->value;
 
         visualization_msgs::MarkerArray array_msg;
         visualization_msgs::Marker msg;
@@ -439,11 +452,17 @@ namespace mav_active_3d_planning {
             msg.scale.y = 0.03;
             msg.action = visualization_msgs::Marker::ADD;
 
-            // Color according to relative cost
-            double frac = (trajectories[i]->value - min_value) / (max_value - min_value);
-            msg.color.r = std::min((0.5 - frac) * 2.0 + 1.0, 1.0);
-            msg.color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
-            msg.color.b = 0.0;
+            // Color according to relative value (gray for no difference)
+            if (max_value != min_value) {
+                double frac = (trajectories[i]->value - min_value) / (max_value - min_value);
+                msg.color.r = std::min((0.5 - frac) * 2.0 + 1.0, 1.0);
+                msg.color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
+                msg.color.b = 0.0;
+            } else {
+                msg.color.r = 0.7;
+                msg.color.g = 0.7;
+                msg.color.b = 0.7;
+            }
             msg.color.a = 0.4;
 
             // points
@@ -502,7 +521,6 @@ namespace mav_active_3d_planning {
             msg.ns = "candidate_text";
             msg.action = visualization_msgs::Marker::DELETE;
             array_msg.markers.push_back(msg);
-
         }
         trajectory_vis_pub_.publish(array_msg);
         vis_num_previous_trajectories_ = trajectories.size();
@@ -541,13 +559,23 @@ namespace mav_active_3d_planning {
 
     void PlannerNode::publishEvalVisualization(const TrajectorySegment &trajectory) {
         // Visualize the gain of the current segment
-        visualization_msgs::Marker msg;
+        visualization_msgs::MarkerArray msg;
         trajectory_evaluator_->visualizeTrajectoryValue(&msg, trajectory);
-        msg.ns = "evaluation";
-        msg.header.stamp = ros::Time::now();
-        visualization_msgs::MarkerArray array_msg;
-        array_msg.markers.push_back(msg);
-        trajectory_vis_pub_.publish(array_msg);
+        if (msg.markers.size() < vis_num_previous_evaluations_) {
+            vis_num_previous_evaluations_ = msg.markers.size();
+            // Make sure previous visualization is cleared again
+            for (int i = msg.markers.size(); i < vis_num_previous_evaluations_; ++i) {
+                // Setup marker message
+                visualization_msgs::Marker new_msg;
+                new_msg.header.frame_id = "/world";
+                new_msg.header.stamp = ros::Time::now();
+                new_msg.id = i;
+                new_msg.ns = "evaluation";
+                new_msg.action = visualization_msgs::Marker::DELETE;
+                msg.markers.push_back(new_msg);
+            }
+        }
+        trajectory_vis_pub_.publish(msg);
     }
 
     bool PlannerNode::runSrvCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) {
@@ -564,7 +592,7 @@ namespace mav_active_3d_planning {
     }
 
     bool PlannerNode::cpuSrvCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) {
-        double time = (double)(std::clock() - cpu_srv_timer_) / CLOCKS_PER_SEC;
+        double time = (double) (std::clock() - cpu_srv_timer_) / CLOCKS_PER_SEC;
         cpu_srv_timer_ = std::clock();
 
         // Just return cpu time as the service message
@@ -575,7 +603,7 @@ namespace mav_active_3d_planning {
 
 } // namespace mav_active_3d_planning
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     ros::init(argc, argv, "active_3d_planner");
 
     // Set logging to debug for testing

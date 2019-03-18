@@ -1,7 +1,7 @@
 trajectory_evaluator:
   type: "SimpleYawPlanningEvaluator"
   n_directions: 4
-  select_by_value: false
+  select_by_value: true
   
   following_evaluator:
     type: "Frontier"
@@ -24,9 +24,12 @@ trajectory_evaluator:
       type: "SubsequentBest"
       
     evaluator_updater:
-      type: "SimulatedSensorUpdater"
+      type: "YawPlanningUpdater"
+      select_by_value: true
       following_updater:
-        type: "UpdateAll"
-        update_gain: false
-        update_cost: false
-        update_value: true
+        type: "SimulatedSensorUpdater"
+        following_updater:
+          type: "UpdateAll"
+          update_gain: false
+          update_cost: true
+          update_value: true

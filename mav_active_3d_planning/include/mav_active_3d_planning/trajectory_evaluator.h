@@ -43,7 +43,7 @@ namespace mav_active_3d_planning {
         virtual bool updateSegments(TrajectorySegment *root);
 
         // Implement this method to allow visualization of the information gain during simulation
-        virtual void visualizeTrajectoryValue(visualization_msgs::Marker* msg, const TrajectorySegment &trajectory) {}
+        virtual void visualizeTrajectoryValue(visualization_msgs::MarkerArray* msg, const TrajectorySegment &trajectory) {}
 
     protected:
         friend class ModuleFactory;

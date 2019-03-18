@@ -4,6 +4,8 @@
 
 namespace mav_active_3d_planning {
     namespace evaluator_updaters {
+        using SimulatedSensorEvaluator = mav_active_3d_planning::trajectory_evaluators::SimulatedSensorEvaluator;
+
 
         // SimulatedSensorUpdater
         bool SimulatedSensorUpdater::updateSegments(TrajectorySegment *root) {
@@ -22,9 +24,7 @@ namespace mav_active_3d_planning {
 
         void SimulatedSensorUpdater::updateSingle(TrajectorySegment *segment) {
             // call the parent to reevaluate the voxels
-            mav_active_3d_planning::trajectory_evaluators::SimulatedSensorEvaluator *asd =
-            dynamic_cast<mav_active_3d_planning::trajectory_evaluators::SimulatedSensorEvaluator *>(parent_);
-            asd->computeGainFromVisibleVoxels(segment);
+            dynamic_cast<SimulatedSensorEvaluator *>(parent_)->computeGainFromVisibleVoxels(segment);
             for (int i = 0; i < segment->children.size(); ++i) {
                 updateSingle(segment->children[i].get());
             }

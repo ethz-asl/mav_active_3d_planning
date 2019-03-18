@@ -34,6 +34,7 @@ cs_add_library(${PROJECT_NAME}
         src/modules/trajectory_evaluators/sensor_models/camera_models.cpp
         src/modules/trajectory_evaluators/evaluator_updaters/simulated_sensor_updaters.cpp
         src/modules/trajectory_evaluators/yaw_planning_evaluators.cpp
+        src/modules/trajectory_evaluators/evaluator_updaters/yaw_planning_updaters.cpp
         )
 
 ############

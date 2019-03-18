@@ -9,9 +9,9 @@ namespace mav_active_3d_planning {
 
     namespace trajectory_evaluators {
 
-        // Samples different yaws for the input trajectory and selects the best one. Evaluation and all other
-        // functionalities are delegated to the folowing evaluator.
-        class SimpleYawPlanningEvaluator : public TrajectoryEvaluator {
+        // Base class for yaw adapting evaluators. Evaluates different yaws for the input trajectory and selects the
+        // best one. Evaluation and all other functionalities are delegated to the folowing evaluator.
+        class YawPlanningEvaluator : public TrajectoryEvaluator {
         public:
 
             // Override virtual functions
@@ -20,14 +20,13 @@ namespace mav_active_3d_planning {
             bool computeValue(TrajectorySegment *traj_in);
             int selectNextBest(const TrajectorySegment &traj_in);
             bool updateSegments(TrajectorySegment *root);
-            void visualizeTrajectoryValue(visualization_msgs::Marker* msg, const TrajectorySegment &trajectory);
+            virtual void visualizeTrajectoryValue(visualization_msgs::MarkerArray* msg, const TrajectorySegment &trajectory);
 
         protected:
             friend ModuleFactory;
 
             // factory access
-            SimpleYawPlanningEvaluator() {}
-
+            YawPlanningEvaluator() {}
             void setupFromParamMap(Module::ParamMap *param_map);
             bool checkParamsValid(std::string *error_message);
 
@@ -36,7 +35,38 @@ namespace mav_active_3d_planning {
 
             // parameters
             int p_n_directions_;
-            bool p_select_by_value_;    // false: only evaluate the gain, true: evaluate gain+cost+value
+            bool p_select_by_value_;        // false: only evaluate the gain, true: evaluate gain+cost+value
+
+            // methods
+            virtual void setTrajectoryYaw(TrajectorySegment* segment, double start_yaw, double target_yaw) = 0;
+            virtual double sampleYaw(double original_yaw, int sample) = 0;
+        };
+
+        // Information struct that is assigned to segments
+        struct YawPlanningInfo : public TrajectoryInfo {
+            virtual ~YawPlanningInfo() {}
+
+            std::vector <TrajectorySegment> orientations;   // Keep all orientated segment versions stored
+            int active_orientation;
+        };
+
+        // Simple evaluator. Samples yaws uniformly and assigns the same yaw to all trajectory points.
+        class SimpleYawPlanningEvaluator : public YawPlanningEvaluator {
+        public:
+
+            // Override virtual functions
+            void visualizeTrajectoryValue(visualization_msgs::MarkerArray* msg, const TrajectorySegment &trajectory);
+
+        protected:
+            friend ModuleFactory;
+
+            // factory access
+            SimpleYawPlanningEvaluator() {}
+            void setupFromParamMap(Module::ParamMap *param_map);
+            bool checkParamsValid(std::string *error_message);
+
+            // params
+            bool p_visualize_followup_;     // true: also visualize the gain of the best orientation
 
             // methods
             void setTrajectoryYaw(TrajectorySegment* segment, double start_yaw, double target_yaw);

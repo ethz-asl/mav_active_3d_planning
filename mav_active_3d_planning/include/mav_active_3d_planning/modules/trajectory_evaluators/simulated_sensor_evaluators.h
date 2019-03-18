@@ -20,7 +20,7 @@ namespace mav_active_3d_planning {
             // Override virtual functions
             bool computeGain(TrajectorySegment *traj_in);
 
-            virtual void visualizeTrajectoryValue(visualization_msgs::Marker *msg, const TrajectorySegment &trajectory);
+            virtual void visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg, const TrajectorySegment &trajectory);
 
         protected:
             friend mav_active_3d_planning::evaluator_updaters::SimulatedSensorUpdater;
@@ -68,7 +68,7 @@ namespace mav_active_3d_planning {
         class Frontier : public SimulatedSensorEvaluator {
         public:
             // Override virtual methods
-            void visualizeTrajectoryValue(visualization_msgs::Marker *msg, const TrajectorySegment &trajectory);
+            void visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg, const TrajectorySegment &trajectory);
 
         protected:
             friend ModuleFactory;

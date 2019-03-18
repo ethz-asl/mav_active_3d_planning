@@ -63,21 +63,25 @@ namespace mav_active_3d_planning {
             return true;
         }
 
-        void SimulatedSensorEvaluator::visualizeTrajectoryValue(visualization_msgs::Marker *msg,
+        void SimulatedSensorEvaluator::visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg,
                                                                 const TrajectorySegment &trajectory) {
             if(!trajectory.info) { return; }
             // Default implementation displays all visible voxels
-            msg->header.frame_id = "/world";
-            msg->pose.orientation.w = 1.0;
-            msg->type = visualization_msgs::Marker::CUBE_LIST;
+            visualization_msgs::Marker new_msg;
+            new_msg.ns = "evaluation";
+            new_msg.header.stamp = ros::Time::now();
+            new_msg.header.frame_id = "/world";
+            new_msg.id = defaults::getNextVisualizationId(*msg);
+            new_msg.pose.orientation.w = 1.0;
+            new_msg.type = visualization_msgs::Marker::CUBE_LIST;
             voxblox::FloatingPoint voxel_size = voxblox_ptr_->getEsdfMapPtr()->voxel_size();
-            msg->scale.x = (double) voxel_size;
-            msg->scale.y = (double) voxel_size;
-            msg->scale.z = (double) voxel_size;
-            msg->color.r = 1.0;
-            msg->color.g = 0.8;
-            msg->color.b = 0.0;
-            msg->color.a = 0.4;
+            new_msg.scale.x = (double) voxel_size;
+            new_msg.scale.y = (double) voxel_size;
+            new_msg.scale.z = (double) voxel_size;
+            new_msg.color.r = 1.0;
+            new_msg.color.g = 0.8;
+            new_msg.color.b = 0.0;
+            new_msg.color.a = 0.4;
 
             // points
             SimulatedSensorInfo *info = dynamic_cast<SimulatedSensorInfo *>(trajectory.info.get());
@@ -86,8 +90,9 @@ namespace mav_active_3d_planning {
                 point.x = (double) info->visible_voxels[i].x();
                 point.y = (double) info->visible_voxels[i].y();
                 point.z = (double) info->visible_voxels[i].z();
-                msg->points.push_back(point);
+                new_msg.points.push_back(point);
             }
+            msg->markers.push_back(new_msg);
         }
 
         // NaiveEvaluator
@@ -179,20 +184,24 @@ namespace mav_active_3d_planning {
             return true;
         }
 
-        void Frontier::visualizeTrajectoryValue(visualization_msgs::Marker *msg, const TrajectorySegment &trajectory) {
+        void Frontier::visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg, const TrajectorySegment &trajectory) {
             // Default implementation displays all frontier voxels
             if (!trajectory.info) { return; }
-            msg->header.frame_id = "/world";
-            msg->pose.orientation.w = 1.0;
-            msg->type = visualization_msgs::Marker::CUBE_LIST;
+            visualization_msgs::Marker new_msg;
+            new_msg.header.frame_id = "/world";
+            new_msg.ns = "evaluation";
+            new_msg.header.stamp = ros::Time::now();
+            new_msg.id = defaults::getNextVisualizationId(*msg);
+            new_msg.pose.orientation.w = 1.0;
+            new_msg.type = visualization_msgs::Marker::CUBE_LIST;
             voxblox::FloatingPoint voxel_size = voxblox_ptr_->getEsdfMapPtr()->voxel_size();
-            msg->scale.x = (double) voxel_size;
-            msg->scale.y = (double) voxel_size;
-            msg->scale.z = (double) voxel_size;
-            msg->color.r = 1.0;
-            msg->color.g = 0.8;
-            msg->color.b = 0.0;
-            msg->color.a = 1.0;
+            new_msg.scale.x = (double) voxel_size;
+            new_msg.scale.y = (double) voxel_size;
+            new_msg.scale.z = (double) voxel_size;
+            new_msg.color.r = 1.0;
+            new_msg.color.g = 0.8;
+            new_msg.color.b = 0.0;
+            new_msg.color.a = 1.0;
 
             // points
             FrontierInfo *info = dynamic_cast<FrontierInfo *>(trajectory.info.get());
@@ -201,8 +210,9 @@ namespace mav_active_3d_planning {
                 point.x = (double) info->frontier_voxels[i].x();
                 point.y = (double) info->frontier_voxels[i].y();
                 point.z = (double) info->frontier_voxels[i].z();
-                msg->points.push_back(point);
+                new_msg.points.push_back(point);
             }
+            msg->markers.push_back(new_msg);
         }
 
         // VoxelType

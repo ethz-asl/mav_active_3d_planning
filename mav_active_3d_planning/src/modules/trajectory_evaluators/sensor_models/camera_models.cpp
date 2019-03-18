@@ -71,15 +71,13 @@ namespace mav_active_3d_planning {
                 *error_message = "resolution_y expected > 0";
                 return false;
             }
-            return true;
+            return SensorModel::checkParamsValid(error_message);
         }
 
         // SimpleRayCaster
         void SimpleRayCaster::setupFromParamMap(Module::ParamMap *param_map) {
-            setParam<double>(param_map, "ray_step", &p_ray_step_, (double) c_voxel_size_);
-
-            // setup parent
             CameraModel::setupFromParamMap(param_map);
+            setParam<double>(param_map, "ray_step", &p_ray_step_, (double) c_voxel_size_);
 
             // Downsample to voxel size resolution at max range
             c_res_x_ = std::min((int) ceil(p_ray_length_ * c_field_of_view_x_ / (double) c_voxel_size_),
@@ -123,10 +121,8 @@ namespace mav_active_3d_planning {
 
         // IterativeRayCaster
         void IterativeRayCaster::setupFromParamMap(Module::ParamMap *param_map) {
-            setParam<double>(param_map, "ray_step", &p_ray_step_, (double) c_voxel_size_);
-
-            // setup parent
             CameraModel::setupFromParamMap(param_map);
+            setParam<double>(param_map, "ray_step", &p_ray_step_, (double) c_voxel_size_);
 
             // Downsample to voxel size resolution at max range
             c_res_x_ = std::min((int) ceil(p_ray_length_ * c_field_of_view_x_ / (double) c_voxel_size_),

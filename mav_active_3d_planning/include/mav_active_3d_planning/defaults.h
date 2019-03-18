@@ -5,6 +5,7 @@
 #include "mav_active_3d_planning/module.h"
 
 #include <Eigen/Core>
+#include <visualization_msgs/MarkerArray.h>
 
 #include <vector>
 #include <string>
@@ -63,6 +64,9 @@ namespace mav_active_3d_planning {
 
         // Returns the rotation direction (+1 / -1) that is closer for two angles
         double angleDirection(double angle1, double angle2);
+
+        // Get the current next id for visualization markerarray messages
+        int getNextVisualizationId(const visualization_msgs::MarkerArray &msg);
 
     } // namespace defaults
 } // namepsace mav_active_3d_planning

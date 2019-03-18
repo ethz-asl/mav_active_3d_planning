@@ -10,6 +10,7 @@
 namespace mav_active_3d_planning {
     namespace defaults {
 
+        // Bounding Volume
         void BoundingVolume::setupFromFactory(std::string args, bool verbose) {
             ModuleFactory::Instance()->parametrizeModule(args, this, std::string("BoundingVolume"), verbose);
         }
@@ -42,6 +43,7 @@ namespace mav_active_3d_planning {
             return true;
         }
 
+        // System Constraints
         SystemConstraints::SystemConstraints() {
             setupFromDefaults();
         }
@@ -77,6 +79,7 @@ namespace mav_active_3d_planning {
             return true;
         }
 
+        // Angle functions
         double angleScaled(double angle) {
             angle = std::fmod(angle, 2.0 * M_PI);
             return angle + 2.0 * M_PI * (angle < 0);
@@ -108,6 +111,16 @@ namespace mav_active_3d_planning {
                 }
             }
         }
+
+        // Visualization message
+        int getNextVisualizationId(const visualization_msgs::MarkerArray &msg){
+            if (msg.markers.empty()){
+                return 0;
+            } else {
+                return msg.markers.back().id + 1;
+            }
+        }
+
 
     } // namespace defaults
 } // namepsace mav_active_3d_planning

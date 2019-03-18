@@ -24,12 +24,14 @@
 #include "mav_active_3d_planning/modules/trajectory_evaluators/sensor_models/camera_models.h"
 #include "mav_active_3d_planning/modules/trajectory_evaluators/evaluator_updaters/simulated_sensor_updaters.h"
 #include "mav_active_3d_planning/modules/trajectory_evaluators/yaw_planning_evaluators.h"
+#include "mav_active_3d_planning/modules/trajectory_evaluators/evaluator_updaters/yaw_planning_updaters.h"
 
 
 
 namespace mav_active_3d_planning {
 
     // Module lists
+    // TrajectoryGenerators
     TrajectoryGenerator *ModuleFactory::parseTrajectoryGenerators(std::string type) {
         if (type == "Uniform") {
             return new trajectory_generators::Uniform();
@@ -45,6 +47,7 @@ namespace mav_active_3d_planning {
         }
     }
 
+    // TrajectoryEvaluators
     TrajectoryEvaluator *ModuleFactory::parseTrajectoryEvaluators(std::string type) {
         if (type == "NaiveEvaluator") {
             return new trajectory_evaluators::NaiveEvaluator();
@@ -60,6 +63,7 @@ namespace mav_active_3d_planning {
         }
     }
 
+    // SegmentSelectors
     SegmentSelector *ModuleFactory::parseSegmentSelectors(std::string type) {
         if (type == "Greedy") {
             return new segment_selectors::Greedy();
@@ -71,6 +75,7 @@ namespace mav_active_3d_planning {
         }
     }
 
+    // GeneratorUpdaters
     GeneratorUpdater *ModuleFactory::parseGeneratorUpdaters(std::string type) {
         if (type == "ResetTree") {
             return new generator_updaters::ResetTree();
@@ -84,6 +89,7 @@ namespace mav_active_3d_planning {
         }
     }
 
+    // CostComputers
     CostComputer *ModuleFactory::parseCostComputers(std::string type) {
         if (type == "SegmentTime") {
             return new cost_computers::SegmentTime();
@@ -95,6 +101,7 @@ namespace mav_active_3d_planning {
         }
     }
 
+    // ValueComputers
     ValueComputer *ModuleFactory::parseValueComputers(std::string type) {
         if (type == "LinearValue") {
             return new value_computers::LinearValue();
@@ -110,6 +117,7 @@ namespace mav_active_3d_planning {
         }
     }
 
+    // NextSelectors
     NextSelector *ModuleFactory::parseNextSelectors(std::string type) {
         if (type == "ImmediateBest") {
             return new next_selectors::ImmediateBest();
@@ -121,6 +129,7 @@ namespace mav_active_3d_planning {
         }
     }
 
+    // EvaluatorUpdaters
     EvaluatorUpdater *ModuleFactory::parseEvaluatorUpdaters(std::string type) {
         if (type == "UpdateNothing") {
             return new evaluator_updaters::UpdateNothing();
@@ -132,14 +141,19 @@ namespace mav_active_3d_planning {
             return new evaluator_updaters::PruneByValue();
         } else if (type == "Periodic") {
             return new evaluator_updaters::Periodic();
-        } if (type == "SimulatedSensorUpdater") {
+        } else if (type == "SimulatedSensorUpdater") {
             return new evaluator_updaters::SimulatedSensorUpdater();
+        } else if (type == "YawPlanningUpdateAdapter") {
+            return new evaluator_updaters::YawPlanningUpdateAdapter();
+        } else if (type == "YawPlanningUpdater") {
+            return new evaluator_updaters::YawPlanningUpdater();
         } else {
             printError("Unknown EvaluatorUpdater type '" + type + "'.");
             return nullptr;
         }
     }
 
+    // BackTrackers
     BackTracker *ModuleFactory::parseBackTrackers(std::string type) {
         if (type == "RotateInPlace") {
             return new back_trackers::RotateInPlace();
@@ -151,6 +165,7 @@ namespace mav_active_3d_planning {
         }
     }
 
+    // SensorModels
     SensorModel *ModuleFactory::parseSensorModels(std::string type) {
         if (type == "SimpleRayCaster") {
             return new sensor_models::SimpleRayCaster();

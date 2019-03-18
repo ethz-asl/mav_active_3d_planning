@@ -14,14 +14,28 @@ namespace mav_active_3d_planning {
     namespace trajectory_generators {
 
         void RRT::setupFromParamMap(Module::ParamMap *param_map) {
-            setParam<double>(param_map, "velocity", &p_velocity_, 1.0);
-            setParam<double>(param_map, "sampling_rate", &p_sampling_rate_, 1.0);
-            setParam<double>(param_map, "max_extension_range", &p_extension_range_, 1.0);
+            setParam<bool>(param_map, "crop_segments", &p_crop_segments_, false);
+            setParam<double>(param_map, "crop_margin", &p_crop_margin_, 0.1);
+            setParam<double>(param_map, "crop_min_length", &p_crop_min_length_, 0.2);
+            setParam<double>(param_map, "sampling_rate", &p_sampling_rate_, 20.0);
+            setParam<double>(param_map, "max_extension_range", &p_max_extension_range_, 1.0);
             setParam<bool>(param_map, "use_spheric_sampling", &p_use_spheric_sampling_, false);
             setParam<int>(param_map, "maximum_tries", &p_maximum_tries_, 1000);
 
             // setup parent
             TrajectoryGenerator::setupFromParamMap(param_map);
+        }
+
+        bool RRT::checkParamsValid(std::string *error_message) {
+            if (p_sampling_rate_ <= 0.0) {
+                *error_message = "sampling_rate expected > 0";
+                return false;
+            }
+            if (p_crop_margin_ <= 0.0) {
+                *error_message = "crop_margin expected > 0";
+                return false;
+            }
+            return TrajectoryGenerator::checkParamsValid(error_message);
         }
 
         bool RRT::selectSegment(TrajectorySegment **result, TrajectorySegment *root) {
@@ -43,19 +57,15 @@ namespace mav_active_3d_planning {
             Eigen::Vector3d goal_pos;
             int counter = 0;
             while (!goal_found && counter <= p_maximum_tries_) {
-                if (p_maximum_tries_ > 0) { counter++; }
-                if (p_use_spheric_sampling_) {
-                    goal_pos = root->trajectory.back().position_W;
-                    if (!sample_spheric(&goal_pos)) {
-                        continue;
-                    }
-                } else {
-                    sample_box(&goal_pos);
+                if (p_maximum_tries_ > 0) {
+                    counter++;
                 }
-                if (!checkTraversable(goal_pos)) {
-                    continue;
+                goal_pos = root->trajectory.back().position_W;
+                sample_goal(&goal_pos);
+                if (p_crop_segments_ || checkTraversable(goal_pos)) {
+                    goal_found = true;
                 }
-                goal_found = true;
+
             }
             if (!goal_found) {
                 *result = nullptr;
@@ -88,58 +98,86 @@ namespace mav_active_3d_planning {
             // Check max segment range
             Eigen::Vector3d start_pos = target->trajectory.back().position_W;
             Eigen::Vector3d direction = goal_pos_ - start_pos;
-            if (direction.norm() > p_extension_range_ && p_extension_range_ > 0.0) {
-                direction *= p_extension_range_ / direction.norm();
+            if (p_max_extension_range_ > 0.0 && direction.norm() > p_max_extension_range_) {
+                direction *= p_max_extension_range_ / direction.norm();
             }
-
-            // try creating a linear trajectory and check for collision
-            Eigen::Vector3d current_pos;
-            int n_points = std::ceil(direction.norm() / (double) voxblox_ptr_->getEsdfMapPtr()->voxel_size());
-            for (int i = 0; i < n_points; ++i) {
-                current_pos = start_pos + (double) i / (double) n_points * direction;
-                if (!checkTraversable(current_pos)) {
-                    return false;
+            if (p_crop_segments_) {
+                // if the full length cannot be reached, crop it
+                int n_points = std::ceil(direction.norm() / (double) voxblox_ptr_->getEsdfMapPtr()->voxel_size());
+                for (int i = 0; i < n_points; ++i) {
+                    if (!checkTraversable(start_pos + (double) i / (double) n_points * direction)) {
+                        double length = direction.norm() * (double) (i - 1) / (double) n_points - p_crop_margin_;
+                        if (length <= p_crop_min_length_){
+                            return false;
+                        }
+                        direction *= length / direction.norm();
+                        break;
+                    }
                 }
             }
 
-            // Build result
-            TrajectorySegment *new_segment = target->spawnChild();
-            double goal_yaw = (double) rand() / (double) RAND_MAX * 2.0 * M_PI;
-            n_points = std::ceil(direction.norm() / p_velocity_ * p_sampling_rate_);
-            for (int i = 0; i < n_points; ++i) {
-                mav_msgs::EigenTrajectoryPoint trajectory_point;
-                trajectory_point.position_W = start_pos + (double) i / (double) n_points * direction;
-                trajectory_point.setFromYaw(defaults::angleScaled(goal_yaw));
-                trajectory_point.time_from_start_ns = static_cast<int64_t>((double) i / p_sampling_rate_ * 1.0e9);
-                new_segment->trajectory.push_back(trajectory_point);
+            // try creating a trajectory
+            mav_msgs::EigenTrajectoryPointVector trajectory;
+            mav_msgs::EigenTrajectoryPoint start_point = target->trajectory.back();
+            mav_msgs::EigenTrajectoryPoint goal_point;
+            goal_point.position_W = start_pos + direction;
+            if (!connect_poses(start_point, goal_point, &trajectory)) {
+                return false;
             }
-            new_segments->push_back(new_segment);
 
-            // Add it to the kdtree
+            // Build result and add it to the kdtree
+            TrajectorySegment *new_segment = target->spawnChild();
+            new_segment->trajectory = trajectory;
+            new_segments->push_back(new_segment);
             tree_data_.addSegment(new_segment);
             kdtree_->addPoints(tree_data_.points.size() - 1, tree_data_.points.size() - 1);
             return true;
         }
 
-        bool RRT::sample_spheric(Eigen::Vector3d *goal_pos) {
-            // Bircher way (also assumes box atm, for unbiased sampling)
-            double radius = std::sqrt(std::pow(bounding_volume_.x_max - bounding_volume_.x_min, 2.0) +
-                                      std::pow(bounding_volume_.y_max - bounding_volume_.y_min, 2.0) +
-                                      std::pow(bounding_volume_.z_max - bounding_volume_.z_min, 2.0));
-            for (int i = 0; i < 3; i++) {
-                (*goal_pos)[i] += 2.0 * radius * (((double) rand()) / ((double) RAND_MAX) - 0.5);
+        bool RRT::sample_goal(Eigen::Vector3d *goal_pos) {
+            if (p_use_spheric_sampling_) {
+                // Bircher way (also assumes box atm, for unbiased sampling)
+                double radius = std::sqrt(std::pow(bounding_volume_.x_max - bounding_volume_.x_min, 2.0) +
+                                          std::pow(bounding_volume_.y_max - bounding_volume_.y_min, 2.0) +
+                                          std::pow(bounding_volume_.z_max - bounding_volume_.z_min, 2.0));
+                for (int i = 0; i < 3; i++) {
+                    (*goal_pos)[i] += 2.0 * radius * (((double) rand()) / ((double) RAND_MAX) - 0.5);
+                }
+                return true;
+            } else {
+                // sample from bounding volume (assumes box atm)
+                (*goal_pos)[0] = bounding_volume_.x_min +
+                                 (double) rand() / RAND_MAX * (bounding_volume_.x_max - bounding_volume_.x_min);
+                (*goal_pos)[1] = bounding_volume_.y_min +
+                                 (double) rand() / RAND_MAX * (bounding_volume_.y_max - bounding_volume_.y_min);
+                (*goal_pos)[2] = bounding_volume_.z_min +
+                                 (double) rand() / RAND_MAX * (bounding_volume_.z_max - bounding_volume_.z_min);
+                return true;
             }
-            return bounding_volume_.contains(*goal_pos);
         }
 
-        bool RRT::sample_box(Eigen::Vector3d *goal_pos) {
-            // sample from bounding volume (assumes box atm)
-            (*goal_pos)[0] = bounding_volume_.x_min +
-                             (double) rand() / RAND_MAX * (bounding_volume_.x_max - bounding_volume_.x_min);
-            (*goal_pos)[1] = bounding_volume_.y_min +
-                             (double) rand() / RAND_MAX * (bounding_volume_.y_max - bounding_volume_.y_min);
-            (*goal_pos)[2] = bounding_volume_.z_min +
-                             (double) rand() / RAND_MAX * (bounding_volume_.z_max - bounding_volume_.z_min);
+        bool RRT::connect_poses(const mav_msgs::EigenTrajectoryPoint &start, const mav_msgs::EigenTrajectoryPoint &goal,
+                                mav_msgs::EigenTrajectoryPointVector *result) {
+            // try creating a linear trajectory and check for collision
+            Eigen::Vector3d start_pos = start.position_W;
+            Eigen::Vector3d direction = goal.position_W - start_pos;
+            int n_points = std::ceil(direction.norm() / (double) voxblox_ptr_->getEsdfMapPtr()->voxel_size());
+            for (int i = 0; i < n_points; ++i) {
+                if (!checkTraversable(start_pos + (double) i / (double) n_points * direction)) {
+                    return false;
+                }
+            }
+
+            // Build trajectory
+            double goal_yaw = (double) rand() / (double) RAND_MAX * 2.0 * M_PI;
+            n_points = std::ceil(direction.norm() / system_constraints_.v_max * p_sampling_rate_);
+            for (int i = 0; i < n_points; ++i) {
+                mav_msgs::EigenTrajectoryPoint trajectory_point;
+                trajectory_point.position_W = start_pos + (double) i / (double) n_points * direction;
+                trajectory_point.setFromYaw(goal_yaw);
+                trajectory_point.time_from_start_ns = static_cast<int64_t>((double) i / p_sampling_rate_ * 1.0e9);
+                result->push_back(trajectory_point);
+            }
             return true;
         }
 
