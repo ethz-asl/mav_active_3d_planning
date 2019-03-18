@@ -180,21 +180,18 @@ namespace mav_active_3d_planning {
                 new_msg.scale.z = 0.07;
                 new_msg.action = visualization_msgs::Marker::ADD;
 
-                // Color according to relative value (gray for no difference)
+                // Color according to relative value (all yellow for no difference)
+                double frac = 0.5;
                 if (max_value != min_value) {
-                    double frac = (info->orientations[i].gain - min_value) / (max_value - min_value);
                     if (p_select_by_value_) {
                         frac = (info->orientations[i].value - min_value) / (max_value - min_value);
+                    } else {
+                        frac = (info->orientations[i].gain - min_value) / (max_value - min_value);
                     }
-                    new_msg.color.r = std::min((0.5 - frac) * 2.0 + 1.0, 1.0);
-                    new_msg.color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
-                    new_msg.color.b = 0.0;
-                } else {
-                    new_msg.color.r = 0.7;
-                    new_msg.color.g = 0.7;
-                    new_msg.color.b = 0.7;
                 }
-
+                new_msg.color.r = std::min((0.5 - frac) * 2.0 + 1.0, 1.0);
+                new_msg.color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
+                new_msg.color.b = 0.0;
                 new_msg.color.a = 0.4;
                 msg->markers.push_back(new_msg);
             }

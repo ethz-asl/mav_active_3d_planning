@@ -452,17 +452,14 @@ namespace mav_active_3d_planning {
             msg.scale.y = 0.03;
             msg.action = visualization_msgs::Marker::ADD;
 
-            // Color according to relative value (gray for no difference)
+            // Color according to relative value (all yellow for no difference)
+            double frac = 0.5;
             if (max_value != min_value) {
                 double frac = (trajectories[i]->value - min_value) / (max_value - min_value);
-                msg.color.r = std::min((0.5 - frac) * 2.0 + 1.0, 1.0);
-                msg.color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
-                msg.color.b = 0.0;
-            } else {
-                msg.color.r = 0.7;
-                msg.color.g = 0.7;
-                msg.color.b = 0.7;
             }
+            msg.color.r = std::min((0.5 - frac) * 2.0 + 1.0, 1.0);
+            msg.color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
+            msg.color.b = 0.0;
             msg.color.a = 0.4;
 
             // points
