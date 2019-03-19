@@ -53,7 +53,8 @@ class EvalData:
             os.mkdir(self.eval_directory)
             os.mkdir(os.path.join(self.eval_directory, "voxblox_maps"))
             self.eval_data_file = open(os.path.join(self.eval_directory, "voxblox_data.csv"), 'wb')
-            self.eval_writer = csv.writer(self.eval_data_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            self.eval_writer = csv.writer(self.eval_data_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL,
+                                          lineterminator='\n')
             self.eval_writer.writerow(['MapName', 'RosTime', 'WallTime', 'NPointclouds', 'CPUTime'])
             self.eval_writer.writerow(['Unit', 'seconds', 'seconds', '-', 'seconds'])
             self.eval_log_file = open(os.path.join(self.eval_directory, "data_log.txt"), 'a')

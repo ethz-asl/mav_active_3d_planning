@@ -9,5 +9,5 @@ trajectory_generator:
   sampling_rate: 20.0
 
   generator_updater:
-    type: "UpdateNothing"
+    type: "RecheckCollision"
 

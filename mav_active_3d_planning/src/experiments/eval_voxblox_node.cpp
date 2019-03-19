@@ -121,7 +121,6 @@ namespace mav_active_3d_planning {
         }
         ROS_INFO("Start processing maps.");
         while (std::getline(data_file, line)){
-            line.pop_back();
             map_name = line.substr(0, line.find(","));
             if (map_name == "MapName") {
                 map_name = "Header";

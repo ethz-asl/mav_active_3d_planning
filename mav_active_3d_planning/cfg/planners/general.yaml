@@ -5,8 +5,8 @@ replan_pos_threshold: 0.2
 replan_yaw_threshold: 0.15
 
 max_new_segments: 0
-min_new_segments: 15
-max_new_tries: 100
+min_new_segments: 0
+max_new_tries: 0
 min_new_tries: 0
 
 visualize_candidates: true

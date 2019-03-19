@@ -15,7 +15,11 @@
   <arg name="uecv_mode" default="fast"/>
   <arg name="slowdown" default="0.0"/>
   <arg name="delay" default="3.0"/>  
-  <arg name="remove_freespace_points" default="false"/>
+  
+  <!-- Unreal Sensor arguments ground_truth, kinect-->
+  <arg name="model_type" default="ground_truth"/>
+  <arg name="flatten_distance" default="5.1"/>
+  <arg name="maximum_distance" default="0.0"/>
   
   <!--  Planner arguments (tg_uniform, tg_random_linear, tg_rrt, general, nbvp_bircher, te_frontier, te_yaw)-->
   <arg name="use_separate_configs" default="true"/>
@@ -25,7 +29,7 @@
   <arg name="verbose_planner" default="true"/>
   
   <!--  Experiment arguments -->  
-  <arg name="experiment_config" default="experiment1.yaml"/>
+  <arg name="experiment_config" default="experiment2.yaml"/>
   <arg name="record_data" default="true"/>
   <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
   <arg name="data_frequency" default="15.0" />
@@ -93,12 +97,11 @@
     <!-- Unreal sensor model -->
     <node name="unreal_sensor_model" pkg="unreal_cv_ros" type="sensor_model.py" output="screen">
       <param name="camera_params_ns" value="/unreal/unreal_ros_client/camera_params"/>
-      <param name="flatten_distance" value="$(eval 0.5 + arg('ray_length'))"/>
+      <param name="flatten_distance" value="$(arg flatten_distance)"/>
+      <param name="model_type" value="$(arg model_type)" />
+      <param name="maximum_distance" value="$(arg maximum_distance)" />
       <remap from="ue_sensor_raw" to="unreal_ros_client/ue_sensor_raw" />
     </node>
-    <group if="$(arg remove_freespace_points)">
-      <param name="unreal_sensor_model/maximum_distance" value="$(arg ray_length)"/>
-    </group>
     
     <!-- Simulation manager for launching the MAV and monitoring -->
     <node name="simulation_manager" pkg="unreal_cv_ros" type="simulation_manager.py" output="screen">
