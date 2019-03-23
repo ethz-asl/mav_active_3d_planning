@@ -1,7 +1,6 @@
 #define _USE_MATH_DEFINES
 
 #include "mav_active_3d_planning/defaults.h"
-#include "mav_active_3d_planning/module_factory.h"
 
 #include <random>
 #include <algorithm>
@@ -10,9 +9,8 @@
 namespace mav_active_3d_planning {
     namespace defaults {
 
-        BoundingVolume::BoundingVolume(std::string args) {
-            ModuleFactory::Instance()->parametrizeModule(args, this);
-        }
+        // BoundingVolume
+        ModuleFactory::Registration<BoundingVolume> BoundingVolume::registration("BoundingVolume");
 
         void BoundingVolume::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<double>(param_map, "x_min", &x_min, 0.0);
@@ -41,35 +39,16 @@ namespace mav_active_3d_planning {
             return true;
         }
 
-        SystemConstraints::SystemConstraints() {
-            setupFromDefaults();
-        }
-
-        SystemConstraints::SystemConstraints(std::string args) {
-            ModuleFactory::Instance()->parametrizeModule(args, this);
-        }
+        // SystemConstraints
+        ModuleFactory::Registration<SystemConstraints> SystemConstraints::registration("SystemConstraints");
 
         void SystemConstraints::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<double>(param_map, "v_max", &v_max, 1.0);
             setParam<double>(param_map, "a_max", &a_max, 1.0);
             setParam<double>(param_map, "yaw_rate_max", &yaw_rate_max, M_PI / 2.0);
-
-            // Check params reasonable
-            if (v_max > 0.0 && a_max > 0.0 && yaw_rate_max > 0.0) {
-                is_setup = true;
-            } else {
-                is_setup = false;
-            }
         }
 
-        bool SystemConstraints::setupFromDefaults(){
-            v_max = 1.0;
-            a_max = 1.0;
-            yaw_rate_max = M_PI / 2.0;
-            is_setup = true;
-            return true;
-        }
-
+        // Angle functions
         double angleScaled(double angle){
             angle = std::fmod(angle, 2.0 * M_PI);
             return angle + 2.0 * M_PI * (angle < 0);

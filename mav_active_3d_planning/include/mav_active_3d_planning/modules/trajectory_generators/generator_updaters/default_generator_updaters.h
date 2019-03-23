@@ -4,14 +4,12 @@
 #include "mav_active_3d_planning/trajectory_generator.h"
 
 namespace mav_active_3d_planning {
-    class ModuleFactory;
-
     namespace generator_updaters {
 
         // Discard all segments and start from scratch
-        class ResetTree : public GeneratorUpdater {
+        class GeneratorResetTree : public GeneratorUpdater {
         public:
-            ResetTree() {}
+            GeneratorResetTree() {}
 
             // override virtual functions
             bool updateSegments(TrajectorySegment *root);
@@ -20,12 +18,14 @@ namespace mav_active_3d_planning {
             friend ModuleFactory;
 
             void setupFromParamMap(Module::ParamMap *param_map) {}
+
+            static ModuleFactory::Registration<GeneratorResetTree> registration;
         };
 
         // Don't perform specific update operations
-        class UpdateNothing : public GeneratorUpdater {
+        class GeneratorUpdateNothing : public GeneratorUpdater {
         public:
-            UpdateNothing() {}
+            GeneratorUpdateNothing() {}
 
             bool updateSegments(TrajectorySegment *root) { return true; }
 
@@ -33,6 +33,8 @@ namespace mav_active_3d_planning {
             friend ModuleFactory;
 
             void setupFromParamMap(Module::ParamMap *param_map) {}
+
+            static ModuleFactory::Registration<GeneratorUpdateNothing> registration;
         };
 
         // Recursively check wether the trajectories are still collision free
@@ -42,6 +44,8 @@ namespace mav_active_3d_planning {
 
             // override virtual functions
             bool updateSegments(TrajectorySegment *root);
+
+            static ModuleFactory::Registration<RecheckCollision> registration;
 
         protected:
             friend ModuleFactory;

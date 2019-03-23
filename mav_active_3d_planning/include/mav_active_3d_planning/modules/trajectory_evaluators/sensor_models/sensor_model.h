@@ -2,7 +2,7 @@
 #define MAV_ACTIVE_3D_PLANNING_SENSOR_MODELS_SENSOR_MODEL_H
 
 #include "mav_active_3d_planning/trajectory_segment.h"
-#include "mav_active_3d_planning/module.h"
+#include "mav_active_3d_planning/module_factory.h"
 
 #include <voxblox_ros/esdf_server.h>
 #include <Eigen/Core>
@@ -22,14 +22,13 @@ namespace mav_active_3d_planning {
                                                         const TrajectorySegment &traj_in) = 0;
 
         protected:
-            friend class ModuleFactory;
+            friend ModuleFactory;
 
             // factory access
             SensorModel() {}
 
             virtual void setupFromParamMap(Module::ParamMap *param_map) {}
 
-            // override this function if voxblox specific initialization is needed, call parent implementation fist!
             void setVoxbloxPtr(const std::shared_ptr <voxblox::EsdfServer> &voxblox_ptr);
 
             // voxblox map

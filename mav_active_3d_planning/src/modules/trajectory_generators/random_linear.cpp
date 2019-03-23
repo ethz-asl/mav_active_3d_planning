@@ -11,27 +11,7 @@
 namespace mav_active_3d_planning {
     namespace trajectory_generators {
 
-//        RandomLinear::RandomLinear(double min_distance, double max_distance, double v_max, double a_max,
-//                                   double sampling_rate, int n_segments, int max_tries, bool planar,
-//                                   bool sample_yaw, bool collision_optimistic, double collision_radius,
-//                                   std::unique_ptr<voxblox::EsdfServer> voxblox_ptr)
-//                                   : p_min_distance_(min_distance),
-//                                     p_max_distance_(max_distance),
-//                                     p_v_max_(v_max),
-//                                     p_a_max_(a_max),
-//                                     p_sampling_rate_(sampling_rate),
-//                                     p_n_segments_(n_segments),
-//                                     p_max_tries_(max_tries),
-//                                     p_planar(planar),
-//                                     p_sample_yaw_(sample_yaw),
-//                                     p_collision_radius_(collision_radius),
-//                                     p_collision
-//
-//                voxblox::EsdfServer *voxblox_ptr, std::string param_ns)
-//                : TrajectoryGenerator(voxblox_ptr, param_ns) {
-//            assureParamsValid();
-//
-//        }
+        ModuleFactory::Registration <RandomLinear> RandomLinear::registration("RandomLinear");
 
         void RandomLinear::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<double>(param_map, "min_distance", &p_min_distance_, 1.0);

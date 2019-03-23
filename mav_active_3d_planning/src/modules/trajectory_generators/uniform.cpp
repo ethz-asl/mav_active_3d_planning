@@ -11,18 +11,7 @@
 namespace mav_active_3d_planning {
     namespace trajectory_generators {
 
-//        Uniform::Uniform(voxblox::EsdfServer *voxblox_ptr, std::string param_ns)
-//                : TrajectoryGenerator(voxblox_ptr, param_ns) {
-//            // params
-//            ros::param::param<double>(param_ns + "/distance", p_distance_, 1.0);
-//            ros::param::param<double>(param_ns + "/velocity", p_velocity_, 0.33);
-//            ros::param::param<double>(param_ns + "/yaw_angle", p_yaw_angle_, 1.571);
-//            ros::param::param<double>(param_ns + "/ascent_angle", p_ascent_angle_, 0.523);
-//            ros::param::param<double>(param_ns + "/p_sampling_rate", p_sampling_rate_, 20.0);
-//            ros::param::param<int>(param_ns + "/n_segments", p_n_segments_, 5);
-//
-//            c_yaw_rate_ = p_yaw_angle_ * p_velocity_ / p_distance_ / 2.0;
-//        }
+        ModuleFactory::Registration <Uniform> Uniform::registration("Uniform");
 
         void Uniform::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<double>(param_map, "distance", &p_distance_, 1.0);
@@ -35,7 +24,6 @@ namespace mav_active_3d_planning {
             c_yaw_rate_ = p_yaw_angle_ * p_velocity_ / p_distance_ / 2.0;
             TrajectoryGenerator::setupFromParamMap(param_map);
         }
-
 
         bool Uniform::expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment *> *new_segments) {
             // Create and add new adjacent trajectories to target segment

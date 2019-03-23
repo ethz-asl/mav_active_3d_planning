@@ -7,13 +7,19 @@
 namespace mav_active_3d_planning {
     namespace generator_updaters {
 
-        // ResetTree
-        bool ResetTree::updateSegments(TrajectorySegment *root) {
+        ModuleFactory::Registration<GeneratorUpdateNothing> GeneratorUpdateNothing::registration("GeneratorUpdateNothing");
+
+        // GeneratorResetTree
+        ModuleFactory::Registration<GeneratorResetTree> GeneratorResetTree::registration("GeneratorResetTree");
+
+        bool GeneratorResetTree::updateSegments(TrajectorySegment *root) {
             root->children.clear();
             return true;
         }
 
         // RecheckCollision
+        ModuleFactory::Registration<RecheckCollision> RecheckCollision::registration("RecheckCollision");
+
         RecheckCollision::RecheckCollision(TrajectoryGenerator *parent) : GeneratorUpdater(parent) {}
 
         bool RecheckCollision::updateSegments(TrajectorySegment *root) {

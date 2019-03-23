@@ -6,6 +6,8 @@ namespace mav_active_3d_planning {
     namespace value_computers {
 
         // LinearValue
+        ModuleFactory::Registration<LinearValue> LinearValue::registration("LinearValue");
+
         LinearValue::LinearValue(double cost_weight, double gain_weight)
                 : cost_weight_(cost_weight),
                   gain_weight_(gain_weight) {}
@@ -21,6 +23,8 @@ namespace mav_active_3d_planning {
         }
 
         // ExponentialDiscount
+        ModuleFactory::Registration<ExponentialDiscount> ExponentialDiscount::registration("ExponentialDiscount");
+
         ExponentialDiscount::ExponentialDiscount(double cost_scale) : cost_scale_(cost_scale) {}
 
         bool ExponentialDiscount::computeValue(TrajectorySegment *traj_in) {
@@ -32,12 +36,14 @@ namespace mav_active_3d_planning {
             setParam<double>(param_map, "cost_scale", &cost_scale_, 1.0);
         }
 
-        // Accumulate
-        Accumulate::Accumulate(std::unique_ptr <ValueComputer> following_value_computer) {
+        // AccumulateValue
+        ModuleFactory::Registration<AccumulateValue> AccumulateValue::registration("AccumulateValue");
+
+        AccumulateValue::AccumulateValue(std::unique_ptr <ValueComputer> following_value_computer) {
             following_value_computer_ = std::move(following_value_computer);
         }
 
-        bool Accumulate::computeValue(TrajectorySegment *traj_in) {
+        bool AccumulateValue::computeValue(TrajectorySegment *traj_in) {
             following_value_computer_->computeValue(traj_in);
             if (traj_in->parent) {
                 traj_in->value += traj_in->parent->value;
@@ -45,13 +51,13 @@ namespace mav_active_3d_planning {
             return true;
         }
 
-        void Accumulate::setupFromParamMap(Module::ParamMap *param_map) {
+        void AccumulateValue::setupFromParamMap(Module::ParamMap *param_map) {
             // Create Following value computer
             std::string args;   // default args extends the parent namespace
             std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_value_computer_args", &args,
                                   param_ns + "/following_value_computer");
-            following_value_computer_ = ModuleFactory::Instance()->createValueComputer(args, verbose_modules_);
+            following_value_computer_ = ModuleFactory::Instance()->createModule<ValueComputer>(args, verbose_modules_);
         }
 
     } // namespace value_computers

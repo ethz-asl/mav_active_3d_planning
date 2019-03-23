@@ -138,11 +138,11 @@ namespace mav_active_3d_planning {
         // Setup members
         std::string ns = ros::this_node::getName();
         voxblox_server_ = std::shared_ptr<voxblox::EsdfServer>( new voxblox::EsdfServer(nh_, nh_private_));
-        trajectory_generator_ = ModuleFactory::Instance()->createTrajectoryGenerator(
-                ns + "/trajectory_generator", voxblox_server_, verbose_modules);
-        trajectory_evaluator_ = ModuleFactory::Instance()->createTrajectoryEvaluator(
-                ns + "/trajectory_evaluator", voxblox_server_, verbose_modules);
-        back_tracker_ = ModuleFactory::Instance()->createBackTracker(ns + "/back_tracker", verbose_modules);
+        trajectory_generator_ = ModuleFactory::Instance()->createModule<TrajectoryGenerator>(
+                ns + "/trajectory_generator", verbose_modules, voxblox_server_);
+        trajectory_evaluator_ = ModuleFactory::Instance()->createModule<TrajectoryEvaluator>(
+                ns + "/trajectory_evaluator", verbose_modules, voxblox_server_);
+        back_tracker_ = ModuleFactory::Instance()->createModule<BackTracker>(ns + "/back_tracker", verbose_modules);
 
         // Force lazy initialization of modules (call every function once)
         if (build_modules_on_init) {
@@ -155,19 +155,6 @@ namespace mav_active_3d_planning {
             trajectory_point.setFromYaw(0);
             temp_segment.trajectory.push_back(trajectory_point);
             temp_segment.spawnChild()->trajectory.push_back(trajectory_point);
-//            auto resetTemps = [](TrajectorySegment* temp_segment, TrajectorySegment** temp_pointer,
-//                    std::vector<TrajectorySegment*> *temp_vector) {
-//                // Empty set of arguments required to run everything
-//                *temp_segment = TrajectorySegment();
-//                mav_msgs::EigenTrajectoryPoint trajectory_point;
-//                trajectory_point.position_W = Eigen::Vector3d(0, 0, 0);
-//                trajectory_point.setFromYaw(0);
-//                temp_segment->trajectory.push_back(trajectory_point);
-//                *temp_pointer = temp_segment->spawnChild();
-//                (*temp_pointer)->trajectory.push_back(trajectory_point);
-//                temp_vector->clear();
-//            };
-//            resetTemps(&temp_segment, &temp_pointer, &temp_vector);
             trajectory_generator_->selectSegment(&temp_pointer, &temp_segment);
             trajectory_generator_->expandSegment(temp_pointer, &temp_vector);
             trajectory_generator_->updateSegments(&temp_segment);

@@ -5,8 +5,6 @@
 #include "mav_active_3d_planning/libs/nanoflann.hpp"
 
 namespace mav_active_3d_planning {
-    class ModuleFactory;
-
     namespace trajectory_generators {
 
         // Random Rapidly Exploring Tree with linear segments, similar to the nbvp planner
@@ -50,6 +48,7 @@ namespace mav_active_3d_planning {
             // factory access
             RRT() {}
             void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<RRT> registration;
 
             // parameters
             double p_velocity_;         // m/s

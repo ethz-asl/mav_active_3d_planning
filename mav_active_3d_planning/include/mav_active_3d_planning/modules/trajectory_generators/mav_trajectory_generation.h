@@ -8,8 +8,6 @@
 #include <mav_trajectory_generation_ros/feasibility_analytic.h>
 
 namespace mav_active_3d_planning {
-    class ModuleFactory;
-
     namespace trajectory_generators {
 
         // Create random trajectories using the mav_trajectory_generation tools and check for MAV constraints (such as max
@@ -17,15 +15,19 @@ namespace mav_active_3d_planning {
         class MavTrajectoryGeneration : public TrajectoryGenerator {
         public:
             // override virtual functions
-            bool expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment*> *new_segments);
+            bool expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment *> *new_segments);
 
         protected:
             friend ModuleFactory;
 
             // factory access
             MavTrajectoryGeneration() {}
+
             void setupFromParamMap(Module::ParamMap *param_map);
+
             bool checkParamsValid(std::string *error_message);
+
+            static ModuleFactory::Registration <MavTrajectoryGeneration> registration;
 
             // methods
             void initializeConstraints();
@@ -41,6 +43,17 @@ namespace mav_active_3d_planning {
             // optimization settings
             mav_trajectory_generation::FeasibilityAnalytic feasibility_check_;
             mav_trajectory_generation::NonlinearOptimizationParameters parameters_;
+
+            // methods
+            void sampleGoalPose(double *yaw, Eigen::Vector3d *goal_pos, const Eigen::Vector3d &start_pos);
+
+            void optimizeVertices(mav_trajectory_generation::Vertex::Vector *vertices,
+                                  mav_trajectory_generation::Segment::Vector *segments,
+                                  mav_trajectory_generation::Trajectory *trajectory);
+
+            bool checkInputFeasible(const mav_trajectory_generation::Segment::Vector &segments);
+
+            bool checkTrajectoryCollision(const mav_msgs::EigenTrajectoryPoint::Vector &states);
         };
 
     } // namespace trajectory_generators

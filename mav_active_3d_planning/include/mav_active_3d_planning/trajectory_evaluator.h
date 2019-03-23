@@ -2,7 +2,7 @@
 #define MAV_ACTIVE_3D_PLANNING_TRAJECTORY_EVALUATOR_H
 
 #include "mav_active_3d_planning/trajectory_segment.h"
-#include "mav_active_3d_planning/module.h"
+#include "mav_active_3d_planning/module_factory.h"
 #include "mav_active_3d_planning/defaults.h"
 
 #include <voxblox_ros/esdf_server.h>
@@ -46,7 +46,7 @@ namespace mav_active_3d_planning {
         virtual void visualizeTrajectoryValue(visualization_msgs::Marker* msg, const TrajectorySegment &trajectory) {}
 
     protected:
-        friend class ModuleFactory;
+        friend ModuleFactory;
 
         TrajectoryEvaluator() {}
 
@@ -54,14 +54,13 @@ namespace mav_active_3d_planning {
         std::shared_ptr<voxblox::EsdfServer> voxblox_ptr_;
 
         // bounding volume of interesting target
-        defaults::BoundingVolume bounding_volume_;
+        std::unique_ptr<defaults::BoundingVolume> bounding_volume_;
 
         // params
         std::string p_cost_args_;
         std::string p_value_args_;
         std::string p_next_args_;
         std::string p_updater_args_;
-
 
         // default modules
         std::unique_ptr<CostComputer> cost_computer_;
@@ -104,7 +103,7 @@ namespace mav_active_3d_planning {
 
         TrajectoryEvaluator* parent_;   // modules are unique ptrs, parent is always valid
 
-        void setParent(TrajectoryEvaluator* parent);
+        void setParent(Module* parent);
     };
 
 }  // namespace mav_active_3d_planning

@@ -8,10 +8,12 @@
 namespace mav_active_3d_planning {
     namespace segment_selectors {
 
-        // Greedy
-        Greedy::Greedy(bool leaves_only) : leaves_only_(leaves_only) {}
+        // GreedySelector
+        ModuleFactory::Registration<GreedySelector> GreedySelector::registration("GreedySelector");
 
-        bool Greedy::selectSegment(TrajectorySegment **result, TrajectorySegment *root) {
+        GreedySelector::GreedySelector(bool leaves_only) : leaves_only_(leaves_only) {}
+
+        bool GreedySelector::selectSegment(TrajectorySegment **result, TrajectorySegment *root) {
             std::vector < TrajectorySegment * > candidates;
             if (leaves_only_) {
                 root->getLeaves(&candidates);
@@ -22,11 +24,13 @@ namespace mav_active_3d_planning {
             return true;
         }
 
-        void Greedy::setupFromParamMap(Module::ParamMap *param_map) {
+        void GreedySelector::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<bool>(param_map, "leaves_only", &leaves_only_, false);
         }
 
         // RandomWeighted
+        ModuleFactory::Registration<RandomWeighted> RandomWeighted::registration("RandomWeighted");
+
         RandomWeighted::RandomWeighted(double factor, double uniform_probability, double leaf_probability, bool revisit)
                 : factor_(factor),
                   uniform_probability_(uniform_probability),

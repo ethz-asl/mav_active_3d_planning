@@ -4,8 +4,6 @@
 #include "mav_active_3d_planning/trajectory_generator.h"
 
 namespace mav_active_3d_planning {
-    class ModuleFactory;
-
     namespace trajectory_generators {
 
         // Sample the input space and propose a uniform grid of new trajectories
@@ -20,6 +18,7 @@ namespace mav_active_3d_planning {
             // factory access
             Uniform() {}
             void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<Uniform> registration;
 
             // parameters
             double p_distance_;         // m

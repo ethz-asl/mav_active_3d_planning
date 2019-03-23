@@ -9,6 +9,8 @@ namespace mav_active_3d_planning {
     namespace back_trackers {
 
         // RotateInPlace
+        ModuleFactory::Registration<RotateInPlace> RotateInPlace::registration("RotateInPlace");
+
         RotateInPlace::RotateInPlace(double turn_rate, double sampling_rate, double update_rate)
             : turn_rate_(turn_rate),
               sampling_rate_(sampling_rate),
@@ -49,6 +51,8 @@ namespace mav_active_3d_planning {
         }
 
         // RotateReverse
+        ModuleFactory::Registration<RotateReverse> RotateReverse::registration("RotateReverse");
+
         RotateReverse::RotateReverse(double turn_rate, double update_rate, double sampling_rate, double n_rotations,
                       int stack_size)
                       : turn_rate_(turn_rate),

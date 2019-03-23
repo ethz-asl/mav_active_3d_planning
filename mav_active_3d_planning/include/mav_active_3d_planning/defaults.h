@@ -2,7 +2,7 @@
 #define MAV_ACTIVE_3D_PLANNING_DEFAULTS_H
 
 #include "mav_active_3d_planning/trajectory_segment.h"
-#include "mav_active_3d_planning/module.h"
+#include "mav_active_3d_planning/module_factory.h"
 
 #include <Eigen/Core>
 
@@ -18,9 +18,6 @@ namespace mav_active_3d_planning {
         struct BoundingVolume : public Module {
             BoundingVolume() : is_setup(false) {}
 
-            // factory constructor
-            BoundingVolume(std::string args);
-
             virtual ~BoundingVolume() {}
 
             // populate the bounding volume
@@ -32,28 +29,30 @@ namespace mav_active_3d_planning {
             // variables
             bool is_setup;
             double x_min, x_max, y_min, y_max, z_min, z_max;
+
+        protected:
+            static ModuleFactory::Registration<BoundingVolume> registration;
         };
 
         // struct for high level system constraints (might add methods for generating these from max thrusts or so)
         struct SystemConstraints : public Module {
-            SystemConstraints();
+            SystemConstraints() {}
 
             // factory constructor
-            SystemConstraints(std::string args);
+            SystemConstraints(const std::string &args);
 
             virtual ~SystemConstraints() {}
 
-            // populate the system constraints from ros params
+            // populate the system constraints from factory
             void setupFromParamMap(Module::ParamMap *param_map);
 
-            // populate the system constraints with reasonable (conservative) defaults
-            bool setupFromDefaults();
-
             // variables
-            bool is_setup;
             double v_max;           // m/s, maximum absolute velocity
             double a_max ;          // m/s2, maximum absolute acceleration
             double yaw_rate_max;    // rad/s, maximum yaw rate
+
+        private:
+            static ModuleFactory::Registration<SystemConstraints> registration;
         };
 
         // Scale an angle to [0, 2pi]
@@ -66,6 +65,7 @@ namespace mav_active_3d_planning {
         double angleDirection(double angle1, double angle2);
 
     } // namespace defaults
+
 } // namepsace mav_active_3d_planning
 
 #endif //MAV_ACTIVE_3D_PLANNING_DEFAULTS_H

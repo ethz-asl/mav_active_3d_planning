@@ -4,14 +4,12 @@
 #include "mav_active_3d_planning/trajectory_generator.h"
 
 namespace mav_active_3d_planning {
-    class ModuleFactory;
-
     namespace segment_selectors {
 
         // Select segment with highest value
-        class Greedy : public SegmentSelector {
+        class GreedySelector : public SegmentSelector {
         public:
-            Greedy(bool leaves_only);
+            GreedySelector(bool leaves_only);
 
             // override virtual functions
             bool selectSegment(TrajectorySegment **result, TrajectorySegment *root);
@@ -20,8 +18,9 @@ namespace mav_active_3d_planning {
             friend ModuleFactory;
 
             // factory access
-            Greedy() {}
+            GreedySelector() {}
             void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<GreedySelector> registration;
 
             // variables
             bool leaves_only_;
@@ -33,7 +32,6 @@ namespace mav_active_3d_planning {
             RandomWeighted(double factor, double uniform_probability, double leaf_probability, bool revisit);
 
             // override virtual functions
-
             bool selectSegment(TrajectorySegment **result, TrajectorySegment *root);
 
         protected:
@@ -43,6 +41,7 @@ namespace mav_active_3d_planning {
             RandomWeighted() {}
             void setupFromParamMap(Module::ParamMap *param_map);
             bool checkParamsValid(std::string *error_message);
+            static ModuleFactory::Registration<RandomWeighted> registration;
 
             // params
             double leaf_probability_;    // Probability to select a leaf (set to 1 for leaves only)

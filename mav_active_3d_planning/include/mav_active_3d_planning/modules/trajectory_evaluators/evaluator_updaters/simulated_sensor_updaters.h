@@ -22,6 +22,7 @@ namespace mav_active_3d_planning {
             // factory acces
             SimulatedSensorUpdater() {}
             void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<SimulatedSensorUpdater> registration;
 
             // methods
             void updateSingle(TrajectorySegment *segment);

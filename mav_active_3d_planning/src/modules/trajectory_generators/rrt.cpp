@@ -13,17 +13,7 @@
 namespace mav_active_3d_planning {
     namespace trajectory_generators {
 
-//        RRT::RRT(voxblox::EsdfServer *voxblox_ptr, std::string param_ns)
-//                : TrajectoryGenerator(voxblox_ptr, param_ns),
-//                  previous_root_(nullptr) {
-//            // params
-//            ros::param::param<double>(param_ns + "/velocity", p_velocity_, 0.5);
-//            ros::param::param<double>(param_ns + "/sampling_rate", p_sampling_rate_, 20.0);
-//            ros::param::param<double>(param_ns + "/extension_range", p_extension_range_, 1.0);
-//            ros::param::param<bool>(param_ns + "/use_spheric_sampling", p_use_spheric_sampling_, false);
-//            ros::param::param<int>(param_ns + "/maximum_tries", p_maximum_tries_, 0);
-//            kdtree_= std::unique_ptr<KDTree>(new KDTree(3, tree_data_));
-//        }
+        ModuleFactory::Registration<RRT> RRT::registration("RRT");
 
         void RRT::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<double>(param_map, "velocity", &p_velocity_, 1.0);
@@ -135,23 +125,23 @@ namespace mav_active_3d_planning {
 
         bool RRT::sample_spheric(Eigen::Vector3d *goal_pos) {
             // Bircher way (also assumes box atm, for unbiased sampling)
-            double radius = std::sqrt(std::pow(bounding_volume_.x_max - bounding_volume_.x_min, 2.0) +
-                                      std::pow(bounding_volume_.y_max - bounding_volume_.y_min, 2.0) +
-                                      std::pow(bounding_volume_.z_max - bounding_volume_.z_min, 2.0));
+            double radius = std::sqrt(std::pow(bounding_volume_->x_max - bounding_volume_->x_min, 2.0) +
+                                      std::pow(bounding_volume_->y_max - bounding_volume_->y_min, 2.0) +
+                                      std::pow(bounding_volume_->z_max - bounding_volume_->z_min, 2.0));
             for (int i = 0; i < 3; i++) {
                 (*goal_pos)[i] += 2.0 * radius * (((double) rand()) / ((double) RAND_MAX) - 0.5);
             }
-            return bounding_volume_.contains(*goal_pos);
+            return bounding_volume_->contains(*goal_pos);
         }
 
         bool RRT::sample_box(Eigen::Vector3d *goal_pos) {
             // sample from bounding volume (assumes box atm)
-            (*goal_pos)[0] = bounding_volume_.x_min +
-                             (double) rand() / RAND_MAX * (bounding_volume_.x_max - bounding_volume_.x_min);
-            (*goal_pos)[1] = bounding_volume_.y_min +
-                             (double) rand() / RAND_MAX * (bounding_volume_.y_max - bounding_volume_.y_min);
-            (*goal_pos)[2] = bounding_volume_.z_min +
-                             (double) rand() / RAND_MAX * (bounding_volume_.z_max - bounding_volume_.z_min);
+            (*goal_pos)[0] = bounding_volume_->x_min +
+                             (double) rand() / RAND_MAX * (bounding_volume_->x_max - bounding_volume_->x_min);
+            (*goal_pos)[1] = bounding_volume_->y_min +
+                             (double) rand() / RAND_MAX * (bounding_volume_->y_max - bounding_volume_->y_min);
+            (*goal_pos)[2] = bounding_volume_->z_min +
+                             (double) rand() / RAND_MAX * (bounding_volume_->z_max - bounding_volume_->z_min);
             return true;
         }
 

@@ -4,8 +4,6 @@
 #include "mav_active_3d_planning/trajectory_evaluator.h"
 
 namespace mav_active_3d_planning {
-    class ModuleFactory;
-
     namespace next_selectors {
 
         // Select the child node which has the highest value
@@ -20,6 +18,8 @@ namespace mav_active_3d_planning {
             friend ModuleFactory;
 
             void setupFromParamMap(Module::ParamMap *param_map) {}
+
+            static ModuleFactory::Registration<ImmediateBest> registration;
         };
 
         // Select the child node which contains the highest value segment in its subtree
@@ -34,6 +34,8 @@ namespace mav_active_3d_planning {
             friend ModuleFactory;
 
             void setupFromParamMap(Module::ParamMap *param_map) {}
+
+            static ModuleFactory::Registration<SubsequentBest> registration;
 
             // methods
             double evaluateSingle(TrajectorySegment *traj_in);

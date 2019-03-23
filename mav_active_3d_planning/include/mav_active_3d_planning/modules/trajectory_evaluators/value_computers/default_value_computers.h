@@ -22,6 +22,7 @@ namespace mav_active_3d_planning {
             // factory access
             LinearValue() {}
             void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<LinearValue> registration;
 
             // params
             double cost_weight_;
@@ -42,15 +43,16 @@ namespace mav_active_3d_planning {
             // factory access
             ExponentialDiscount() {}
             void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<ExponentialDiscount> registration;
 
             // params
             double cost_scale_;
         };
 
         // Accumulates the values up to the root, use another value computer for individual values (Decorator pattern)
-        class Accumulate : public ValueComputer {
+        class AccumulateValue : public ValueComputer {
         public:
-            Accumulate(std::unique_ptr <ValueComputer> following_value_computer);
+            AccumulateValue(std::unique_ptr <ValueComputer> following_value_computer);
 
             // override virtual functions
             bool computeValue(TrajectorySegment *traj_in);
@@ -59,8 +61,9 @@ namespace mav_active_3d_planning {
             friend ModuleFactory;
 
             // factory access
-            Accumulate() {}
+            AccumulateValue() {}
             void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<AccumulateValue> registration;
 
             // params
             std::unique_ptr <ValueComputer> following_value_computer_;

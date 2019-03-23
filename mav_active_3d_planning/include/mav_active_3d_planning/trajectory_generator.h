@@ -2,7 +2,7 @@
 #define MAV_ACTIVE_3D_PLANNING_TRAJECTORY_GENERATOR_H_
 
 #include "mav_active_3d_planning/trajectory_segment.h"
-#include "mav_active_3d_planning/module.h"
+#include "mav_active_3d_planning/module_factory.h"
 #include "mav_active_3d_planning/defaults.h"
 
 #include <voxblox_ros/esdf_server.h>
@@ -19,7 +19,7 @@ namespace mav_active_3d_planning {
 
     // Base class for trajectory generation to provide uniform interface with other classes
     class TrajectoryGenerator : public Module {
-        friend class ModuleFactory;
+        friend ModuleFactory;
 
     public:
         virtual ~TrajectoryGenerator() {}
@@ -43,8 +43,8 @@ namespace mav_active_3d_planning {
         std::shared_ptr<voxblox::EsdfServer> voxblox_ptr_;
 
         // bounding box
-        defaults::BoundingVolume bounding_volume_;
-        defaults::SystemConstraints system_constraints_;
+        std::unique_ptr<defaults::BoundingVolume> bounding_volume_;
+        std::unique_ptr<defaults::SystemConstraints> system_constraints_;
 
         // default modules
         std::unique_ptr<SegmentSelector> segment_selector_;
@@ -80,7 +80,7 @@ namespace mav_active_3d_planning {
     protected:
         TrajectoryGenerator* parent_;
 
-        void setParent(TrajectoryGenerator* parent);
+        void setParent(Module* parent);
     };
 
 }  // namespace mav_active_3d_planning
