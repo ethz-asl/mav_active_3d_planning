@@ -13,6 +13,8 @@
 namespace mav_active_3d_planning {
     namespace trajectory_generators {
 
+        ModuleFactory::Registration<RRT> RRT::registration("RRT");
+
         void RRT::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<bool>(param_map, "crop_segments", &p_crop_segments_, false);
             setParam<double>(param_map, "crop_margin", &p_crop_margin_, 0.1);
@@ -138,21 +140,21 @@ namespace mav_active_3d_planning {
         bool RRT::sample_goal(Eigen::Vector3d *goal_pos) {
             if (p_use_spheric_sampling_) {
                 // Bircher way (also assumes box atm, for unbiased sampling)
-                double radius = std::sqrt(std::pow(bounding_volume_.x_max - bounding_volume_.x_min, 2.0) +
-                                          std::pow(bounding_volume_.y_max - bounding_volume_.y_min, 2.0) +
-                                          std::pow(bounding_volume_.z_max - bounding_volume_.z_min, 2.0));
+                double radius = std::sqrt(std::pow(bounding_volume_->x_max - bounding_volume_->x_min, 2.0) +
+                                          std::pow(bounding_volume_->y_max - bounding_volume_->y_min, 2.0) +
+                                          std::pow(bounding_volume_->z_max - bounding_volume_->z_min, 2.0));
                 for (int i = 0; i < 3; i++) {
                     (*goal_pos)[i] += 2.0 * radius * (((double) rand()) / ((double) RAND_MAX) - 0.5);
                 }
                 return true;
             } else {
                 // sample from bounding volume (assumes box atm)
-                (*goal_pos)[0] = bounding_volume_.x_min +
-                                 (double) rand() / RAND_MAX * (bounding_volume_.x_max - bounding_volume_.x_min);
-                (*goal_pos)[1] = bounding_volume_.y_min +
-                                 (double) rand() / RAND_MAX * (bounding_volume_.y_max - bounding_volume_.y_min);
-                (*goal_pos)[2] = bounding_volume_.z_min +
-                                 (double) rand() / RAND_MAX * (bounding_volume_.z_max - bounding_volume_.z_min);
+                (*goal_pos)[0] = bounding_volume_->x_min +
+                                 (double) rand() / RAND_MAX * (bounding_volume_->x_max - bounding_volume_->x_min);
+                (*goal_pos)[1] = bounding_volume_->y_min +
+                                 (double) rand() / RAND_MAX * (bounding_volume_->y_max - bounding_volume_->y_min);
+                (*goal_pos)[2] = bounding_volume_->z_min +
+                                 (double) rand() / RAND_MAX * (bounding_volume_->z_max - bounding_volume_->z_min);
                 return true;
             }
         }
@@ -170,7 +172,7 @@ namespace mav_active_3d_planning {
             }
 
             // Build trajectory
-            n_points = std::ceil(direction.norm() / system_constraints_.v_max * p_sampling_rate_);
+            n_points = std::ceil(direction.norm() / system_constraints_->v_max * p_sampling_rate_);
             for (int i = 0; i < n_points; ++i) {
                 mav_msgs::EigenTrajectoryPoint trajectory_point;
                 trajectory_point.position_W = start_pos + (double) i / (double) n_points * direction;

@@ -9,6 +9,8 @@ namespace mav_active_3d_planning {
     namespace back_trackers {
 
         // RotateInPlace
+        ModuleFactory::Registration<RotateInPlace> RotateInPlace::registration("RotateInPlace");
+
         bool RotateInPlace::trackBack(TrajectorySegment *target){
             // Just rotate the specified amount
             TrajectorySegment *new_segment = target->spawnChild();
@@ -42,6 +44,8 @@ namespace mav_active_3d_planning {
         }
 
         // RotateReverse
+        ModuleFactory::Registration<RotateReverse> RotateReverse::registration("RotateReverse");
+
          bool RotateReverse::segmentIsExecuted(const TrajectorySegment &segment) {
              // Don't track backtracking segments
              if (segment.trajectory.back().position_W == last_position_

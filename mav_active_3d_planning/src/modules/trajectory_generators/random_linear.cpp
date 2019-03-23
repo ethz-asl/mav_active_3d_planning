@@ -11,6 +11,8 @@
 namespace mav_active_3d_planning {
     namespace trajectory_generators {
 
+        ModuleFactory::Registration <RandomLinear> RandomLinear::registration("RandomLinear");
+
         void RandomLinear::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<double>(param_map, "min_distance", &p_min_distance_, 1.0);
             setParam<double>(param_map, "max_distance", &p_max_distance_, 1.0);
@@ -78,7 +80,7 @@ namespace mav_active_3d_planning {
             double theta = (double) rand() * M_PI / (double) RAND_MAX;
             double distance = p_min_distance_ + (double) rand() / RAND_MAX * (p_max_distance_ - p_min_distance_);
             *decelleration_distance = distance -
-                                      std::min(std::pow(system_constraints_.v_max, 2.0) / system_constraints_.a_max,
+                                      std::min(std::pow(system_constraints_->v_max, 2.0) / system_constraints_->a_max,
                                                distance) / 2;
             if (p_planar_) { theta = 0.5 * M_PI; }
             *direction = Eigen::Vector3d(sin(theta) * cos(*yaw), sin(theta) * sin(*yaw), cos(theta));
@@ -94,9 +96,9 @@ namespace mav_active_3d_planning {
 
             while (v_curr >= 0.0) {
                 if (x_curr < decelleration_distance) {
-                    v_curr = std::min(v_curr + system_constraints_.a_max / p_sampling_rate_, system_constraints_.v_max);
+                    v_curr = std::min(v_curr + system_constraints_->a_max / p_sampling_rate_, system_constraints_->v_max);
                 } else {
-                    v_curr -= system_constraints_.a_max / p_sampling_rate_;
+                    v_curr -= system_constraints_->a_max / p_sampling_rate_;
                 }
                 t_curr += 1.0 / p_sampling_rate_;
                 x_curr += v_curr / p_sampling_rate_;

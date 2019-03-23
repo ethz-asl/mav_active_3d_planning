@@ -4,8 +4,6 @@
 #include "mav_active_3d_planning/trajectory_generator.h"
 
 namespace mav_active_3d_planning {
-    class ModuleFactory;
-
     namespace trajectory_generators {
 
         // Point sampling in space, joined by linear segments
@@ -21,6 +19,7 @@ namespace mav_active_3d_planning {
             RandomLinear() {}
             void setupFromParamMap(Module::ParamMap *param_map);
             bool checkParamsValid(std::string *error_message);
+            static ModuleFactory::Registration<RandomLinear> registration;
 
             // params
             double p_min_distance_;     // m

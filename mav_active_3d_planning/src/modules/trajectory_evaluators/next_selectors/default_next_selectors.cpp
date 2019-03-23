@@ -7,6 +7,8 @@ namespace mav_active_3d_planning {
     namespace next_selectors {
 
         // ImmediateBest
+        ModuleFactory::Registration<ImmediateBest> ImmediateBest::registration("ImmediateBest");
+
         int ImmediateBest::selectNextBest(const TrajectorySegment &traj_in) {
             std::vector<int> candidates = {0};
             double current_max = traj_in.children[0]->value;
@@ -25,6 +27,8 @@ namespace mav_active_3d_planning {
         }
 
         // SubsequentBest
+        ModuleFactory::Registration<SubsequentBest> SubsequentBest::registration("SubsequentBest");
+
         int SubsequentBest::selectNextBest(const TrajectorySegment &traj_in) {
             std::vector<int> candidates = {0};
             double current_max = evaluateSingle(traj_in.children[0].get());

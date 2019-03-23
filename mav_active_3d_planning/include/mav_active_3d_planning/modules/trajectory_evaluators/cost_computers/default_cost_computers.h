@@ -8,8 +8,6 @@
 #include <vector>
 
 namespace mav_active_3d_planning {
-    class ModuleFactory;
-
     namespace cost_computers {
 
         // Execution time of a single segment
@@ -24,6 +22,8 @@ namespace mav_active_3d_planning {
             SegmentTime() {}
 
             void setupFromParamMap(Module::ParamMap *param_map) {}
+
+            static ModuleFactory::Registration<SegmentTime> registration;
         };
 
         // Travelled distance of a segment
@@ -38,6 +38,8 @@ namespace mav_active_3d_planning {
             SegmentLength() {}
 
             void setupFromParamMap(Module::ParamMap *param_map) {}
+
+            static ModuleFactory::Registration<SegmentLength> registration;
         };
 
     } // namespace cost_computers

@@ -1,7 +1,6 @@
 #define _USE_MATH_DEFINES
 
 #include "mav_active_3d_planning/defaults.h"
-#include "mav_active_3d_planning/module_factory.h"
 
 #include <random>
 #include <algorithm>
@@ -10,10 +9,8 @@
 namespace mav_active_3d_planning {
     namespace defaults {
 
-        // Bounding Volume
-        void BoundingVolume::setupFromFactory(std::string args, bool verbose) {
-            ModuleFactory::Instance()->parametrizeModule(args, this, std::string("BoundingVolume"), verbose);
-        }
+        // BoundingVolume
+        ModuleFactory::Registration<BoundingVolume> BoundingVolume::registration("BoundingVolume");
 
         void BoundingVolume::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<double>(param_map, "x_min", &x_min, 0.0);
@@ -43,14 +40,8 @@ namespace mav_active_3d_planning {
             return true;
         }
 
-        // System Constraints
-        SystemConstraints::SystemConstraints() {
-            setupFromDefaults();
-        }
-
-        void SystemConstraints::setupFromFactory(std::string args, bool verbose) {
-            ModuleFactory::Instance()->parametrizeModule(args, this, std::string("SystemConstraints"), verbose);
-        }
+        // SystemConstraints
+        ModuleFactory::Registration<SystemConstraints> SystemConstraints::registration("SystemConstraints");
 
         void SystemConstraints::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<double>(param_map, "v_max", &v_max, 1.0);
@@ -72,15 +63,8 @@ namespace mav_active_3d_planning {
             return true;
         }
 
-        bool SystemConstraints::setupFromDefaults() {
-            v_max = 1.0;
-            a_max = 1.0;
-            yaw_rate_max = M_PI / 2.0;
-            return true;
-        }
-
         // Angle functions
-        double angleScaled(double angle) {
+        double angleScaled(double angle){
             angle = std::fmod(angle, 2.0 * M_PI);
             return angle + 2.0 * M_PI * (angle < 0);
         }

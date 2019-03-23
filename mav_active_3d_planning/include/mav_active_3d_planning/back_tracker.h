@@ -2,7 +2,7 @@
 #define MAV_ACTIVE_3D_PLANNING_BACK_TRACKER_H_
 
 #include "mav_active_3d_planning/trajectory_segment.h"
-#include "mav_active_3d_planning/module.h"
+#include "mav_active_3d_planning/module_factory.h"
 
 namespace mav_active_3d_planning {
 

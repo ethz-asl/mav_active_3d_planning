@@ -20,6 +20,7 @@ namespace mav_active_3d_planning {
             // factory access
             LinearValue() {}
             void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<LinearValue> registration;
 
             // params
             double cost_weight_;
@@ -38,13 +39,14 @@ namespace mav_active_3d_planning {
             // factory access
             ExponentialDiscount() {}
             void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<ExponentialDiscount> registration;
 
             // params
             double cost_scale_;
         };
 
         // Accumulates the values up to the root, use another value computer for individual values (Decorator pattern)
-        class Accumulate : public ValueComputer {
+        class AccumulateValue : public ValueComputer {
         public:
             // override virtual functions
             bool computeValue(TrajectorySegment *traj_in);
@@ -53,8 +55,9 @@ namespace mav_active_3d_planning {
             friend ModuleFactory;
 
             // factory access
-            Accumulate() {}
+            AccumulateValue() {}
             void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<AccumulateValue> registration;
 
             // params
             std::unique_ptr <ValueComputer> following_value_computer_;
@@ -72,6 +75,7 @@ namespace mav_active_3d_planning {
             // factory access
             RelativeGain() {}
             void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<RelativeGain> registration;
 
             // params
             bool p_accumulate_;     // true: return total gain divided by total cost

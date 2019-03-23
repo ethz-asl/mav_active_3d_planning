@@ -12,7 +12,7 @@ namespace mav_active_3d_planning {
     namespace evaluator_updaters {
 
         // Don't perform any specific update operations
-        class UpdateNothing : public EvaluatorUpdater {
+        class EvaluatorUpdateNothing : public EvaluatorUpdater {
         public:
             // override virtual functions
             bool updateSegments(TrajectorySegment *root) { return true; }
@@ -20,13 +20,15 @@ namespace mav_active_3d_planning {
         protected:
             friend ModuleFactory;
 
-            UpdateNothing() {}
+            EvaluatorUpdateNothing() {}
 
             void setupFromParamMap(Module::ParamMap *param_map) {}
+
+            static ModuleFactory::Registration<EvaluatorUpdateNothing> registration;
         };
 
         // Discard all segments and start from scratch
-        class ResetTree : public EvaluatorUpdater {
+        class EvaluatorResetTree : public EvaluatorUpdater {
         public:
             // override virtual functions
             bool updateSegments(TrajectorySegment *root);
@@ -34,9 +36,11 @@ namespace mav_active_3d_planning {
         protected:
             friend ModuleFactory;
 
-            ResetTree() {}
+            EvaluatorResetTree() {}
 
             void setupFromParamMap(Module::ParamMap *param_map){}
+
+            static ModuleFactory::Registration<EvaluatorResetTree> registration;
         };
 
         // Update gain/cost/value for the complete trajectory tree
@@ -51,6 +55,7 @@ namespace mav_active_3d_planning {
             // factory acces
             UpdateAll() {}
             void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<UpdateAll> registration;
 
             // methods
             void updateSingle(TrajectorySegment *segment);
@@ -74,19 +79,21 @@ namespace mav_active_3d_planning {
             // factory access
             PruneByValue() {}
             void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<PruneByValue> registration;
 
             // methods
             bool removeSingle(TrajectorySegment *segment, double min_value);
+            double getMinimumValue(TrajectorySegment *segment);
 
             // params
-            double minimum_value_;
-            bool use_relative_values_;
-            bool include_subsequent_;
+            double minimum_value_;          // value below which segments are cropped
+            bool use_relative_values_;      // if true scale all existing values to 0-1
+            bool include_subsequent_;       // if true keep all segments where at least 1 child matches the min value
             std::unique_ptr<EvaluatorUpdater> following_updater_;
         };
 
         // Only periodically call another updater
-        class Periodic : public EvaluatorUpdater {
+        class UpdatePeriodic : public EvaluatorUpdater {
         public:
             // override virtual functions
             bool updateSegments(TrajectorySegment *root);
@@ -95,8 +102,9 @@ namespace mav_active_3d_planning {
             friend ModuleFactory;
 
             // factory access
-            Periodic() {}
+            UpdatePeriodic() {}
             void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<UpdatePeriodic> registration;
 
             // params
             double p_minimum_wait_time_;

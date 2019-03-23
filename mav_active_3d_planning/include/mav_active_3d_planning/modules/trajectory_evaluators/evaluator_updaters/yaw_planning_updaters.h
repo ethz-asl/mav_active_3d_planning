@@ -4,8 +4,6 @@
 #include "mav_active_3d_planning/modules/trajectory_evaluators/yaw_planning_evaluators.h"
 
 namespace mav_active_3d_planning {
-    class ModuleFactory;
-
     namespace evaluator_updaters {
 
         // Updater specific for yaw planning evaluators. This adaptor allows yaw planning segments (which have the
@@ -21,6 +19,7 @@ namespace mav_active_3d_planning {
             // factory acces
             YawPlanningUpdateAdapter() {}
             void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<YawPlanningUpdateAdapter> registration;
 
             // members
             std::unique_ptr<EvaluatorUpdater> following_updater_;
@@ -42,6 +41,7 @@ namespace mav_active_3d_planning {
             // factory acces
             YawPlanningUpdater() {}
             void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<YawPlanningUpdater> registration;
 
             // members
             std::unique_ptr<EvaluatorUpdater> following_updater_;

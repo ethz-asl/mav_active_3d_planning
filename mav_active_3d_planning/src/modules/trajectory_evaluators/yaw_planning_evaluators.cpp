@@ -76,7 +76,7 @@ namespace mav_active_3d_planning {
         }
 
         void YawPlanningEvaluator::visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg,
-                                                                  const TrajectorySegment &trajectory) {
+                                                            const TrajectorySegment &trajectory) {
             if (!trajectory.info) { return; }
             YawPlanningInfo *info = dynamic_cast<YawPlanningInfo *>(trajectory.info.get());
             // Let the followup evaluator draw the visualization of the selected orientation
@@ -92,8 +92,8 @@ namespace mav_active_3d_planning {
             std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_evaluator_args", &args,
                                   param_ns + "/following_evaluator");
-            following_evaluator_ = ModuleFactory::Instance()->createTrajectoryEvaluator(args, parent_, voxblox_ptr_,
-                                                                                        verbose_modules_);
+            following_evaluator_ = ModuleFactory::Instance()->createModule<TrajectoryEvaluator>(args, verbose_modules_,
+                                                                                                voxblox_ptr_);
 
             // setup parent
             TrajectoryEvaluator::setupFromParamMap(param_map);
@@ -108,9 +108,12 @@ namespace mav_active_3d_planning {
         }
 
         // SimpleYawPlanningEvaluator
-        double SimpleYawPlanningEvaluator::sampleYaw(double original_yaw, int sampleNumber) {
+        ModuleFactory::Registration <SimpleYawPlanningEvaluator> SimpleYawPlanningEvaluator::registration(
+                "SimpleYawPlanningEvaluator");
+
+        double SimpleYawPlanningEvaluator::sampleYaw(double original_yaw, int sample_number) {
             // Uniform sampling
-            return defaults::angleScaled(original_yaw + (double) sampleNumber * 2.0 * M_PI / p_n_directions_);
+            return defaults::angleScaled(original_yaw + (double) sample_number * 2.0 * M_PI / p_n_directions_);
         }
 
         void
@@ -133,18 +136,18 @@ namespace mav_active_3d_planning {
         }
 
         void SimpleYawPlanningEvaluator::visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg,
-                                                            const TrajectorySegment &trajectory) {
+                                                                  const TrajectorySegment &trajectory) {
             if (!trajectory.info) { return; }
             YawPlanningInfo *info = dynamic_cast<YawPlanningInfo *>(trajectory.info.get());
             // Simple version: visualize facing of endpoints of trajectories, colored with value (highest green to lowest red)
             double max_value = info->orientations[0].gain;
             double min_value = info->orientations[0].gain;
-            if (p_select_by_value_){
+            if (p_select_by_value_) {
                 double max_value = info->orientations[0].value;
                 double min_value = info->orientations[0].value;
             }
             for (int i = 1; i < info->orientations.size(); ++i) {
-                if (p_select_by_value_){
+                if (p_select_by_value_) {
                     if (info->orientations[i].value > max_value) {
                         max_value = info->orientations[i].value;
                     }

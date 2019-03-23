@@ -1,5 +1,4 @@
 #include "mav_active_3d_planning/modules/trajectory_evaluators/simulated_sensor_evaluators.h"
-#include "mav_active_3d_planning/module_factory.h"
 
 #include <algorithm>
 
@@ -15,7 +14,7 @@ namespace mav_active_3d_planning {
             std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "sensor_model_args", &args,
                                   param_ns + "/sensor_model");
-            sensor_model_ = ModuleFactory::Instance()->createSensorModel(args, voxblox_ptr_, verbose_modules_);
+            sensor_model_ = ModuleFactory::Instance()->createModule<SensorModel>(args, verbose_modules_, voxblox_ptr_);
 
             // setup parent
             TrajectoryEvaluator::setupFromParamMap(param_map);
@@ -26,10 +25,10 @@ namespace mav_active_3d_planning {
             sensor_model_->getVisibleVoxelsFromTrajectory(&new_voxels, *traj_in);
 
             // Check for interesting bounding box
-            if (bounding_volume_.is_setup) {
+            if (bounding_volume_->is_setup) {
                 new_voxels.erase(std::remove_if(new_voxels.begin(), new_voxels.end(),
                                                 [this](const Eigen::Vector3d &voxel) {
-                                                    return (!bounding_volume_.contains(voxel));
+                                                    return (!bounding_volume_->contains(voxel));
                                                 }), new_voxels.end());
             }
 
@@ -65,7 +64,7 @@ namespace mav_active_3d_planning {
 
         void SimulatedSensorEvaluator::visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg,
                                                                 const TrajectorySegment &trajectory) {
-            if(!trajectory.info) { return; }
+            if (!trajectory.info) { return; }
             // Default implementation displays all visible voxels
             visualization_msgs::Marker new_msg;
             new_msg.ns = "evaluation";
@@ -96,6 +95,8 @@ namespace mav_active_3d_planning {
         }
 
         // NaiveEvaluator
+        ModuleFactory::Registration<NaiveEvaluator> NaiveEvaluator::registration("NaiveEvaluator");
+
         void NaiveEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
             // setup parent
             SimulatedSensorEvaluator::setupFromParamMap(param_map);
@@ -118,6 +119,8 @@ namespace mav_active_3d_planning {
         }
 
         // Frontier
+        ModuleFactory::Registration<Frontier> Frontier::registration("Frontier");
+
         void Frontier::setupFromParamMap(Module::ParamMap *param_map) {
             // setup parent
             SimulatedSensorEvaluator::setupFromParamMap(param_map);
@@ -216,6 +219,8 @@ namespace mav_active_3d_planning {
         }
 
         // VoxelType
+        ModuleFactory::Registration<VoxelType> VoxelType::registration("VoxelType");
+
         void VoxelType::setupFromParamMap(Module::ParamMap *param_map) {
             // params
             setParam<double>(param_map, "gain_unknown", &p_gain_unknown_, 1.0);
@@ -229,7 +234,8 @@ namespace mav_active_3d_planning {
             std::string ns = (*param_map)["param_namespace"];
             std::string outer_volume_args;
             setParam<std::string>(param_map, "outer_volume_args", &outer_volume_args, ns + "/outer_volume");
-            outer_volume_.setupFromFactory(outer_volume_args, verbose_modules_);
+            outer_volume_ = ModuleFactory::Instance()->createModule<defaults::BoundingVolume>(outer_volume_args,
+                                                                                              verbose_modules_);
 
             // constants
             c_min_gain_ = std::min({p_gain_unknown_, p_gain_occupied_, p_gain_free_, p_gain_unknown_outer_,
@@ -247,7 +253,7 @@ namespace mav_active_3d_planning {
             SimulatedSensorInfo *info = dynamic_cast<SimulatedSensorInfo *>(traj_in->info.get());
             for (int i = 0; i < info->visible_voxels.size(); ++i) {
                 double distance = 0.0;
-                if (bounding_volume_.contains(info->visible_voxels[i])) {
+                if (bounding_volume_->contains(info->visible_voxels[i])) {
                     if (voxblox_ptr_->getEsdfMapPtr()->getDistanceAtPosition(info->visible_voxels[i], &distance)) {
                         if (distance < 0.0) {
                             traj_in->gain += p_gain_occupied_;

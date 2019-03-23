@@ -2,7 +2,7 @@
 #define MAV_ACTIVE_3D_PLANNING_DEFAULTS_H
 
 #include "mav_active_3d_planning/trajectory_segment.h"
-#include "mav_active_3d_planning/module.h"
+#include "mav_active_3d_planning/module_factory.h"
 
 #include <Eigen/Core>
 #include <visualization_msgs/MarkerArray.h>
@@ -33,27 +33,31 @@ namespace mav_active_3d_planning {
             // variables
             bool is_setup;
             double x_min, x_max, y_min, y_max, z_min, z_max;
+
+        protected:
+            static ModuleFactory::Registration<BoundingVolume> registration;
         };
 
         // struct for high level system constraints (might add methods for generating these from max thrusts or so)
         struct SystemConstraints : public Module {
-            SystemConstraints();
+            SystemConstraints() {}
+
             virtual ~SystemConstraints() {}
 
-            // factory setup
-            void setupFromFactory(std::string args, bool verbose);
+            // factory constructor
+            SystemConstraints(const std::string &args);
 
-            // populate the system constraints
+            // populate the system constraints from factory
             void setupFromParamMap(Module::ParamMap *param_map);
             bool checkParamsValid(std::string *error_message);
-
-            // populate the system constraints with reasonable (conservative) defaults
-            bool setupFromDefaults();
 
             // variables
             double v_max;           // m/s, maximum absolute velocity
             double a_max ;          // m/s2, maximum absolute acceleration
             double yaw_rate_max;    // rad/s, maximum yaw rate
+
+        protected:
+            static ModuleFactory::Registration<SystemConstraints> registration;
         };
 
         // Scale an angle to [0, 2pi]
@@ -69,6 +73,7 @@ namespace mav_active_3d_planning {
         int getNextVisualizationId(const visualization_msgs::MarkerArray &msg);
 
     } // namespace defaults
+
 } // namepsace mav_active_3d_planning
 
 #endif //MAV_ACTIVE_3D_PLANNING_DEFAULTS_H

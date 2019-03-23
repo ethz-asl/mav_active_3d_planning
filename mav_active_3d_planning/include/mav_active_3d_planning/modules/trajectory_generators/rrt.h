@@ -5,8 +5,6 @@
 #include "mav_active_3d_planning/libs/nanoflann.hpp"
 
 namespace mav_active_3d_planning {
-    class ModuleFactory;
-
     namespace trajectory_generators {
 
         // Random Rapidly Exploring Tree with linear segments, similar to the nbvp planner
@@ -52,6 +50,7 @@ namespace mav_active_3d_planning {
 
             void setupFromParamMap(Module::ParamMap *param_map);
             bool checkParamsValid(std::string *error_message);
+            static ModuleFactory::Registration<RRT> registration;
 
             // parameters
             bool p_crop_segments_;          // if true extend segments as long as possible instead of cancling them

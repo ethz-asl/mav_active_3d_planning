@@ -64,6 +64,7 @@ namespace mav_active_3d_planning {
             SimpleYawPlanningEvaluator() {}
             void setupFromParamMap(Module::ParamMap *param_map);
             bool checkParamsValid(std::string *error_message);
+            static ModuleFactory::Registration<SimpleYawPlanningEvaluator> registration;
 
             // params
             bool p_visualize_followup_;     // true: also visualize the gain of the best orientation

@@ -7,6 +7,9 @@ namespace mav_active_3d_planning {
         using YawPlanningInfo = mav_active_3d_planning::trajectory_evaluators::YawPlanningInfo;
 
         // YawPlanningUpdateAdapter
+        ModuleFactory::Registration <YawPlanningUpdateAdapter> YawPlanningUpdateAdapter::registration(
+                "YawPlanningUpdateAdapter");
+
         bool YawPlanningUpdateAdapter::updateSegments(TrajectorySegment *root) {
             // recursively update all segments, exclude root since this is now the base with no parent
             for (int i = 0; i < root->children.size(); ++i) {
@@ -20,7 +23,8 @@ namespace mav_active_3d_planning {
             std::string args;   // default args extends the parent namespace
             std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_updater_args", &args, param_ns + "/following_updater");
-            following_updater_ = ModuleFactory::Instance()->createEvaluatorUpdater(args, parent_, verbose_modules_);
+            following_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(args, verbose_modules_,
+                                                                                           parent_);
         }
 
         void YawPlanningUpdateAdapter::updateSingle(TrajectorySegment *segment) {
@@ -41,6 +45,8 @@ namespace mav_active_3d_planning {
         }
 
         // YawPlanningUpdater
+        ModuleFactory::Registration <YawPlanningUpdater> YawPlanningUpdater::registration("YawPlanningUpdater");
+
         bool YawPlanningUpdater::updateSegments(TrajectorySegment *root) {
             // recursively update all segments, exclude root since this is now the base with no parent
             for (int i = 0; i < root->children.size(); ++i) {
@@ -55,7 +61,8 @@ namespace mav_active_3d_planning {
             std::string args;   // default args extends the parent namespace
             std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_updater_args", &args, param_ns + "/following_updater");
-            following_updater_ = ModuleFactory::Instance()->createEvaluatorUpdater(args, parent_, verbose_modules_);
+            following_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(args, verbose_modules_,
+                                                                                           parent_);
         }
 
         void YawPlanningUpdater::updateSingle(TrajectorySegment *segment) {
@@ -68,7 +75,7 @@ namespace mav_active_3d_planning {
                 following_updater_->updateSegments(&(info->orientations[0]));
                 info->active_orientation = 0;
                 double best_value = info->orientations[0].gain;
-                if (p_select_by_value_){
+                if (p_select_by_value_) {
                     best_value = info->orientations[0].value;
                 }
                 for (int i = 1; i < info->orientations.size(); ++i) {

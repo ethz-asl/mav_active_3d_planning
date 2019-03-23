@@ -6,6 +6,9 @@ namespace mav_active_3d_planning {
     namespace evaluator_updaters {
         using SimulatedSensorEvaluator = mav_active_3d_planning::trajectory_evaluators::SimulatedSensorEvaluator;
 
+        // SimulatedSensorUpdater
+        ModuleFactory::Registration<SimulatedSensorUpdater> SimulatedSensorUpdater::registration("SimulatedSensorUpdater");
+
 
         // SimulatedSensorUpdater
         bool SimulatedSensorUpdater::updateSegments(TrajectorySegment *root) {
@@ -19,7 +22,8 @@ namespace mav_active_3d_planning {
             std::string args;   // default args extends the parent namespace
             std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_updater_args", &args, param_ns + "/following_updater");
-            following_updater_ = ModuleFactory::Instance()->createEvaluatorUpdater(args, parent_, verbose_modules_);
+            following_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(args, verbose_modules_,
+                                                                                           parent_);
         }
 
         void SimulatedSensorUpdater::updateSingle(TrajectorySegment *segment) {

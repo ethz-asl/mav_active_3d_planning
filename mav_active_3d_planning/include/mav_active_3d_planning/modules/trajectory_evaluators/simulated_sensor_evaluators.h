@@ -7,7 +7,6 @@
 #include <vector>
 
 namespace mav_active_3d_planning {
-    class ModuleFactory;
     namespace evaluator_updaters{ class SimulatedSensorUpdater; }
 
     namespace trajectory_evaluators {
@@ -60,6 +59,8 @@ namespace mav_active_3d_planning {
 
             void setupFromParamMap(Module::ParamMap *param_map);
 
+            static ModuleFactory::Registration<NaiveEvaluator> registration;
+
             // Override virtual methods
             bool computeGainFromVisibleVoxels(TrajectorySegment *traj_in);
         };
@@ -77,6 +78,8 @@ namespace mav_active_3d_planning {
             Frontier() {}
 
             void setupFromParamMap(Module::ParamMap *param_map);
+
+            static ModuleFactory::Registration<Frontier> registration;
 
             // Override virtual methods
             bool storeTrajectoryInformation(TrajectorySegment *traj_in,
@@ -103,8 +106,10 @@ namespace mav_active_3d_planning {
 
             void setupFromParamMap(Module::ParamMap *param_map);
 
+            static ModuleFactory::Registration<VoxelType> registration;
+
             // members
-            defaults::BoundingVolume outer_volume_;
+            std::unique_ptr<defaults::BoundingVolume> outer_volume_;
 
             // parameters
             double p_gain_unknown_;

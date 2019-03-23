@@ -7,26 +7,30 @@
 namespace mav_active_3d_planning {
     namespace trajectory_generators {
 
+        ModuleFactory::Registration <MavTrajectoryGeneration> MavTrajectoryGeneration::registration(
+                "MavTrajectoryGeneration");
+
         void MavTrajectoryGeneration::setupFromParamMap(Module::ParamMap *param_map) {
             TrajectoryGenerator::setupFromParamMap(param_map);
             setParam<double>(param_map, "distance_max", &p_distance_max_, 3.0);
             setParam<double>(param_map, "distance_min", &p_distance_min_, 0.5);
+            setParam<double>(param_map, "sampling_rate", &p_sampling_rate_, 0.5);
             setParam<int>(param_map, "n_segments", &p_n_segments_, 5);
             setParam<int>(param_map, "max_tries", &p_max_tries_, 100);
             initializeConstraints();
         }
 
         bool MavTrajectoryGeneration::checkParamsValid(std::string *error_message) {
-            if (p_distance_max_ <= 0.0 ){
+            if (p_distance_max_ <= 0.0) {
                 *error_message = "distance_max expected > 0.0";
                 return false;
-            } else if (p_distance_max_ < p_distance_min_ ){
+            } else if (p_distance_max_ < p_distance_min_) {
                 *error_message = "distance_max needs to be larger than distance_min";
                 return false;
-            } else if (p_n_segments_ < 1 ){
+            } else if (p_n_segments_ < 1) {
                 *error_message = "n_segments expected > 0";
                 return false;
-            } else if (p_max_tries_ < 1 ){
+            } else if (p_max_tries_ < 1) {
                 *error_message = "max_tries expected > 0";
                 return false;
             }
@@ -40,9 +44,9 @@ namespace mav_active_3d_planning {
             mav_trajectory_generation::InputConstraints input_constraints;
             input_constraints.addConstraint(ICT::kFMin, 0.5 * 9.81); // minimum acceleration in [m/s/s].
             input_constraints.addConstraint(ICT::kFMax, 1.5 * 9.81); // maximum acceleration in [m/s/s].
-            input_constraints.addConstraint(ICT::kVMax, system_constraints_.v_max); // maximum velocity in [m/s].
+            input_constraints.addConstraint(ICT::kVMax, system_constraints_->v_max); // maximum velocity in [m/s].
             input_constraints.addConstraint(ICT::kOmegaXYMax, M_PI / 2.0); // maximum roll/pitch rates in [rad/s].
-            input_constraints.addConstraint(ICT::kOmegaZMax, system_constraints_.yaw_rate_max); // maximum yaw rates in [rad/s].
+            input_constraints.addConstraint(ICT::kOmegaZMax, system_constraints_->yaw_rate_max); // max yaw rate [rad/s].
             input_constraints.addConstraint(ICT::kOmegaZDotMax, M_PI); // maximum yaw acceleration in [rad/s/s]..
             feasibility_check_ = mav_trajectory_generation::FeasibilityAnalytic(input_constraints);
             feasibility_check_.settings_.setMinSectionTimeS(0.01);
@@ -58,22 +62,20 @@ namespace mav_active_3d_planning {
             parameters_ = mav_trajectory_generation::NonlinearOptimizationParameters();
         }
 
-        bool MavTrajectoryGeneration::expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment*> *new_segments) {
+        bool MavTrajectoryGeneration::expandSegment(TrajectorySegment *target,
+                                                    std::vector<TrajectorySegment *> *new_segments) {
             // Create and add new adjacent trajectories to target segment
             target->tg_visited = true;
             int valid_segments = 0;
             Eigen::Vector3d start_pos = target->trajectory.back().position_W;
-            srand(time(NULL));
             int counter = 0;
 
             while (valid_segments < p_n_segments_ && counter < p_max_tries_) {
                 counter++;
                 // new random target
-                double yaw = (double) rand() * 2.0 * M_PI / RAND_MAX;
-                double theta = (double) rand() * M_PI / RAND_MAX;
-                double range = p_distance_min_ + (double) rand() / RAND_MAX * (p_distance_max_ - p_distance_min_);
-                Eigen::Vector3d goal_pos =
-                        start_pos + range * Eigen::Vector3d(sin(theta) * cos(yaw), sin(theta) * sin(yaw), cos(theta));
+                double yaw;
+                Eigen::Vector3d goal_pos;
+                sampleGoalPose(&yaw, &goal_pos, start_pos);
 
                 // create trajectory (4D)
                 Eigen::Vector4d start4, goal4, vel4, acc4;
@@ -83,13 +85,12 @@ namespace mav_active_3d_planning {
                 acc4 << target->trajectory.back().acceleration_W, target->trajectory.back().getYawAcc();
 
                 mav_trajectory_generation::Vertex::Vector vertices;
-                const int derivative_to_optimize = mav_trajectory_generation::derivative_order::ACCELERATION;
                 mav_trajectory_generation::Vertex start(4), goal(4);
-                start.makeStartOrEnd(start4, derivative_to_optimize);
+                start.makeStartOrEnd(start4, mav_trajectory_generation::derivative_order::ACCELERATION);
                 start.addConstraint(mav_trajectory_generation::derivative_order::VELOCITY, vel4);
                 start.addConstraint(mav_trajectory_generation::derivative_order::ACCELERATION, acc4);
                 vertices.push_back(start);
-                goal.makeStartOrEnd(goal4, derivative_to_optimize);
+                goal.makeStartOrEnd(goal4, mav_trajectory_generation::derivative_order::ACCELERATION);
 
                 // test: add some goal velocity
                 Eigen::Vector4d constraint4;
@@ -98,45 +99,25 @@ namespace mav_active_3d_planning {
                 vertices.push_back(goal);
 
                 // Optimize
-                std::vector<double> segment_times = mav_trajectory_generation::estimateSegmentTimes(vertices, system_constraints_.v_max,
-                                                                                                    system_constraints_.a_max);
-                mav_trajectory_generation::PolynomialOptimizationNonLinear<10> opt(4, parameters_);
-                opt.setupFromVertices(vertices, segment_times, derivative_to_optimize);
-                opt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::VELOCITY, p_v_max_);
-                opt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::ACCELERATION, p_a_max_);
-                opt.optimize();
-
                 mav_trajectory_generation::Segment::Vector segments;
-                opt.getPolynomialOptimizationRef().getSegments(&segments);
+                mav_trajectory_generation::Trajectory trajectory;
+                optimizeVertices(&vertices, &segments, &trajectory);
 
                 // check input feasibility
-                bool infeasible = false;
-                for (int i = 0; i < segments.size(); ++i) {
-                    if (feasibility_check_.checkInputFeasibility(segments[i]) !=
-                        mav_trajectory_generation::InputFeasibilityResult::kInputFeasible) {
-                        infeasible = true;
-                        break;
-                    }
+                if (!checkInputFeasible(segments)) {
+                    continue;
                 }
-                if (infeasible) { continue; }
 
                 // convert to EigenTrajectory
-                mav_trajectory_generation::Trajectory trajectory;
-                opt.getTrajectory(&trajectory);
                 mav_msgs::EigenTrajectoryPoint::Vector states;
-                double sampling_interval = 1.0 / 20;     // sample at 20Hz
-                if (!mav_trajectory_generation::sampleWholeTrajectory(trajectory, sampling_interval,
-                                                                      &states)) { continue; }
+                if (!mav_trajectory_generation::sampleWholeTrajectory(trajectory, 1.0 / p_sampling_rate_, &states)) {
+                    continue;
+                }
 
                 // Check collision
-                bool collided = false;
-                for (int i = 0; i < states.size(); ++i) {
-                    if (!checkTraversable(states[i].position_W)) {
-                        collided = true;
-                        break;
-                    }
+                if (!checkTrajectoryCollision(states)) {
+                    continue;
                 }
-                if (collided) { continue; }
 
                 // Build result
                 TrajectorySegment *new_segment = target->spawnChild();
@@ -146,6 +127,50 @@ namespace mav_active_3d_planning {
             }
             // Feasible solution found?
             return (valid_segments > 0);
+        }
+
+        void MavTrajectoryGeneration::sampleGoalPose(double *yaw, Eigen::Vector3d *goal_pos,
+                                                     const Eigen::Vector3d &start_pos) {
+            *yaw = (double) rand() * 2.0 * M_PI / RAND_MAX;
+            double theta = (double) rand() * M_PI / RAND_MAX;
+            double range = p_distance_min_ + (double) rand() / RAND_MAX * (p_distance_max_ - p_distance_min_);
+            *goal_pos = start_pos + range * Eigen::Vector3d(sin(theta) * cos(*yaw), sin(theta) * sin(*yaw), cos(theta));
+        }
+
+        void MavTrajectoryGeneration::optimizeVertices(mav_trajectory_generation::Vertex::Vector *vertices,
+                                                       mav_trajectory_generation::Segment::Vector *segments,
+                                                       mav_trajectory_generation::Trajectory *trajectory) {
+            std::vector<double> segment_times = mav_trajectory_generation::estimateSegmentTimes(*vertices,
+                                                                                                system_constraints_->v_max,
+                                                                                                system_constraints_->a_max);
+            mav_trajectory_generation::PolynomialOptimizationNonLinear<10> opt(4, parameters_);
+            opt.setupFromVertices(*vertices, segment_times, mav_trajectory_generation::derivative_order::ACCELERATION);
+            opt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::VELOCITY,
+                                              system_constraints_->v_max);
+            opt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::ACCELERATION,
+                                              system_constraints_->a_max);
+            opt.optimize();
+            opt.getPolynomialOptimizationRef().getSegments(segments);
+            opt.getTrajectory(trajectory);
+        }
+
+        bool MavTrajectoryGeneration::checkInputFeasible(const mav_trajectory_generation::Segment::Vector &segments) {
+            for (int i = 0; i < segments.size(); ++i) {
+                if (feasibility_check_.checkInputFeasibility(segments[i]) !=
+                    mav_trajectory_generation::InputFeasibilityResult::kInputFeasible) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        bool MavTrajectoryGeneration::checkTrajectoryCollision(const mav_msgs::EigenTrajectoryPoint::Vector &states) {
+            for (int i = 0; i < states.size(); ++i) {
+                if (!checkTraversable(states[i].position_W)) {
+                    return false;
+                }
+            }
+            return true;
         }
 
     } // namespace trajectory_generators

@@ -8,8 +8,6 @@
 #include <vector>
 
 namespace mav_active_3d_planning {
-    class ModuleFactory;
-
     namespace back_trackers {
 
         // Try rotating in place until feasible trajectories were found
@@ -25,6 +23,7 @@ namespace mav_active_3d_planning {
             RotateInPlace() {}
             void setupFromParamMap(Module::ParamMap *param_map);
             bool checkParamsValid(std::string *error_message);
+            static ModuleFactory::Registration<RotateInPlace> registration;
 
             // params
             double turn_rate_;  // rad/s
@@ -46,6 +45,7 @@ namespace mav_active_3d_planning {
             RotateReverse() {}
             void setupFromParamMap(Module::ParamMap *param_map);
             bool checkParamsValid(std::string *error_message);
+            static ModuleFactory::Registration<RotateReverse> registration;
 
             // params
             double turn_rate_;  // rad/s

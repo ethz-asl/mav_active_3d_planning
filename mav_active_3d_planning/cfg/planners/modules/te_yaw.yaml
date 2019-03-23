@@ -16,6 +16,9 @@ trajectory_evaluator:
       resolution_x: 640
       resolution_y: 480
       
+    cost_computer:
+      type: "SegmentTime"
+        
     value_computer:
       type: "RelativeGain"
       accumulate: true

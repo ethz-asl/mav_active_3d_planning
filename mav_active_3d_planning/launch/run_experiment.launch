@@ -18,7 +18,7 @@
   
   <!-- Unreal Sensor arguments ground_truth, kinect-->
   <arg name="model_type" default="ground_truth"/>
-  <arg name="flatten_distance" default="5.1"/>
+  <arg name="flatten_distance" default="5.5"/>
   <arg name="maximum_distance" default="0.0"/>
   
   <!--  Planner arguments (tg_uniform, tg_random_linear, tg_rrt, general, nbvp_bircher, te_frontier, te_yaw)-->

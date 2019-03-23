@@ -23,7 +23,7 @@ trajectory_generator:
   sampling_rate: 20.0
   
   generator_updater:
-    type: "UpdateNothing"
+    type: "GeneratorUpdateNothing"
   
 trajectory_evaluator:
   type: "NaiveEvaluator"
@@ -39,7 +39,7 @@ trajectory_evaluator:
     type: "SegmentLength"
     
   value_computer:
-    type: "Accumulate"
+    type: "AccumulateValue"
     following_value_computer:
       type: "ExponentialDiscount"
       cost_scale: 0.5

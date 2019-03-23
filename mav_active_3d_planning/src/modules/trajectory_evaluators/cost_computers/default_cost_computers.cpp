@@ -4,6 +4,8 @@ namespace mav_active_3d_planning {
     namespace cost_computers {
 
         // SegmentTime
+        ModuleFactory::Registration<SegmentTime> SegmentTime::registration("SegmentTime");
+
         bool SegmentTime::computeCost(TrajectorySegment *traj_in) {
             if (traj_in->trajectory.size() < 2) {
                 traj_in->cost = 0.0;
@@ -15,6 +17,8 @@ namespace mav_active_3d_planning {
         }
 
         // SegmentLength
+        ModuleFactory::Registration<SegmentLength> SegmentLength::registration("SegmentLength");
+
         bool SegmentLength::computeCost(TrajectorySegment *traj_in) {
             if (traj_in->trajectory.size() < 2) {
                 traj_in->cost = 0.0;
