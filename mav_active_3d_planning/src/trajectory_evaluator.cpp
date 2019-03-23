@@ -53,6 +53,10 @@ namespace mav_active_3d_planning {
         voxblox_ptr_ = voxblox_ptr;
     }
 
+    void TrajectoryEvaluator::setParent(PlannerNode* parent){
+        parent_ = parent;
+    }
+
     void EvaluatorUpdater::setParent(TrajectoryEvaluator* parent){
         parent_ = parent;
     }

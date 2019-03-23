@@ -204,7 +204,7 @@ namespace mav_active_3d_planning {
         return true;
     }
 
-    std::unique_ptr <TrajectoryGenerator> ModuleFactory::createTrajectoryGenerator(std::string args,
+    std::unique_ptr <TrajectoryGenerator> ModuleFactory::createTrajectoryGenerator(std::string args, PlannerNode* parent,
                                                                                    std::shared_ptr <voxblox::EsdfServer> voxblox_ptr,
                                                                                    bool verbose) {
         std::unique_ptr <TrajectoryGenerator> result;
@@ -213,12 +213,13 @@ namespace mav_active_3d_planning {
                                                &ModuleFactory::parseTrajectoryGenerators, verbose)) {
             return nullptr;
         }
+        result->setParent(parent);
         result->setVoxbloxPtr(voxblox_ptr);
         setupCommon(&map, result.get(), verbose);
         return result;
     }
 
-    std::unique_ptr <TrajectoryEvaluator> ModuleFactory::createTrajectoryEvaluator(std::string args,
+    std::unique_ptr <TrajectoryEvaluator> ModuleFactory::createTrajectoryEvaluator(std::string args, PlannerNode* parent,
                                                                                    std::shared_ptr <voxblox::EsdfServer> voxblox_ptr,
                                                                                    bool verbose) {
         std::unique_ptr <TrajectoryEvaluator> result;
@@ -227,6 +228,7 @@ namespace mav_active_3d_planning {
                                                &ModuleFactory::parseTrajectoryEvaluators, verbose)) {
             return nullptr;
         }
+        result->setParent(parent);
         result->setVoxbloxPtr(voxblox_ptr);
         setupCommon(&map, result.get(), verbose);
         return result;

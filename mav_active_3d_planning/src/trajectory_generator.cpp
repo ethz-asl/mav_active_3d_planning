@@ -50,6 +50,10 @@ namespace mav_active_3d_planning {
         voxblox_ptr_->setTraversabilityRadius(static_cast<float>(p_collision_radius_));
     }
 
+    void TrajectoryGenerator::setParent(PlannerNode* parent){
+        parent_ = parent;
+    }
+
     void GeneratorUpdater::setParent(TrajectoryGenerator *parent) {
         parent_ = parent;
     }

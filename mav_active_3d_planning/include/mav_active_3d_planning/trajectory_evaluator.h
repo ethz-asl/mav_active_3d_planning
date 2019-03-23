@@ -15,6 +15,8 @@
 namespace mav_active_3d_planning {
 
     // Forward declaration
+    class PlannerNode;
+
     class CostComputer;
     class ValueComputer;
     class NextSelector;
@@ -68,8 +70,12 @@ namespace mav_active_3d_planning {
         std::unique_ptr<NextSelector> next_selector_;
         std::unique_ptr<EvaluatorUpdater> evaluator_updater_;
 
+        // parent
+        PlannerNode* parent_;
+
         // factory accessors
         void setVoxbloxPtr(const std::shared_ptr<voxblox::EsdfServer> &voxblox_ptr);
+        void setParent(PlannerNode* parent);
         virtual void setupFromParamMap(Module::ParamMap *param_map);
     };
 

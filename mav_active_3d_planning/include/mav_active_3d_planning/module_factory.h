@@ -28,12 +28,12 @@ namespace mav_active_3d_planning {
 
         // Module creation accessors
         // Trajectory Generators
-        std::unique_ptr <TrajectoryGenerator> createTrajectoryGenerator(std::string args,
+        std::unique_ptr <TrajectoryGenerator> createTrajectoryGenerator(std::string args, PlannerNode* parent,
                                                                         std::shared_ptr <voxblox::EsdfServer> voxblox_ptr,
                                                                         bool verbose);
 
         // Trajectory Evaluators
-        std::unique_ptr <TrajectoryEvaluator> createTrajectoryEvaluator(std::string args,
+        std::unique_ptr <TrajectoryEvaluator> createTrajectoryEvaluator(std::string args, PlannerNode* parent,
                                                                         std::shared_ptr <voxblox::EsdfServer> voxblox_ptr,
                                                                         bool verbose);
 

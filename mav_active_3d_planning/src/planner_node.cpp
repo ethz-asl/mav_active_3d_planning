@@ -150,9 +150,9 @@ namespace mav_active_3d_planning {
         std::string ns = ros::this_node::getName();
         voxblox_server_ = std::shared_ptr<voxblox::EsdfServer>(new voxblox::EsdfServer(nh_, nh_private_));
         trajectory_generator_ = ModuleFactory::Instance()->createTrajectoryGenerator(
-                ns + "/trajectory_generator", voxblox_server_, verbose_modules);
+                ns + "/trajectory_generator", this, voxblox_server_, verbose_modules);
         trajectory_evaluator_ = ModuleFactory::Instance()->createTrajectoryEvaluator(
-                ns + "/trajectory_evaluator", voxblox_server_, verbose_modules);
+                ns + "/trajectory_evaluator", this, voxblox_server_, verbose_modules);
         back_tracker_ = ModuleFactory::Instance()->createBackTracker(ns + "/back_tracker", verbose_modules);
 
         // Force lazy initialization of modules (call every function once)

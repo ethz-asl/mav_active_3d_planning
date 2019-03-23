@@ -27,6 +27,7 @@ namespace mav_active_3d_planning {
             if (segment->info) {
                 // Update the stored active orientation
                 YawPlanningInfo *info = dynamic_cast<YawPlanningInfo *>(segment->info.get());
+                info->orientations[info->active_orientation].parent = segment->parent;
                 following_updater_->updateSegments(&(info->orientations[info->active_orientation]));
                 segment->gain = info->orientations[info->active_orientation].gain;
                 segment->cost = info->orientations[info->active_orientation].cost;
@@ -61,6 +62,9 @@ namespace mav_active_3d_planning {
             if (segment->info) {
                 // Update all orientations and find maximum gain/value
                 YawPlanningInfo *info = dynamic_cast<YawPlanningInfo *>(segment->info.get());
+                for (int i = 0; i < info->orientations.size(); ++i) {
+                    info->orientations[i].parent = segment->parent;
+                }
                 following_updater_->updateSegments(&(info->orientations[0]));
                 info->active_orientation = 0;
                 double best_value = info->orientations[0].gain;

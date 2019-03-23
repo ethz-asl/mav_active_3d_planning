@@ -121,6 +121,7 @@ namespace mav_active_3d_planning {
             mav_msgs::EigenTrajectoryPoint start_point = target->trajectory.back();
             mav_msgs::EigenTrajectoryPoint goal_point;
             goal_point.position_W = start_pos + direction;
+            goal_point.setFromYaw((double) rand() / (double) RAND_MAX * 2.0 * M_PI);    // random orientation
             if (!connect_poses(start_point, goal_point, &trajectory)) {
                 return false;
             }
@@ -169,12 +170,11 @@ namespace mav_active_3d_planning {
             }
 
             // Build trajectory
-            double goal_yaw = (double) rand() / (double) RAND_MAX * 2.0 * M_PI;
             n_points = std::ceil(direction.norm() / system_constraints_.v_max * p_sampling_rate_);
             for (int i = 0; i < n_points; ++i) {
                 mav_msgs::EigenTrajectoryPoint trajectory_point;
                 trajectory_point.position_W = start_pos + (double) i / (double) n_points * direction;
-                trajectory_point.setFromYaw(goal_yaw);
+                trajectory_point.setFromYaw(goal.getYaw());
                 trajectory_point.time_from_start_ns = static_cast<int64_t>((double) i / p_sampling_rate_ * 1.0e9);
                 result->push_back(trajectory_point);
             }
