@@ -40,11 +40,10 @@ We provide a framework for buidling and evaluating sampling based, receding hori
 * [Run an Experiment](#Run-an-Experiment)
 
 # Installation
-
-Coming...
+TODO
 
 ## Dependencies
-Uses [nanoflann](#https://github.com/jlblancoc/nanoflann). (included as header lib, no need to install)
+Uses [nanoflann](#https://github.com/jlblancoc/nanoflann) (included as header lib, no need to install).
 
 To run the mav_active_3d_planning simulation framework, the following packages are required: `gazebo_ros`, `rotors_gazebo`, `mav_nonlinear_mpc`, `mav_lowlevel_attitude_controller`, `voxblox_ros` and `unreal_cv_ros`.
 
@@ -77,6 +76,7 @@ Trajectory generators need to implement the following virtual functions:
 * **computeValue** Assign the final value for a trajectory segment, usually f(gain, cost, ...).
 * **selectNextBest** Policy for executing the next segment.
 * **updateSegments** Whether and how to update existing segments when a new trajectory is executed.
+* **visualizeTrajectoryValue** Optional. How to display the expected gain in RVIZ.
 
 ## Voxblox Server
 The main planner includes a [voxblox](https://github.com/ethz-asl/voxblox) server, which is updated from a separate voxblox node and contains all information about the environment. 
@@ -127,16 +127,82 @@ evaluator_updater:
 ```
 
 ## Contributing Custom Modules
-Custom implementations for all module types can easily be added to the framework:
-* Create a "my_module.cpp" in the respective module directory.
-* Use the corresponding namespace, inherit from the base module class and implement the new functionality.
-* In "module_factory.cpp" include your new module file and add the instantiation to the respective type switch.
+Custom implementations for all module types can easily be added to the framework. Custom modules inherit from a base module type that specifies the interface with other classes. All base types inherit from the `Module` class, which contains utilities to configure and build modules through the `ModuleFactory`. To create a custom module follow these steps:
 
-  **Note: Modules are to be included and created ONLY through the ModuleFactory!**
-* Add some doc..?
-* Have fun :)
+* **Create your module class** 
 
-For an idea of how certain module types are generally structured, have a look through the default modules.
+All module classes should be organized as follows:
+```c++
+class MyModule : public ModuleBase {
+public:
+    // override virtual functions of the base class
+    bool moduleBasePureVirtualFunction(TrajectorySegment *root){
+        /* do some magic here */
+        return success;
+    }
+
+protected:
+    // All modules need to be friends of the ModuleFactory to allow creation and setup
+    friend ModuleFactory;
+
+    // protected default constructor
+    MyModule() {}
+
+    // make the module configurable through the factory (required by Module class)
+    void setupFromParamMap(Module::ParamMap *param_map){
+        int my_param_default = 1;
+        
+         // Use the utility function of Module to set params
+        setParam<int>(param_map, "my_param", &p_my_param_, my_param_default); 
+
+        // Make sure to propagate the setup through the inheritance chain
+        ModuleBase::setupFromParamMap(param_map);
+    }
+
+    // guarantee the parameters fulfill the required constraints (optional by Module class)
+    bool checkParamsValid(std::string *error_message) {
+        if (p_my_param <= 0) {
+            *error_message = "my_param expected > 0";
+            return false;
+        }
+
+        // Make sure to propagate the validation check through the inheritance chain
+        return ModuleBase::checkParamsValid(error_message);
+    }
+
+    // params
+    int p_my_param_;
+};
+```
+If your module uses other modules, e.g. to be used in a chain of decorators, adapt the following functions:
+```c++
+class MyDecoratorModule : public ModuleBase {
+public:
+    bool moduleBasePureVirtualFunction(TrajectorySegment *root){
+        // pass the request down the chain
+        return following_module->moduleBasePureVirtualFunction(root);
+    }
+
+protected:
+    void setupFromParamMap(Module::ParamMap *param_map){
+        // Submodules are created using this formalism
+        std::string args;   // the module args need to be specifiable
+        std::string param_ns = (*param_map)["param_namespace"]; // default extends the parent namespace
+        setParam<std::string>(param_map, "following_module_args", &args, param_ns + "/following_module");
+        following_module_ = ModuleFactory::Instance()->createModuleBase(args, parent_, verbose_modules_);
+    }
+
+    // Modules are unique_ptrs
+    std::unique_ptr<ModuleBase> following_module_;
+};
+```
+* **Add the module to the facatory** 
+
+In `ModuleFactory.cpp`, include your module and add it to the respective parsing function. Modules are supposed to be included and created **only** through the factory.
+
+* **Add some doc..?**
+
+For inspiration maybe look through some of the default modules.
 
 # Running and Evaluating a Simulated Experiment
 To test and compare the performance of planners, we provide a simulation environment and evaluation tools.
