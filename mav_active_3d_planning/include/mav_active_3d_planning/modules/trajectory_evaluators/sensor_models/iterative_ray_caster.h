@@ -8,7 +8,7 @@ namespace mav_active_3d_planning {
     namespace sensor_models {
 
         // Cast Rays until they span 1 full voxel, then duplicate them to omit redundancies
-        // (timed at 55 +/- 25 ms)
+        // (timed at 42 +/- 20 ms)
         class IterativeRayCaster : public CameraModel {
         public:
             virtual ~IterativeRayCaster() {}

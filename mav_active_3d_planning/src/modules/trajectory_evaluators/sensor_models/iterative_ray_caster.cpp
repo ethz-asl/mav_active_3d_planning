@@ -4,11 +4,12 @@
 
 #include <vector>
 #include <algorithm>
+#include <cmath>
 
 namespace mav_active_3d_planning {
     namespace sensor_models {
 
-        ModuleFactory::Registration<IterativeRayCaster> IterativeRayCaster::registration("IterativeRayCaster");
+        ModuleFactory::Registration <IterativeRayCaster> IterativeRayCaster::registration("IterativeRayCaster");
 
         void IterativeRayCaster::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<double>(param_map, "ray_step", &p_ray_step_, (double) c_voxel_size_);
@@ -41,26 +42,27 @@ namespace mav_active_3d_planning {
             ray_table_ = Eigen::ArrayXXi::Zero(c_res_x_, c_res_y_);
 
             // Ray-casting
-            Eigen::Vector3d unit_direction = orientation * Eigen::Vector3d(1, 0, 0);
+            Eigen::Vector3d camera_direction;
+            Eigen::Vector3d direction;
+            Eigen::Vector3d current_position;
+            double distance;
+            bool cast_ray;
+            double map_distance;
             for (int i = 0; i < c_res_x_; ++i) {
-                Eigen::Vector3d x_direction =
-                        Eigen::AngleAxis<double>(c_field_of_view_x_ * (0.5 - (double) i / c_res_x_),
-                                                 Eigen::Vector3d(0, 0, 1)) * unit_direction;
                 for (int j = 0; j < c_res_y_; ++j) {
                     int current_segment = ray_table_(i, j); // get ray starting segment
                     if (current_segment < 0) {
                         continue;   // already occluded ray
                     }
-                    // Cast a single ray
-                    Eigen::Vector3d direction =
-                            Eigen::AngleAxis<double>(c_field_of_view_y_ * (0.5 - (double) j / c_res_y_),
-                                                     Eigen::Vector3d(0, 1, 0)) * x_direction;
-                    double distance = c_split_distances_[current_segment];
-                    bool cast_ray = true;
+                    CameraModel::getDirectionVector(&camera_direction, (double) i / ((double) c_res_x_ - 1.0),
+                                                    (double) j / ((double) c_res_y_ - 1.0));
+                    direction = orientation * camera_direction;
+                    distance = c_split_distances_[current_segment];
+                    cast_ray = true;
                     while (cast_ray) {
                         // iterate through all splits (segments)
                         while (distance < c_split_distances_[current_segment + 1]) {
-                            Eigen::Vector3d current_position = position + distance * direction;
+                            current_position = position + distance * direction;
                             distance += p_ray_step_;
 
                             // Add point (duplicates are handled in CameraModel::getVisibleVoxelsFromTrajectory)
@@ -68,7 +70,7 @@ namespace mav_active_3d_planning {
                             result->push_back(current_position);
 
                             // Check voxel occupied
-                            double map_distance = 0.0;
+                            map_distance = 0.0;
                             if (voxblox_ptr_->getEsdfMapPtr()->getDistanceAtPosition(current_position, &map_distance)) {
                                 if (map_distance < 0.0) {
                                     // Occlusion, mark neighboring rays as occluded
@@ -95,8 +97,8 @@ namespace mav_active_3d_planning {
 
         void IterativeRayCaster::markNeighboringRays(int x, int y, int segment, int value) {
             // Set all nearby (towards bottom right) ray starts, depending on the segment depth, to a value.
-            for (int i = x; i < std::min(c_res_x_, i + c_split_widths_[segment]); ++i) {
-                for (int j = y; j < std::min(c_res_y_, j + c_split_widths_[segment]); ++j) {
+            for (int i = x; i < std::min(c_res_x_, x + c_split_widths_[segment]); ++i) {
+                for (int j = y; j < std::min(c_res_y_, y + c_split_widths_[segment]); ++j) {
                     ray_table_(i, j) = value;
                 }
             }

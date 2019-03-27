@@ -10,7 +10,7 @@ namespace mav_active_3d_planning {
     namespace sensor_models {
 
         // Get minimum resolution reuqired for 1 ray per voxel at max distance, then cast a ray through every
-        // such voxel to detect visible voxels (timed at 90 +/- 30 ms)
+        // such voxel to detect visible voxels (timed at 98 +/- 30 ms)
         class SimpleRayCaster : public CameraModel {
         public:
             virtual ~SimpleRayCaster() {}
