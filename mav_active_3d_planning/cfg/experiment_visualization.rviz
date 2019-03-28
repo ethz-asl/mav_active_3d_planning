@@ -7,9 +7,6 @@ Panels:
         - /Global Options1
         - /Status1
         - /VoxbloxMesh1
-        - /Axes1
-        - /Traversability1
-        - /Sensor Output1
         - /PlannerVisualization1
         - /PlannerVisualization1/Namespaces1
       Splitter Ratio: 0.5
@@ -32,7 +29,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: Traversability
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
@@ -140,6 +137,7 @@ Visualization Manager:
       Marker Topic: /planner/trajectory_visualization
       Name: PlannerVisualization
       Namespaces:
+        candidate_text: false
         candidate_trajectories: true
         completed_trajectory: true
         evaluation: true
@@ -170,25 +168,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 14.0492802
+      Distance: 22.0470142
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
+        X: -0.315799981
+        Y: 0.210542217
+        Z: -0.321117401
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 1.26479626
+      Pitch: 0.844796658
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 2.03089428
+      Yaw: 2.24589086
     Saved: ~
 Window Geometry:
   Displays:

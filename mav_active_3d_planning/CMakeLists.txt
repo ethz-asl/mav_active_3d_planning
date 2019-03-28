@@ -9,24 +9,44 @@ add_definitions(-std=c++11)
 #############
 # LIBRARIES #
 #############
-cs_add_library(${PROJECT_NAME} 
-	src/defaults.cpp
-	src/module_factory.cpp
-	src/trajectory_generator.cpp
-	src/trajectory_evaluator.cpp
-)
+cs_add_library(${PROJECT_NAME}
+        src/defaults.cpp
+        src/module_factory.cpp
+        src/trajectory_generator.cpp
+        src/trajectory_evaluator.cpp
+        # Default Modules
+        src/modules/back_trackers/default_back_trackers.cpp
+        src/modules/trajectory_evaluators/cost_computers/default_cost_computers.cpp
+        src/modules/trajectory_evaluators/evaluator_updaters/default_evaluator_updaters.cpp
+        src/modules/trajectory_evaluators/next_selectors/default_next_selectors.cpp
+        src/modules/trajectory_evaluators/value_computers/default_value_computers.cpp
+        src/modules/trajectory_evaluators/sensor_models/camera_model.cpp
+        src/modules/trajectory_generators/generator_updaters/default_generator_updaters.cpp
+        src/modules/trajectory_generators/segment_selectors/default_segment_selectors.cpp
+        # Other modules
+        src/modules/trajectory_generators/mav_trajectory_generation.cpp
+        src/modules/trajectory_generators/random_linear.cpp
+        src/modules/trajectory_generators/rrt.cpp
+        src/modules/trajectory_generators/uniform.cpp
+        src/modules/trajectory_evaluators/simulated_sensor.cpp
+        src/modules/trajectory_evaluators/sensor_models/sensor_model.cpp
+        src/modules/trajectory_evaluators/sensor_models/camera_model.cpp
+        src/modules/trajectory_evaluators/sensor_models/simple_ray_caster.cpp
+        src/modules/trajectory_evaluators/sensor_models/iterative_ray_caster.cpp
+        src/modules/trajectory_evaluators/evaluator_updaters/simulated_sensor_updaters.cpp
+        )
 
 ############
 # BINARIES #
 ############
 cs_add_executable(planner_node
-  src/planner_node.cpp
-)
+        src/planner_node.cpp
+        )
 target_link_libraries(planner_node ${PROJECT_NAME})
 
 cs_add_executable(eval_voxblox_node
-		src/experiments/eval_voxblox_node.cpp
-)
+        src/experiments/eval_voxblox_node.cpp
+        )
 
 
 #############

@@ -8,16 +8,21 @@
 
 namespace mav_active_3d_planning {
 
+    // Base struct that contains trajectory evaluator information associated with the segment.
+    struct TrajectoryInfo {
+        virtual ~TrajectoryInfo() {}
+    };
+
     // Struct to store trajectory tree data
     struct TrajectorySegment {
-        TrajectorySegment() : parent(nullptr), tg_visited(false) {};
+        TrajectorySegment() : parent(nullptr), tg_visited(false), gain(0.0), cost(0.0), value(0.0) {};
 
         // All trajectory points
         mav_msgs::EigenTrajectoryPointVector trajectory;
 
-        // Associated cost_computers
-        double cost;
+        // Associated costs
         double gain;
+        double cost;
         double value;
 
         // trajectory generator flag
@@ -27,11 +32,10 @@ namespace mav_active_3d_planning {
         TrajectorySegment* parent;
 
         // Pointers to successive trajectory nodes, all nodes are owned by the parent
-        std::vector<std::shared_ptr<TrajectorySegment>> children;
+        std::vector<std::unique_ptr<TrajectorySegment>> children;
 
-        // TODO: make this a template variable?
         // Information to be carried with this segment, e.g. virtual voxels
-        std::vector<Eigen::Vector3d> info;
+        std::unique_ptr<TrajectoryInfo> info;
 
         // compare function for sorting etc
         static bool compare(TrajectorySegment a, TrajectorySegment b) {
@@ -42,23 +46,27 @@ namespace mav_active_3d_planning {
         }
 
         // Safely create a child node and return a pointer to it
-        inline TrajectorySegment* spawnChild(){
-            std::shared_ptr<TrajectorySegment> child = std::make_shared<TrajectorySegment>();
-            children.push_back(child);
-            child->parent = this;
-            return child.get();
+        TrajectorySegment* spawnChild(){
+            children.push_back(std::unique_ptr<TrajectorySegment>(new TrajectorySegment()));
+            children.back()->parent = this;
+            return children.back().get();
         }
 
         // The following utility functions assume a tree structure (no loops)
+        // Add pointers to all immediate children to the result vector
+        void getChildren(std::vector<TrajectorySegment*> *result) {
+            for (int i = 0; i < children.size(); ++i) { result->push_back(children[i].get()); }
+        }
+
         // Recursively add pointers to all leaf nodes (have no children) to the result vector
-        inline void getLeaves(std::vector<TrajectorySegment*> &result) {
-            if (children.empty()) { result.push_back(this); return;}
+        void getLeaves(std::vector<TrajectorySegment*> *result) {
+            if (children.empty()) { result->push_back(this); return;}
             for (int i = 0; i < children.size(); ++i) { children[i]->getLeaves(result); }
         }
 
         // Recursively add pointers to all subsequent nodes to the result vector
-        inline void getTree(std::vector<TrajectorySegment*> &result) {
-            result.push_back(this);
+        void getTree(std::vector<TrajectorySegment*> *result) {
+            result->push_back(this);
             for (int i = 0; i < children.size(); ++i) { children[i]->getTree(result); }
         }
     };

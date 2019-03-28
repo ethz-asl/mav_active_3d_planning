@@ -1,24 +1,18 @@
 # Experiment 1 specific parameters
 
 # Bounding boxes (in initialization frame, relative to PlayerStart)
-planner:
-  planner_node:
-    #Map bounding box
-    trajectory_generator:
-      bounding_volume:
-        x_min: -10.0
-        x_max: 30.0
-        y_min: -22.0
-        y_max: 18.0
-        z_min: -1.5
-        z_max: 13.5
-        
-    # Target bounding box
-    trajectory_evaluator:
-      bounding_volume:
-        x_min: 1.9
-        x_max: 18.7
-        y_min: -10.7
-        y_max: 6.1
-        z_min: -1.5
-        z_max: 9.5
+map_bounding_volume:
+  x_min: -10.0
+  x_max: 30.0
+  y_min: -22.0
+  y_max: 18.0
+  z_min: -1.5
+  z_max: 13.5
+
+target_bounding_volume:
+  x_min: 1.9
+  x_max: 18.7
+  y_min: -10.7
+  y_max: 6.1
+  z_min: -1.5
+  z_max: 9.5

@@ -2,11 +2,10 @@
 #define MAV_ACTIVE_3D_PLANNING_DEFAULTS_H
 
 #include "mav_active_3d_planning/trajectory_segment.h"
+#include "mav_active_3d_planning/module_factory.h"
 
 #include <Eigen/Core>
-#include <ros/node_handle.h>
 
-#include <functional>
 #include <vector>
 #include <string>
 
@@ -16,18 +15,13 @@ namespace mav_active_3d_planning {
     namespace defaults {
 
         // struct for bounding volumes (simple box atm, might include z-rotation, sphere, set of planes, ...)
-        struct BoundingVolume {
+        struct BoundingVolume : public Module {
             BoundingVolume() : is_setup(false) {}
-
-            BoundingVolume(std::string param_ns) {
-                ros::NodeHandle nh(param_ns);
-                setupFromRos(nh);
-            }
 
             virtual ~BoundingVolume() {}
 
-            // populate the bounding volume from ros params
-            bool setupFromRos(const ros::NodeHandle &nh);
+            // populate the bounding volume
+            void setupFromParamMap(Module::ParamMap *param_map);
 
             // check wether point is in bounding box, if bounding box is setup
             bool contains(const Eigen::Vector3d &point);
@@ -35,37 +29,43 @@ namespace mav_active_3d_planning {
             // variables
             bool is_setup;
             double x_min, x_max, y_min, y_max, z_min, z_max;
+
+        protected:
+            static ModuleFactory::Registration<BoundingVolume> registration;
         };
 
         // struct for high level system constraints (might add methods for generating these from max thrusts or so)
-        struct SystemConstraints {
-            SystemConstraints() : is_setup(false) {}
+        struct SystemConstraints : public Module {
+            SystemConstraints() {}
 
-            SystemConstraints(std::string param_ns) {
-                ros::NodeHandle nh(param_ns);
-                setupFromRos(nh);
-            }
+            // factory constructor
+            SystemConstraints(const std::string &args);
 
             virtual ~SystemConstraints() {}
 
-            // populate the system constraints from ros params
-            bool setupFromRos(const ros::NodeHandle &nh);
-
-            // populate the system constraints with reasonable (conservative) defaults
-            bool setupFromDefaults();
+            // populate the system constraints from factory
+            void setupFromParamMap(Module::ParamMap *param_map);
 
             // variables
-            bool is_setup;
             double v_max;           // m/s, maximum absolute velocity
             double a_max ;          // m/s2, maximum absolute acceleration
             double yaw_rate_max;    // rad/s, maximum yaw rate
+
+        private:
+            static ModuleFactory::Registration<SystemConstraints> registration;
         };
 
-        // Return the indices of the EigenTrajectoryPoints in the segment to be evaluated
-        std::vector<int> samplePointsFromSegment(const TrajectorySegment &segment, double sampling_rate,
-                                                    bool include_first = false);
+        // Scale an angle to [0, 2pi]
+        double angleScaled(double angle);
+
+        // Compute the difference between two angles in rad
+        double angleDifference(double angle1, double angle2);
+
+        // Returns the rotation direction (+1 / -1) that is closer for two angles
+        double angleDirection(double angle1, double angle2);
 
     } // namespace defaults
+
 } // namepsace mav_active_3d_planning
 
 #endif //MAV_ACTIVE_3D_PLANNING_DEFAULTS_H

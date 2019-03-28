@@ -1,0 +1,33 @@
+trajectory_evaluator:
+  type: "Frontier"
+  clear_from_parents: false 
+    
+  value_computer:
+    type: "Accumulate"
+    following_value_computer:
+      type: "LinearValue"
+      cost_weight: 1.0
+      gain_weight: 1.0
+    
+  next_selector:
+    type: "SubsequentBest"
+    
+  evaluator_updater:
+    type: "UpdateAll"
+    update_gain: false
+    update_cost: false
+    update_value: true
+    following_updater: 
+      type: "Periodic"
+      minimum_wait_calls: 5
+      following_updater:
+        type: "ResetTree"
+#        type: "PruneByValue"
+#        minimum_value: 0.0
+#        use_relative_values: false
+#        include_subsequent: true
+#        following_updater: 
+#          type: "UpdateAll"
+#          update_gain: true
+#          update_cost: false
+#          update_value: true

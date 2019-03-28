@@ -1,0 +1,21 @@
+trajectory_generator:
+  type: "RandomLinear"
+  min_distance: 0.5  
+  max_distance: 2.0  
+  v_max: 0.5
+  a_max: 0.5
+  planar: false
+  n_segments: 1
+  sample_yaw: true
+  max_tries: 100
+  sampling_rate: 20.0
+  
+  segment_selector:
+    type: "RandomWeighted"
+    revisit: true
+    factor: 3.0
+    leaf_probability: 0.3
+    uniform_probability: 0.1
+    
+  generator_updater:
+    type: "RecheckCollision"

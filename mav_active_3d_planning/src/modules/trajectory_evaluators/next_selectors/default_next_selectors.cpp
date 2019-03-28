@@ -1,4 +1,4 @@
-#include "mav_active_3d_planning/trajectory_evaluator.h"
+#include "mav_active_3d_planning/modules/trajectory_evaluators/next_selectors/default_next_selectors.h"
 
 #include <algorithm>
 #include <vector>
@@ -6,65 +6,58 @@
 namespace mav_active_3d_planning {
     namespace next_selectors {
 
-        // Select the child node which has the highest value
-        class ImmediateBest : public NextSelector {
-        public:
-            ImmediateBest() {}
+        // ImmediateBest
+        ModuleFactory::Registration<ImmediateBest> ImmediateBest::registration("ImmediateBest");
 
-            int selectNextBest(const TrajectorySegment &traj_in) {
-                int current_index = 0;
-                double current_value = traj_in.children[0]->value;
-                for (int i = 1; i < traj_in.children.size(); ++i) {
-                    if (traj_in.children[i]->value > current_value) {
-                        current_value = traj_in.children[i]->value;
-                        current_index = i;
-                    }
+        int ImmediateBest::selectNextBest(const TrajectorySegment &traj_in) {
+            std::vector<int> candidates = {0};
+            double current_max = traj_in.children[0]->value;
+            for (int i = 1; i < traj_in.children.size(); ++i){
+                if (traj_in.children[i]->value > current_max){
+                    current_max = traj_in.children[i]->value;
+                    candidates.clear();
+                    candidates.push_back(i);
+                } else if (traj_in.children[i]->value == current_max){
+                    candidates.push_back(i);
                 }
-                return current_index;
             }
+            // randomize if multiple maxima
+            std::random_shuffle(candidates.begin(), candidates.end());
+            return candidates[0];
+        }
 
-        protected:
-            friend ModuleFactory;
+        // SubsequentBest
+        ModuleFactory::Registration<SubsequentBest> SubsequentBest::registration("SubsequentBest");
 
-            void setupFromParamMap(ParamMap *param_map) {}
-        };
-
-        // Select the child node which contains the highest value segment in its subtree
-        class SubsequentBest : public NextSelector {
-        public:
-            SubsequentBest() {}
-
-            int selectNextBest(const TrajectorySegment &traj_in) {
-                int current_index = 0;
-                double current_value = evaluateSingle(traj_in.children[0].get());
-                double best_value = current_value;
-                for (int i = 1; i < traj_in.children.size(); ++i) {
-                    current_value = evaluateSingle(traj_in.children[i].get());
-                    if (current_value > best_value) {
-                        best_value = current_value;
-                        current_index = i;
-                    }
+        int SubsequentBest::selectNextBest(const TrajectorySegment &traj_in) {
+            std::vector<int> candidates = {0};
+            double current_max = evaluateSingle(traj_in.children[0].get());
+            for (int i = 1; i < traj_in.children.size(); ++i){
+                double current_value = evaluateSingle(traj_in.children[i].get());
+                if (current_value > current_max){
+                    current_max = current_value;
+                    candidates.clear();
+                    candidates.push_back(i);
+                } else if (current_value == current_max){
+                    candidates.push_back(i);
                 }
-                return current_index;
             }
+            // randomize if multiple maxima
+            std::random_shuffle(candidates.begin(), candidates.end());
+            return candidates[0];
+        }
 
-        protected:
-            friend ModuleFactory;
-
-            void setupFromParamMap(ParamMap *param_map) {}
-
-            double evaluateSingle(TrajectorySegment *traj_in) {
-                //Recursively find highest value
-                if (traj_in->children.empty()) {
-                    return traj_in->value;
-                }
-                double highest_value = traj_in->value;
-                for (int i = 0; i < traj_in->children.size(); ++i) {
-                    highest_value = std::max(highest_value, evaluateSingle(traj_in->children[i].get()));
-                }
-                return highest_value;
+        double SubsequentBest::evaluateSingle(TrajectorySegment *traj_in) {
+            //Recursively find highest value
+            if (traj_in->children.empty()) {
+                return traj_in->value;
             }
-        };
+            double highest_value = traj_in->value;
+            for (int i = 0; i < traj_in->children.size(); ++i) {
+                highest_value = std::max(highest_value, evaluateSingle(traj_in->children[i].get()));
+            }
+            return highest_value;
+        }
 
     } // namespace next_selectors
 } // namepsace mav_active_3d_planning
