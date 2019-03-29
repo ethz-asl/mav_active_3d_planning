@@ -1,10 +1,7 @@
 #include "mav_active_3d_planning/trajectory_evaluator.h"
-#include "mav_active_3d_planning/module_factory.h"
-
-#include <vector>
+#include "mav_active_3d_planning/planner_node.h"
 
 namespace mav_active_3d_planning {
-
 
     void TrajectoryEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
         // Get the args to build the modules, default is a namespace extension
@@ -35,7 +32,7 @@ namespace mav_active_3d_planning {
         return value_computer_->computeValue(traj_in);
     }
 
-    int TrajectoryEvaluator::selectNextBest(const TrajectorySegment &traj_in) {
+    int TrajectoryEvaluator::selectNextBest(TrajectorySegment *traj_in) {
         // If not implemented use a (default) module
         if (!next_selector_) {
             next_selector_ = ModuleFactory::Instance()->createModule<NextSelector>(p_next_args_, verbose_modules_);
@@ -47,13 +44,18 @@ namespace mav_active_3d_planning {
         // If not implemented use a (default) module
         if (!evaluator_updater_) {
             evaluator_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(p_updater_args_,
-                                                                                           verbose_modules_, this);
+                                                                                           verbose_modules_,
+                                                                                           parent_->trajectory_evaluator_.get());
         }
         return evaluator_updater_->updateSegments(root);
     }
 
     void TrajectoryEvaluator::setVoxbloxPtr(const std::shared_ptr <voxblox::EsdfServer> &voxblox_ptr) {
         voxblox_ptr_ = voxblox_ptr;
+    }
+
+    void TrajectoryEvaluator::setParent(Module* parent){
+        parent_ = dynamic_cast<PlannerNode*>(parent);
     }
 
     void EvaluatorUpdater::setParent(Module *parent) {

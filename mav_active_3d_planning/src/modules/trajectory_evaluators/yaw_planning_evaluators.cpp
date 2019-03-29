@@ -9,6 +9,7 @@
 
 namespace mav_active_3d_planning {
     namespace trajectory_evaluators {
+        using YawPlanningUpdater = mav_active_3d_planning::evaluator_updaters::YawPlanningUpdater;
 
         // YawPlanningEvaluator
         bool YawPlanningEvaluator::computeGain(TrajectorySegment *traj_in) {
@@ -29,7 +30,6 @@ namespace mav_active_3d_planning {
                 current_value = info->orientations.back().value;
             }
             double best_value = current_value;
-
             // Sample all directions
             for (int i = 1; i < p_n_directions_; ++i) {
                 info->orientations.push_back(traj_in->shallowCopy());
@@ -67,7 +67,7 @@ namespace mav_active_3d_planning {
             return following_evaluator_->computeValue(traj_in);
         }
 
-        int YawPlanningEvaluator::selectNextBest(const TrajectorySegment &traj_in) {
+        int YawPlanningEvaluator::selectNextBest(TrajectorySegment *traj_in) {
             return following_evaluator_->selectNextBest(traj_in);
         }
 
@@ -87,13 +87,17 @@ namespace mav_active_3d_planning {
             setParam<int>(param_map, "n_directions", &p_n_directions_, 4);
             setParam<bool>(param_map, "select_by_value", &p_select_by_value_, false);
 
+            // Register link for yaw planning udpaters
+            ModuleFactory::Instance()->registerLinkableModule("YawPlanningEvaluator", this);
+
             // Create following evaluator
             std::string args;   // default args extends the parent namespace
             std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_evaluator_args", &args,
                                   param_ns + "/following_evaluator");
             following_evaluator_ = ModuleFactory::Instance()->createModule<TrajectoryEvaluator>(args, verbose_modules_,
-                                                                                                voxblox_ptr_);
+                                                                                                voxblox_ptr_,
+                                                                                                (Module *) parent_);
 
             // setup parent
             TrajectoryEvaluator::setupFromParamMap(param_map);
@@ -126,13 +130,8 @@ namespace mav_active_3d_planning {
 
         void SimpleYawPlanningEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<bool>(param_map, "visualize_followup", &p_visualize_followup_, true);
-
             // setup parent
             YawPlanningEvaluator::setupFromParamMap(param_map);
-        }
-
-        bool SimpleYawPlanningEvaluator::checkParamsValid(std::string *error_message) {
-            return YawPlanningEvaluator::checkParamsValid(error_message);
         }
 
         void SimpleYawPlanningEvaluator::visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg,
@@ -143,8 +142,8 @@ namespace mav_active_3d_planning {
             double max_value = info->orientations[0].gain;
             double min_value = info->orientations[0].gain;
             if (p_select_by_value_) {
-                double max_value = info->orientations[0].value;
-                double min_value = info->orientations[0].value;
+                max_value = info->orientations[0].value;
+                min_value = info->orientations[0].value;
             }
             for (int i = 1; i < info->orientations.size(); ++i) {
                 if (p_select_by_value_) {

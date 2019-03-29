@@ -28,6 +28,7 @@ cs_add_library(${PROJECT_NAME}
         src/modules/trajectory_generators/mav_trajectory_generation.cpp
         src/modules/trajectory_generators/random_linear.cpp
         src/modules/trajectory_generators/rrt.cpp
+        src/modules/trajectory_generators/rrt_star.cpp
         src/modules/trajectory_generators/uniform.cpp
         src/modules/trajectory_evaluators/simulated_sensor_evaluators.cpp
         src/modules/trajectory_evaluators/sensor_models/sensor_model.cpp

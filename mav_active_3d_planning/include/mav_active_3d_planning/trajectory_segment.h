@@ -20,13 +20,13 @@ namespace mav_active_3d_planning {
         // All trajectory points
         mav_msgs::EigenTrajectoryPointVector trajectory;
 
-        // Associated costs
+        // Associated values
         double gain;
         double cost;
         double value;
 
-        // trajectory generator flag
-        bool tg_visited;
+        // flags
+        bool tg_visited;            // trajectory generator visited during expansion site selection
 
         // pointer to parent trajectory, nullptr for currently active segment (root)
         TrajectorySegment *parent;
@@ -58,6 +58,7 @@ namespace mav_active_3d_planning {
         // Create a shallow copy of the segment (Includes everything except the unique pointers children and info, which
         // will not be setup!)
         TrajectorySegment shallowCopy();
+
     };
 
 }  // namespace mav_active_3d_planning

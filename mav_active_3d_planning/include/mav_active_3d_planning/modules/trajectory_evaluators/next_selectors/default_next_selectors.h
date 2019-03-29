@@ -10,7 +10,7 @@ namespace mav_active_3d_planning {
         class ImmediateBest : public NextSelector {
         public:
             // override virtual functions
-            int selectNextBest(const TrajectorySegment &traj_in);
+            int selectNextBest(TrajectorySegment *traj_in);
 
         protected:
             friend ModuleFactory;
@@ -26,7 +26,7 @@ namespace mav_active_3d_planning {
         class SubsequentBest : public NextSelector {
         public:
             // override virtual functions
-            int selectNextBest(const TrajectorySegment &traj_in);
+            int selectNextBest(TrajectorySegment *traj_in);
 
         protected:
             friend ModuleFactory;

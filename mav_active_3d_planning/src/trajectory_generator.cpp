@@ -42,7 +42,8 @@ namespace mav_active_3d_planning {
         // If not implemented use a (default) module
         if (!generator_updater_) {
             generator_updater_ = ModuleFactory::Instance()->createModule<GeneratorUpdater>(p_updater_args_,
-                                                                                           verbose_modules_, this);
+                                                                                           verbose_modules_,
+                                                                                           parent_->trajectory_generator_.get());
         }
         return generator_updater_->updateSegments(root);
     }

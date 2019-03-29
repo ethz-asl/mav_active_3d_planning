@@ -39,7 +39,7 @@ namespace mav_active_3d_planning {
         virtual bool computeValue(TrajectorySegment *traj_in);
 
         // return the index of the most promising child segment
-        virtual int selectNextBest(const TrajectorySegment &traj_in);
+        virtual int selectNextBest(TrajectorySegment *traj_in);
 
         // Whether and how to update existing segments when a new trajectory is executed
         virtual bool updateSegments(TrajectorySegment *root);
@@ -75,6 +75,7 @@ namespace mav_active_3d_planning {
 
         // factory accessors
         void setVoxbloxPtr(const std::shared_ptr<voxblox::EsdfServer> &voxblox_ptr);
+        void setParent(Module* parent);
         virtual void setupFromParamMap(Module::ParamMap *param_map);
     };
 
@@ -93,7 +94,7 @@ namespace mav_active_3d_planning {
     // Abstract encapsulation for default/modular implementations of the selectNextBest method
     class NextSelector : public Module {
     public:
-        virtual int selectNextBest(const TrajectorySegment &traj_in) = 0;
+        virtual int selectNextBest(TrajectorySegment *traj_in) = 0;
     };
 
     // Abstract encapsulation for default/modular implementations of the updateSegments method
@@ -104,7 +105,7 @@ namespace mav_active_3d_planning {
         virtual bool updateSegments(TrajectorySegment *root) = 0;
 
     protected:
-        friend class ModuleFactory;
+        friend ModuleFactory;
 
         TrajectoryEvaluator* parent_;   // modules are unique ptrs, parent is always valid
 

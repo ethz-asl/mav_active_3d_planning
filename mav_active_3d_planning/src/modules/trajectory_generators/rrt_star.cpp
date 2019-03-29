@@ -14,14 +14,20 @@ namespace mav_active_3d_planning {
     namespace trajectory_generators {
 
         // RRTStar
+        ModuleFactory::Registration <RRTStar> RRTStar::registration("RRTStar");
+
         void RRTStar::setupFromParamMap(Module::ParamMap *param_map) {
             RRT::setupFromParamMap(param_map);
             setParam<bool>(param_map, "rewire_root", &p_rewire_root_, false);
-            setParam<double>(param_map, "rewire_range", &p_rewire_range_, p_max_extension_range_);
+            setParam<bool>(param_map, "rewire_intermediate", &p_rewire_intermediate_, false);
+            setParam<double>(param_map, "max_rewire_range", &p_max_rewire_range_, p_max_extension_range_ + 0.2);
+            setParam<int>(param_map, "n_neighbors", &p_n_neighbors_, 10);
+            c_rewire_range_square_ = p_max_rewire_range_*p_max_rewire_range_;
+            ModuleFactory::Instance()->registerLinkableModule("RRTStarGenerator", this);
         }
 
         bool RRTStar::checkParamsValid(std::string *error_message) {
-            if (p_rewire_range_ <= 0.0) {
+            if (p_max_rewire_range_ <= 0.0) {
                 *error_message = "rewire_range expected > 0";
                 return false;
             }
@@ -29,123 +35,184 @@ namespace mav_active_3d_planning {
         }
 
         bool RRTStar::expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment *> *new_segments) {
+            tree_is_reset_ = true;  // select was called earlier, resetting the tree on new root segment
             if (!target) {
                 // Segment selection failed
                 return false;
             }
 
-            // Check max segment range
-            Eigen::Vector3d start_pos = target->trajectory.back().position_W;
-            Eigen::Vector3d direction = goal_pos_ - start_pos;
-            if (p_max_extension_range_ > 0.0 && direction.norm() > p_max_extension_range_) {
-                direction *= p_max_extension_range_ / direction.norm();
+            // Check max segment range and cropping
+            if (!adjustGoalPosition(target->trajectory.back().position_W, &goal_pos_)) {
+                return false;
             }
-            if (p_crop_segments_) {
-                // if the full length cannot be reached, crop it
-                int n_points = std::ceil(direction.norm() / (double) voxblox_ptr_->getEsdfMapPtr()->voxel_size());
-                for (int i = 0; i < n_points; ++i) {
-                    if (!checkTraversable(start_pos + (double) i / (double) n_points * direction)) {
-                        double length = direction.norm() * (double) (i - 1) / (double) n_points - p_crop_margin_;
-                        if (length <= p_crop_min_length_) {
-                            return false;
-                        }
-                        direction *= length / direction.norm();
-                        break;
-                    }
-                }
+
+            // Find nearby parent candidates
+            std::vector < TrajectorySegment * > candidate_parents;
+            if (!findNearbyCandidates(goal_pos_, &candidate_parents)) {
+                // No candidates found
+                return false;
             }
 
             // Compute the gain of the new point (evaluation must be single point!)
             TrajectorySegment *new_segment = new TrajectorySegment();
             mav_msgs::EigenTrajectoryPoint goal_point;
-            goal_point.position_W = start_pos + direction;
+            goal_point.position_W = goal_pos_;
             goal_point.setFromYaw((double) rand() / (double) RAND_MAX * 2.0 * M_PI);    // random orientation
             new_segment->trajectory.push_back(goal_point);
+            new_segment->parent = nullptr;
             parent_->trajectory_evaluator_->computeGain(new_segment);
 
-            // Find nearby parent candidates
-            std::vector <std::pair<std::size_t, double>> indices_dists;
-            double query_pt[3] = {goal_pos.x(), goal_pos.y(), goal_pos.z()};
-            nanoflann::RadiusResultSet<double, std::size_t> result_set(p_rewire_range_, indices_dists);
-            kdtree_->findNeighbors(result_set, query_pt, nanoflann::SearchParams());
-            if (indices_dists.empty()) {
-                // no neighbors found
-                delete new_segment;
-                return false;
-            }
-
-            // Build best segment
-            std::vector < TrajectorySegment * > candidate_parents;
-            for (int i = 0; i < indices_dists.size(); ++i) {
-                candidate_parents.push_back(tree_data_.data[indices_dists[i].first);
-            }
-            if (!findBestParentTrajectory(new_segment, candidate_parents)) {
+            // Create the trajectory from the best parent and attach the segment to it
+            if (!rewireToBestParent(new_segment, candidate_parents)) {
                 // no possible trajectory found
                 delete new_segment;
                 return false;
             }
 
             // Rewire existing segments within range to the new segment, if this increases their value
-            TrajectorySegment *current = new_segment->parent;
-            while (current) {
-                // the connection of the new segment to the root cannot be rewired (loops!)
-                candidate_parents.erase(std::remove(candidate_parents.begin(), candidate_parents.end(), current),
-                                        candidate_parents.end());
-                current = current->parent;
+            if (p_rewire_intermediate_) {
+                TrajectorySegment *current = new_segment;
+                while (current) {
+                    // the connection of the new segment to the root cannot be rewired (loops!)
+                    candidate_parents.erase(std::remove(candidate_parents.begin(), candidate_parents.end(), current),
+                                            candidate_parents.end());
+                    current = current->parent;
+                }
+                std::vector < TrajectorySegment * > new_parent = {new_segment};
+                for (int i = 0; i < candidate_parents.size(); ++i) {
+                    rewireToBestParent(candidate_parents[i], new_parent);
+                }
             }
-            for (int i = 0; i < candidate_parents.size(); ++i) {
 
-            }
-
-
-            // Build result and add it to the kdtree
-            TrajectorySegment *new_segment = target->spawnChild();
-            new_segment->trajectory = trajectory;
-            new_segments->push_back(new_segment);
+            // Add to the kdtree
             tree_data_.addSegment(new_segment);
             kdtree_->addPoints(tree_data_.points.size() - 1, tree_data_.points.size() - 1);
             return true;
         }
 
-        bool findBestParentTrajectory(TrajectorySegment *segment, const std::vector<TrajectorySegment *> &candidates) {
+        bool RRTStar::rewireRoot(TrajectorySegment *root, int *next_segment) {
+            if (!p_rewire_root_) {
+                return true;
+            }
+            if (!tree_is_reset_) {
+                // Force reset (dangling pointers!)
+                std::vector < TrajectorySegment * > currrent_tree;
+                root->getTree(&currrent_tree);
+                tree_data_.clear();
+                for (int i = 0; i < currrent_tree.size(); ++i) {
+                    tree_data_.addSegment(currrent_tree[i]);
+                }
+                kdtree_ = std::unique_ptr<KDTree>(new KDTree(3, tree_data_));
+                kdtree_->addPoints(0, tree_data_.points.size() - 1);
+            }
+            tree_is_reset_ = false;
+            // Try rewiring non-next segments (to keept their branches alive)
+            TrajectorySegment *next_root = root->children[*next_segment].get();
+            std::vector < TrajectorySegment * > to_rewire;
+            root->getChildren(&to_rewire);
+            to_rewire.erase(std::remove(to_rewire.begin(), to_rewire.end(), next_root), to_rewire.end());
+            for (int i = 0; i < to_rewire.size(); ++i) {
+                std::vector < TrajectorySegment * > candidate_parents;
+                if (!findNearbyCandidates(to_rewire[i]->trajectory.back().position_W, &candidate_parents)) {
+                    continue;
+                }
+                // remove all candidates that are still connected to the root
+                std::vector < TrajectorySegment * > safe_candidates;
+                TrajectorySegment *current;
+                for (int j = 0; j < candidate_parents.size(); ++j) {
+                    current = candidate_parents[j];
+                    while (current) {
+                        if (current == next_root) {
+                            safe_candidates.push_back(candidate_parents[j]);
+                            break;
+                        }
+                        current = current->parent;
+                    }
+                }
+                if (safe_candidates.empty()) { continue; }
+                rewireToBestParent(to_rewire[i], safe_candidates);
+            }
+
+            // Adjust the next best value
+            for (int i = 0; i < root->children.size(); ++i) {
+                if (root->children[i].get() == next_root) {
+                    *next_segment = i;
+                    break;
+                }
+            }
+            return true;
+        }
+
+        bool
+        RRTStar::findNearbyCandidates(const Eigen::Vector3d &target_point, std::vector<TrajectorySegment *> *result) {
+            // Also tried radius search here but that stuff blows for some reason...
+            double query_pt[3] = {target_point.x(), target_point.y(), target_point.z()};
+            std::size_t ret_index[p_n_neighbors_];
+            double out_dist[p_n_neighbors_];
+            nanoflann::KNNResultSet<double> resultSet(p_n_neighbors_);
+            resultSet.init(ret_index, out_dist);
+            kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10));
+            bool candidate_found = false;
+            for (int i = 0; i < resultSet.size(); ++i) {
+                if (out_dist[i] <= c_rewire_range_square_) {
+                    candidate_found = true;
+                    result->push_back(tree_data_.data[ret_index[i]]);
+                }
+            }
+            return candidate_found;
+        }
+
+        bool RRTStar::rewireToBestParent(TrajectorySegment *segment,
+                                         const std::vector<TrajectorySegment *> &candidates) {
             // Evaluate all candidate parents and store the best one in the segment
-            // Goal is the end of the inital segment
+            // Goal is the end point of the segment
             mav_msgs::EigenTrajectoryPoint goal_point = segment->trajectory.back();
-            bool parent_found = false;
-            mav_msgs::EigenTrajectoryPointVector best_trajectory;
-            double best_value;
-            double best_cost;
-            TrajectorySegment *best_parent;
+
+            // store the initial segment
+            TrajectorySegment best_segment = segment->shallowCopy();
+            TrajectorySegment *initial_parent = segment->parent;
+
+            // Find best segment
             for (int i = 0; i < candidates.size(); ++i) {
-                mav_msgs::EigenTrajectoryPointVector trajectory;
-                if (connect_poses(candidates[i]->trajectory.back(), goal_point, &trajectory)) {
-                    // evaluate the trajectory (these ops should not touch the gain or info)
-                    segment->trajectory = trajectory;
-                    segment->parent = candidate_parent;
+                segment->trajectory.clear();
+                segment->parent = candidates[i];
+                if (connect_poses(candidates[i]->trajectory.back(), goal_point, &(segment->trajectory))) {
+                    // Feasible connection: evaluate the trajectory
                     parent_->trajectory_evaluator_->computeCost(segment);
                     parent_->trajectory_evaluator_->computeValue(segment);
-                    if (!parent_found) {
-                        parent_found = true;
-                        best_value = segment->value;
-                        best_cost = segment->cost;
-                        best_parent = candidates[i];
-                        best_trajectory = trajectory;
-                    } else if (new_segment->value > best_value) {
-                        best_value = segment->value;
-                        best_cost = segment->cost;
-                        best_parent = candidates[i];
-                        best_trajectory = trajectory;
+                    if (best_segment.parent == nullptr || segment->value > best_segment.value) {
+                        best_segment = segment->shallowCopy();
                     }
                 }
             }
-            if (!parent_found) {
+            if (best_segment.parent == nullptr) {
+                // No connection found and no previous trajectory
                 return false;
             } else {
-                segment->cost = best_cost;
-                segment->value = best_value;
-                segment->parent = best_parent;
-                segment->trajectory = best_trajectory;
-                return true;
+                // Apply best segment and rewire
+                segment->cost = best_segment.cost;
+                segment->value = best_segment.value;
+                segment->parent = best_segment.parent;
+                segment->trajectory = best_segment.trajectory;
+                if (segment->parent == initial_parent) {
+                    // Back to old parent
+                    return true;
+                } else if (initial_parent == nullptr) {
+                    // Found new parent
+                    segment->parent->children.push_back(std::unique_ptr<TrajectorySegment>(segment));
+                    return true;
+                } else {
+                    for (int i = 0; i < initial_parent->children.size(); ++i) {
+                        if (initial_parent->children[i].get() == segment) {
+                            // Move from existing parent
+                            segment->parent->children.push_back(std::move(initial_parent->children[i]));
+                            initial_parent->children.erase(initial_parent->children.begin() + i);
+                            return true;
+                        }
+                    }
+                    // Rewiring failed (should not happen by construction)
+                    return false;
+                }
             }
         }
 
@@ -154,6 +221,9 @@ namespace mav_active_3d_planning {
     namespace trajectory_evaluators {
 
         // RRTStarEvaluatorAdapter (just delegate everything, call rewire on select best)
+        ModuleFactory::Registration <RRTStarEvaluatorAdapter> RRTStarEvaluatorAdapter::registration(
+                "RRTStarEvaluatorAdapter");
+
         bool RRTStarEvaluatorAdapter::computeGain(TrajectorySegment *traj_in) {
             return following_evaluator_->computeGain(traj_in);
         }
@@ -166,9 +236,10 @@ namespace mav_active_3d_planning {
             return following_evaluator_->computeValue(traj_in);
         }
 
-        int RRTStarEvaluatorAdapter::selectNextBest(const TrajectorySegment &traj_in) {
-            dynamic_cast<RRTStar *>(parent_->trajectory_generator_.get())->rewireRoot();
-            return following_evaluator_->selectNextBest(traj_in);
+        int RRTStarEvaluatorAdapter::selectNextBest(TrajectorySegment *traj_in) {
+            int next = following_evaluator_->selectNextBest(traj_in);
+            generator_->rewireRoot(traj_in, &next);
+            return next;
         }
 
         bool RRTStarEvaluatorAdapter::updateSegments(TrajectorySegment *root) {
@@ -181,13 +252,16 @@ namespace mav_active_3d_planning {
         }
 
         void RRTStarEvaluatorAdapter::setupFromParamMap(Module::ParamMap *param_map) {
+            generator_ = dynamic_cast<mav_active_3d_planning::trajectory_generators::RRTStar *>(
+                    ModuleFactory::Instance()->readLinkableModule("RRTStarGenerator"));
             // Create following evaluator
             std::string args;   // default args extends the parent namespace
             std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_evaluator_args", &args,
                                   param_ns + "/following_evaluator");
-            following_evaluator_ = ModuleFactory::Instance()->createTrajectoryEvaluator(args, parent_, voxblox_ptr_,
-                                                                                        verbose_modules_);
+            following_evaluator_ = ModuleFactory::Instance()->createModule<TrajectoryEvaluator>(args, verbose_modules_,
+                                                                                                voxblox_ptr_,
+                                                                                                (Module *) parent_);
 
             // setup parent
             TrajectoryEvaluator::setupFromParamMap(param_map);

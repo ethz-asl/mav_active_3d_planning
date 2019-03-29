@@ -58,8 +58,9 @@ namespace mav_active_3d_planning {
             double p_crop_min_length_;      // Cropped segments below this length are discarded
             double p_sampling_rate_;        // Hz
             double p_max_extension_range_;  // m (set 0.0 to ignore)
-            bool p_use_spheric_sampling_;
-            int p_maximum_tries_;           // sampling tries, 0 for inf, negative for distance before coll.
+            bool p_use_spheric_sampling_;   // True to use bircher way of sampling, false just sample map bounding box
+            bool p_sample_yaw_;             // True: random yaw, false: face direction of travel
+            int p_maximum_tries_;           // sampling tries, 0 for inf
 
             // kdtree
             std::unique_ptr <KDTree> kdtree_;
@@ -77,6 +78,9 @@ namespace mav_active_3d_planning {
             virtual bool connect_poses(const mav_msgs::EigenTrajectoryPoint &start,
                                        const mav_msgs::EigenTrajectoryPoint &goal,
                                        mav_msgs::EigenTrajectoryPointVector *result);
+
+            // check max segment length and cropping
+            virtual bool adjustGoalPosition(const Eigen::Vector3d &start_pos, Eigen::Vector3d *goal_pos_);
         };
 
     } // namespace trajectory_generators

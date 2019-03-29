@@ -19,6 +19,7 @@ namespace mav_active_3d_planning {
         }
 
         void YawPlanningUpdateAdapter::setupFromParamMap(Module::ParamMap *param_map) {
+            setParam<bool>(param_map, "dynamic_trajectories", &p_dynamic_trajectories_, false);
             // Create Following updater (default does nothing)
             std::string args;   // default args extends the parent namespace
             std::string param_ns = (*param_map)["param_namespace"];
@@ -29,8 +30,13 @@ namespace mav_active_3d_planning {
 
         void YawPlanningUpdateAdapter::updateSingle(TrajectorySegment *segment) {
             if (segment->info) {
-                // Update the stored active orientation
                 YawPlanningInfo *info = dynamic_cast<YawPlanningInfo *>(segment->info.get());
+                if (p_dynamic_trajectories_) {
+                    // Update the (possibly changed) trajectory
+                    info->orientations[info->active_orientation].trajectory = segment->trajectory;
+                    info->orientations[info->active_orientation].parent = segment->parent;
+                }
+                // Update the stored active orientation
                 info->orientations[info->active_orientation].parent = segment->parent;
                 following_updater_->updateSegments(&(info->orientations[info->active_orientation]));
                 segment->gain = info->orientations[info->active_orientation].gain;
@@ -57,6 +63,10 @@ namespace mav_active_3d_planning {
 
         void YawPlanningUpdater::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<bool>(param_map, "select_by_value", &p_select_by_value_, false);
+            setParam<bool>(param_map, "dynamic_trajectories", &p_dynamic_trajectories_, false);
+            evaluator_ = dynamic_cast<YawPlanningEvaluator *>(ModuleFactory::Instance()->readLinkableModule(
+                    "YawPlanningEvaluator"));
+
             // Create Following updater (default does nothing)
             std::string args;   // default args extends the parent namespace
             std::string param_ns = (*param_map)["param_namespace"];
@@ -69,8 +79,18 @@ namespace mav_active_3d_planning {
             if (segment->info) {
                 // Update all orientations and find maximum gain/value
                 YawPlanningInfo *info = dynamic_cast<YawPlanningInfo *>(segment->info.get());
-                for (int i = 0; i < info->orientations.size(); ++i) {
-                    info->orientations[i].parent = segment->parent;
+                if (p_dynamic_trajectories_) {
+                    if (info->orientations[info->active_orientation].cost != segment->cost ||
+                        info->orientations[info->active_orientation].value != segment->value ||
+                        info->orientations[info->active_orientation].parent != segment->parent) {
+                        // The trajectories have changed, also need to recompute the orientations
+                        for (int j = 0; j < info->orientations.size(); ++j) {
+                            info->orientations[j].parent = segment->parent;
+                            double yaw = info->orientations[j].trajectory.back().getYaw();
+                            info->orientations[j].trajectory = segment->trajectory;
+                            evaluator_->setTrajectoryYaw(&(info->orientations[j]), segment->trajectory.front().getYaw(), yaw);
+                        }
+                    }
                 }
                 following_updater_->updateSegments(&(info->orientations[0]));
                 info->active_orientation = 0;

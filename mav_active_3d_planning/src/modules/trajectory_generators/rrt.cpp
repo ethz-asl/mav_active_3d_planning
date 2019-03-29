@@ -13,7 +13,7 @@
 namespace mav_active_3d_planning {
     namespace trajectory_generators {
 
-        ModuleFactory::Registration<RRT> RRT::registration("RRT");
+        ModuleFactory::Registration <RRT> RRT::registration("RRT");
 
         void RRT::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<bool>(param_map, "crop_segments", &p_crop_segments_, false);
@@ -22,7 +22,9 @@ namespace mav_active_3d_planning {
             setParam<double>(param_map, "sampling_rate", &p_sampling_rate_, 20.0);
             setParam<double>(param_map, "max_extension_range", &p_max_extension_range_, 1.0);
             setParam<bool>(param_map, "use_spheric_sampling", &p_use_spheric_sampling_, false);
+            setParam<bool>(param_map, "sample_yaw", &p_sample_yaw_, true);
             setParam<int>(param_map, "maximum_tries", &p_maximum_tries_, 1000);
+            previous_root_ = nullptr;
 
             // setup parent
             TrajectoryGenerator::setupFromParamMap(param_map);
@@ -97,33 +99,23 @@ namespace mav_active_3d_planning {
                 return false;
             }
 
-            // Check max segment range
-            Eigen::Vector3d start_pos = target->trajectory.back().position_W;
-            Eigen::Vector3d direction = goal_pos_ - start_pos;
-            if (p_max_extension_range_ > 0.0 && direction.norm() > p_max_extension_range_) {
-                direction *= p_max_extension_range_ / direction.norm();
-            }
-            if (p_crop_segments_) {
-                // if the full length cannot be reached, crop it
-                int n_points = std::ceil(direction.norm() / (double) voxblox_ptr_->getEsdfMapPtr()->voxel_size());
-                for (int i = 0; i < n_points; ++i) {
-                    if (!checkTraversable(start_pos + (double) i / (double) n_points * direction)) {
-                        double length = direction.norm() * (double) (i - 1) / (double) n_points - p_crop_margin_;
-                        if (length <= p_crop_min_length_){
-                            return false;
-                        }
-                        direction *= length / direction.norm();
-                        break;
-                    }
-                }
+            // Check max segment range and cropping
+            if (!adjustGoalPosition(target->trajectory.back().position_W, &goal_pos_)) {
+                return false;
             }
 
             // try creating a trajectory
             mav_msgs::EigenTrajectoryPointVector trajectory;
             mav_msgs::EigenTrajectoryPoint start_point = target->trajectory.back();
             mav_msgs::EigenTrajectoryPoint goal_point;
-            goal_point.position_W = start_pos + direction;
-            goal_point.setFromYaw((double) rand() / (double) RAND_MAX * 2.0 * M_PI);    // random orientation
+            goal_point.position_W = goal_pos_;
+            if (p_sample_yaw_) {
+                goal_point.setFromYaw((double) rand() / (double) RAND_MAX * 2.0 * M_PI);    // random orientation
+            } else {
+                goal_point.setFromYaw(std::atan2(goal_pos_.x() - start_point.position_W.x(),
+                                                 -goal_pos_.y() + start_point.position_W.y()) -
+                                      M_PI / 2.0);  // face direction of travel
+            }
             if (!connect_poses(start_point, goal_point, &trajectory)) {
                 return false;
             }
@@ -180,6 +172,30 @@ namespace mav_active_3d_planning {
                 trajectory_point.time_from_start_ns = static_cast<int64_t>((double) i / p_sampling_rate_ * 1.0e9);
                 result->push_back(trajectory_point);
             }
+            return true;
+        }
+
+        bool RRT::adjustGoalPosition(const Eigen::Vector3d &start_pos, Eigen::Vector3d *goal_pos_) {
+            Eigen::Vector3d direction = *goal_pos_ - start_pos;
+            if (p_max_extension_range_ > 0.0 && direction.norm() > p_max_extension_range_) {
+                // check max length
+                direction *= p_max_extension_range_ / direction.norm();
+            }
+            if (p_crop_segments_) {
+                // if the full length cannot be reached, crop it
+                int n_points = std::ceil(direction.norm() / (double) voxblox_ptr_->getEsdfMapPtr()->voxel_size());
+                for (int i = 0; i < n_points; ++i) {
+                    if (!checkTraversable(start_pos + (double) i / (double) n_points * direction)) {
+                        double length = direction.norm() * (double) (i - 1) / (double) n_points - p_crop_margin_;
+                        if (length <= p_crop_min_length_) {
+                            return false;
+                        }
+                        direction *= length / direction.norm();
+                        break;
+                    }
+                }
+            }
+            *goal_pos_ = start_pos + direction;
             return true;
         }
 

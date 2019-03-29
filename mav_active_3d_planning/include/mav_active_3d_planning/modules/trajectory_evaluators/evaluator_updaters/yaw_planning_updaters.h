@@ -5,9 +5,11 @@
 
 namespace mav_active_3d_planning {
     namespace evaluator_updaters {
+        using YawPlanningEvaluator = mav_active_3d_planning::trajectory_evaluators::YawPlanningEvaluator;
 
         // Updater specific for yaw planning evaluators. This adaptor allows yaw planning segments (which have the
-        // yaw planning info struct) to be updated by following updaters without further manipulation).
+        // yaw planning info struct) to be updated by following updaters without further manipulation. Updates only the
+        // best view.
         class YawPlanningUpdateAdapter : public EvaluatorUpdater {
         public:
             // override virtual functions
@@ -23,6 +25,9 @@ namespace mav_active_3d_planning {
 
             // members
             std::unique_ptr<EvaluatorUpdater> following_updater_;
+
+            // params
+            bool p_dynamic_trajectories_;   // true: adapt the trajectory of the best view during update, can set false in evaluator
 
             // methods
             void updateSingle(TrajectorySegment *segment);
@@ -45,9 +50,11 @@ namespace mav_active_3d_planning {
 
             // members
             std::unique_ptr<EvaluatorUpdater> following_updater_;
+            YawPlanningEvaluator* evaluator_;
 
             // params
             bool p_select_by_value_;
+            bool p_dynamic_trajectories_;   // If true recompute the trajectories for segments that have changed
 
             // methods
             void updateSingle(TrajectorySegment *segment);

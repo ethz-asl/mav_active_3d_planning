@@ -59,7 +59,7 @@ namespace mav_active_3d_planning {
         trajectory_generator_ = ModuleFactory::Instance()->createModule<TrajectoryGenerator>(
                 ns + "/trajectory_generator", verbose_modules, voxblox_server_, this);
         trajectory_evaluator_ = ModuleFactory::Instance()->createModule<TrajectoryEvaluator>(
-                ns + "/trajectory_evaluator", verbose_modules, voxblox_server_);
+                ns + "/trajectory_evaluator", verbose_modules, voxblox_server_, this);
         back_tracker_ = ModuleFactory::Instance()->createModule<BackTracker>(ns + "/back_tracker", verbose_modules);
 
         // Force lazy initialization of modules (call every function once)
@@ -85,7 +85,7 @@ namespace mav_active_3d_planning {
             trajectory_evaluator_->updateSegments(&temp_segment);
 
             temp_segment.spawnChild()->trajectory.push_back(trajectory_point);
-            trajectory_evaluator_->selectNextBest(temp_segment);
+            trajectory_evaluator_->selectNextBest(&temp_segment);
         }
 
         // Subscribers and publishers
@@ -203,7 +203,7 @@ namespace mav_active_3d_planning {
         }
 
         // Select best next trajectory and update root
-        int next_segment = trajectory_evaluator_->selectNextBest(*current_segment_);
+        int next_segment = trajectory_evaluator_->selectNextBest(current_segment_.get());
         current_segment_ = std::move(current_segment_->children[next_segment]);
         current_segment_->parent = nullptr;
         current_segment_->gain = 0.0;
@@ -470,7 +470,7 @@ namespace mav_active_3d_planning {
         visualization_msgs::MarkerArray msg;
         trajectory_evaluator_->visualizeTrajectoryValue(&msg, trajectory);
         if (msg.markers.size() < vis_num_previous_evaluations_) {
-            vis_num_previous_evaluations_ = msg.markers.size();
+            int temp_num_evals = msg.markers.size();
             // Make sure previous visualization is cleared again
             for (int i = msg.markers.size(); i < vis_num_previous_evaluations_; ++i) {
                 // Setup marker message
@@ -482,6 +482,7 @@ namespace mav_active_3d_planning {
                 new_msg.action = visualization_msgs::Marker::DELETE;
                 msg.markers.push_back(new_msg);
             }
+            vis_num_previous_evaluations_ = temp_num_evals;
         }
         trajectory_vis_pub_.publish(msg);
     }

@@ -33,6 +33,7 @@ namespace mav_active_3d_planning {
 
             // parameters
             bool p_clear_from_parents_;
+            bool p_visualize_sensor_view_;
 
             // store the visible voxel information, asign correct TrajectoryData type here
             virtual bool storeTrajectoryInformation(TrajectorySegment *traj_in,
@@ -86,6 +87,10 @@ namespace mav_active_3d_planning {
                                             const std::vector <Eigen::Vector3d> &new_voxels);
 
             bool computeGainFromVisibleVoxels(TrajectorySegment *traj_in);
+
+            // constants
+            Eigen::Vector3d c_neighbor_voxels_[8];
+            double c_voxel_size_;
 
             // methods
             bool isFrontierVoxel(const Eigen::Vector3d &voxel);

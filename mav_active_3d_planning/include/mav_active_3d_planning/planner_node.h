@@ -17,6 +17,7 @@
 #include <string>
 #include <ctime>
 #include <fstream>
+#include <map>
 
 
 namespace mav_active_3d_planning {
@@ -34,6 +35,12 @@ namespace mav_active_3d_planning {
 
         bool cpuSrvCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
 
+        // members
+        std::shared_ptr <voxblox::EsdfServer> voxblox_server_;
+        std::unique_ptr <TrajectoryGenerator> trajectory_generator_;
+        std::unique_ptr <TrajectoryEvaluator> trajectory_evaluator_;
+        std::unique_ptr <BackTracker> back_tracker_;
+
     protected:
         // ros
         ros::NodeHandle nh_;
@@ -43,12 +50,6 @@ namespace mav_active_3d_planning {
         ros::Publisher trajectory_vis_pub_;
         ros::ServiceServer run_srv_;
         ros::ServiceServer get_cpu_time_srv_;
-
-        // members
-        std::shared_ptr <voxblox::EsdfServer> voxblox_server_;
-        std::unique_ptr <TrajectoryGenerator> trajectory_generator_;
-        std::unique_ptr <TrajectoryEvaluator> trajectory_evaluator_;
-        std::unique_ptr <BackTracker> back_tracker_;
 
         // variables
         std::unique_ptr <TrajectorySegment> current_segment_;        // root node of full trajectory tree

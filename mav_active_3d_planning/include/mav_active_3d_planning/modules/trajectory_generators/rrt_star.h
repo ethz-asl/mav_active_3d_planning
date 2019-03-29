@@ -2,10 +2,12 @@
 #define MAV_ACTIVE_3D_PLANNING_TRAJECTORY_GENERATORS_RRT_STAR_H
 
 #include "mav_active_3d_planning/modules/trajectory_generators/rrt.h"
+#include "mav_active_3d_planning/trajectory_evaluator.h"
+#include "mav_active_3d_planning/planner_node.h"
+
 
 namespace mav_active_3d_planning {
-    class ModuleFactory;
-
+    namespace trajectory_evaluators { class RRTStarEvaluatorAdapter; }
     namespace trajectory_generators {
 
         // Extension of the RRT class. Use with its trajectory evaluator adapter below to find the gain, cost and value
@@ -16,10 +18,11 @@ namespace mav_active_3d_planning {
             // override virtual functions
             virtual bool expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment *> *new_segments);
 
-            bool rewireRoot(TrajectorySegment *root, int next_segment);
+            bool rewireRoot(TrajectorySegment *root, int *next_segment);
 
         protected:
             friend ModuleFactory;
+            friend mav_active_3d_planning::trajectory_evaluators::RRTStarEvaluatorAdapter;
 
             // factory access
             RRTStar() {}
@@ -28,24 +31,24 @@ namespace mav_active_3d_planning {
 
             bool checkParamsValid(std::string *error_message);
 
-            // parameters
-            bool p_rewire_root_;        // if true try rewiring the children of the current segment (to keep them alive)
-            double p_rewire_range_;     // distance [m] within which we search for alternative segments
+            static ModuleFactory::Registration<RRTStar> registration;
 
-            // kdtree
-            std::unique_ptr <KDTree> kdtree_;
-            TreeData tree_data_;
+            // parameters
+            bool p_rewire_root_;            // if true try rewiring the children of the current segment (to keep them alive)
+            bool p_rewire_intermediate_;    // If true try rewiring existing segments to new candidates if this improves their value
+            double p_max_rewire_range_;     // distance [m] within which rewiring is possible
+            int p_n_neighbors_;             // How many knns to consider for rewiring
+
+            // constants
+            double c_rewire_range_square_;
 
             // variables
-
+            bool tree_is_reset_;            // Force reset of kdtree if requestNext is called twice (dangling pointers)
 
             // methods
-            bool findBestParentTrajectory(TrajectorySegment *segment, const std::vector <TrajectorySegment*> &candidates);
-//            virtual bool sample_goal(Eigen::Vector3d *goal_pos);
-//
-//            virtual bool connect_poses(const mav_msgs::EigenTrajectoryPoint &start,
-//                                       const mav_msgs::EigenTrajectoryPoint &goal,
-//                                       mav_msgs::EigenTrajectoryPointVector *result);
+            bool findNearbyCandidates(const Eigen::Vector3d &target_point, std::vector<TrajectorySegment *> *result);
+
+            bool rewireToBestParent(TrajectorySegment *segment, const std::vector <TrajectorySegment*> &candidates);
         };
 
     } // namespace trajectory_generators
@@ -63,7 +66,7 @@ namespace mav_active_3d_planning {
 
             bool computeValue(TrajectorySegment *traj_in);
 
-            int selectNextBest(const TrajectorySegment &traj_in);
+            int selectNextBest(TrajectorySegment *traj_in);
 
             bool updateSegments(TrajectorySegment *root);
 
@@ -77,8 +80,11 @@ namespace mav_active_3d_planning {
 
             void setupFromParamMap(Module::ParamMap *param_map);
 
+            static ModuleFactory::Registration<RRTStarEvaluatorAdapter> registration;
+
             // members
             std::unique_ptr <TrajectoryEvaluator> following_evaluator_;
+            mav_active_3d_planning::trajectory_generators::RRTStar *generator_;
         };
 
     } //namespace trajectory_evaluators

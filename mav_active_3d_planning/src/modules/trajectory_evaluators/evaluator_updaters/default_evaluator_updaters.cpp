@@ -22,7 +22,9 @@ namespace mav_active_3d_planning {
 
         bool UpdateAll::updateSegments(TrajectorySegment *root) {
             // recursively update all segments from root to leaves (as in the planner)
-            updateSingle(root);
+            for (int i = 0; i < root->children.size(); ++i) {
+                updateSingle(root->children[i].get());
+            }
             return following_updater_->updateSegments(root);
         }
 

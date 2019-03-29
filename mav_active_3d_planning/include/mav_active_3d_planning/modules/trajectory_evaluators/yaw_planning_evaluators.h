@@ -5,8 +5,7 @@
 
 
 namespace mav_active_3d_planning {
-    class ModuleFactory;
-
+    namespace evaluator_updaters { class YawPlanningUpdater; }
     namespace trajectory_evaluators {
 
         // Base class for yaw adapting evaluators. Evaluates different yaws for the input trajectory and selects the
@@ -18,12 +17,13 @@ namespace mav_active_3d_planning {
             bool computeGain(TrajectorySegment *traj_in);
             bool computeCost(TrajectorySegment *traj_in);
             bool computeValue(TrajectorySegment *traj_in);
-            int selectNextBest(const TrajectorySegment &traj_in);
+            int selectNextBest(TrajectorySegment *traj_in);
             bool updateSegments(TrajectorySegment *root);
             virtual void visualizeTrajectoryValue(visualization_msgs::MarkerArray* msg, const TrajectorySegment &trajectory);
 
         protected:
             friend ModuleFactory;
+            friend mav_active_3d_planning::evaluator_updaters::YawPlanningUpdater;
 
             // factory access
             YawPlanningEvaluator() {}
@@ -38,8 +38,8 @@ namespace mav_active_3d_planning {
             bool p_select_by_value_;        // false: only evaluate the gain, true: evaluate gain+cost+value
 
             // methods
-            virtual void setTrajectoryYaw(TrajectorySegment* segment, double start_yaw, double target_yaw) = 0;
             virtual double sampleYaw(double original_yaw, int sample) = 0;
+            virtual void setTrajectoryYaw(TrajectorySegment* segment, double start_yaw, double target_yaw) = 0;
         };
 
         // Information struct that is assigned to segments
@@ -59,19 +59,19 @@ namespace mav_active_3d_planning {
 
         protected:
             friend ModuleFactory;
+            friend class mav_active_3d_planning::evaluator_updaters::YawPlanningUpdater;
 
             // factory access
             SimpleYawPlanningEvaluator() {}
             void setupFromParamMap(Module::ParamMap *param_map);
-            bool checkParamsValid(std::string *error_message);
             static ModuleFactory::Registration<SimpleYawPlanningEvaluator> registration;
 
             // params
             bool p_visualize_followup_;     // true: also visualize the gain of the best orientation
 
             // methods
-            void setTrajectoryYaw(TrajectorySegment* segment, double start_yaw, double target_yaw);
             double sampleYaw(double original_yaw, int sample);
+            void setTrajectoryYaw(TrajectorySegment* segment, double start_yaw, double target_yaw);
         };
 
     } // namespace trajectory_evaluators
