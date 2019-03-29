@@ -147,6 +147,9 @@ protected:
 
     // protected default constructor
     MyModule() {}
+    
+    // Statically register the module to the factory so that it can be constructed
+    static ModuleFactory::Registration<MyModule> registration;
 
     // make the module configurable through the factory (required by Module class)
     void setupFromParamMap(Module::ParamMap *param_map){
@@ -159,7 +162,7 @@ protected:
         ModuleBase::setupFromParamMap(param_map);
     }
 
-    // guarantee the parameters fulfill the required constraints (optional by Module class)
+    // guarantee that parameters fulfill required constraints (optional by Module class)
     bool checkParamsValid(std::string *error_message) {
         if (p_my_param <= 0) {
             *error_message = "my_param expected > 0";
@@ -173,8 +176,12 @@ protected:
     // params
     int p_my_param_;
 };
+
+// make sure the registration is initialized with a unique name (i.e. the name of the class)
+ModuleFactory::Registration<MyModule> MyModule::registration("MyModule");
+
 ```
-If your module uses other modules, e.g. to be used in a chain of decorators, adapt the following functions:
+If your module uses other modules, e.g. to be used in a chain of decorators, adapt these functions as follows:
 ```c++
 class MyDecoratorModule : public ModuleBase {
 public:
@@ -189,16 +196,13 @@ protected:
         std::string args;   // the module args need to be specifiable
         std::string param_ns = (*param_map)["param_namespace"]; // default extends the parent namespace
         setParam<std::string>(param_map, "following_module_args", &args, param_ns + "/following_module");
-        following_module_ = ModuleFactory::Instance()->createModuleBase(args, parent_, verbose_modules_);
+        following_module_ = ModuleFactory::Instance()->createModuleBase(args, verbose_modules_, parent_);
     }
 
     // Modules are unique_ptrs
     std::unique_ptr<ModuleBase> following_module_;
 };
 ```
-* **Add the module to the facatory** 
-
-In `ModuleFactory.cpp`, include your module and add it to the respective parsing function. Modules are supposed to be included and created **only** through the factory.
 
 * **Add some doc..?**
 
