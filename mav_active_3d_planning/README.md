@@ -1,5 +1,3 @@
-**This is a first rough readme, will be more formulated out.**
-
 mav_active_3d_planning contains code for  voxblox based active path planning in unknown environments with the goal of optimizing a 3D-reconstruction gain such as exploration and quality while minimizing a cost. 
 
 We provide a framework for buidling and evaluating sampling based, receding horizon planners.
@@ -14,24 +12,15 @@ We provide a framework for buidling and evaluating sampling based, receding hori
 * [Configuring a Planner](#Configuring-a-Planner)
 * [Run an Experiment](#Run-an-Experiment)
 
-**Documentation and additional Information**
-* **Planner Structure**
-  * [Main Planner](wiki/Planner-Structure#Main-Planner)
-  * [Trajectory Generator](wiki/Planner-Structure#Trajectory-Generator)
-  * [Trajectory Evaluator](wiki/Planner-Structure#Trajectory-Evaluator)
-  * [Voxblox Server](wiki/Planner-Structure#Voxblox-Server)
-* **Planner Design Framework**
-  * [Modular Configuration](wiki/Planner-Design-Framework#Modular-Configuration)
-  * [Building Planners](wiki/Planner-Design-Framework#Building-Planners)
-  * [Contributing Custom Modules](wiki/Planner-Design-Framework#Contributing-Custom-Modules)
-* **Running and Evaluating a Simulated Experiment**
-  * [Simulation Framework](wiki/Running-and-Evaluating-a-Simulated-Experiment#Simulation-Framework)
-  * [Conducting an Experiment](wiki/Running-and-Evaluating-a-Simulated-Experiment#Conducting-an-Experiment)
-  * [Results and Monitoring Tools](wiki/Running-and-Evaluating-a-Simulated-Experiment#Results-and-Monitoring-Tools)
-* **Code Index**
-  * [Module Index](wiki/Code-Index)
-  * [Planner Node](wiki/Code-Index#Planner-Node)
-  * [Experiment Nodes](wiki/Code-Index#Experiment-Nodes)
+**Documentation**
+
+Documentation and additional information can be found in the wiki: 
+* [Planner Structure](https://github.com/ethz-asl/asldoc-2018-ma-schmid/wiki/Planner-Structure#Main-Planner)
+* [Planner Design Framework](https://github.com/ethz-asl/asldoc-2018-ma-schmid/wiki/Planner-Design-Framework)
+* [Running and Evaluating a Simulated Experiment](https://github.com/ethz-asl/asldoc-2018-ma-schmid/wiki/Running-and-Evaluating-a-Simulated-Experiment)
+* [Code Index](https://github.com/ethz-asl/asldoc-2018-ma-schmid/wiki/Code-Index)
+
+
   
 # Installation
 TODO
