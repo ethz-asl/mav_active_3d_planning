@@ -29,16 +29,14 @@ We provide a framework for buidling and evaluating sampling based, receding hori
   * [Conducting an Experiment](wiki/Running-and-Evaluating-a-Simulated-Experiment#Conducting-an-Experiment)
   * [Results and Monitoring Tools](wiki/Running-and-Evaluating-a-Simulated-Experiment#Results-and-Monitoring-Tools)
 * **Code Index**
-  * [Module Index](wiki/Module-Index)
-  * [Planner Node]
-  * [Experiment Nodes]
+  * [Module Index](wiki/Code-Index)
+  * [Planner Node](wiki/Code-Index#Planner-Node)
+  * [Experiment Nodes](wiki/Code-Index#Experiment-Nodes)
   
 # Installation
 TODO
 
 ## Dependencies
-Uses [nanoflann](#https://github.com/jlblancoc/nanoflann) (included as header lib, no need to install).
-
 To run the mav_active_3d_planning simulation framework, the following packages are required: `gazebo_ros`, `rotors_gazebo`, `mav_nonlinear_mpc`, `mav_lowlevel_attitude_controller`, `voxblox_ros` and `unreal_cv_ros`.
 
 Other modules use `mav_trajectory_generation`.
