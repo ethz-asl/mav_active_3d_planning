@@ -5,6 +5,7 @@
 #include "mav_active_3d_planning/module_factory.h"
 
 #include <Eigen/Core>
+#include <visualization_msgs/MarkerArray.h>
 
 #include <vector>
 #include <string>
@@ -19,6 +20,9 @@ namespace mav_active_3d_planning {
             BoundingVolume() : is_setup(false) {}
 
             virtual ~BoundingVolume() {}
+
+            // factory parametrization
+            void setupFromFactory(std::string args, bool verbose);
 
             // populate the bounding volume
             void setupFromParamMap(Module::ParamMap *param_map);
@@ -38,20 +42,21 @@ namespace mav_active_3d_planning {
         struct SystemConstraints : public Module {
             SystemConstraints() {}
 
+            virtual ~SystemConstraints() {}
+
             // factory constructor
             SystemConstraints(const std::string &args);
 
-            virtual ~SystemConstraints() {}
-
             // populate the system constraints from factory
             void setupFromParamMap(Module::ParamMap *param_map);
-
+            bool checkParamsValid(std::string *error_message);
+            
             // variables
             double v_max;           // m/s, maximum absolute velocity
             double a_max ;          // m/s2, maximum absolute acceleration
             double yaw_rate_max;    // rad/s, maximum yaw rate
 
-        private:
+        protected:
             static ModuleFactory::Registration<SystemConstraints> registration;
         };
 
@@ -63,6 +68,9 @@ namespace mav_active_3d_planning {
 
         // Returns the rotation direction (+1 / -1) that is closer for two angles
         double angleDirection(double angle1, double angle2);
+
+        // Get the current next id for visualization markerarray messages
+        int getNextVisualizationId(const visualization_msgs::MarkerArray &msg);
 
     } // namespace defaults
 

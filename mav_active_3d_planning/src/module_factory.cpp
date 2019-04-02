@@ -14,7 +14,6 @@
 
 namespace mav_active_3d_planning {
 
-    // Module factory core functionality
     ModuleFactory *ModuleFactory::instance_ = nullptr;
 
     ModuleFactory *ModuleFactory::Instance() {
@@ -53,6 +52,19 @@ namespace mav_active_3d_planning {
         return true;
     }
 
+    void ModuleFactory::registerLinkableModule(const std::string& name, Module* module){
+        linkable_module_list_[name] = module;
+    }
+
+    Module* ModuleFactory::readLinkableModule(const std::string& name){
+        std::map<std::string, Module*>::iterator it = linkable_module_list_.find(name);
+        if(it == linkable_module_list_.end()){
+            printError("No module with name '" + name + "' is registered in the linkable moduels list.");
+            return nullptr;
+        }
+        return it->second;
+    }
+
     // ROS factory
     bool ModuleFactoryROS::getParamMapAndType(Module::ParamMap *map, std::string *type, std::string args) {
         // For the ros factory, args is the namespace of the module
@@ -83,8 +95,8 @@ namespace mav_active_3d_planning {
         if (!nh.getParam("type", *type)) {
             type_default = " (default)";
         }
-        (*map)["verbose_text"] = "Creating Module '" + *type + "'" + type_default + " from namespace '" + args +
-                                 "' with parameters:";
+        (*map)["verbose_text"] = "\n************************************************************\nCreating Module '"
+                                 + *type + "'" + type_default + " from namespace '" + args + "' with parameters:";
         (*map)["param_namespace"] = args;   // also log the namespace for other modules as default
         return true;
     }

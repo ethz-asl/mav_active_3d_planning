@@ -132,7 +132,7 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
-    - Class: rviz/Marker
+    - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /planner/trajectory_visualization
       Name: PlannerVisualization
@@ -168,7 +168,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 22.0470142
+      Distance: 27.0369225
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
@@ -183,10 +183,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.844796658
+      Pitch: 0.904795885
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 2.24589086
+      Yaw: 2.33589482
     Saved: ~
 Window Geometry:
   Displays:

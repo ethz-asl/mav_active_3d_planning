@@ -1,0 +1,19 @@
+trajectory_generator:
+  type: "RRTStar"
+  crop_segments: true
+  crop_margin: 0.5
+  crop_min_length: 0.2
+  max_extension_range: 2.0
+  use_spheric_sampling: true
+  maximum_tries: 1000
+  sampling_rate: 20.0
+  sample_yaw: false
+  
+  rewire_root: true
+  rewire_intermediate: true
+  max_rewire_range: 2.1
+  n_neighbors: 10
+
+  generator_updater:
+    type: "RecheckCollision"
+

@@ -21,6 +21,9 @@ namespace mav_active_3d_planning {
             bool
             getVisibleVoxelsFromTrajectory(std::vector <Eigen::Vector3d> *result, const TrajectorySegment &traj_in);
 
+            // Display camera view bounds
+            void visualizeSensorView(visualization_msgs::MarkerArray *msg, const TrajectorySegment &traj_in);
+
         protected:
             // factory access
             CameraModel() {}
@@ -43,6 +46,14 @@ namespace mav_active_3d_planning {
             // For performance timing of different implementations
             bool p_test_;
             std::vector<double> time_count_;
+
+            // methods
+            // return the indices of the trajectory points of traj_in for which a view is needed
+            void sampleViewpoints(std::vector<int> *result, const TrajectorySegment &traj_in);
+            void visualizeSingleView(visualization_msgs::MarkerArray *msg, const Eigen::Vector3d &position,
+                                     const Eigen::Quaterniond &orientation);
+            // get the direction vector for camera pointing in x_direction at pixel with relative x, y position [0, 1]
+            void getDirectionVector(Eigen::Vector3d *result, double relative_x, double relative_y);
         };
 
     } // namespace sensor_models

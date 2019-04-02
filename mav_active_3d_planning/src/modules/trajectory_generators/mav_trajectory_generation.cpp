@@ -11,14 +11,13 @@ namespace mav_active_3d_planning {
                 "MavTrajectoryGeneration");
 
         void MavTrajectoryGeneration::setupFromParamMap(Module::ParamMap *param_map) {
+            TrajectoryGenerator::setupFromParamMap(param_map);
             setParam<double>(param_map, "distance_max", &p_distance_max_, 3.0);
             setParam<double>(param_map, "distance_min", &p_distance_min_, 0.5);
-            setParam<double>(param_map, "a_max", &p_a_max_, 1.0);
-            setParam<double>(param_map, "v_max", &p_v_max_, 1.0);
+            setParam<double>(param_map, "sampling_rate", &p_sampling_rate_, 0.5);
             setParam<int>(param_map, "n_segments", &p_n_segments_, 5);
             setParam<int>(param_map, "max_tries", &p_max_tries_, 100);
             initializeConstraints();
-            TrajectoryGenerator::setupFromParamMap(param_map);
         }
 
         bool MavTrajectoryGeneration::checkParamsValid(std::string *error_message) {
@@ -45,9 +44,9 @@ namespace mav_active_3d_planning {
             mav_trajectory_generation::InputConstraints input_constraints;
             input_constraints.addConstraint(ICT::kFMin, 0.5 * 9.81); // minimum acceleration in [m/s/s].
             input_constraints.addConstraint(ICT::kFMax, 1.5 * 9.81); // maximum acceleration in [m/s/s].
-            input_constraints.addConstraint(ICT::kVMax, 3.5); // maximum velocity in [m/s].
+            input_constraints.addConstraint(ICT::kVMax, system_constraints_->v_max); // maximum velocity in [m/s].
             input_constraints.addConstraint(ICT::kOmegaXYMax, M_PI / 2.0); // maximum roll/pitch rates in [rad/s].
-            input_constraints.addConstraint(ICT::kOmegaZMax, M_PI / 2.0); // maximum yaw rates in [rad/s].
+            input_constraints.addConstraint(ICT::kOmegaZMax, system_constraints_->yaw_rate_max); // max yaw rate [rad/s].
             input_constraints.addConstraint(ICT::kOmegaZDotMax, M_PI); // maximum yaw acceleration in [rad/s/s]..
             feasibility_check_ = mav_trajectory_generation::FeasibilityAnalytic(input_constraints);
             feasibility_check_.settings_.setMinSectionTimeS(0.01);
@@ -111,9 +110,9 @@ namespace mav_active_3d_planning {
 
                 // convert to EigenTrajectory
                 mav_msgs::EigenTrajectoryPoint::Vector states;
-                double sampling_interval = 1.0 / 20;     // sample at 20Hz
-                if (!mav_trajectory_generation::sampleWholeTrajectory(trajectory, sampling_interval,
-                                                                      &states)) { continue; }
+                if (!mav_trajectory_generation::sampleWholeTrajectory(trajectory, 1.0 / p_sampling_rate_, &states)) {
+                    continue;
+                }
 
                 // Check collision
                 if (!checkTrajectoryCollision(states)) {
@@ -141,12 +140,15 @@ namespace mav_active_3d_planning {
         void MavTrajectoryGeneration::optimizeVertices(mav_trajectory_generation::Vertex::Vector *vertices,
                                                        mav_trajectory_generation::Segment::Vector *segments,
                                                        mav_trajectory_generation::Trajectory *trajectory) {
-            std::vector<double> segment_times = mav_trajectory_generation::estimateSegmentTimes(*vertices, p_v_max_,
-                                                                                                p_a_max_);
+            std::vector<double> segment_times = mav_trajectory_generation::estimateSegmentTimes(*vertices,
+                                                                                                system_constraints_->v_max,
+                                                                                                system_constraints_->a_max);
             mav_trajectory_generation::PolynomialOptimizationNonLinear<10> opt(4, parameters_);
             opt.setupFromVertices(*vertices, segment_times, mav_trajectory_generation::derivative_order::ACCELERATION);
-            opt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::VELOCITY, p_v_max_);
-            opt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::ACCELERATION, p_a_max_);
+            opt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::VELOCITY,
+                                              system_constraints_->v_max);
+            opt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::ACCELERATION,
+                                              system_constraints_->a_max);
             opt.optimize();
             opt.getPolynomialOptimizationRef().getSegments(segments);
             opt.getTrajectory(trajectory);

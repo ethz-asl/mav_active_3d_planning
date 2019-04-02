@@ -35,8 +35,7 @@ namespace mav_active_3d_planning {
             // parameters
             double p_distance_max_;
             double p_distance_min_;
-            double p_v_max_;
-            double p_a_max_;
+            double p_sampling_rate_;
             int p_n_segments_;
             int p_max_tries_;
 

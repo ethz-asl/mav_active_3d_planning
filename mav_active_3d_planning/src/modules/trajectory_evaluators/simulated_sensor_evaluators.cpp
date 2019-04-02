@@ -1,4 +1,4 @@
-#include "mav_active_3d_planning/modules/trajectory_evaluators/simulated_sensor.h"
+#include "mav_active_3d_planning/modules/trajectory_evaluators/simulated_sensor_evaluators.h"
 
 #include <algorithm>
 
@@ -8,6 +8,10 @@ namespace mav_active_3d_planning {
         // SimulatedSensorEvaluator (base class)
         void SimulatedSensorEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<bool>(param_map, "clear_from_parents", &p_clear_from_parents_, false);
+            setParam<bool>(param_map, "visualize_sensor_view", &p_visualize_sensor_view_, false);
+
+            // Register link for simulated sensor udpaters
+            ModuleFactory::Instance()->registerLinkableModule("SimulatedSensorEvaluator", this);
 
             // Create sensor model
             std::string args;   // default args extends the parent namespace
@@ -62,21 +66,25 @@ namespace mav_active_3d_planning {
             return true;
         }
 
-        void SimulatedSensorEvaluator::visualizeTrajectoryValue(visualization_msgs::Marker *msg,
+        void SimulatedSensorEvaluator::visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg,
                                                                 const TrajectorySegment &trajectory) {
             if (!trajectory.info) { return; }
             // Default implementation displays all visible voxels
-            msg->header.frame_id = "/world";
-            msg->pose.orientation.w = 1.0;
-            msg->type = visualization_msgs::Marker::CUBE_LIST;
+            visualization_msgs::Marker new_msg;
+            new_msg.ns = "evaluation";
+            new_msg.header.stamp = ros::Time::now();
+            new_msg.header.frame_id = "/world";
+            new_msg.id = defaults::getNextVisualizationId(*msg);
+            new_msg.pose.orientation.w = 1.0;
+            new_msg.type = visualization_msgs::Marker::CUBE_LIST;
             voxblox::FloatingPoint voxel_size = voxblox_ptr_->getEsdfMapPtr()->voxel_size();
-            msg->scale.x = (double) voxel_size;
-            msg->scale.y = (double) voxel_size;
-            msg->scale.z = (double) voxel_size;
-            msg->color.r = 1.0;
-            msg->color.g = 0.8;
-            msg->color.b = 0.0;
-            msg->color.a = 0.4;
+            new_msg.scale.x = (double) voxel_size;
+            new_msg.scale.y = (double) voxel_size;
+            new_msg.scale.z = (double) voxel_size;
+            new_msg.color.r = 1.0;
+            new_msg.color.g = 0.8;
+            new_msg.color.b = 0.0;
+            new_msg.color.a = 0.4;
 
             // points
             SimulatedSensorInfo *info = dynamic_cast<SimulatedSensorInfo *>(trajectory.info.get());
@@ -85,7 +93,12 @@ namespace mav_active_3d_planning {
                 point.x = (double) info->visible_voxels[i].x();
                 point.y = (double) info->visible_voxels[i].y();
                 point.z = (double) info->visible_voxels[i].z();
-                msg->points.push_back(point);
+                new_msg.points.push_back(point);
+            }
+            msg->markers.push_back(new_msg);
+
+            if (p_visualize_sensor_view_) {
+                sensor_model_->visualizeSensorView(msg, trajectory);
             }
         }
 
@@ -117,33 +130,26 @@ namespace mav_active_3d_planning {
         ModuleFactory::Registration<Frontier> Frontier::registration("Frontier");
 
         void Frontier::setupFromParamMap(Module::ParamMap *param_map) {
-            // setup parent
             SimulatedSensorEvaluator::setupFromParamMap(param_map);
+
+            // initialize neighbor offsets
+            c_voxel_size_ = static_cast<double>(voxblox_ptr_->getEsdfMapPtr()->voxel_size());
+            c_neighbor_voxels_[0] = Eigen::Vector3d(c_voxel_size_, 0, 0);
+            c_neighbor_voxels_[1] = Eigen::Vector3d(-c_voxel_size_, 0, 0);
+            c_neighbor_voxels_[2] = Eigen::Vector3d(0, c_voxel_size_, 0);
+            c_neighbor_voxels_[3] = Eigen::Vector3d(0, -c_voxel_size_, 0);
+            c_neighbor_voxels_[4] = Eigen::Vector3d(0, 0, c_voxel_size_);
+            c_neighbor_voxels_[5] = Eigen::Vector3d(0, 0, -c_voxel_size_);
         }
 
         bool Frontier::isFrontierVoxel(const Eigen::Vector3d &voxel) {
-            double voxel_size = static_cast<double>(voxblox_ptr_->getEsdfMapPtr()->voxel_size());
             voxblox::EsdfMap *esdf_map = voxblox_ptr_->getEsdfMapPtr().get();
-
-            // Check all neighboring voxels
             double distance;
-            if (esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(voxel_size, 0, 0), &distance)) {
-                if (distance < voxel_size) { return true; }
-            }
-            if (esdf_map->getDistanceAtPosition(voxel - Eigen::Vector3d(voxel_size, 0, 0), &distance)) {
-                if (distance < voxel_size) { return true; }
-            }
-            if (esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(0, voxel_size, 0), &distance)) {
-                if (distance < voxel_size) { return true; }
-            }
-            if (esdf_map->getDistanceAtPosition(voxel - Eigen::Vector3d(0, voxel_size, 0), &distance)) {
-                if (distance < voxel_size) { return true; }
-            }
-            if (esdf_map->getDistanceAtPosition(voxel + Eigen::Vector3d(0, 0, voxel_size), &distance)) {
-                if (distance < voxel_size) { return true; }
-            }
-            if (esdf_map->getDistanceAtPosition(voxel - Eigen::Vector3d(0, 0, voxel_size), &distance)) {
-                if (distance < voxel_size) { return true; }
+            // Check all neighboring voxels
+            for (int i = 0; i < 6; ++i) {
+                if (esdf_map->getDistanceAtPosition(voxel + c_neighbor_voxels_[i], &distance)) {
+                    if (distance < c_voxel_size_) { return true; }
+                }
             }
             return false;
         }
@@ -182,20 +188,24 @@ namespace mav_active_3d_planning {
             return true;
         }
 
-        void Frontier::visualizeTrajectoryValue(visualization_msgs::Marker *msg, const TrajectorySegment &trajectory) {
+        void Frontier::visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg, const TrajectorySegment &trajectory) {
             // Default implementation displays all frontier voxels
             if (!trajectory.info) { return; }
-            msg->header.frame_id = "/world";
-            msg->pose.orientation.w = 1.0;
-            msg->type = visualization_msgs::Marker::CUBE_LIST;
+            visualization_msgs::Marker new_msg;
+            new_msg.header.frame_id = "/world";
+            new_msg.ns = "evaluation";
+            new_msg.header.stamp = ros::Time::now();
+            new_msg.id = defaults::getNextVisualizationId(*msg);
+            new_msg.pose.orientation.w = 1.0;
+            new_msg.type = visualization_msgs::Marker::CUBE_LIST;
             voxblox::FloatingPoint voxel_size = voxblox_ptr_->getEsdfMapPtr()->voxel_size();
-            msg->scale.x = (double) voxel_size;
-            msg->scale.y = (double) voxel_size;
-            msg->scale.z = (double) voxel_size;
-            msg->color.r = 1.0;
-            msg->color.g = 0.8;
-            msg->color.b = 0.0;
-            msg->color.a = 1.0;
+            new_msg.scale.x = (double) voxel_size;
+            new_msg.scale.y = (double) voxel_size;
+            new_msg.scale.z = (double) voxel_size;
+            new_msg.color.r = 1.0;
+            new_msg.color.g = 0.8;
+            new_msg.color.b = 0.0;
+            new_msg.color.a = 1.0;
 
             // points
             FrontierInfo *info = dynamic_cast<FrontierInfo *>(trajectory.info.get());
@@ -204,7 +214,12 @@ namespace mav_active_3d_planning {
                 point.x = (double) info->frontier_voxels[i].x();
                 point.y = (double) info->frontier_voxels[i].y();
                 point.z = (double) info->frontier_voxels[i].z();
-                msg->points.push_back(point);
+                new_msg.points.push_back(point);
+            }
+            msg->markers.push_back(new_msg);
+
+            if (p_visualize_sensor_view_) {
+                sensor_model_->visualizeSensorView(msg, trajectory);
             }
         }
 

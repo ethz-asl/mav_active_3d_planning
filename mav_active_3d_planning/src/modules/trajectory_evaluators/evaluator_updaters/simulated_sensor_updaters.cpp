@@ -8,10 +8,6 @@ namespace mav_active_3d_planning {
         // SimulatedSensorUpdater
         ModuleFactory::Registration<SimulatedSensorUpdater> SimulatedSensorUpdater::registration("SimulatedSensorUpdater");
 
-        SimulatedSensorUpdater::SimulatedSensorUpdater(std::unique_ptr <EvaluatorUpdater> following_updater) {
-            following_updater_ = std::move(following_updater);
-        }
-
         bool SimulatedSensorUpdater::updateSegments(TrajectorySegment *root) {
             // recursively update all segments from root to leaves (as in the planner)
             updateSingle(root);
@@ -19,6 +15,9 @@ namespace mav_active_3d_planning {
         }
 
         void SimulatedSensorUpdater::setupFromParamMap(Module::ParamMap *param_map) {
+            // Link to corresponding evaluator
+            evaluator_ = dynamic_cast<SimulatedSensorEvaluator *>(ModuleFactory::Instance()->readLinkableModule(
+                    "SimulatedSensorEvaluator"));
             // Create Following updater (default does nothing)
             std::string args;   // default args extends the parent namespace
             std::string param_ns = (*param_map)["param_namespace"];
@@ -29,9 +28,7 @@ namespace mav_active_3d_planning {
 
         void SimulatedSensorUpdater::updateSingle(TrajectorySegment *segment) {
             // call the parent to reevaluate the voxels
-            mav_active_3d_planning::trajectory_evaluators::SimulatedSensorEvaluator *asd =
-                    dynamic_cast<mav_active_3d_planning::trajectory_evaluators::SimulatedSensorEvaluator *>(parent_);
-            asd->computeGainFromVisibleVoxels(segment);
+            evaluator_->computeGainFromVisibleVoxels(segment);
             for (int i = 0; i < segment->children.size(); ++i) {
                 updateSingle(segment->children[i].get());
             }

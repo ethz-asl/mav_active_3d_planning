@@ -14,13 +14,13 @@ namespace mav_active_3d_planning {
         // Don't perform any specific update operations
         class EvaluatorUpdateNothing : public EvaluatorUpdater {
         public:
-            EvaluatorUpdateNothing() {}
-
             // override virtual functions
             bool updateSegments(TrajectorySegment *root) { return true; }
 
         protected:
             friend ModuleFactory;
+
+            EvaluatorUpdateNothing() {}
 
             void setupFromParamMap(Module::ParamMap *param_map) {}
 
@@ -30,13 +30,13 @@ namespace mav_active_3d_planning {
         // Discard all segments and start from scratch
         class EvaluatorResetTree : public EvaluatorUpdater {
         public:
-            EvaluatorResetTree() {}
-
             // override virtual functions
             bool updateSegments(TrajectorySegment *root);
 
         protected:
             friend ModuleFactory;
+
+            EvaluatorResetTree() {}
 
             void setupFromParamMap(Module::ParamMap *param_map){}
 
@@ -46,9 +46,6 @@ namespace mav_active_3d_planning {
         // Update gain/cost/value for the complete trajectory tree
         class UpdateAll : public EvaluatorUpdater {
         public:
-            UpdateAll(bool update_gain, bool update_cost, bool update_value,
-                      std::unique_ptr<EvaluatorUpdater> following_updater);
-
             // override virtual functions
             bool updateSegments(TrajectorySegment *root);
 
@@ -73,9 +70,6 @@ namespace mav_active_3d_planning {
         // Remove all segments that dont have a minimum value, can then call another updater
         class PruneByValue : public EvaluatorUpdater {
         public:
-            PruneByValue(double minimum_value, bool use_relative_values, bool include_subsequent,
-                         std::unique_ptr<EvaluatorUpdater> following_updater);
-
             // override virtual functions
             bool updateSegments(TrajectorySegment *root);
 
@@ -101,8 +95,6 @@ namespace mav_active_3d_planning {
         // Only periodically call another updater
         class UpdatePeriodic : public EvaluatorUpdater {
         public:
-            UpdatePeriodic(double minimum_wait_time, int minimum_wait_calls,
-                     std::unique_ptr<EvaluatorUpdater> following_updater);
 
             // override virtual functions
             bool updateSegments(TrajectorySegment *root);

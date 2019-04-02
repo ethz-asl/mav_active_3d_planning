@@ -20,8 +20,6 @@ namespace mav_active_3d_planning {
         // RecheckCollision
         ModuleFactory::Registration<RecheckCollision> RecheckCollision::registration("RecheckCollision");
 
-        RecheckCollision::RecheckCollision(TrajectoryGenerator *parent) : GeneratorUpdater(parent) {}
-
         bool RecheckCollision::updateSegments(TrajectorySegment *root) {
             checkSingle(root);
             return true;

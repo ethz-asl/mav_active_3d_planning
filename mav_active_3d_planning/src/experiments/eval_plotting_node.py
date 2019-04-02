@@ -105,7 +105,7 @@ class EvalPlotting:
                 sys.exit(-1)
 
         # Reopen logfile
-        self.eval_log_file = open(os.path.join(target_dir, "data_log.txt"), 'a')
+        self.eval_log_file = open(os.path.join(target_dir, "data_log.txt"), 'a+')
 
         if self.create_plots:
             # Read voxblox data file

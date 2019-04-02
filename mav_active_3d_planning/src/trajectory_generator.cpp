@@ -1,7 +1,5 @@
 #include "mav_active_3d_planning/trajectory_generator.h"
-#include "mav_active_3d_planning/module_factory.h"
-
-#include <ros/param.h>
+#include "mav_active_3d_planning/planner_node.h"
 
 namespace mav_active_3d_planning {
 
@@ -44,7 +42,8 @@ namespace mav_active_3d_planning {
         // If not implemented use a (default) module
         if (!generator_updater_) {
             generator_updater_ = ModuleFactory::Instance()->createModule<GeneratorUpdater>(p_updater_args_,
-                                                                                           verbose_modules_, this);
+                                                                                           verbose_modules_,
+                                                                                           parent_->trajectory_generator_.get());
         }
         return generator_updater_->updateSegments(root);
     }
@@ -52,6 +51,10 @@ namespace mav_active_3d_planning {
     void TrajectoryGenerator::setVoxbloxPtr(const std::shared_ptr <voxblox::EsdfServer> &voxblox_ptr) {
         voxblox_ptr_ = voxblox_ptr;
         voxblox_ptr_->setTraversabilityRadius(static_cast<float>(p_collision_radius_));
+    }
+
+    void TrajectoryGenerator::setParent(Module* parent){
+        parent_ = dynamic_cast<PlannerNode*>(parent);
     }
 
     void GeneratorUpdater::setParent(Module *parent) {

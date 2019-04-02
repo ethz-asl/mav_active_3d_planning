@@ -12,35 +12,39 @@
 
 namespace mav_active_3d_planning {
 
-        // Base class that interfaces with sensor based evaluators.
-        class SensorModel : public Module {
-        public:
-            virtual ~SensorModel() {}
+    // Base class that interfaces with sensor based evaluators.
+    class SensorModel : public Module {
+    public:
+        virtual ~SensorModel() {}
 
-            // Return the voxel centers of all visible voxels
-            virtual bool getVisibleVoxelsFromTrajectory(std::vector <Eigen::Vector3d> *result,
-                                                        const TrajectorySegment &traj_in) = 0;
+        // Return the voxel centers of all visible voxels
+        virtual bool getVisibleVoxelsFromTrajectory(std::vector <Eigen::Vector3d> *result,
+                                                    const TrajectorySegment &traj_in) = 0;
 
-        protected:
-            friend ModuleFactory;
+        // Implement this function to allow visualization of the sensing bounds
+        virtual void
+        visualizeSensorView(visualization_msgs::MarkerArray *msg, const TrajectorySegment &trajectory) {}
 
-            // factory access
-            SensorModel() {}
+    protected:
+        friend ModuleFactory;
 
-            virtual void setupFromParamMap(Module::ParamMap *param_map) {}
+        // factory access
+        SensorModel() {}
 
-            void setVoxbloxPtr(const std::shared_ptr <voxblox::EsdfServer> &voxblox_ptr);
+        virtual void setupFromParamMap(Module::ParamMap *param_map) {}
 
-            // voxblox map
-            std::shared_ptr <voxblox::EsdfServer> voxblox_ptr_;
+        void setVoxbloxPtr(const std::shared_ptr <voxblox::EsdfServer> &voxblox_ptr);
 
-            // constants
-            voxblox::FloatingPoint c_voxel_size_;
-            voxblox::FloatingPoint c_block_size_;
+        // voxblox map
+        std::shared_ptr <voxblox::EsdfServer> voxblox_ptr_;
 
-            // changes the input point to the center of the corresponding voxel
-            bool getVoxelCenter(Eigen::Vector3d *point);
-        };
+        // constants
+        voxblox::FloatingPoint c_voxel_size_;
+        voxblox::FloatingPoint c_block_size_;
+
+        // changes the input point to the center of the corresponding voxel
+        bool getVoxelCenter(Eigen::Vector3d *point);
+    };
 
 }  // namespace mav_active_3d_planning
 #endif // MAV_ACTIVE_3D_PLANNING_SENSOR_MODELS_SENSOR_MODEL_H

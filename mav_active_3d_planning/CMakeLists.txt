@@ -12,6 +12,7 @@ add_definitions(-std=c++11)
 cs_add_library(${PROJECT_NAME}
         src/defaults.cpp
         src/module_factory.cpp
+        src/trajectory_segment.cpp
         src/trajectory_generator.cpp
         src/trajectory_evaluator.cpp
         # Default Modules
@@ -27,13 +28,16 @@ cs_add_library(${PROJECT_NAME}
         src/modules/trajectory_generators/mav_trajectory_generation.cpp
         src/modules/trajectory_generators/random_linear.cpp
         src/modules/trajectory_generators/rrt.cpp
+        src/modules/trajectory_generators/rrt_star.cpp
         src/modules/trajectory_generators/uniform.cpp
-        src/modules/trajectory_evaluators/simulated_sensor.cpp
+        src/modules/trajectory_evaluators/simulated_sensor_evaluators.cpp
         src/modules/trajectory_evaluators/sensor_models/sensor_model.cpp
         src/modules/trajectory_evaluators/sensor_models/camera_model.cpp
         src/modules/trajectory_evaluators/sensor_models/simple_ray_caster.cpp
         src/modules/trajectory_evaluators/sensor_models/iterative_ray_caster.cpp
         src/modules/trajectory_evaluators/evaluator_updaters/simulated_sensor_updaters.cpp
+        src/modules/trajectory_evaluators/yaw_planning_evaluators.cpp
+        src/modules/trajectory_evaluators/evaluator_updaters/yaw_planning_updaters.cpp
         )
 
 ############

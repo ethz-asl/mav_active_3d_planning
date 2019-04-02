@@ -19,7 +19,7 @@ namespace mav_active_3d_planning {
             // Override virtual functions
             bool computeGain(TrajectorySegment *traj_in);
 
-            virtual void visualizeTrajectoryValue(visualization_msgs::Marker *msg, const TrajectorySegment &trajectory);
+            virtual void visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg, const TrajectorySegment &trajectory);
 
         protected:
             friend mav_active_3d_planning::evaluator_updaters::SimulatedSensorUpdater;
@@ -33,6 +33,7 @@ namespace mav_active_3d_planning {
 
             // parameters
             bool p_clear_from_parents_;
+            bool p_visualize_sensor_view_;
 
             // store the visible voxel information, asign correct TrajectoryData type here
             virtual bool storeTrajectoryInformation(TrajectorySegment *traj_in,
@@ -69,7 +70,7 @@ namespace mav_active_3d_planning {
         class Frontier : public SimulatedSensorEvaluator {
         public:
             // Override virtual methods
-            void visualizeTrajectoryValue(visualization_msgs::Marker *msg, const TrajectorySegment &trajectory);
+            void visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg, const TrajectorySegment &trajectory);
 
         protected:
             friend ModuleFactory;
@@ -86,6 +87,10 @@ namespace mav_active_3d_planning {
                                             const std::vector <Eigen::Vector3d> &new_voxels);
 
             bool computeGainFromVisibleVoxels(TrajectorySegment *traj_in);
+
+            // constants
+            Eigen::Vector3d c_neighbor_voxels_[8];
+            double c_voxel_size_;
 
             // methods
             bool isFrontierVoxel(const Eigen::Vector3d &voxel);

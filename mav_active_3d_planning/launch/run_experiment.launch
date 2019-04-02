@@ -5,7 +5,7 @@
   <arg name="verbose_gazebo" default="false"/>
 
   <!-- Voxblox arguments -->
-  <arg name="voxel_size" default="0.1"/>
+  <arg name="voxel_size" default="0.13"/>
   <arg name="voxels_per_side" default="16"/>
   <arg name="ray_length" default="5.0"/>
   <arg name="method" default="merged"/>
@@ -14,19 +14,23 @@
   <!-- Unreal Routine arguments -->
   <arg name="uecv_mode" default="fast"/>
   <arg name="slowdown" default="0.0"/>
-  <arg name="delay" default="3.0"/>  
-  <arg name="remove_freespace_points" default="false"/>
+  <arg name="delay" default="2.0"/>  
   
-  <!--  Planner arguments (tg_uniform, tg_random_linear, general, nbvp_bircher)-->
-  <arg name="use_separate_configs" default="false"/>
-  <arg name="planner_general_config" default="planners/nbvp_bircher.yaml"/>
-  <arg name="planner_generator_config" default="planners/modules/tg_random_linear.yaml"/>
-  <arg name="planner_evaluator_config" default="planners/modules/te_frontier.yaml"/>
+  <!-- Unreal Sensor arguments ground_truth, kinect-->
+  <arg name="model_type" default="ground_truth"/>
+  <arg name="flatten_distance" default="5.5"/>
+  <arg name="maximum_distance" default="0.0"/>
+  
+  <!--  Planner arguments (tg_uniform, tg_random_linear, tg_rrt, general, nbvp_bircher, te_frontier, te_yaw)-->
+  <arg name="use_separate_configs" default="true"/>
+  <arg name="planner_general_config" default="planners/general.yaml"/>
+  <arg name="planner_generator_config" default="planners/modules/tg_rrt.yaml"/>
+  <arg name="planner_evaluator_config" default="planners/modules/te_yaw.yaml"/>
   <arg name="verbose_planner" default="true"/>
   
   <!--  Experiment arguments -->  
   <arg name="experiment_config" default="experiment1.yaml"/>
-  <arg name="record_data" default="false"/>
+  <arg name="record_data" default="true"/>
   <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
   <arg name="data_frequency" default="15.0" />
   <arg name="time_limit" default="30.0" />
@@ -93,12 +97,11 @@
     <!-- Unreal sensor model -->
     <node name="unreal_sensor_model" pkg="unreal_cv_ros" type="sensor_model.py" output="screen">
       <param name="camera_params_ns" value="/unreal/unreal_ros_client/camera_params"/>
-      <param name="flatten_distance" value="$(eval 0.5 + arg('ray_length'))"/>
+      <param name="flatten_distance" value="$(arg flatten_distance)"/>
+      <param name="model_type" value="$(arg model_type)" />
+      <param name="maximum_distance" value="$(arg maximum_distance)" />
       <remap from="ue_sensor_raw" to="unreal_ros_client/ue_sensor_raw" />
     </node>
-    <group if="$(arg remove_freespace_points)">
-      <param name="unreal_sensor_model/maximum_distance" value="$(arg ray_length)"/>
-    </group>
     
     <!-- Simulation manager for launching the MAV and monitoring -->
     <node name="simulation_manager" pkg="unreal_cv_ros" type="simulation_manager.py" output="screen">
@@ -163,6 +166,7 @@
       <param name="trajectory_evaluator/sensor_model/ray_length" value="$(arg ray_length)" />
       <param name="trajectory_evaluator/bounding_volume_args" value="/target_bounding_volume" />
       <param name="trajectory_generator/bounding_volume_args" value="/map_bounding_volume" />
+      <param name="trajectory_generator/system_constraints_args" value="/planner/system_contraints" />
       
       <!-- General Config -->    
       <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_general_config)"/>

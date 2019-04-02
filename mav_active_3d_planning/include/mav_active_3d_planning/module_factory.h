@@ -143,8 +143,14 @@ namespace mav_active_3d_planning {
                 }
             };
 
+        // Modules that need to be linkable (eg. an evaluator-updater pair) can register here
+        void registerLinkableModule(const std::string& name, Module* module);
+
+        // Modules that need to be linkable (eg. an evaluator-updater pair) can be retrieved here
+        Module* readLinkableModule(const std::string& name);
+
     protected:
-        // Module map type
+        // Module map type for module creation
         typedef std::map<std::string, Module*(*)()> ModuleMap;
 
         ModuleFactory() {}
@@ -163,6 +169,9 @@ namespace mav_active_3d_planning {
         static Module* parseModuleMap() {
             return new ModuleType();
         }
+
+        // Modules that need to be linkable (eg. an evaluator-updater pair) can register and read here
+        std::map<std::string, Module*> linkable_module_list_;
 
         // Specify default types for modules that need such (e.g. doNothing modules)
         void getDefaultType(const std::type_index &module_index, std::string *type);

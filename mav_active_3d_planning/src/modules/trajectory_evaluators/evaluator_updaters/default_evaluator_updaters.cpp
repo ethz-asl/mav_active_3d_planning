@@ -20,17 +20,11 @@ namespace mav_active_3d_planning {
         // UpdateAll
         ModuleFactory::Registration<UpdateAll> UpdateAll::registration("UpdateAll");
 
-        UpdateAll::UpdateAll(bool update_gain, bool update_cost, bool update_value,
-                             std::unique_ptr <EvaluatorUpdater> following_updater)
-                : update_gain_(update_gain),
-                  update_cost_(update_cost),
-                  update_value_(update_value) {
-            following_updater_ = std::move(following_updater);
-        }
-
         bool UpdateAll::updateSegments(TrajectorySegment *root) {
             // recursively update all segments from root to leaves (as in the planner)
-            updateSingle(root);
+            for (int i = 0; i < root->children.size(); ++i) {
+                updateSingle(root->children[i].get());
+            }
             return following_updater_->updateSegments(root);
         }
 
@@ -59,12 +53,17 @@ namespace mav_active_3d_planning {
         // PruneByValue
         ModuleFactory::Registration<PruneByValue> PruneByValue::registration("PruneByValue");
 
-        PruneByValue::PruneByValue(double minimum_value, bool use_relative_values, bool include_subsequent,
-                                   std::unique_ptr <EvaluatorUpdater> following_updater)
-                : minimum_value_(minimum_value),
-                  use_relative_values_(use_relative_values),
-                  include_subsequent_(include_subsequent) {
-            following_updater_ = std::move(following_updater);
+        void PruneByValue::setupFromParamMap(Module::ParamMap *param_map) {
+            setParam<double>(param_map, "minimum_value", &minimum_value_, 0.0);
+            setParam<bool>(param_map, "use_relative_values", &use_relative_values_, false);
+            setParam<bool>(param_map, "include_subsequent", &include_subsequent_, true);
+
+            // Create Following updater (default does nothing)
+            std::string args;   // default args extends the parent namespace
+            std::string param_ns = (*param_map)["param_namespace"];
+            setParam<std::string>(param_map, "following_updater_args", &args, param_ns + "/following_updater");
+            following_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(args, verbose_modules_,
+                                                                                           parent_);
         }
 
         void PruneByValue::setupFromParamMap(Module::ParamMap *param_map) {
@@ -139,15 +138,6 @@ namespace mav_active_3d_planning {
 
         // UpdatePeriodic
         ModuleFactory::Registration<UpdatePeriodic> UpdatePeriodic::registration("UpdatePeriodic");
-
-        UpdatePeriodic::UpdatePeriodic(double minimum_wait_time, int minimum_wait_calls,
-                           std::unique_ptr <EvaluatorUpdater> following_updater)
-                : p_minimum_wait_time_(minimum_wait_time),
-                  p_minimum_wait_calls_(minimum_wait_calls),
-                  waited_calls_(0) {
-            previous_time_ = ros::Time::now();
-            following_updater_ = std::move(following_updater);
-        }
 
         bool UpdatePeriodic::updateSegments(TrajectorySegment *root) {
             // Both conditions need to be met

@@ -9,15 +9,15 @@ namespace mav_active_3d_planning {
         // ImmediateBest
         ModuleFactory::Registration<ImmediateBest> ImmediateBest::registration("ImmediateBest");
 
-        int ImmediateBest::selectNextBest(const TrajectorySegment &traj_in) {
+        int ImmediateBest::selectNextBest(TrajectorySegment *traj_in) {
             std::vector<int> candidates = {0};
-            double current_max = traj_in.children[0]->value;
-            for (int i = 1; i < traj_in.children.size(); ++i){
-                if (traj_in.children[i]->value > current_max){
-                    current_max = traj_in.children[i]->value;
+            double current_max = traj_in->children[0]->value;
+            for (int i = 1; i < traj_in->children.size(); ++i){
+                if (traj_in->children[i]->value > current_max){
+                    current_max = traj_in->children[i]->value;
                     candidates.clear();
                     candidates.push_back(i);
-                } else if (traj_in.children[i]->value == current_max){
+                } else if (traj_in->children[i]->value == current_max){
                     candidates.push_back(i);
                 }
             }
@@ -29,11 +29,11 @@ namespace mav_active_3d_planning {
         // SubsequentBest
         ModuleFactory::Registration<SubsequentBest> SubsequentBest::registration("SubsequentBest");
 
-        int SubsequentBest::selectNextBest(const TrajectorySegment &traj_in) {
+        int SubsequentBest::selectNextBest(TrajectorySegment *traj_in) {
             std::vector<int> candidates = {0};
-            double current_max = evaluateSingle(traj_in.children[0].get());
-            for (int i = 1; i < traj_in.children.size(); ++i){
-                double current_value = evaluateSingle(traj_in.children[i].get());
+            double current_max = evaluateSingle(traj_in->children[0].get());
+            for (int i = 1; i < traj_in->children.size(); ++i){
+                double current_value = evaluateSingle(traj_in->children[i].get());
                 if (current_value > current_max){
                     current_max = current_value;
                     candidates.clear();

@@ -11,8 +11,11 @@ namespace mav_active_3d_planning {
         // GreedySelector
         ModuleFactory::Registration<GreedySelector> GreedySelector::registration("GreedySelector");
 
+<<<<<<< HEAD
+=======
         GreedySelector::GreedySelector(bool leaves_only) : leaves_only_(leaves_only) {}
 
+>>>>>>> master
         bool GreedySelector::selectSegment(TrajectorySegment **result, TrajectorySegment *root) {
             std::vector < TrajectorySegment * > candidates;
             if (leaves_only_) {
@@ -30,6 +33,8 @@ namespace mav_active_3d_planning {
 
         // RandomWeighted
         ModuleFactory::Registration<RandomWeighted> RandomWeighted::registration("RandomWeighted");
+<<<<<<< HEAD
+=======
 
         RandomWeighted::RandomWeighted(double factor, double uniform_probability, double leaf_probability, bool revisit)
                 : factor_(factor),
@@ -38,6 +43,7 @@ namespace mav_active_3d_planning {
                   revisit_(revisit) {
             assureParamsValid();
         }
+>>>>>>> master
 
         bool RandomWeighted::selectSegment(TrajectorySegment **result, TrajectorySegment *root) {
             // Get all candidates

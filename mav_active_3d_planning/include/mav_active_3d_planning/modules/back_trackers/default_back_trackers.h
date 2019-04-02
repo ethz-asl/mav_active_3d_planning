@@ -13,8 +13,6 @@ namespace mav_active_3d_planning {
         // Try rotating in place until feasible trajectories were found
         class RotateInPlace : public BackTracker {
         public:
-            RotateInPlace(double turn_rate, double sampling_rate, double update_rate);
-
             // implement virtual functions
             bool trackBack(TrajectorySegment *target);
 
@@ -36,8 +34,6 @@ namespace mav_active_3d_planning {
         // Try rotating in place, if nothing found reverse most recent segments
         class RotateReverse : public BackTracker {
         public:
-            RotateReverse(double turn_rate, double update_rate, double sampling_rate, double n_rotations, int stack_size);
-
             // implement virtual functions
             bool segmentIsExecuted(const TrajectorySegment &segment);
             bool trackBack(TrajectorySegment *target);
@@ -63,6 +59,10 @@ namespace mav_active_3d_planning {
             Eigen::Vector3d last_position_;
             double last_yaw_;
             double current_rotation_;
+
+            // methods
+            bool rotate(TrajectorySegment *target);
+            bool reverse(TrajectorySegment *target);
         };
 
     } // namespace back_trackers

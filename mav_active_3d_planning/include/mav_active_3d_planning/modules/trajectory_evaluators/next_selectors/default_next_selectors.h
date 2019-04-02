@@ -9,13 +9,13 @@ namespace mav_active_3d_planning {
         // Select the child node which has the highest value
         class ImmediateBest : public NextSelector {
         public:
-            ImmediateBest() {}
-
             // override virtual functions
-            int selectNextBest(const TrajectorySegment &traj_in);
+            int selectNextBest(TrajectorySegment *traj_in);
 
         protected:
             friend ModuleFactory;
+
+            ImmediateBest() {}
 
             void setupFromParamMap(Module::ParamMap *param_map) {}
 
@@ -25,13 +25,13 @@ namespace mav_active_3d_planning {
         // Select the child node which contains the highest value segment in its subtree
         class SubsequentBest : public NextSelector {
         public:
-            SubsequentBest() {}
-
             // override virtual functions
-            int selectNextBest(const TrajectorySegment &traj_in);
+            int selectNextBest(TrajectorySegment *traj_in);
 
         protected:
             friend ModuleFactory;
+
+            SubsequentBest() {}
 
             void setupFromParamMap(Module::ParamMap *param_map) {}
 
