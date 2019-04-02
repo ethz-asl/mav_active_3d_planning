@@ -22,12 +22,24 @@ namespace mav_active_3d_planning {
         ModuleFactory::Registration<ExponentialDiscount> ExponentialDiscount::registration("ExponentialDiscount");
 
         bool ExponentialDiscount::computeValue(TrajectorySegment *traj_in) {
-            traj_in->value = traj_in->gain * std::exp(-1.0 * cost_scale_ * traj_in->cost);
+            double gain = traj_in->gain;
+            double cost = traj_in->cost;
+            if (p_accumulate_){
+                // accumulate up to the root
+                TrajectorySegment* current = traj_in->parent;
+                while (current) {
+                    gain += current->gain;
+                    cost += current->cost;
+                    current = current->parent;
+                }
+            }
+            traj_in->value = gain * std::exp(-1.0 * p_cost_scale_ * cost);
             return true;
         }
 
         void ExponentialDiscount::setupFromParamMap(Module::ParamMap *param_map) {
-            setParam<double>(param_map, "cost_scale", &cost_scale_, 1.0);
+            setParam<double>(param_map, "cost_p_scale", &p_cost_scale_, 1.0);
+            setParam<bool>(param_map, "accumulate", &p_accumulate_, false);
         }
 
         // AccumulateValue

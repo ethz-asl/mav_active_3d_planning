@@ -42,7 +42,9 @@ namespace mav_active_3d_planning {
             static ModuleFactory::Registration<ExponentialDiscount> registration;
 
             // params
-            double cost_scale_;
+            double p_cost_scale_;
+            bool p_accumulate_;     // If true first accumulate all gain and cost, then discount
+
         };
 
         // Accumulates the values up to the root, use another value computer for individual values (Decorator pattern)
@@ -59,7 +61,7 @@ namespace mav_active_3d_planning {
             void setupFromParamMap(Module::ParamMap *param_map);
             static ModuleFactory::Registration<AccumulateValue> registration;
 
-            // params
+            // members
             std::unique_ptr <ValueComputer> following_value_computer_;
         };
 

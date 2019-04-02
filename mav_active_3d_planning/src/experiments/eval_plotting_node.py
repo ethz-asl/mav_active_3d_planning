@@ -123,6 +123,13 @@ class EvalPlotting:
                         for i in range(len(row)):
                             data_voxblox[headers[i]].append(row[i])
 
+            # Create dirs
+            if not os.path.isdir(os.path.join(target_dir, "graphs")):
+                os.mkdir(os.path.join(target_dir, "graphs"))
+
+            # Create graph
+            self.plot_sim_overview(data_voxblox, target_dir)
+
             # Read performance data file
             data_perf = {}
             headers = None
@@ -137,12 +144,7 @@ class EvalPlotting:
                     for i in range(len(row)):
                         data_perf[headers[i]].append(row[i])
 
-            # Create dirs
-            if not os.path.isdir(os.path.join(target_dir, "graphs")):
-                os.mkdir(os.path.join(target_dir, "graphs"))
-
-            # Create graphs
-            self.plot_sim_overview(data_voxblox, target_dir)
+            # Create graph
             self.plot_perf_overview(data_perf, target_dir)
 
             # Finish

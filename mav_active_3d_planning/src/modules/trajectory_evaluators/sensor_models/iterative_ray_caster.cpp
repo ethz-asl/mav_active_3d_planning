@@ -13,15 +13,18 @@ namespace mav_active_3d_planning {
 
         void IterativeRayCaster::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<double>(param_map, "ray_step", &p_ray_step_, (double) c_voxel_size_);
+            setParam<double>(param_map, "downsampling_factor", &p_downsampling_factor_, 1.0);
 
             // setup parent
             CameraModel::setupFromParamMap(param_map);
 
             // Downsample to voxel size resolution at max range
-            c_res_x_ = std::min((int) ceil(p_ray_length_ * c_field_of_view_x_ / (double) c_voxel_size_),
-                                p_resolution_x_);
-            c_res_y_ = std::min((int) ceil(p_ray_length_ * c_field_of_view_y_ / (double) c_voxel_size_),
-                                p_resolution_y_);
+            c_res_x_ = std::min(
+                    (int) ceil(p_ray_length_ * c_field_of_view_x_ / ((double) c_voxel_size_ * p_downsampling_factor_)),
+                    p_resolution_x_);
+            c_res_y_ = std::min(
+                    (int) ceil(p_ray_length_ * c_field_of_view_y_ / ((double) c_voxel_size_ * p_downsampling_factor_)),
+                    p_resolution_y_);
 
             // Determine number of splits + split distances
             c_n_sections_ = (int) std::floor(std::log2(std::min((double) c_res_x_, (double) c_res_y_)));

@@ -1,7 +1,7 @@
 <launch>
-  <arg name="target_directory" default="/home/lukas/Documents/MT/Data/rrtstar_12cm" />
-  <arg name="gt_file_path" default="/home/lukas/Documents/MT/experiment1/gt_surface_pcl.ply"/>
-  <arg name="method" default="single"/>
+  <arg name="target_directory" default="/home/lukas/Documents/MT/Data" />
+  <arg name="gt_file_path" default="/home/lukas/Documents/MT/experiment2/gt_surface_pcl.ply"/>
+  <arg name="method" default="recent"/>
   
   <arg name="evaluate" default="true"/>
   <arg name="create_meshes" default="true"/>

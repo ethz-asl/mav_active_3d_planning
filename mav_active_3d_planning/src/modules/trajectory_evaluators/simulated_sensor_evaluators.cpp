@@ -131,24 +131,63 @@ namespace mav_active_3d_planning {
 
         void Frontier::setupFromParamMap(Module::ParamMap *param_map) {
             SimulatedSensorEvaluator::setupFromParamMap(param_map);
+            setParam<bool>(param_map, "accurate_frontiers", &p_accurate_frontiers_, false);
 
             // initialize neighbor offsets
-            c_voxel_size_ = static_cast<double>(voxblox_ptr_->getEsdfMapPtr()->voxel_size());
-            c_neighbor_voxels_[0] = Eigen::Vector3d(c_voxel_size_, 0, 0);
-            c_neighbor_voxels_[1] = Eigen::Vector3d(-c_voxel_size_, 0, 0);
-            c_neighbor_voxels_[2] = Eigen::Vector3d(0, c_voxel_size_, 0);
-            c_neighbor_voxels_[3] = Eigen::Vector3d(0, -c_voxel_size_, 0);
-            c_neighbor_voxels_[4] = Eigen::Vector3d(0, 0, c_voxel_size_);
-            c_neighbor_voxels_[5] = Eigen::Vector3d(0, 0, -c_voxel_size_);
+            if (!p_accurate_frontiers_) {
+                c_voxel_size_ = static_cast<double>(voxblox_ptr_->getEsdfMapPtr()->voxel_size());
+                c_neighbor_voxels_[0] = Eigen::Vector3d(c_voxel_size_, 0, 0);
+                c_neighbor_voxels_[1] = Eigen::Vector3d(-c_voxel_size_, 0, 0);
+                c_neighbor_voxels_[2] = Eigen::Vector3d(0, c_voxel_size_, 0);
+                c_neighbor_voxels_[3] = Eigen::Vector3d(0, -c_voxel_size_, 0);
+                c_neighbor_voxels_[4] = Eigen::Vector3d(0, 0, c_voxel_size_);
+                c_neighbor_voxels_[5] = Eigen::Vector3d(0, 0, -c_voxel_size_);
+            } else {
+                double vs = static_cast<double>(voxblox_ptr_->getEsdfMapPtr()->voxel_size());
+                c_neighbor_voxels_[0] = Eigen::Vector3d(vs, 0, 0);
+                c_neighbor_voxels_[1] = Eigen::Vector3d(vs, vs, 0);
+                c_neighbor_voxels_[2] = Eigen::Vector3d(vs, -vs, 0);
+                c_neighbor_voxels_[3] = Eigen::Vector3d(vs, 0, vs);
+                c_neighbor_voxels_[4] = Eigen::Vector3d(vs, vs, vs);
+                c_neighbor_voxels_[5] = Eigen::Vector3d(vs, -vs, vs);
+                c_neighbor_voxels_[6] = Eigen::Vector3d(vs, 0, -vs);
+                c_neighbor_voxels_[7] = Eigen::Vector3d(vs, vs, -vs);
+                c_neighbor_voxels_[8] = Eigen::Vector3d(vs, -vs, -vs);
+                c_neighbor_voxels_[9] = Eigen::Vector3d(0, vs, 0);
+                c_neighbor_voxels_[10] = Eigen::Vector3d(0, -vs, 0);
+                c_neighbor_voxels_[11] = Eigen::Vector3d(0, 0, vs);
+                c_neighbor_voxels_[12] = Eigen::Vector3d(0, vs, vs);
+                c_neighbor_voxels_[13] = Eigen::Vector3d(0, -vs, vs);
+                c_neighbor_voxels_[14] = Eigen::Vector3d(0, 0, -vs);
+                c_neighbor_voxels_[15] = Eigen::Vector3d(0, vs, -vs);
+                c_neighbor_voxels_[16] = Eigen::Vector3d(0, -vs, -vs);
+                c_neighbor_voxels_[17] = Eigen::Vector3d(-vs, 0, 0);
+                c_neighbor_voxels_[18] = Eigen::Vector3d(-vs, vs, 0);
+                c_neighbor_voxels_[19] = Eigen::Vector3d(-vs, -vs, 0);
+                c_neighbor_voxels_[20] = Eigen::Vector3d(-vs, 0, vs);
+                c_neighbor_voxels_[21] = Eigen::Vector3d(-vs, vs, vs);
+                c_neighbor_voxels_[22] = Eigen::Vector3d(-vs, -vs, vs);
+                c_neighbor_voxels_[23] = Eigen::Vector3d(-vs, 0, -vs);
+                c_neighbor_voxels_[24] = Eigen::Vector3d(-vs, vs, -vs);
+                c_neighbor_voxels_[25] = Eigen::Vector3d(-vs, -vs, -vs);
+            }
         }
 
         bool Frontier::isFrontierVoxel(const Eigen::Vector3d &voxel) {
             voxblox::EsdfMap *esdf_map = voxblox_ptr_->getEsdfMapPtr().get();
             double distance;
             // Check all neighboring voxels
-            for (int i = 0; i < 6; ++i) {
-                if (esdf_map->getDistanceAtPosition(voxel + c_neighbor_voxels_[i], &distance)) {
-                    if (distance < c_voxel_size_) { return true; }
+            if (!p_accurate_frontiers_) {
+                for (int i = 0; i < 6; ++i) {
+                    if (esdf_map->getDistanceAtPosition(voxel + c_neighbor_voxels_[i], &distance)) {
+                        if (distance < c_voxel_size_) { return true; }
+                    }
+                }
+            } else {
+                for (int i = 0; i < 26; ++i) {
+                    if (esdf_map->getDistanceAtPosition(voxel + c_neighbor_voxels_[i], &distance)) {
+                        if (distance <= 0) { return true; }
+                    }
                 }
             }
             return false;

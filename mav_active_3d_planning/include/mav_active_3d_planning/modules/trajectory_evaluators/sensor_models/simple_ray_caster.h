@@ -31,6 +31,7 @@ namespace mav_active_3d_planning {
 
             // params
             double p_ray_step_;
+            double p_downsampling_factor_;      // Artificially reduce the minimum resolution to increase performance
 
             // constants
             int c_res_x_;       // factual resolution that is used for ray casting

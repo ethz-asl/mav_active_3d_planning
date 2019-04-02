@@ -88,9 +88,13 @@ namespace mav_active_3d_planning {
 
             bool computeGainFromVisibleVoxels(TrajectorySegment *traj_in);
 
+            // params
+            bool p_accurate_frontiers_;     // True: explicitely compute all frontier voxels (may degrade performance),
+            // false: estimate frontier voxels by checking only some neighbors (detection depends on previous views)
+
             // constants
-            Eigen::Vector3d c_neighbor_voxels_[8];
             double c_voxel_size_;
+            Eigen::Vector3d c_neighbor_voxels_[26];
 
             // methods
             bool isFrontierVoxel(const Eigen::Vector3d &voxel);
