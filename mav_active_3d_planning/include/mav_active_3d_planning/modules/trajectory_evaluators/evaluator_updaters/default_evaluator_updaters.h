@@ -95,6 +95,7 @@ namespace mav_active_3d_planning {
         // Only periodically call another updater
         class UpdatePeriodic : public EvaluatorUpdater {
         public:
+
             // override virtual functions
             bool updateSegments(TrajectorySegment *root);
 
