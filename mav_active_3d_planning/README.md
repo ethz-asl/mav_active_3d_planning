@@ -13,13 +13,12 @@ We provide a framework for buidling and evaluating sampling based, receding hori
 * [Run an Experiment](#Run-an-Experiment)
 
 **Documentation**
-
-Documentation and additional information can be found in the wiki: 
-* [Planner Structure](https://github.com/ethz-asl/asldoc-2018-ma-schmid/wiki/Planner-Structure#Main-Planner)
+* [Planner Structure](https://github.com/ethz-asl/asldoc-2018-ma-schmid/wiki/Planner-Structure)
 * [Planner Design Framework](https://github.com/ethz-asl/asldoc-2018-ma-schmid/wiki/Planner-Design-Framework)
 * [Running and Evaluating a Simulated Experiment](https://github.com/ethz-asl/asldoc-2018-ma-schmid/wiki/Running-and-Evaluating-a-Simulated-Experiment)
 * [Code Index](https://github.com/ethz-asl/asldoc-2018-ma-schmid/wiki/Code-Index)
 
+For additional information and see the wiki.
 
   
 # Installation
@@ -27,8 +26,6 @@ TODO
 
 ## Dependencies
 To run the mav_active_3d_planning simulation framework, the following packages are required: `gazebo_ros`, `rotors_gazebo`, `mav_nonlinear_mpc`, `mav_lowlevel_attitude_controller`, `voxblox_ros` and `unreal_cv_ros`.
-
-Other modules use `mav_trajectory_generation`.
 
 ## Data Repository
 Related ressources can be downloaded from [here](https://www.polybox.ethz.ch/index.php/s/6vhPDINcISbEogg). 
