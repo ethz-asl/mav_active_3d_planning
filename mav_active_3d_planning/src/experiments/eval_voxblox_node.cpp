@@ -141,14 +141,6 @@ namespace mav_active_3d_planning {
         }
         ROS_INFO("Succesfully loaded ground truth pointcloud from '%s'.", gt_path.c_str());
 
-//        // TEEEEEEEST store pointcloud in kd_tree
-//        for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it = gt_ptcloud_.begin();
-//             it != gt_ptcloud_.end(); ++it) {
-//            kdtree_data_.points.push_back(Eigen::Vector3f(it->x, it->y, it->z));
-//        }
-//        kdtree_ = new KDTree(3, kdtree_data_, nanoflann::KDTreeSingleIndexAdaptorParams(10));
-//        kdtree_->buildIndex();
-
         // Parse and evaluate all lines in the data file
         std::string map_name;
         int n_maps = 0;
@@ -306,56 +298,6 @@ namespace mav_active_3d_planning {
             mesh_integrator->generateMesh(only_mesh_updated_blocks, clear_updated_flag);
             voxblox::outputMeshLayerAsPly(p_target_dir_ + "/meshes/" + map_name + "error.ply", *mesh_layer);
         }
-
-        // TEEEEEEST: Mesh coloring from voxel point of view
-//        if (p_create_meshes_) {
-//            // Iterate over all voxels
-//            voxblox::BlockIndexList blocks;
-//            tsdf_layer->getAllAllocatedBlocks(&blocks);
-//            const size_t vps = tsdf_layer->voxels_per_side();
-//            const size_t num_voxels_per_block = vps * vps * vps;
-//            for (voxblox::BlockIndex &index : blocks) {
-//                // Iterate over all voxels in said blocks.
-//                voxblox::Block <voxblox::TsdfVoxel> &block = tsdf_layer->getBlockByIndex(index);
-//                for (size_t linear_index = 0; linear_index < num_voxels_per_block;
-//                     ++linear_index) {
-//                    voxblox::TsdfVoxel &voxel = block.getVoxelByLinearIndex(linear_index);
-//                    // Voxel parsing
-//                    if (voxel.weight < min_weight) {
-//                        voxel.color = voxblox::Color(128, 128, 128);
-//                    } else {
-//                        voxblox::Point voxel_center = block.computeCoordinatesFromLinearIndex(linear_index);
-//                        float query_pt[3] = {voxel_center.x(), voxel_center.y(), voxel_center.z()};
-//                        std::size_t ret_index;
-//                        float out_dist_sqr;
-//                        nanoflann::KNNResultSet<float> resultSet(1);
-//                        resultSet.init(&ret_index, &out_dist_sqr);
-//                        kdtree_->findNeighbors(resultSet, &query_pt[0], nanoflann::SearchParams(10));
-//                        float dist = std::abs(voxel.distance - std::sqrt(out_dist_sqr));
-//                        if (dist > truncation_distance) {
-//                            voxel.color = voxblox::Color(128, 128, 128);
-//                        } else {
-//                            double frac = dist / truncation_distance;
-//                            double r = std::min((frac - 0.5) * 2.0 + 1.0, 1.0) * 255;
-//                            double g = (1.0 - frac) * 2 * 255;
-//                            if (frac <= 0.5) {
-//                                g = 190 + 130.0 * frac;
-//                            }
-//                            voxel.color = voxblox::Color(r, g, 0);
-//                        }
-//                    }
-//                }
-//            }
-//            // create mesh
-//            mesh_layer.reset(new voxblox::MeshLayer(tsdf_layer->block_size()));
-//            mesh_integrator.reset(new voxblox::MeshIntegrator<voxblox::TsdfVoxel>(
-//                    mesh_config, tsdf_layer.get(), mesh_layer.get()));
-//            mesh_integrator->generateMesh(only_mesh_updated_blocks, clear_updated_flag);
-//            voxblox::outputMeshLayerAsPly(p_target_dir_ + "/meshes/" + map_name + "voxel_dist.ply", *mesh_layer);
-//        }
-        // TEEEEEST end
-
-
 
         std::ostringstream result("");
         if (p_evaluate_) {

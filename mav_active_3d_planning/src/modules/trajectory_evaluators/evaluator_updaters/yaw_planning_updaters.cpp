@@ -77,13 +77,14 @@ namespace mav_active_3d_planning {
 
         void YawPlanningUpdater::updateSingle(TrajectorySegment *segment) {
             if (segment->info) {
-                // Update all orientations and find maximum gain/value
                 YawPlanningInfo *info = dynamic_cast<YawPlanningInfo *>(segment->info.get());
+
+                // If requested, check whether the trajectory changed
                 if (p_dynamic_trajectories_) {
                     if (info->orientations[info->active_orientation].cost != segment->cost ||
                         info->orientations[info->active_orientation].value != segment->value ||
                         info->orientations[info->active_orientation].parent != segment->parent) {
-                        // The trajectories have changed, also need to recompute the orientations
+                        // Trajectory changed, recompute all orientations
                         for (int j = 0; j < info->orientations.size(); ++j) {
                             info->orientations[j].parent = segment->parent;
                             double yaw = info->orientations[j].trajectory.back().getYaw();
@@ -92,12 +93,17 @@ namespace mav_active_3d_planning {
                         }
                     }
                 }
+
+                // Update all orientations with the following updater and select the best one as the main trajectory
+                // Initialization step
                 following_updater_->updateSegments(&(info->orientations[0]));
                 info->active_orientation = 0;
                 double best_value = info->orientations[0].gain;
                 if (p_select_by_value_) {
                     best_value = info->orientations[0].value;
                 }
+
+                // Update and compare all other orientations
                 for (int i = 1; i < info->orientations.size(); ++i) {
                     following_updater_->updateSegments(&(info->orientations[i]));
                     if (p_select_by_value_) {
@@ -112,6 +118,7 @@ namespace mav_active_3d_planning {
                         }
                     }
                 }
+
                 // Apply best rotation to the segment
                 segment->trajectory = info->orientations[info->active_orientation].trajectory;
                 segment->gain = info->orientations[info->active_orientation].gain;
