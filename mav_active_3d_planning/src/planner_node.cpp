@@ -102,6 +102,11 @@ namespace mav_active_3d_planning {
     void PlannerNode::odomCallback(const nav_msgs::Odometry &msg) {
         // This is the main loop, high odom message frequency is expected to continuously run
         if (!running_) { return; }
+
+//        voxblox::Point point(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
+//        voxblox::Block <voxblox::TsdfVoxel>::Ptr block = voxblox_server_->getTsdfMapPtr()->getTsdfLayerPtr()->getBlockPtrByCoordinates(point);
+//            double weight = (double)(block->getVoxelPtrByCoordinates(point)->weight);
+
         Eigen::Vector3d position(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
         double yaw = tf::getYaw(msg.pose.pose.orientation);
 

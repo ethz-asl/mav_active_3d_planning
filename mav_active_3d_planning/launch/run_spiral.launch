@@ -20,6 +20,7 @@
   <arg name="model_type" default="ground_truth"/>
   <arg name="flatten_distance" default="5.5"/>
   <arg name="maximum_distance" default="0.0"/>
+  <arg name="apply_odometry_noise" default="true"/>
   
   <!--  Planner arguments (tg_uniform, tg_random_linear, tg_rrt, general, nbvp_bircher, te_frontier, te_yaw)-->
   <arg name="use_separate_configs" default="true"/>
@@ -29,7 +30,7 @@
   <arg name="verbose_planner" default="true"/>
   
   <!--  Experiment arguments -->  
-  <arg name="experiment_config" default="experiment1.yaml"/>
+  <arg name="experiment_config" default="experiment2.yaml"/>
   <arg name="record_data" default="true"/>
   <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
   <arg name="data_frequency" default="15.0" />
@@ -79,19 +80,29 @@
       <remap from="odometry" to="ground_truth/odometry" />
       <rosparam file="$(find mav_lowlevel_attitude_controller)/resources/PID_attitude_$(arg mav_name).yaml" />
     </node>
+    
+    <!-- Odometry noise model -->
+    <node name="odometry_noise_model" pkg="mav_active_3d_planning" type="gps_odometry_simulator.py" output="screen">
+      <param name="apply_noise" value="$(arg apply_odometry_noise)"/>
+      <param name="position_uncertainty" value="0.03"/>
+      <param name="roll_pitch_uncertainty" value="1.0" />
+      <param name="yaw_uncertainty" value="3.0" />
+      <param name="gaussian_noise" value="false" />
+      <remap from="odometry_in" to="ground_truth/odometry" />
+    </node>
 
     <!-- static camera transform -->
-    <node pkg="tf" type="static_transform_publisher" name="tf_camera_to_link" args="0 0 0 -0.5 0.5 -0.5 0.5 /camera_link /camera 100"/>  
+    <node pkg="tf" type="static_transform_publisher" name="tf_camera_to_link" args="0 0 0 -0.5 0.5 -0.5 0.5 /firefly/base_link /camera 100"/>  
   </group>
 
   <group ns="unreal">
     <!-- Unreal vision client -->
     <node name="unreal_ros_client" pkg="unreal_cv_ros" type="unreal_ros_client.py" required="true" output="screen">
       <param name="mode" value="$(arg uecv_mode)"/>
-      <param name="publish_tf" value="true"/>
+      <param name="publish_tf" value="false"/>
       <param name="collision_on" value="true"/>
       <param name="slowdown" value="$(arg slowdown)"/>
-      <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
+      <remap from="odometry" to="/$(arg mav_name)/odometry_out" />
     </node>
     
     <!-- Unreal sensor model -->

@@ -20,10 +20,10 @@ class PathPublisher:
         '''  Initialize ros node and read params '''
         # Parse parameters
         self.loop_time = rospy.get_param('~loop_time', 45.0)    # time per rotation (38~1m/s for 10x14 ellispsis)
-        self.x_center = rospy.get_param('~x_center', 5.0)
+        self.x_center = rospy.get_param('~x_center', 4.75)
         self.y_center = rospy.get_param('~y_center', 0.0)
-        self.x_width = rospy.get_param('~x_width', 10.0)
-        self.y_width = rospy.get_param('~y_width', 15.0)
+        self.x_width = rospy.get_param('~x_width', 10.5)
+        self.y_width = rospy.get_param('~y_width', 15.5)
         self.z_max = rospy.get_param('~z_max', 15.0)
         self.z_step = rospy.get_param('~z_step', 1.5)
 

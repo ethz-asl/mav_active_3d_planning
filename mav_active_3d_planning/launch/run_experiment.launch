@@ -20,7 +20,9 @@
   <arg name="model_type" default="ground_truth"/>
   <arg name="flatten_distance" default="5.5"/>
   <arg name="maximum_distance" default="0.0"/>
-  <arg name="apply_odometry_noise" default="true"/>
+  
+  <!-- Odometry simulation (currently rovio) -->
+  <arg name="apply_odometry_noise" default="false"/>
   
   <!--  Planner arguments (tg_uniform, tg_random_linear, tg_rrt, general, nbvp_bircher, te_frontier, te_yaw)-->
   <arg name="use_separate_configs" default="true"/>
@@ -30,11 +32,11 @@
   <arg name="verbose_planner" default="true"/>
   
   <!--  Experiment arguments -->  
-  <arg name="experiment_config" default="experiment2.yaml"/>
+  <arg name="experiment_config" default="experiment1.yaml"/>
   <arg name="record_data" default="false"/>
-  <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
-  <arg name="data_frequency" default="15.0" />
-  <arg name="time_limit" default="30.0" />
+  <arg name="data_directory" default="/home/lukas/Documents/MT/Data/series_1"/> 
+  <arg name="data_frequency" default="30.0" />
+  <arg name="time_limit" default="30" />
   
   
   
@@ -66,33 +68,43 @@
     
     <!-- MPC trajectory tracker (sampling time needs to match odom publish rate!)-->
     <node name="mav_nonlinear_mpc" pkg="mav_nonlinear_mpc" type="nonlinear_mpc_node" respawn="true" clear_params="true">
-      <remap from="odometry" to="odometry_out" />
+      <remap from="odometry" to="ground_truth/odometry" />
       <rosparam file="$(find mav_nonlinear_mpc)/resources/nonlinear_mpc_$(arg mav_name).yaml" />
       <rosparam file="$(find mav_disturbance_observer)/resources/disturbance_observer_$(arg mav_name).yaml"/>
       <param name="use_rc_teleop" value="false"/>
       <param name="verbose" value="false" />
       <param name="reference_frame" value="world"/>
-      <param name="sampling_time" value="0.04"/>
+      <param name="sampling_time" value="0.0021"/>
     </node>
     
     <!-- Rotor input controller -->
     <node name="PID_attitude_controller" pkg="mav_lowlevel_attitude_controller" type="mav_pid_attitude_controller_node" respawn="true" clear_params="true">
-      <remap from="odometry" to="odometry_out" />
+      <remap from="odometry" to="ground_truth/odometry" />
       <rosparam file="$(find mav_lowlevel_attitude_controller)/resources/PID_attitude_$(arg mav_name).yaml" />
     </node>
     
-    <!-- Odometry noise model -->
-    <node name="odometry_noise_model" pkg="mav_active_3d_planning" type="gps_odometry_simulator.py" output="screen">
-      <param name="apply_noise" value="$(arg apply_odometry_noise)"/>
+    <!-- Odometry noise model >
+    <group if="$(arg apply_odometry_noise)">
+      <node pkg="rovio" type="rovio_node" name="rovio" output="screen">
+        <param name="filter_config" value="$(find mav_active_3d_planning)/cfg/rovio/rovio.info"/>
+        <param name="camera0_config" value="$(find mav_active_3d_planning)/cfg/rovio/unreal_cam0.yaml"/>
+        <remap from="cam0/image_raw" to="/unreal/unreal_sensor_model/ue_sensor_image_out" />
+        <remap from="imu0" to="imu" />
+        <remap from="rovio/odometry" to="odometry_to_use" />
+      </node>
+    </group>
+      <node name="odometry_noise_model" pkg="mav_active_3d_planning" type="gps_odometry_simulator.py" output="screen">
       <param name="position_uncertainty" value="0.03"/>
-      <param name="roll_pitch_uncertainty" value="1" />
-      <param name="yaw_uncertainty" value="3" />
-      <param name="gaussian_noise" value="false" />
+      <param name="roll_pitch_uncertainty" value="1.0" />
+      <param name="yaw_uncertainty" value="3.0" />
+      <param name="noise_model" value="gaussian" />
+      <param name="publish_tf" value="false" />
       <remap from="odometry_in" to="ground_truth/odometry" />
-    </node>
+    </node--> 
 
     <!-- static camera transform -->
     <node pkg="tf" type="static_transform_publisher" name="tf_camera_to_link" args="0 0 0 -0.5 0.5 -0.5 0.5 /camera_link /camera 100"/>  
+    <node pkg="tf" type="static_transform_publisher" name="tf_base_to_camera_link" args="0 0 0 0 0 0 1 /firefly/base_link /camera_link 100"/> 
   </group>
 
   <group ns="unreal">
@@ -102,7 +114,7 @@
       <param name="publish_tf" value="true"/>
       <param name="collision_on" value="true"/>
       <param name="slowdown" value="$(arg slowdown)"/>
-      <remap from="odometry" to="/$(arg mav_name)/odometry_out" />
+      <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
     </node>
     
     <!-- Unreal sensor model -->
@@ -111,6 +123,7 @@
       <param name="flatten_distance" value="$(arg flatten_distance)"/>
       <param name="model_type" value="$(arg model_type)" />
       <param name="maximum_distance" value="$(arg maximum_distance)" />
+      <param name="publish_images" value="$(arg apply_odometry_noise)" />
       <remap from="ue_sensor_raw" to="unreal_ros_client/ue_sensor_raw" />
     </node>
 
@@ -132,6 +145,7 @@
       <param name="ns_planner" value="/planner/planner_node" />
       <param name="ns_voxblox" value="/planner/voxblox_node" />
       <param name="delay" value="$(arg delay)" />
+      <param name="startup_timeout" value="30.0" />
       <param name="evaluate" value="$(arg record_data)" />
       <param name="eval_directory" value="$(arg data_directory)" />
       <param name="eval_frequency" value="$(arg data_frequency)" />
@@ -147,6 +161,9 @@
     <!-- Voxblox -->
     <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
       <remap from="pointcloud" to="/unreal/unreal_sensor_model/ue_sensor_out"/>
+      <!--remap from="transform" to="/$(arg mav_name)/ground_truth/odometry"/>
+      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/voxblox/transforms.yaml"/-->
+      <param name="publish_tsdf_map" value="true" />
       <param name="publish_esdf_map" value="true" />
       <param name="publish_pointclouds" value="true" />
       <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
@@ -163,12 +180,13 @@
     <!-- Planner -->
     <node name="planner_node" pkg="mav_active_3d_planning" type="planner_node" output="screen" >
       <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
-      <param name="use_tf_transforms" value="true" />
+      <remap from="planner_node/tsdf_map_in" to="voxblox_node/tsdf_map_out" />
+      <param name="use_tf_transforms" value="false" />
       <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
       <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
       <param name="update_mesh_every_n_sec" value="0.0" />
     
-      <remap from="odometry" to="/$(arg mav_name)/odometry_out" />
+      <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
       <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
       <param name="verbose" value="$(arg verbose_planner)" />
       <param name="log_performance" value="$(arg record_data)" />

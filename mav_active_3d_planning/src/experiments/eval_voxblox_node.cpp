@@ -43,7 +43,7 @@ namespace mav_active_3d_planning {
 
         bool evaluate(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 
-        std::string evaluateSingle(std::string map_name);
+        std::string evaluateSingle(std::string map_name, bool create_mesh);
 
         void writeLog(std::string text);
 
@@ -78,10 +78,18 @@ namespace mav_active_3d_planning {
         std::string p_target_dir_;
         bool p_create_meshes_;
         bool p_evaluate_;
+        bool p_error_histogram_;            // create a histo with 20 bins
+        double p_truncation_distance_;      // leave 0.0 for 3x voxelsize
+        int p_mesh_steps_;
+
+        // variables
+        int mesh_counter_;
+        int hist_bins_;
 
         // log file
         std::string log_file_path_;
         std::ofstream log_file_;
+        std::ofstream hist_file_;
 
         // Ground truth pointcloud
         pcl::PointCloud <pcl::PointXYZRGB> gt_ptcloud_;
@@ -91,7 +99,9 @@ namespace mav_active_3d_planning {
 
     EvaluationNode::EvaluationNode(const ros::NodeHandle &nh, const ros::NodeHandle &nh_private)
             : nh_(nh),
-              nh_private_(nh_private) {
+              nh_private_(nh_private),
+              mesh_counter_(0),
+              hist_bins_(30) {
         eval_srv_ = nh_private_.advertiseService("evaluate", &EvaluationNode::evaluate, this);
     }
 
@@ -112,6 +122,9 @@ namespace mav_active_3d_planning {
         // Get actions to perform
         nh_private_.param("evaluate", p_evaluate_, true);
         nh_private_.param("create_meshes", p_create_meshes_, true);
+        nh_private_.param("mesh_every_n_steps", p_mesh_steps_, 20);
+        nh_private_.param("truncation_distance", p_truncation_distance_, 0.0);
+        nh_private_.param("error_histogram", p_error_histogram_, true);
 
         // Check not previously evaluated
         std::string line;
@@ -141,13 +154,22 @@ namespace mav_active_3d_planning {
         }
         ROS_INFO("Succesfully loaded ground truth pointcloud from '%s'.", gt_path.c_str());
 
-//        // TEEEEEEEST store pointcloud in kd_tree
-//        for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it = gt_ptcloud_.begin();
-//             it != gt_ptcloud_.end(); ++it) {
-//            kdtree_data_.points.push_back(Eigen::Vector3f(it->x, it->y, it->z));
-//        }
-//        kdtree_ = new KDTree(3, kdtree_data_, nanoflann::KDTreeSingleIndexAdaptorParams(10));
-//        kdtree_->buildIndex();
+        for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it = gt_ptcloud_.begin();
+             it != gt_ptcloud_.end(); ++it) {
+            kdtree_data_.points.push_back(Eigen::Vector3f(it->x, it->y, it->z));
+        }
+        kdtree_ = new KDTree(3, kdtree_data_, nanoflann::KDTreeSingleIndexAdaptorParams(10));
+        kdtree_->buildIndex();
+
+        // Setup hist file
+        if (p_error_histogram_) {
+            hist_file_.open((p_target_dir_ + "/error_hist.csv").c_str(), std::ios::out);
+            hist_file_ << "MapName";
+            for (int i = 0; i < hist_bins_; ++i) {
+                hist_file_ << ",Bin" << i;
+            }
+            hist_file_ << "\n";
+        }
 
         // Parse and evaluate all lines in the data file
         std::string map_name;
@@ -173,17 +195,25 @@ namespace mav_active_3d_planning {
                     continue;
                 }
                 n_maps++;
+                mesh_counter_++;
             }
             ROS_INFO("Processing: %s", map_name.c_str());
+            bool create_mesh = false;
+            if (p_create_meshes_ && mesh_counter_ >= p_mesh_steps_){
+                create_mesh = true;
+                mesh_counter_ = 0;
+            }
+            std::string result = evaluateSingle(map_name, create_mesh);
             if (p_evaluate_) {
-                fout << line + "," + evaluateSingle(map_name) + "\n";
-            } else if (p_create_meshes_) {
-                evaluateSingle(map_name);
+                fout << line + "," + result + "\n";
             }
         }
         data_file.close();
         if (p_evaluate_) {
             fout.close();
+        }
+        if (p_error_histogram_) {
+            hist_file_.close();
         }
         ROS_INFO("Finished processing maps.");
 
@@ -205,7 +235,7 @@ namespace mav_active_3d_planning {
         return true;
     }
 
-    std::string EvaluationNode::evaluateSingle(std::string map_name) {
+    std::string EvaluationNode::evaluateSingle(std::string map_name, bool create_mesh) {
         if (map_name == "Header") {
             return "MeanError,StdDevError,UnknownVoxels,OutsideTruncation";
         } else if (map_name == "Unit") {
@@ -224,14 +254,61 @@ namespace mav_active_3d_planning {
         std::shared_ptr <voxblox::MeshIntegrator<voxblox::TsdfVoxel>> mesh_integrator;
         constexpr bool only_mesh_updated_blocks = false;
         constexpr bool clear_updated_flag = true;
-        if (p_create_meshes_) {
+        if (create_mesh) {
             mesh_layer.reset(new voxblox::MeshLayer(tsdf_layer->block_size()));
             mesh_integrator.reset(new voxblox::MeshIntegrator<voxblox::TsdfVoxel>(
                     mesh_config, tsdf_layer.get(), mesh_layer.get()));
             mesh_integrator->generateMesh(only_mesh_updated_blocks, clear_updated_flag);
             voxblox::outputMeshLayerAsPly(p_target_dir_ + "/meshes/" + map_name + "color.ply", *mesh_layer);
+        }
 
-            // Set every voxel to gray for error map
+        // Go through each point, use trilateral interpolation to figure out the distance at that point.
+        // This double-counts -- multiple queries to the same voxel will be counted separately.
+        uint64_t total_evaluated_voxels = 0;
+        uint64_t unknown_voxels = 0;
+        uint64_t outside_truncation_voxels = 0;
+        const float min_weight = 0.01;
+        const bool interpolate = true;
+        double truncation_distance = 3 * tsdf_layer->voxel_size();
+        if (p_truncation_distance_ != 0.0) {
+            truncation_distance = p_truncation_distance_;
+        }
+        std::vector<double> abserror;
+        if (p_evaluate_) {
+            // Evaluate gt pcl based(# gt points within < trunc_dist)
+            for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it = gt_ptcloud_.begin();
+                 it != gt_ptcloud_.end(); ++it) {
+                voxblox::Point point(it->x, it->y, it->z);
+                voxblox::FloatingPoint distance = 0.0;
+
+                float weight = 0.0;
+                // We will do multiple lookups -- the first is to determine whether the
+                // voxel exists.
+                if (!interpolator->getNearestDistanceAndWeight(point, &distance, &weight)) {
+                    unknown_voxels++;
+                } else if (weight <= min_weight) {
+                    unknown_voxels++;
+                } else {
+                    interpolator->getDistance(point, &distance, interpolate);
+                    if (std::abs(distance) > truncation_distance) {
+                        distance = truncation_distance;
+                    }
+
+//                    if (distance >= truncation_distance) {
+//                        outside_truncation_voxels++;
+//                        distance = truncation_distance;
+//                    } else {
+//                        // In case this fails, distance is still the nearest neighbor distance.
+//                        interpolator->getDistance(point, &distance, interpolate);
+//                    }
+                    abserror.push_back(std::abs(distance));
+                }
+                total_evaluated_voxels++;
+            }
+        }
+
+        // Coloring: grey -> unknown, green -> 0 error, red -> maximum error (truncation dist), purple: >truncation
+        if (create_mesh) {
             voxblox::BlockIndexList blocks;
             tsdf_layer->getAllAllocatedBlocks(&blocks);
             const size_t vps = tsdf_layer->voxels_per_side();
@@ -242,64 +319,49 @@ namespace mav_active_3d_planning {
                 for (size_t linear_index = 0; linear_index < num_voxels_per_block;
                      ++linear_index) {
                     voxblox::TsdfVoxel &voxel = block.getVoxelByLinearIndex(linear_index);
-                    voxel.color = voxblox::Color(128, 128, 128);
-                }
-            }
-        }
+                    // Voxel parsing
+                    voxblox::Point voxel_center = block.computeCoordinatesFromLinearIndex(linear_index);
+                    float query_pt[3] = {voxel_center.x(), voxel_center.y(), voxel_center.z()};
+                    std::size_t ret_index;
+                    float out_dist_sqr;
+                    nanoflann::KNNResultSet<float> resultSet(1);
+                    resultSet.init(&ret_index, &out_dist_sqr);
+                    kdtree_->findNeighbors(resultSet, &query_pt[0], nanoflann::SearchParams(10));
 
-        // Go through each point, use trilateral interpolation to figure out the distance at that point.
-        // This double-counts -- multiple queries to the same voxel will be counted separately.
-        // Coloring: grey -> unknown, green -> 0 error, red -> maximum error (truncation dist=2voxelsize)
-        uint64_t total_evaluated_voxels = 0;
-        uint64_t unknown_voxels = 0;
-        uint64_t outside_truncation_voxels = 0;
-        const float min_weight = 0.01;
-        double truncation_distance = 2 * tsdf_layer->voxel_size();
-        std::vector<double> abserror;
+                    if (out_dist_sqr > truncation_distance * truncation_distance) {
+                        // voxel is not near the ground truth
+                        voxel.color = voxblox::Color(128, 128, 128);
+                        continue;
+                    }
 
-        for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it = gt_ptcloud_.begin();
-             it != gt_ptcloud_.end(); ++it) {
-            voxblox::Point point(it->x, it->y, it->z);
-            voxblox::FloatingPoint distance = 0.0;
-
-            float weight = 0.0;
-            const bool interpolate = true;
-            // We will do multiple lookups -- the first is to determine whether the
-            // voxel exists.
-            if (!interpolator->getNearestDistanceAndWeight(point, &distance,
-                                                           &weight)) {
-                unknown_voxels++;
-            } else if (weight <= min_weight) {
-                unknown_voxels++;
-            } else {
-                if (distance >= truncation_distance) {
-                    outside_truncation_voxels++;
-                    distance = truncation_distance;
-                } else {
-                    // In case this fails, distance is still the nearest neighbor distance.
-                    interpolator->getDistance(point, &distance, interpolate);
-                }
-                abserror.push_back(std::abs(distance));
-                if (p_create_meshes_) {
-                    voxblox::Layer<voxblox::TsdfVoxel>::BlockType::Ptr block_ptr =
-                            tsdf_layer->getBlockPtrByCoordinates(point);
-                    if (block_ptr != nullptr) {
-                        voxblox::TsdfVoxel &voxel = block_ptr->getVoxelByCoordinates(point);
-                        double frac = std::fabs(distance) / truncation_distance;
-                        double r = std::min((frac - 0.5) * 2.0 + 1.0, 1.0) * 255;
-                        double g = (1.0 - frac) * 2 * 255;
-                        if (frac <= 0.5) {
-                            g = 190 + 130.0 * frac;
+                    // get error of closest gt point
+                    voxblox::Point point(kdtree_data_.points[ret_index].x(), kdtree_data_.points[ret_index].y(),
+                                         kdtree_data_.points[ret_index].z());
+                    voxblox::FloatingPoint distance = 0.0;
+                    float weight = 0.0;
+                    if (!interpolator->getNearestDistanceAndWeight(point, &distance, &weight)) {
+                        voxel.color = voxblox::Color(128, 128, 128);
+                    } else if (weight <= min_weight) {
+                        voxel.color = voxblox::Color(128, 128, 128);
+                    } else {
+                        interpolator->getDistance(point, &distance, interpolate);
+                        if (distance >= truncation_distance) {
+                            voxel.color = voxblox::Color(255, 0, 0);
+                        } else {
+                            // In case this fails, distance is still the nearest neighbor distance.
+                            double frac = std::abs(distance) / truncation_distance;
+                            double r = std::min((frac - 0.5) * 2.0 + 1.0, 1.0) * 255;
+                            double g = (1.0 - frac) * 2 * 255;
+                            if (frac <= 0.5) {
+                                g = 190 + 130.0 * frac;
+                            }
+                            voxel.color = voxblox::Color(r, g, 0);
                         }
-                        voxel.color = voxblox::Color(r, g, 0);
                     }
                 }
             }
-            total_evaluated_voxels++;
-        }
 
-        // create eror mesh
-        if (p_create_meshes_) {
+            // produce the now colored mesh
             mesh_layer.reset(new voxblox::MeshLayer(tsdf_layer->block_size()));
             mesh_integrator.reset(new voxblox::MeshIntegrator<voxblox::TsdfVoxel>(
                     mesh_config, tsdf_layer.get(), mesh_layer.get()));
@@ -307,58 +369,9 @@ namespace mav_active_3d_planning {
             voxblox::outputMeshLayerAsPly(p_target_dir_ + "/meshes/" + map_name + "error.ply", *mesh_layer);
         }
 
-        // TEEEEEEST: Mesh coloring from voxel point of view
-//        if (p_create_meshes_) {
-//            // Iterate over all voxels
-//            voxblox::BlockIndexList blocks;
-//            tsdf_layer->getAllAllocatedBlocks(&blocks);
-//            const size_t vps = tsdf_layer->voxels_per_side();
-//            const size_t num_voxels_per_block = vps * vps * vps;
-//            for (voxblox::BlockIndex &index : blocks) {
-//                // Iterate over all voxels in said blocks.
-//                voxblox::Block <voxblox::TsdfVoxel> &block = tsdf_layer->getBlockByIndex(index);
-//                for (size_t linear_index = 0; linear_index < num_voxels_per_block;
-//                     ++linear_index) {
-//                    voxblox::TsdfVoxel &voxel = block.getVoxelByLinearIndex(linear_index);
-//                    // Voxel parsing
-//                    if (voxel.weight < min_weight) {
-//                        voxel.color = voxblox::Color(128, 128, 128);
-//                    } else {
-//                        voxblox::Point voxel_center = block.computeCoordinatesFromLinearIndex(linear_index);
-//                        float query_pt[3] = {voxel_center.x(), voxel_center.y(), voxel_center.z()};
-//                        std::size_t ret_index;
-//                        float out_dist_sqr;
-//                        nanoflann::KNNResultSet<float> resultSet(1);
-//                        resultSet.init(&ret_index, &out_dist_sqr);
-//                        kdtree_->findNeighbors(resultSet, &query_pt[0], nanoflann::SearchParams(10));
-//                        float dist = std::abs(voxel.distance - std::sqrt(out_dist_sqr));
-//                        if (dist > truncation_distance) {
-//                            voxel.color = voxblox::Color(128, 128, 128);
-//                        } else {
-//                            double frac = dist / truncation_distance;
-//                            double r = std::min((frac - 0.5) * 2.0 + 1.0, 1.0) * 255;
-//                            double g = (1.0 - frac) * 2 * 255;
-//                            if (frac <= 0.5) {
-//                                g = 190 + 130.0 * frac;
-//                            }
-//                            voxel.color = voxblox::Color(r, g, 0);
-//                        }
-//                    }
-//                }
-//            }
-//            // create mesh
-//            mesh_layer.reset(new voxblox::MeshLayer(tsdf_layer->block_size()));
-//            mesh_integrator.reset(new voxblox::MeshIntegrator<voxblox::TsdfVoxel>(
-//                    mesh_config, tsdf_layer.get(), mesh_layer.get()));
-//            mesh_integrator->generateMesh(only_mesh_updated_blocks, clear_updated_flag);
-//            voxblox::outputMeshLayerAsPly(p_target_dir_ + "/meshes/" + map_name + "voxel_dist.ply", *mesh_layer);
-//        }
-        // TEEEEEST end
-
-
-
         std::ostringstream result("");
         if (p_evaluate_) {
+            // Evaluate result
             double mean = 0.0;
             for (int i = 0; i < abserror.size(); ++i) {
                 mean += abserror[i];
@@ -369,11 +382,31 @@ namespace mav_active_3d_planning {
                 stddev += std::pow(abserror[i] - mean, 2.0);
             }
             stddev = sqrt(stddev / (total_evaluated_voxels - unknown_voxels - 1.0));
+
             // Build result
             result << mean << "," << stddev << "," << static_cast<double>(unknown_voxels) / total_evaluated_voxels
-                   << ","
-                   << outside_truncation_voxels / static_cast<double>(total_evaluated_voxels);
+                   << "," << outside_truncation_voxels / static_cast<double>(total_evaluated_voxels);
         }
+
+        if (p_error_histogram_) {
+            // create histogram of error distribution
+            std::vector<int> histogram(hist_bins_);
+            double bin_size = truncation_distance / ((double)hist_bins_ - 1.0);
+            for (int i = 0; i < abserror.size(); ++i) {
+                int bin = (int)floor(abserror[i] / bin_size);
+                if (bin < 0 || bin >= hist_bins_) {
+                    std::cout << "Bin Error at bin " << bin << ", value " << abserror[i] << std::endl;
+                    continue;
+                }
+                histogram[bin] += 1;
+            }
+            hist_file_ << map_name;
+            for (int i = 0; i < histogram.size(); ++i) {
+                hist_file_ << "," << histogram[i];
+            }
+            hist_file_ << "\n";
+        }
+
         return result.str();
     }
 

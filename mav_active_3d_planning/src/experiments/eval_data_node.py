@@ -28,6 +28,7 @@ class EvalData:
         self.ns_planner = rospy.get_param('~ns_planner', "/firefly/planner_node")
         self.planner_delay = rospy.get_param('~delay', 0.0)     # Waiting time until the planner is launched
         self.evaluate = rospy.get_param('~evaluate', False)     # Periodically save the voxblox state
+        self.startup_timeout = rospy.get_param('~startup_timeout', 0.0)     # Max allowed time for startup, 0 for inf
 
         if self.evaluate:
             # Setup parameters
@@ -37,8 +38,10 @@ class EvalData:
                 sys.exit(-1)
 
             self.ns_voxblox = rospy.get_param('~ns_voxblox', "/voxblox/voxblox_node")
+            self.ns_unreal_cv_ros = rospy.get_param('~ns_unreal_cv_ros', "/unreal/unreal_ros_client")
             self.eval_frequency = rospy.get_param('~eval_frequency', 5.0)  # Save rate in seconds
-            self.time_limit = rospy.get_param('~time_limit', 0)  # Maximum sim duration in minutes, 0 for inf
+            self.time_limit = rospy.get_param('~time_limit', 0.0)  # Maximum sim duration in minutes, 0 for inf
+            self.reset_unreal_cv_ros = rospy.get_param('~reset_unreal_cv_ros', True)  # On shutdown reset pose to 0
 
             # Statistics
             self.eval_walltime_0 = None
@@ -78,7 +81,14 @@ class EvalData:
     def launch_simulation(self):
         rospy.loginfo("Experiment setup: waiting for unreal MAV simulationto setup...")
         # Wait for unreal simulation to setup
-        rospy.wait_for_message("unreal_simulation_ready", String)
+        if self.startup_timeout > 0.0:
+            try:
+                rospy.wait_for_message("unreal_simulation_ready", String, self.startup_timeout)
+            except rospy.ROSException:
+                self.stop_experiment("Simulation startup failed (timeout after " + str(self.startup_timeout) + "s).")
+                return
+        else:
+            rospy.wait_for_message("unreal_simulation_ready", String)
         rospy.loginfo("Waiting for unreal MAV simulationto setup... done.")
 
         # Launch planner (by service, every planner needs to advertise this service when ready)
@@ -130,15 +140,20 @@ class EvalData:
         time_real = time.time() - self.eval_walltime_0
         time_ros = rospy.get_time() - self.eval_rostime_0
         map_name = "{0:05d}".format(self.eval_n_maps)
-        cpu = self.cpu_time_srv(True)
+        try:
+            cpu = self.cpu_time_srv(True)
+        except:
+            # Usually this means the planner died
+            self.stop_experiment("Planner Node died (cpu srv failed).")
+            return
         self.eval_writer.writerow([map_name, time_ros, time_real, self.eval_n_pointclouds, float(cpu.message)])
         self.eval_voxblox_service(os.path.join(self.eval_directory, "voxblox_maps", map_name + ".vxblx"))
         self.eval_n_pointclouds = 0
         self.eval_n_maps += 1
 
         # If the time limit is reached stop the simulation
-        if self.time_limit > 0:
-            if rospy.get_time() - self.eval_rostime_0 >= self.time_limit * 60:
+        if self.time_limit > 0.0:
+            if rospy.get_time() - self.eval_rostime_0 >= self.time_limit * 60.0:
                 self.stop_experiment("Time limit reached.")
 
     def eval_finish(self):
@@ -161,12 +176,19 @@ class EvalData:
 
     def stop_experiment(self, reason):
         # Shutdown the node with proper logging, only required when experiment is performed
+        reason = "Stopping the experiment: " + reason
         if self.evaluate:
-            reason = "Stopping the experiment: " + reason
             self.writelog(reason)
             width = len(reason) + 4
             rospy.loginfo("\n" + "*" * width + "\n* " + reason + " *\n" + "*" * width)
-            rospy.signal_shutdown(reason)
+            if self.reset_unreal_cv_ros:
+                try:
+                    # If unreal is running, this will reset it, otherwise map is already in initial state
+                    terminate_srv = rospy.ServiceProxy(self.ns_unreal_cv_ros + "/terminate_with_reset", SetBool)
+                    terminate_srv(True)
+                except:
+                    pass
+        rospy.signal_shutdown(reason)
 
     def collision_callback(self, _):
         if not self.collided:

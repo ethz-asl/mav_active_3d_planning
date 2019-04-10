@@ -1,12 +1,21 @@
 <launch>
-  <arg name="target_directory" default="/home/lukas/Documents/MT/Data" />
-  <arg name="gt_file_path" default="/home/lukas/Documents/MT/experiment2/gt_surface_pcl.ply"/>
+  <!-- Data source -->
+  <arg name="target_directory" default="/home/lukas/Documents/MT/Data/series_test" />
+  <arg name="gt_file_path" default="/home/lukas/Documents/MT/experiment1/gt_surface_pcl.ply"/>
   <arg name="method" default="recent"/>
   
+  <!-- what to evaluate -->
+  <arg name="series" default="false"/>
   <arg name="evaluate" default="true"/>
+  <arg name="error_histogram" default="true"/>
   <arg name="create_meshes" default="true"/>
   <arg name="create_plots" default="true"/>
   <arg name="show_plots" default="false"/>
+  <arg name="clear_voxblox_maps" default="false"/>	<!-- irreversible map removal (disk space)!-->
+  
+  <!-- Eval args -->
+  <arg name="truncation_distance" default="0.0"/>
+  <arg name="mesh_every_n_steps" default="10"/>
 
 
 
@@ -16,14 +25,19 @@
     <param name="method" value="$(arg method)" />
     <param name="ns_eval_voxblox_node" value="/eval_voxblox_node" />
     <param name="evaluate" value="$(arg evaluate)" />
+    <param name="series" value="$(arg series)" />
     <param name="create_plots" value="$(arg create_plots)" />
     <param name="show_plots" value="$(arg show_plots)" />
     <param name="create_meshes" value="$(arg create_meshes)" />
+    <param name="clear_voxblox_maps" value="$(arg clear_voxblox_maps)" />
   </node>
   
 	<node name="eval_voxblox_node" pkg="mav_active_3d_planning" type="eval_voxblox_node" output="screen" >
 	  <param name="ground_truth_path" value="$(arg gt_file_path)" />
 	  <param name="create_meshes" value="$(arg create_meshes)" />
+	  <param name="error_histogram" value="$(arg error_histogram)" />
 	  <param name="evaluate" value="$(arg evaluate)" />
+	  <param name="truncation_distance" value="$(arg truncation_distance)" />
+	  <param name="mesh_every_n_steps" value="$(arg mesh_every_n_steps)" />
 	</node>
 </launch>
