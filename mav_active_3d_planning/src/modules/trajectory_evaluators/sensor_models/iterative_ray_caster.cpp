@@ -12,11 +12,9 @@ namespace mav_active_3d_planning {
         ModuleFactory::Registration <IterativeRayCaster> IterativeRayCaster::registration("IterativeRayCaster");
 
         void IterativeRayCaster::setupFromParamMap(Module::ParamMap *param_map) {
+            CameraModel::setupFromParamMap(param_map);
             setParam<double>(param_map, "ray_step", &p_ray_step_, (double) c_voxel_size_);
             setParam<double>(param_map, "downsampling_factor", &p_downsampling_factor_, 1.0);
-
-            // setup parent
-            CameraModel::setupFromParamMap(param_map);
 
             // Downsample to voxel size resolution at max range
             c_res_x_ = std::min(

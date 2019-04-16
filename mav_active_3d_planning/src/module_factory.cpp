@@ -45,13 +45,6 @@ namespace mav_active_3d_planning {
         }
     }
 
-    bool ModuleFactory::moduleParametrizationStep(Module::ParamMap *map, Module *module, bool verbose) {
-        module->setupFromParamMap(map);
-        module->assureParamsValid();
-        if (verbose) { printVerbose(*map); }
-        return true;
-    }
-
     void ModuleFactory::registerLinkableModule(const std::string& name, Module* module){
         linkable_module_list_[name] = module;
     }

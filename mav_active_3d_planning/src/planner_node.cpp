@@ -40,8 +40,7 @@ namespace mav_active_3d_planning {
         nh_private_.param("verbose", p_verbose_, true);
         nh_private_.param("verbose_modules", verbose_modules, false);
         nh_private_.param("build_modules_on_init", build_modules_on_init, false);
-        nh_private_.param("visualize_candidates", p_visualize_candidates_, true);
-        nh_private_.param("visualize_samples", p_visualize_samples_, 1);
+        nh_private_.param("visualize", p_visualize_, true);
         nh_private_.param("log_performance", p_log_performance_, false);
 
         // Sampling constraints
@@ -49,17 +48,19 @@ namespace mav_active_3d_planning {
         nh_private_.param("min_new_segments", p_min_new_segments_, 0);
         nh_private_.param("max_new_tries", p_max_new_tries_, 0);  // set 0 for infinite
         nh_private_.param("min_new_tries", p_min_new_tries_, 0);
+        nh_private_.param("min_new_value", p_min_new_value_, 0.0);
 
         // Wait for voxblox to setup and receive first map
         ros::topic::waitForMessage<voxblox_msgs::Layer>("esdf_map_in", nh_private_);
 
         // Setup members
+        ModuleFactory::Instance()->registerLinkableModule("PlannerNode", this);
         std::string ns = ros::this_node::getName();
-        voxblox_server_ = std::shared_ptr<voxblox::EsdfServer>( new voxblox::EsdfServer(nh_, nh_private_));
+        voxblox_server_.reset(new voxblox::EsdfServer(nh_, nh_private_));
         trajectory_generator_ = ModuleFactory::Instance()->createModule<TrajectoryGenerator>(
-                ns + "/trajectory_generator", verbose_modules, voxblox_server_, this);
+                ns + "/trajectory_generator", verbose_modules);
         trajectory_evaluator_ = ModuleFactory::Instance()->createModule<TrajectoryEvaluator>(
-                ns + "/trajectory_evaluator", verbose_modules, voxblox_server_, this);
+                ns + "/trajectory_evaluator", verbose_modules);
         back_tracker_ = ModuleFactory::Instance()->createModule<BackTracker>(ns + "/back_tracker", verbose_modules);
 
         // Force lazy initialization of modules (call every function once)
@@ -93,41 +94,49 @@ namespace mav_active_3d_planning {
                 mav_msgs::default_topics::COMMAND_TRAJECTORY, 10);
         trajectory_vis_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("trajectory_visualization", 100);
         odom_sub_ = nh_.subscribe("odometry", 2, &PlannerNode::odomCallback, this);
+        get_cpu_time_srv_ = nh_private_.advertiseService("get_cpu_time", &PlannerNode::cpuSrvCallback, this);
 
         // Finish
         run_srv_ = nh_private_.advertiseService("toggle_running", &PlannerNode::runSrvCallback, this);
-        get_cpu_time_srv_ = nh_private_.advertiseService("get_cpu_time", &PlannerNode::cpuSrvCallback, this);
     }
 
     void PlannerNode::odomCallback(const nav_msgs::Odometry &msg) {
         // This is the main loop, high odom message frequency is expected to continuously run
         if (!running_) { return; }
 
-//        voxblox::Point point(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
-//        voxblox::Block <voxblox::TsdfVoxel>::Ptr block = voxblox_server_->getTsdfMapPtr()->getTsdfLayerPtr()->getBlockPtrByCoordinates(point);
-//            double weight = (double)(block->getVoxelPtrByCoordinates(point)->weight);
-
         Eigen::Vector3d position(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
         double yaw = tf::getYaw(msg.pose.pose.orientation);
 
+        // Continuosly expand the trajectory space
+        expandTrajectories();
+        if (!min_new_value_reached_){
+            //  recursively check whether the minimum value is reached
+            min_new_value_reached_= checkMinNewValue(current_segment_);
+        }
+
+        // After finishing the current segment, execute the next one
         // check goal pos reached (if tol is set)
         if (p_replan_pos_threshold_ <= 0 || (target_position_ - position).norm() < p_replan_pos_threshold_) {
             // check goal yaw reached (if tol is set)
             if (p_replan_yaw_threshold_ <= 0 || defaults::angleDifference(target_yaw_, yaw) < p_replan_yaw_threshold_) {
-                // check minimum tries reached
-                if (new_segment_tries_ >= p_min_new_tries_) {
-                    if (new_segments_ >= p_min_new_segments_ ||
-                        (new_segment_tries_ >= p_max_new_tries_ && p_max_new_tries_ > 0)) {
-                        // After finishing the current segment execute next one
-                        requestNextTrajectory();
-                        return;
+                if (new_segment_tries_ >= p_max_new_tries_ && p_max_new_tries_ > 0) {
+                    // Maximum tries reached: force next segment
+                    requestNextTrajectory();
+                } else {
+                    if (new_segment_tries_ < p_min_new_tries_) {
+                        return;     // check minimum tries reached
                     }
+                    if (new_segments_ < p_min_new_segments_) {
+                        return;     // check minimum successful expansions reached
+                    }
+                    if (!min_new_value_reached_){
+                       return;      // check minimum value reached
+                    }
+                    // All requirements met
+                    requestNextTrajectory();
                 }
             }
         }
-
-        // Otherwise continuosly expand the trajectory space
-        expandTrajectories();
     }
 
     void PlannerNode::initializePlanning() {
@@ -166,6 +175,7 @@ namespace mav_active_3d_planning {
         new_segment_tries_ = 0;
         vis_num_previous_evaluations_ = 0;
         vis_num_previous_trajectories_ = 0;
+        min_new_value_reached_ = p_min_new_value_ == 0.0;
     }
 
     void PlannerNode::requestNextTrajectory() {
@@ -190,7 +200,7 @@ namespace mav_active_3d_planning {
         std::vector < TrajectorySegment * > trajectories_to_vis;
         current_segment_->getTree(&trajectories_to_vis);
         trajectories_to_vis.erase(trajectories_to_vis.begin()); // remove current segment (root)
-        if (p_visualize_candidates_) {
+        if (p_visualize_) {
             publishTrajectoryVisualization(trajectories_to_vis);
         }
         int num_trajectories = trajectories_to_vis.size();
@@ -229,11 +239,11 @@ namespace mav_active_3d_planning {
         if (p_log_performance_) {
             timer = std::clock();
         }
-        if (p_visualize_candidates_) {
+        if (p_visualize_) {
             voxblox_server_->publishTraversable();
             publishEvalVisualization(*current_segment_);
+            publishCompletedTrajectoryVisualization(*current_segment_);
         }
-        publishCompletedTrajectoryVisualization(*current_segment_);
         if (p_log_performance_) {
             perf_vis += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
@@ -270,11 +280,12 @@ namespace mav_active_3d_planning {
         // Update tracking values
         new_segment_tries_ = 0;
         new_segments_ = 0;
+        min_new_value_reached_ = p_min_new_value_ == 0.0;
     }
 
     void PlannerNode::expandTrajectories() {
-        // Check max number of tries already
-        if (p_max_new_segments_ > 0 && new_segments_ >= p_max_new_segments_) {
+        // Check max number of tries already and min value found
+        if (p_max_new_segments_ > 0 && new_segments_ >= p_max_new_segments_ && min_new_value_reached_) {
             return;
         }
 
@@ -490,6 +501,20 @@ namespace mav_active_3d_planning {
             vis_num_previous_evaluations_ = temp_num_evals;
         }
         trajectory_vis_pub_.publish(msg);
+    }
+
+    bool PlannerNode::checkMinNewValue(const std::unique_ptr<TrajectorySegment> &segment){
+        // Recursively check wehter the minimum value is reached
+        if (segment->value >= p_min_new_value_) {
+            return true;
+        } else {
+            for (int i = 0; i < segment->children.size(); ++i) {
+                if (checkMinNewValue(segment->children[i])) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     bool PlannerNode::runSrvCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) {

@@ -1,15 +1,15 @@
 #include "mav_active_3d_planning/modules/trajectory_evaluators/sensor_models/sensor_model.h"
+#include "mav_active_3d_planning/planner_node.h"
 
 namespace mav_active_3d_planning {
 
         // SensorModel
-        void SensorModel::setVoxbloxPtr(const std::shared_ptr <voxblox::EsdfServer> &voxblox_ptr) {
-            voxblox_ptr_ = voxblox_ptr;
-
+        void SensorModel::setupFromParamMap(Module::ParamMap *param_map){
+            voxblox_ptr_.reset(dynamic_cast<PlannerNode *>(ModuleFactory::Instance()->readLinkableModule(
+                    "PlannerNode"))->voxblox_server_.get());
             // Cache constants from voxblox
             c_voxel_size_ = voxblox_ptr_->getEsdfMapPtr()->voxel_size();
             c_block_size_ = voxblox_ptr_->getEsdfMapPtr()->block_size();
-            voxblox_ptr_->getEsdfMapPtr();
         }
 
         bool SensorModel::getVoxelCenter(Eigen::Vector3d *point) {

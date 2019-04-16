@@ -81,53 +81,30 @@ namespace mav_active_3d_planning {
         // Module creation (this is the main accessor for new modules).
         template<class ModuleType>
         std::unique_ptr <ModuleType> createModule(const std::string &args, bool verbose){
-            std::unique_ptr <ModuleType> result;
+            // Get config
             Module::ParamMap param_map;
-            if (!moduleCreationStep<ModuleType>(&param_map, &result, args, verbose)) {
-                return nullptr;
-            }
-            moduleParametrizationStep(&param_map, result.get(), verbose);
-            return result;
-        }
+            std::string type = "NoDefaultTypeAvailable";
+            getDefaultType(std::type_index(typeid(ModuleType)), &type);
+            getParamMapAndType(&param_map, &type, args);
 
-        // Overload for modules that need a voxblox map (TrajectoryEvaluator, SensorModel)
-        template<class ModuleType>
-        std::unique_ptr <ModuleType> createModule(const std::string &args, bool verbose, std::shared_ptr<voxblox::EsdfServer> voxblox_ptr){
-            std::unique_ptr <ModuleType> result;
-            Module::ParamMap param_map;
-            if (!moduleCreationStep<ModuleType>(&param_map, &result, args, verbose)) {
+            // Build requested module
+            ModuleMap::iterator it = getModuleMap()->find(type);
+            if(it == getModuleMap()->end()) {
+                std::stringstream ss;
+                ss << "Unknown " << typeid(ModuleType).name() << " type '" << type << "'.";
+                printError(ss.str());
                 return nullptr;
             }
-            result->setVoxbloxPtr(voxblox_ptr);
-            moduleParametrizationStep(&param_map, result.get(), verbose);
-            return result;
-        }
+            ModuleType* module = dynamic_cast<ModuleType*>(it->second());
 
-        // Overload for modules that need a parent pointer (EvaluatorUpdater, GeneratorUpdater)
-        template<class ModuleType>
-        std::unique_ptr <ModuleType> createModule(const std::string &args, bool verbose, Module* parent){
-            std::unique_ptr <ModuleType> result;
-            Module::ParamMap param_map;
-            if (!moduleCreationStep<ModuleType>(&param_map, &result, args, verbose)) {
-                return nullptr;
+            // Setup module
+            module->verbose_modules_ = verbose;
+            module->setupFromParamMap(&param_map);
+            module->assureParamsValid();
+            if (verbose) {
+                printVerbose(param_map);
             }
-            result->setParent(parent);
-            moduleParametrizationStep(&param_map, result.get(), verbose);
-            return result;
-        }
-
-        // Overload for modules that need both (TrajectoryGenerator)
-        template<class ModuleType>
-        std::unique_ptr <ModuleType> createModule(const std::string &args, bool verbose, std::shared_ptr<voxblox::EsdfServer> voxblox_ptr, Module* parent){
-            std::unique_ptr <ModuleType> result;
-            Module::ParamMap param_map;
-            if (!moduleCreationStep<ModuleType>(&param_map, &result, args, verbose)) {
-                return nullptr;
-            }
-            result->setVoxbloxPtr(voxblox_ptr);
-            result->setParent(parent);
-            moduleParametrizationStep(&param_map, result.get(), verbose);
-            return result;
+            return std::unique_ptr <ModuleType>(module);
         }
 
         // Allow modules to register themselves to the factory using a static Registration struct
@@ -175,27 +152,6 @@ namespace mav_active_3d_planning {
 
         // Specify default types for modules that need such (e.g. doNothing modules)
         void getDefaultType(const std::type_index &module_index, std::string *type);
-
-        // Two step base routine for creating modules (to allow members to be setup before parametrization)
-        template <class ModuleType>
-        bool moduleCreationStep(Module::ParamMap* map, std::unique_ptr <ModuleType> *result, const std::string &args, bool verbose) {
-            std::string type = "NoDefaultTypeAvailable";
-            getDefaultType(std::type_index(typeid(ModuleType)), &type);
-            getParamMapAndType(map, &type, args);
-            ModuleMap::iterator it = getModuleMap()->find(type);
-            if(it == getModuleMap()->end()) {
-                std::stringstream ss;
-                ss << "Unknown " << typeid(ModuleType).name() << " type '" << type << "'.";
-                printError(ss.str());
-                return false;
-            }
-            ModuleType* module = dynamic_cast<ModuleType*>(it->second());
-            module->verbose_modules_ = verbose;
-            result->reset(module);
-            return true;
-        }
-
-        bool moduleParametrizationStep(Module::ParamMap* map, Module *module, bool verbose);
 
         // Derived Factory responsibilities
         // Create a param map from the arg string (ROS, string, file, ...)

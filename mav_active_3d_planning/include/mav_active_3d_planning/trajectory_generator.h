@@ -14,8 +14,6 @@
 namespace mav_active_3d_planning {
 
     // Forward declaration
-    class PlannerNode;
-
     class SegmentSelector;
     class GeneratorUpdater;
 
@@ -58,12 +56,7 @@ namespace mav_active_3d_planning {
         std::string p_selector_args_;
         std::string p_updater_args_;
 
-        // parent
-        PlannerNode* parent_;
-
         // factory setup accessor
-        void setVoxbloxPtr(const std::shared_ptr<voxblox::EsdfServer> &voxblox_ptr);
-        void setParent(Module* parent);
         virtual void setupFromParamMap(Module::ParamMap *param_map);
     };
 
@@ -75,17 +68,8 @@ namespace mav_active_3d_planning {
 
     // Abstract encapsulation for default/modular implementations of the updateSegments method
     class GeneratorUpdater : public Module {
-        friend class ModuleFactory;
-
     public:
-        GeneratorUpdater(TrajectoryGenerator* parent = nullptr) : parent_(parent) {};
-
         virtual bool updateSegments(TrajectorySegment *root) = 0;
-
-    protected:
-        TrajectoryGenerator* parent_;
-
-        void setParent(Module* parent);
     };
 
 }  // namespace mav_active_3d_planning

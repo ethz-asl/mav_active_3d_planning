@@ -31,9 +31,7 @@ namespace mav_active_3d_planning {
         // factory access
         SensorModel() {}
 
-        virtual void setupFromParamMap(Module::ParamMap *param_map) {}
-
-        void setVoxbloxPtr(const std::shared_ptr <voxblox::EsdfServer> &voxblox_ptr);
+        virtual void setupFromParamMap(Module::ParamMap *param_map);
 
         // voxblox map
         std::shared_ptr <voxblox::EsdfServer> voxblox_ptr_;

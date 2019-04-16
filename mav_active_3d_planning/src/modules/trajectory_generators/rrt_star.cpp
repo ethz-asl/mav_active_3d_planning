@@ -24,6 +24,7 @@ namespace mav_active_3d_planning {
             setParam<int>(param_map, "n_neighbors", &p_n_neighbors_, 10);
             c_rewire_range_square_ = p_max_rewire_range_*p_max_rewire_range_;
             ModuleFactory::Instance()->registerLinkableModule("RRTStarGenerator", this);
+            planner_node_ = dynamic_cast<PlannerNode *>(ModuleFactory::Instance()->readLinkableModule("PlannerNode"));
         }
 
         bool RRTStar::checkParamsValid(std::string *error_message) {
@@ -60,7 +61,7 @@ namespace mav_active_3d_planning {
             goal_point.setFromYaw((double) rand() / (double) RAND_MAX * 2.0 * M_PI);    // random orientation
             new_segment->trajectory.push_back(goal_point);
             new_segment->parent = nullptr;
-            parent_->trajectory_evaluator_->computeGain(new_segment);
+            planner_node_->trajectory_evaluator_->computeGain(new_segment);
 
             // Create the trajectory from the best parent and attach the segment to it
             if (!rewireToBestParent(new_segment, candidate_parents)) {
@@ -178,8 +179,8 @@ namespace mav_active_3d_planning {
                 segment->parent = candidates[i];
                 if (connect_poses(candidates[i]->trajectory.back(), goal_point, &(segment->trajectory))) {
                     // Feasible connection: evaluate the trajectory
-                    parent_->trajectory_evaluator_->computeCost(segment);
-                    parent_->trajectory_evaluator_->computeValue(segment);
+                    planner_node_->trajectory_evaluator_->computeCost(segment);
+                    planner_node_->trajectory_evaluator_->computeValue(segment);
                     if (best_segment.parent == nullptr || segment->value > best_segment.value) {
                         best_segment = segment->shallowCopy();
                     }
@@ -259,9 +260,7 @@ namespace mav_active_3d_planning {
             std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_evaluator_args", &args,
                                   param_ns + "/following_evaluator");
-            following_evaluator_ = ModuleFactory::Instance()->createModule<TrajectoryEvaluator>(args, verbose_modules_,
-                                                                                                voxblox_ptr_,
-                                                                                                (Module *) parent_);
+            following_evaluator_ = ModuleFactory::Instance()->createModule<TrajectoryEvaluator>(args, verbose_modules_);
 
             // setup parent
             TrajectoryEvaluator::setupFromParamMap(param_map);

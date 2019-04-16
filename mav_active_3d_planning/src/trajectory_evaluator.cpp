@@ -14,6 +14,9 @@ namespace mav_active_3d_planning {
         setParam<std::string>(param_map, "bounding_volume_args", &bounding_volume_args, ns + "/bounding_volume");
         bounding_volume_ = ModuleFactory::Instance()->createModule<defaults::BoundingVolume>(bounding_volume_args,
                                                                                              verbose_modules_);
+        // Get the voxblox server
+        voxblox_ptr_.reset(dynamic_cast<PlannerNode *>(ModuleFactory::Instance()->readLinkableModule(
+                "PlannerNode"))->voxblox_server_.get());
     }
 
     bool TrajectoryEvaluator::computeCost(TrajectorySegment *traj_in) {
@@ -44,22 +47,9 @@ namespace mav_active_3d_planning {
         // If not implemented use a (default) module
         if (!evaluator_updater_) {
             evaluator_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(p_updater_args_,
-                                                                                           verbose_modules_,
-                                                                                           parent_->trajectory_evaluator_.get());
+                                                                                           verbose_modules_);
         }
         return evaluator_updater_->updateSegments(root);
-    }
-
-    void TrajectoryEvaluator::setVoxbloxPtr(const std::shared_ptr <voxblox::EsdfServer> &voxblox_ptr) {
-        voxblox_ptr_ = voxblox_ptr;
-    }
-
-    void TrajectoryEvaluator::setParent(Module* parent){
-        parent_ = dynamic_cast<PlannerNode*>(parent);
-    }
-
-    void EvaluatorUpdater::setParent(Module *parent) {
-        parent_ = dynamic_cast<TrajectoryEvaluator*>(parent);
     }
 
 } // namepsace mav_active_3d_planning

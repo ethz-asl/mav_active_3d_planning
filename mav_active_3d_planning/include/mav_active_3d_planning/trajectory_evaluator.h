@@ -15,8 +15,6 @@
 namespace mav_active_3d_planning {
 
     // Forward declaration
-    class PlannerNode;
-
     class CostComputer;
     class ValueComputer;
     class NextSelector;
@@ -70,12 +68,7 @@ namespace mav_active_3d_planning {
         std::unique_ptr<NextSelector> next_selector_;
         std::unique_ptr<EvaluatorUpdater> evaluator_updater_;
 
-        // parent
-        PlannerNode* parent_;
-
         // factory accessors
-        void setVoxbloxPtr(const std::shared_ptr<voxblox::EsdfServer> &voxblox_ptr);
-        void setParent(Module* parent);
         virtual void setupFromParamMap(Module::ParamMap *param_map);
     };
 
@@ -100,16 +93,7 @@ namespace mav_active_3d_planning {
     // Abstract encapsulation for default/modular implementations of the updateSegments method
     class EvaluatorUpdater : public Module {
     public:
-        EvaluatorUpdater(TrajectoryEvaluator* parent = nullptr) : parent_(parent) {};
-
         virtual bool updateSegments(TrajectorySegment *root) = 0;
-
-    protected:
-        friend ModuleFactory;
-
-        TrajectoryEvaluator* parent_;   // modules are unique ptrs, parent is always valid
-
-        void setParent(Module* parent);
     };
 
 }  // namespace mav_active_3d_planning

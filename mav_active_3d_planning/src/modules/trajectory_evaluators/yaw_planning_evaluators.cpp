@@ -95,9 +95,7 @@ namespace mav_active_3d_planning {
             std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_evaluator_args", &args,
                                   param_ns + "/following_evaluator");
-            following_evaluator_ = ModuleFactory::Instance()->createModule<TrajectoryEvaluator>(args, verbose_modules_,
-                                                                                                voxblox_ptr_,
-                                                                                                (Module *) parent_);
+            following_evaluator_ = ModuleFactory::Instance()->createModule<TrajectoryEvaluator>(args, verbose_modules_);
 
             // setup parent
             TrajectoryEvaluator::setupFromParamMap(param_map);

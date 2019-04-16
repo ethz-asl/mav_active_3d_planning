@@ -20,6 +20,10 @@ namespace mav_active_3d_planning {
         // RecheckCollision
         ModuleFactory::Registration<RecheckCollision> RecheckCollision::registration("RecheckCollision");
 
+        void RecheckCollision::setupFromParamMap(Module::ParamMap *param_map) {
+            planner_node_ = dynamic_cast<PlannerNode *>(ModuleFactory::Instance()->readLinkableModule("PlannerNode"));
+        }
+
         bool RecheckCollision::updateSegments(TrajectorySegment *root) {
             checkSingle(root);
             return true;
@@ -27,7 +31,7 @@ namespace mav_active_3d_planning {
 
         bool RecheckCollision::isCollided(const mav_msgs::EigenTrajectoryPointVector &trajectory) {
             for (int i = 0; i < trajectory.size(); ++i) {
-                if (!parent_->checkTraversable(trajectory[i].position_W)) {
+                if (!(planner_node_->trajectory_generator_->checkTraversable(trajectory[i].position_W))) {
                     return true;
                 }
             }

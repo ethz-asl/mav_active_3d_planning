@@ -16,6 +16,9 @@ namespace mav_active_3d_planning {
         setParam<std::string>(param_map, "system_constraints_args", &temp_args, ns + "/system_constraints");
         system_constraints_ = ModuleFactory::Instance()->createModule<defaults::SystemConstraints>(temp_args,
                                                                                                    verbose_modules_);
+        // Get the voxblox server
+        voxblox_ptr_.reset(dynamic_cast<PlannerNode *>(ModuleFactory::Instance()->readLinkableModule(
+                "PlannerNode"))->voxblox_server_.get());
     }
 
     bool TrajectoryGenerator::checkTraversable(const Eigen::Vector3d &position) {
@@ -42,23 +45,9 @@ namespace mav_active_3d_planning {
         // If not implemented use a (default) module
         if (!generator_updater_) {
             generator_updater_ = ModuleFactory::Instance()->createModule<GeneratorUpdater>(p_updater_args_,
-                                                                                           verbose_modules_,
-                                                                                           parent_->trajectory_generator_.get());
+                                                                                           verbose_modules_);
         }
         return generator_updater_->updateSegments(root);
-    }
-
-    void TrajectoryGenerator::setVoxbloxPtr(const std::shared_ptr <voxblox::EsdfServer> &voxblox_ptr) {
-        voxblox_ptr_ = voxblox_ptr;
-        voxblox_ptr_->setTraversabilityRadius(static_cast<float>(p_collision_radius_));
-    }
-
-    void TrajectoryGenerator::setParent(Module* parent){
-        parent_ = dynamic_cast<PlannerNode*>(parent);
-    }
-
-    void GeneratorUpdater::setParent(Module *parent) {
-        parent_ = dynamic_cast<TrajectoryGenerator*>(parent);
     }
 
 }  // namespace mav_active_3d_planning

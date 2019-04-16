@@ -45,6 +45,9 @@ namespace mav_active_3d_planning {
             // variables
             bool tree_is_reset_;            // Force reset of kdtree if requestNext is called twice (dangling pointers)
 
+            // Pointer to planner node to call for evaluation
+            PlannerNode *planner_node_;
+
             // methods
             bool findNearbyCandidates(const Eigen::Vector3d &target_point, std::vector<TrajectorySegment *> *result);
 

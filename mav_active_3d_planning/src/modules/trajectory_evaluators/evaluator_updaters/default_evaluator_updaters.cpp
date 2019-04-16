@@ -1,4 +1,5 @@
 #include "mav_active_3d_planning/modules/trajectory_evaluators/evaluator_updaters/default_evaluator_updaters.h"
+#include "mav_active_3d_planning/planner_node.h"
 
 #include <vector>
 #include <algorithm>
@@ -37,14 +38,14 @@ namespace mav_active_3d_planning {
             std::string args;   // default args extends the parent namespace
             std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_updater_args", &args, param_ns + "/following_updater");
-            following_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(args, verbose_modules_,
-                                                                                           parent_);
+            following_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(args, verbose_modules_);
+            planner_node_ = dynamic_cast<PlannerNode *>(ModuleFactory::Instance()->readLinkableModule("PlannerNode"));
         }
 
         void UpdateAll::updateSingle(TrajectorySegment *segment) {
-            if (update_gain_) { parent_->computeGain(segment); }
-            if (update_cost_) { parent_->computeCost(segment); }
-            if (update_value_) { parent_->computeValue(segment); }
+            if (update_gain_) { planner_node_->trajectory_evaluator_->computeGain(segment); }
+            if (update_cost_) { planner_node_->trajectory_evaluator_->computeCost(segment); }
+            if (update_value_) { planner_node_->trajectory_evaluator_->computeValue(segment); }
             for (int i = 0; i < segment->children.size(); ++i) {
                 updateSingle(segment->children[i].get());
             }
@@ -62,8 +63,7 @@ namespace mav_active_3d_planning {
             std::string args;   // default args extends the parent namespace
             std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_updater_args", &args, param_ns + "/following_updater");
-            following_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(args, verbose_modules_,
-                                                                                           parent_);
+            following_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(args, verbose_modules_);
         }
 
         bool PruneByValue::updateSegments(TrajectorySegment *root) {
@@ -148,8 +148,7 @@ namespace mav_active_3d_planning {
             std::string args;   // default args extends the parent namespace
             std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_updater_args", &args, param_ns + "/following_updater");
-            following_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(args, verbose_modules_,
-                                                                                           parent_);
+            following_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(args, verbose_modules_);
         }
 
     } // namespace evaluator_updaters

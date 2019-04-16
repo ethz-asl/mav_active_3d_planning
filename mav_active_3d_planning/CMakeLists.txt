@@ -6,10 +6,13 @@ catkin_simple(ALL_DEPS_REQUIRED)
 
 add_definitions(-std=c++11)
 
+catkin_package()
+
 #############
 # LIBRARIES #
 #############
 cs_add_library(${PROJECT_NAME}
+        # Core
         src/defaults.cpp
         src/module_factory.cpp
         src/trajectory_segment.cpp
@@ -21,22 +24,27 @@ cs_add_library(${PROJECT_NAME}
         src/modules/trajectory_evaluators/evaluator_updaters/default_evaluator_updaters.cpp
         src/modules/trajectory_evaluators/next_selectors/default_next_selectors.cpp
         src/modules/trajectory_evaluators/value_computers/default_value_computers.cpp
+        src/modules/trajectory_evaluators/sensor_models/sensor_model.cpp
         src/modules/trajectory_evaluators/sensor_models/camera_model.cpp
         src/modules/trajectory_generators/generator_updaters/default_generator_updaters.cpp
         src/modules/trajectory_generators/segment_selectors/default_segment_selectors.cpp
-        # Other modules
+        # Generators
         src/modules/trajectory_generators/mav_trajectory_generation.cpp
         src/modules/trajectory_generators/random_linear.cpp
         src/modules/trajectory_generators/rrt.cpp
         src/modules/trajectory_generators/rrt_star.cpp
         src/modules/trajectory_generators/uniform.cpp
-        src/modules/trajectory_evaluators/simulated_sensor_evaluators.cpp
-        src/modules/trajectory_evaluators/sensor_models/sensor_model.cpp
-        src/modules/trajectory_evaluators/sensor_models/camera_model.cpp
+        # Evaluators
+        src/modules/trajectory_evaluators/simulated_sensor_evaluator.cpp
+        src/modules/trajectory_evaluators/naive_evaluator.cpp
+        src/modules/trajectory_evaluators/frontier_evaluator.cpp
+        src/modules/trajectory_evaluators/voxel_type_evaluator.cpp
+        src/modules/trajectory_evaluators/voxel_weight_evaluator.cpp
+        src/modules/trajectory_evaluators/yaw_planning_evaluators.cpp
+        # Other Modules
         src/modules/trajectory_evaluators/sensor_models/simple_ray_caster.cpp
         src/modules/trajectory_evaluators/sensor_models/iterative_ray_caster.cpp
         src/modules/trajectory_evaluators/evaluator_updaters/simulated_sensor_updaters.cpp
-        src/modules/trajectory_evaluators/yaw_planning_evaluators.cpp
         src/modules/trajectory_evaluators/evaluator_updaters/yaw_planning_updaters.cpp
         )
 
@@ -51,7 +59,6 @@ target_link_libraries(planner_node ${PROJECT_NAME})
 cs_add_executable(eval_voxblox_node
         src/experiments/eval_voxblox_node.cpp
         )
-
 
 #############
 ## Install ##

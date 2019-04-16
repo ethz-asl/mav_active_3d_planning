@@ -1,7 +1,7 @@
 #ifndef MAV_ACTIVE_3D_PLANNING_EVALUATOR_UPDATERS_SIMULATED_SENSOR_UPDATERS_H
 #define MAV_ACTIVE_3D_PLANNING_EVALUATOR_UPDATERS_SIMULATED_SENSOR_UPDATERS_H
 
-#include "mav_active_3d_planning/modules/trajectory_evaluators/simulated_sensor_evaluators.h"
+#include "mav_active_3d_planning/modules/trajectory_evaluators/simulated_sensor_evaluator.h"
 
 namespace mav_active_3d_planning {
     namespace evaluator_updaters {

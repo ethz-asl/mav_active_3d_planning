@@ -2,6 +2,7 @@
 #define MAV_ACTIVE_3D_PLANNING_GENERATOR_UPDATERS_DEFAULT_GENERATOR_UPDATERS_H
 
 #include "mav_active_3d_planning/trajectory_generator.h"
+#include "mav_active_3d_planning/planner_node.h"
 
 namespace mav_active_3d_planning {
     namespace generator_updaters {
@@ -43,18 +44,20 @@ namespace mav_active_3d_planning {
             // override virtual functions
             bool updateSegments(TrajectorySegment *root);
 
-            static ModuleFactory::Registration<RecheckCollision> registration;
-
         protected:
             friend ModuleFactory;
 
             // factory access
             RecheckCollision() {}
-            void setupFromParamMap(Module::ParamMap *param_map) {}
+            void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<RecheckCollision> registration;
 
             // methods
             bool isCollided(const mav_msgs::EigenTrajectoryPointVector &trajectory);
             void checkSingle(TrajectorySegment *segment);
+
+            // pointer to the planner node to request collision checks
+            PlannerNode* planner_node_;
         };
 
     } // namespace generator_updaters

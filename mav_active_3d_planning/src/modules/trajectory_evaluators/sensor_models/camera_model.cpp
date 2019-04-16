@@ -167,6 +167,7 @@ namespace mav_active_3d_planning {
         }
 
         void CameraModel::setupFromParamMap(Module::ParamMap *param_map) {
+            SensorModel::setupFromParamMap(param_map);
             setParam<double>(param_map, "ray_length", &p_ray_length_, 5.0);
             setParam<double>(param_map, "sampling_time", &p_sampling_time_, 0.0);
             setParam<double>(param_map, "focal_length", &p_focal_length_, 320.0);

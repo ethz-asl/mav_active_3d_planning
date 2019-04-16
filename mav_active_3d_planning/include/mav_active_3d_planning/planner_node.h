@@ -1,3 +1,6 @@
+#ifndef MAV_ACTIVE_3D_PLANNING_PLANNER_NODE_H_
+#define MAV_ACTIVE_3D_PLANNING_PLANNER_NODE_H_
+
 #include "mav_active_3d_planning/trajectory_segment.h"
 #include "mav_active_3d_planning/trajectory_generator.h"
 #include "mav_active_3d_planning/trajectory_evaluator.h"
@@ -61,6 +64,7 @@ namespace mav_active_3d_planning {
         int vis_completed_count_;
         int new_segments_;                  // keep track of min/max tries and segments
         int new_segment_tries_;
+        bool min_new_value_reached_;
 
         // Info+performance bookkeeping
         ros::Time info_timing_;             // Rostime for verbose and perf
@@ -74,13 +78,13 @@ namespace mav_active_3d_planning {
         double p_replan_pos_threshold_;     // m
         double p_replan_yaw_threshold_;     // rad
         bool p_verbose_;
-        bool p_visualize_candidates_;
-        int p_visualize_samples_;           // How many lines are created for every candidate segment
+        bool p_visualize_;                  // Publish visualization of completed path, current gain, new candidates, ...
         bool p_log_performance_;            // Whether to write a performance log file
-        int p_max_new_segments_;
-        int p_min_new_segments_;
-        int p_min_new_tries_;
-        int p_max_new_tries_;
+        int p_max_new_segments_;            // After this count is reached no more segments are expanded (0 to ignore)
+        int p_min_new_segments_;            // Until this count is reached the next segment is not executed (0 to ignore)
+        int p_min_new_tries_;               // Until no. expansion calls the next segment is not executed (0 to ignore)
+        int p_max_new_tries_;               // After no. expansion calls the next segment is forced (0 to ignore)
+        double p_min_new_value_;            // Until this value is found in the tree, expansion continues (0 to ignore)
         // ideas: take images only on points,
 
         // methods
@@ -99,7 +103,13 @@ namespace mav_active_3d_planning {
 
         void publishEvalVisualization(const TrajectorySegment &trajectory);
 
+        // factory access
         void setupFromParamMap(Module::ParamMap *param_map) {}
+
+        // helper functions
+        bool checkMinNewValue(const std::unique_ptr<TrajectorySegment> &segment);   // check whether min value is found
     };
 
 } // namespace mav_active_3d_planning
+#endif  // MAV_ACTIVE_3D_PLANNING_PLANNER_NODE_H_
+

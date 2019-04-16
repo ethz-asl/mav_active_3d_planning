@@ -3,6 +3,7 @@
 
 #include "mav_active_3d_planning/trajectory_evaluator.h"
 #include "mav_active_3d_planning/module_factory.h"
+#include "mav_active_3d_planning/planner_node.h"
 
 #include <ros/time.h>
 
@@ -65,6 +66,9 @@ namespace mav_active_3d_planning {
             bool update_cost_;
             bool update_value_;
             std::unique_ptr<EvaluatorUpdater> following_updater_;
+
+            // pointer to the planner node to call for updates
+            PlannerNode* planner_node_;
         };
 
         // Remove all segments that dont have a minimum value, can then call another updater
