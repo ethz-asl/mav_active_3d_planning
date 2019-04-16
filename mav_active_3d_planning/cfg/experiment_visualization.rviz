@@ -7,7 +7,6 @@ Panels:
         - /Global Options1
         - /Status1
         - /VoxbloxMesh1
-        - /PlannerVisualization1
         - /PlannerVisualization1/Namespaces1
       Splitter Ratio: 0.5
     Tree Height: 565
@@ -29,7 +28,9 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: Traversability
+Toolbars:
+  toolButtonStyle: 2
 Visualization Manager:
   Class: ""
   Displays:
@@ -87,9 +88,9 @@ Visualization Manager:
       Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 3.7289629
+      Max Intensity: -999999
       Min Color: 0; 0; 0
-      Min Intensity: 0.700000048
+      Min Intensity: 999999
       Name: Traversability
       Position Transformer: XYZ
       Queue Size: 10
@@ -143,6 +144,40 @@ Visualization Manager:
         evaluation: true
       Queue Size: 100
       Value: true
+    - Angle Tolerance: 0.100000001
+      Class: rviz/Odometry
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.300000012
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
+      Enabled: false
+      Keep: 100
+      Name: Rovio
+      Position Tolerance: 0.100000001
+      Shape:
+        Alpha: 1
+        Axes Length: 1
+        Axes Radius: 0.100000001
+        Color: 255; 25; 0
+        Head Length: 0.300000012
+        Head Radius: 0.100000001
+        Shaft Length: 1
+        Shaft Radius: 0.0500000007
+        Value: Arrow
+      Topic: /firefly/rovio/odometry
+      Unreliable: false
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -168,7 +203,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 27.0369225
+      Distance: 19.4200211
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
@@ -183,10 +218,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.904795885
+      Pitch: 0.659795225
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 2.33589482
+      Yaw: 2.46090102
     Saved: ~
 Window Geometry:
   Displays:

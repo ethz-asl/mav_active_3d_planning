@@ -1,14 +1,14 @@
 <launch>
-  <!-- Data source -->
-  <arg name="target_directory" default="/home/lukas/Documents/MT/Data/series_test" />
-  <arg name="gt_file_path" default="/home/lukas/Documents/MT/experiment1/gt_surface_pcl.ply"/>
-  <arg name="method" default="recent"/>
+  <!-- Data source Data, -->
+  <arg name="target_directory" default="/home/lukas/Documents/MT/Data/spiral_odom" />
+  <arg name="gt_file_path" default="/home/lukas/Documents/MT/experiment2/gt_surface_pcl.ply"/>
+  <arg name="method" default="single"/>
   
   <!-- what to evaluate -->
   <arg name="series" default="false"/>
-  <arg name="evaluate" default="true"/>
+  <arg name="evaluate" default="false"/>
   <arg name="error_histogram" default="true"/>
-  <arg name="create_meshes" default="true"/>
+  <arg name="create_meshes" default="false"/>
   <arg name="create_plots" default="true"/>
   <arg name="show_plots" default="false"/>
   <arg name="clear_voxblox_maps" default="false"/>	<!-- irreversible map removal (disk space)!-->
@@ -21,6 +21,7 @@
 
   <!-- plotting is the main node, voxblox encapsulates c++ voxblox code -->
   <node name="eval_plotting_node" pkg="mav_active_3d_planning" type="eval_plotting_node.py" output="screen" required="true">
+    <param name="unobservable_points_pct" value="0.028078" if="$(eval arg('gt_file_path') == '/home/lukas/Documents/MT/experiment2/gt_surface_pcl.ply')"/>
     <param name="target_directory" value="$(arg target_directory)" />
     <param name="method" value="$(arg method)" />
     <param name="ns_eval_voxblox_node" value="/eval_voxblox_node" />

@@ -16,25 +16,28 @@
   <arg name="slowdown" default="0.0"/>
   <arg name="delay" default="3.0"/>  
   
-  <!-- Unreal Sensor arguments ground_truth, kinect-->
+  <!-- Unreal Sensor arguments (ground_truth, kinect, gaussian_depth_noise)-->
   <arg name="model_type" default="ground_truth"/>
   <arg name="flatten_distance" default="5.5"/>
   <arg name="maximum_distance" default="0.0"/>
   
-  <!-- Odometry simulation (currently rovio) -->
-  <arg name="apply_odometry_noise" default="false"/>
+  <!-- Odometry  arguments (random_walk, ground_truth)-->
+  <arg name="use_rovio" default="false"/>
+  <arg name="odom_noise_model" default="ground_truth"/>
   
   <!--  Planner arguments (tg_uniform, tg_random_linear, tg_rrt, general, nbvp_bircher, te_frontier, te_yaw)-->
-  <arg name="use_separate_configs" default="true"/>
-  <arg name="planner_general_config" default="planners/general.yaml"/>
+  <arg name="use_separate_configs" default="false"/>
+  <arg name="planner_general_config" default="planners/nbvp_bircher.yaml"/>
   <arg name="planner_generator_config" default="planners/modules/tg_rrt.yaml"/>
   <arg name="planner_evaluator_config" default="planners/modules/te_yaw.yaml"/>
   <arg name="verbose_planner" default="true"/>
+  <arg name="visualize_planner" default="false"/>
   
   <!--  Experiment arguments -->  
   <arg name="experiment_config" default="experiment1.yaml"/>
-  <arg name="record_data" default="false"/>
-  <arg name="data_directory" default="/home/lukas/Documents/MT/Data/series_1"/> 
+  <arg name="record_data" default="true"/>
+  <arg name="record_visualization" default="false"/>
+  <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
   <arg name="data_frequency" default="30.0" />
   <arg name="time_limit" default="30" />
   
@@ -57,7 +60,7 @@
   </include>
 
   <group ns="$(arg mav_name)">
-    <!-- Setup a mav with odom sensor -->
+    <!-- Setup a mav -->
     <include file="$(find rotors_gazebo)/launch/spawn_mav.launch">
       <arg name="mav_name" value="$(arg mav_name)" />
       <arg name="model" value="$(find rotors_description)/urdf/mav_generic_odometry_sensor.gazebo" />
@@ -66,7 +69,7 @@
       <arg name="z" value="0" />
     </include>
     
-    <!-- MPC trajectory tracker (sampling time needs to match odom publish rate!)-->
+    <!-- MPC trajectory tracker (0.0021 sampling time needs to match odom publish rate!)-->
     <node name="mav_nonlinear_mpc" pkg="mav_nonlinear_mpc" type="nonlinear_mpc_node" respawn="true" clear_params="true">
       <remap from="odometry" to="ground_truth/odometry" />
       <rosparam file="$(find mav_nonlinear_mpc)/resources/nonlinear_mpc_$(arg mav_name).yaml" />
@@ -83,35 +86,31 @@
       <rosparam file="$(find mav_lowlevel_attitude_controller)/resources/PID_attitude_$(arg mav_name).yaml" />
     </node>
     
-    <!-- Odometry noise model >
-    <group if="$(arg apply_odometry_noise)">
-      <node pkg="rovio" type="rovio_node" name="rovio" output="screen">
-        <param name="filter_config" value="$(find mav_active_3d_planning)/cfg/rovio/rovio.info"/>
-        <param name="camera0_config" value="$(find mav_active_3d_planning)/cfg/rovio/unreal_cam0.yaml"/>
-        <remap from="cam0/image_raw" to="/unreal/unreal_sensor_model/ue_sensor_image_out" />
-        <remap from="imu0" to="imu" />
-        <remap from="rovio/odometry" to="odometry_to_use" />
-      </node>
-    </group>
-      <node name="odometry_noise_model" pkg="mav_active_3d_planning" type="gps_odometry_simulator.py" output="screen">
-      <param name="position_uncertainty" value="0.03"/>
-      <param name="roll_pitch_uncertainty" value="1.0" />
-      <param name="yaw_uncertainty" value="3.0" />
-      <param name="noise_model" value="gaussian" />
-      <param name="publish_tf" value="false" />
+    <!-- Odometry: noise model / rovio -->
+    <node pkg="rovio" type="rovio_node" name="rovio" output="screen" if="$(arg use_rovio)">
+      <param name="filter_config" value="$(find mav_active_3d_planning)/cfg/rovio/rovio.info"/>
+      <param name="camera0_config" value="$(find mav_active_3d_planning)/cfg/rovio/unreal_cam0.yaml"/>
+      <remap from="cam0/image_raw" to="/unreal/unreal_sensor_model/ue_gray_image_out" />
+      <remap from="imu0" to="ground_truth/imu" />
+    </node>
+    <node name="odometry_noise_model" pkg="mav_active_3d_planning" type="gps_odometry_simulator.py" output="screen" unless="$(arg use_rovio)">
+      <param name="position_uncertainty" value="0.05"/>
+      <param name="roll_pitch_uncertainty" value="1.5" />
+      <param name="yaw_uncertainty" value="5.0" />
+      <param name="noise_model" value="$(arg odom_noise_model)" />
+      <param name="publish_tf" value="true" />
       <remap from="odometry_in" to="ground_truth/odometry" />
-    </node--> 
+    </node> 
 
     <!-- static camera transform -->
     <node pkg="tf" type="static_transform_publisher" name="tf_camera_to_link" args="0 0 0 -0.5 0.5 -0.5 0.5 /camera_link /camera 100"/>  
-    <node pkg="tf" type="static_transform_publisher" name="tf_base_to_camera_link" args="0 0 0 0 0 0 1 /firefly/base_link /camera_link 100"/> 
   </group>
 
   <group ns="unreal">
     <!-- Unreal vision client -->
     <node name="unreal_ros_client" pkg="unreal_cv_ros" type="unreal_ros_client.py" required="true" output="screen">
       <param name="mode" value="$(arg uecv_mode)"/>
-      <param name="publish_tf" value="true"/>
+      <param name="publish_tf" value="false"/>
       <param name="collision_on" value="true"/>
       <param name="slowdown" value="$(arg slowdown)"/>
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
@@ -123,7 +122,9 @@
       <param name="flatten_distance" value="$(arg flatten_distance)"/>
       <param name="model_type" value="$(arg model_type)" />
       <param name="maximum_distance" value="$(arg maximum_distance)" />
-      <param name="publish_images" value="$(arg apply_odometry_noise)" />
+      <param name="publish_gray_images" value="$(arg use_rovio)" />
+      <param name="k_mu_1" value="0.006" />
+      <param name="k_sigma_1" value="0.006" />
       <remap from="ue_sensor_raw" to="unreal_ros_client/ue_sensor_raw" />
     </node>
 
@@ -154,22 +155,21 @@
     
     <!-- Record a rosbag of the visualization-->
     <node pkg="rosbag" type="record" name="rosbag_vis_recorder"
-       args="record -o $(arg data_directory)/tmp_bags/tmp_bag /rosout /clock /tf /planner/voxblox_node/mesh /firefly/reference_trajectory /firefly/base_link /planner/trajectory_visualization" if="$(arg record_data)" />
+       args="record -o $(arg data_directory)/tmp_bags/tmp_bag /rosout /clock /tf /planner/voxblox_node/mesh /firefly/reference_trajectory /firefly/base_link /planner/trajectory_visualization" if="$(eval arg('record_data') and arg('record_visualization'))"/>
   </group>
 
   <group ns="planner">
     <!-- Voxblox -->
     <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
       <remap from="pointcloud" to="/unreal/unreal_sensor_model/ue_sensor_out"/>
-      <!--remap from="transform" to="/$(arg mav_name)/ground_truth/odometry"/>
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/voxblox/transforms.yaml"/-->
+      <remap from="transform" to="/$(arg mav_name)/rovio/transform" if="$(arg use_rovio)"/>
+      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/voxblox/transforms.yaml" if="$(arg use_rovio)"/> 
+      <param name="use_tf_transforms" value="$(eval arg('use_rovio') == false)"/>
       <param name="publish_tsdf_map" value="true" />
       <param name="publish_esdf_map" value="true" />
-      <param name="publish_pointclouds" value="true" />
       <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
       <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
       <param name="color_mode" value="color" />
-      <param name="use_tf_transforms" value="true" />
       <param name="update_mesh_every_n_sec" value="1.0" />
       <param name="method" value="$(arg method)" />
       <param name="max_ray_length" value="$(arg ray_length)" />
@@ -189,20 +189,21 @@
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
       <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
       <param name="verbose" value="$(arg verbose_planner)" />
+      <param name="visualize" value="$(arg visualize_planner)" />
       <param name="log_performance" value="$(arg record_data)" />
     
       <!-- Experiment dependent -->
       <param name="trajectory_evaluator/sensor_model/ray_length" value="$(arg ray_length)" />
       <param name="trajectory_evaluator/bounding_volume_args" value="/target_bounding_volume" />
       <param name="trajectory_generator/bounding_volume_args" value="/map_bounding_volume" />
-      <param name="trajectory_generator/system_constraints_args" value="/planner/system_contraints" />
+      <param name="trajectory_generator/system_constraints_args" value="/planner/system_constraints" />
       
       <!-- General Config -->    
       <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_general_config)"/>
     </node>    
     
+    <!-- Modular config -->    
     <group if="$(arg use_separate_configs)">
-      <!-- Modular config -->    
       <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_generator_config)" ns="planner_node"/>
       <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_evaluator_config)" ns="planner_node"/> 
     </group>

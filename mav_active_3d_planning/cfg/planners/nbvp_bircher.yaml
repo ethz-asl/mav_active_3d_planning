@@ -1,26 +1,27 @@
 # Config that builds the mav_active_3d_planning implementation of the nbvp planner (bircher paper)
-visualize_candidates: true
 verbose_modules: true
 build_modules_on_init: true
 
-max_new_segments: 0
+max_new_segments: 15
 min_new_segments: 15
-max_new_tries: 100
+max_new_tries: 1000
 min_new_tries: 0
+min_new_value: 0.0001
 
-replan_pos_threshold: 0.2
-replan_yaw_threshold: 0.2
+replan_pos_threshold: 0.15
+replan_yaw_threshold: 0.15
     
 trajectory_generator:
   collision_optimistic: false 
   collision_radius: 0.7
   
   type: "RRT"
-  velocity: 0.5
-  max_extension_range: 1.0
+  crop_segments: false
+  max_extension_range: 1.5
   use_spheric_sampling: true
   maximum_tries: 1000
   sampling_rate: 20.0
+  sample_yaw: true
   
   generator_updater:
     type: "GeneratorUpdateNothing"

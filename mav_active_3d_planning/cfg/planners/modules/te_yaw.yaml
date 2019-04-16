@@ -20,15 +20,17 @@ trajectory_evaluator:
         focal_length: 320.0
         resolution_x: 640
         resolution_y: 480
-        downsampling_factor: 2.5
+        downsampling_factor: 2.0
         
       cost_computer:
         type: "SegmentTime"
           
       value_computer:
+#        type: "RelativeGain"
+#        accumulate: true
         type: "ExponentialDiscount"
         accumulate: true
-        cost_scale: 2.0
+        cost_scale: 0.5
         
       next_selector:
         type: "SubsequentBest"
