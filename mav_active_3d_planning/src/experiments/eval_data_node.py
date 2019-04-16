@@ -179,8 +179,6 @@ class EvalData:
         reason = "Stopping the experiment: " + reason
         if self.evaluate:
             self.writelog(reason)
-            width = len(reason) + 4
-            rospy.loginfo("\n" + "*" * width + "\n* " + reason + " *\n" + "*" * width)
             if self.reset_unreal_cv_ros:
                 try:
                     # If unreal is running, this will reset it, otherwise map is already in initial state
@@ -188,6 +186,8 @@ class EvalData:
                     terminate_srv(True)
                 except:
                     pass
+        width = len(reason) + 4
+        rospy.loginfo("\n" + "*" * width + "\n* " + reason + " *\n" + "*" * width)
         rospy.signal_shutdown(reason)
 
     def collision_callback(self, _):

@@ -162,7 +162,7 @@ namespace mav_active_3d_planning {
         kdtree_->buildIndex();
 
         // Setup hist file
-        if (p_error_histogram_) {
+        if (p_error_histogram_ && p_evaluate_) {
             hist_file_.open((p_target_dir_ + "/error_hist.csv").c_str(), std::ios::out);
             hist_file_ << "MapName";
             for (int i = 0; i < hist_bins_; ++i) {
@@ -293,14 +293,6 @@ namespace mav_active_3d_planning {
                     if (std::abs(distance) > truncation_distance) {
                         distance = truncation_distance;
                     }
-
-//                    if (distance >= truncation_distance) {
-//                        outside_truncation_voxels++;
-//                        distance = truncation_distance;
-//                    } else {
-//                        // In case this fails, distance is still the nearest neighbor distance.
-//                        interpolator->getDistance(point, &distance, interpolate);
-//                    }
                     abserror.push_back(std::abs(distance));
                 }
                 total_evaluated_voxels++;
@@ -386,27 +378,26 @@ namespace mav_active_3d_planning {
             // Build result
             result << mean << "," << stddev << "," << static_cast<double>(unknown_voxels) / total_evaluated_voxels
                    << "," << outside_truncation_voxels / static_cast<double>(total_evaluated_voxels);
-        }
 
-        if (p_error_histogram_) {
-            // create histogram of error distribution
-            std::vector<int> histogram(hist_bins_);
-            double bin_size = truncation_distance / ((double)hist_bins_ - 1.0);
-            for (int i = 0; i < abserror.size(); ++i) {
-                int bin = (int)floor(abserror[i] / bin_size);
-                if (bin < 0 || bin >= hist_bins_) {
-                    std::cout << "Bin Error at bin " << bin << ", value " << abserror[i] << std::endl;
-                    continue;
+            if (p_error_histogram_) {
+                // create histogram of error distribution
+                std::vector<int> histogram(hist_bins_);
+                double bin_size = truncation_distance / ((double) hist_bins_ - 1.0);
+                for (int i = 0; i < abserror.size(); ++i) {
+                    int bin = (int) floor(abserror[i] / bin_size);
+                    if (bin < 0 || bin >= hist_bins_) {
+                        std::cout << "Bin Error at bin " << bin << ", value " << abserror[i] << std::endl;
+                        continue;
+                    }
+                    histogram[bin] += 1;
                 }
-                histogram[bin] += 1;
+                hist_file_ << map_name;
+                for (int i = 0; i < histogram.size(); ++i) {
+                    hist_file_ << "," << histogram[i];
+                }
+                hist_file_ << "\n";
             }
-            hist_file_ << map_name;
-            for (int i = 0; i < histogram.size(); ++i) {
-                hist_file_ << "," << histogram[i];
-            }
-            hist_file_ << "\n";
         }
-
         return result.str();
     }
 

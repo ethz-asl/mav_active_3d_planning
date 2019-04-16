@@ -37,6 +37,8 @@ class EvalPlotting:
         self.series = rospy.get_param('~series', False)   # True: skip single evaluation and create
         # series evaluation data and plots for all runs in the target directory
         self.clear_voxblox_maps = rospy.get_param('~clear_voxblox_maps', False)  # rm all maps after eval (disk space!)
+        self.unobservable_points_pct = rospy.get_param('~unobservable_points_pct', 0.0)     # Exluce unobservable points
+        # from the plots (in percent of total)
 
         # Check for valid params
         methods = {'single': 'single', 'recent': 'recent', 'all': 'all'}  # Dictionary of implemented models
@@ -192,6 +194,7 @@ class EvalPlotting:
         names = []
         for o in subdirs:
             if os.path.isfile((os.path.join(target_dir, o, "graphs", "SimulationOverview.png"))):
+                # Valid evaluated directory
                 data = self.read_voxblox_data(os.path.join(target_dir, o, "voxblox_data.csv"))
                 max_data_length = max(max_data_length, len(data["RosTime"]))
                 voxblox_data.append(data)
@@ -217,7 +220,6 @@ class EvalPlotting:
         for key in keys:
             means[key] = np.array([])
             std_devs[key] = np.array([])
-
         for i in range(max_data_length):
             line = []
             if i == 0:
@@ -229,28 +231,29 @@ class EvalPlotting:
                         header_line.append('')
                     line.extend(("Mean", "StdDev"))
                 data_writer.writerow(header_line)
-            else:
-                for key in keys:
-                    values = []
-                    for dataset in voxblox_data:
-                        if i < len(dataset[key]):
-                            if key == 'NPointclouds':
-                                # These need to accumulate
-                                ind = voxblox_data.index(dataset)
-                                prev_pcls[ind] = prev_pcls[ind] + float(dataset[key][i])
-                                line.append(prev_pcls[ind])
-                                values.append(prev_pcls[ind])
-                            else:
-                                line.append(dataset[key][i])
-                                values.append(dataset[key][i])
+                data_writer.writerow(line)
+                line = []
+            for key in keys:
+                values = []
+                for dataset in voxblox_data:
+                    if i < len(dataset[key]):
+                        if key == 'NPointclouds':
+                            # These need to accumulate
+                            ind = voxblox_data.index(dataset)
+                            prev_pcls[ind] = prev_pcls[ind] + float(dataset[key][i])
+                            line.append(prev_pcls[ind])
+                            values.append(prev_pcls[ind])
                         else:
-                            line.append("")
-                    values = np.array(values, dtype=float)
-                    mean = np.mean(values)
-                    std = np.std(values)
-                    means[key] = np.append(means[key], mean)
-                    std_devs[key] = np.append(std_devs[key], std)
-                    line.extend((mean, std))
+                            line.append(dataset[key][i])
+                            values.append(dataset[key][i])
+                    else:
+                        line.append("")
+                values = np.array(values, dtype=float)
+                mean = np.mean(values)
+                std = np.std(values)
+                means[key] = np.append(means[key], mean)
+                std_devs[key] = np.append(std_devs[key], std)
+                line.extend((mean, std))
             data_writer.writerow(line)
         data_file.close()
 
@@ -312,7 +315,10 @@ class EvalPlotting:
         axes[2, 0].set_xlabel("Simulated Time [%s]" % unit)
         axes[2, 0].set_xlim(left=0, right=x[-1])
 
-        axes[0, 1].plot(x, means['UnknownVoxels'], 'g-')
+        # Compensate unobservable voxels
+        unknown = (means['UnknownVoxels'] - self.unobservable_points_pct) / (1.0 - self.unobservable_points_pct)
+        unknown = np.maximum(unknown, np.zeros_like(unknown))
+        axes[0, 1].plot(x, unknown, 'g-')
         axes[0, 1].fill_between(x, means['UnknownVoxels'] - std_devs['UnknownVoxels'],
                                 means['UnknownVoxels'] + std_devs['UnknownVoxels'],
                                 facecolor='g', alpha=.2)
@@ -377,7 +383,9 @@ class EvalPlotting:
             x = np.divide(x, 60)
         meanerr = np.array(data['MeanError'])
         stddev = np.array(data['StdDevError'])
-        unknown = np.array(data['UnknownVoxels'])
+        unknown = np.array(data['UnknownVoxels'], dtype=float)
+        unknown = (unknown - self.unobservable_points_pct)/(1.0 - self.unobservable_points_pct)  # compensate invisible
+        unknown = np.maximum(unknown, np.zeros_like(unknown))
         truncated = np.array(data['OutsideTruncation'])
         pointclouds = np.cumsum(np.array(data['NPointclouds'], dtype=float))
         ros_time = np.array(data['RosTime'], dtype=float)
