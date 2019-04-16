@@ -66,10 +66,6 @@ namespace mav_active_3d_planning {
                             current_position = position + distance * direction;
                             distance += p_ray_step_;
 
-                            // Add point (duplicates are handled in CameraModel::getVisibleVoxelsFromTrajectory)
-                            getVoxelCenter(&current_position);
-                            result->push_back(current_position);
-
                             // Check voxel occupied
                             map_distance = 0.0;
                             if (voxblox_ptr_->getEsdfMapPtr()->getDistanceAtPosition(current_position, &map_distance)) {
@@ -80,6 +76,10 @@ namespace mav_active_3d_planning {
                                     break;
                                 }
                             }
+
+                            // Add point (duplicates are handled in CameraModel::getVisibleVoxelsFromTrajectory)
+                            getVoxelCenter(&current_position);
+                            result->push_back(current_position);
                         }
                         if (cast_ray) {
                             current_segment++;
