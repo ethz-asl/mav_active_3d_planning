@@ -26,16 +26,16 @@
   <arg name="odom_noise_model" default="ground_truth"/>
   
   <!--  Planner arguments (tg_uniform, tg_random_linear, tg_rrt, general, nbvp_bircher, te_frontier, te_yaw)-->
-  <arg name="use_separate_configs" default="false"/>
-  <arg name="planner_general_config" default="planners/nbvp_bircher.yaml"/>
+  <arg name="use_separate_configs" default="true"/>
+  <arg name="planner_general_config" default="planners/general.yaml"/>
   <arg name="planner_generator_config" default="planners/modules/tg_rrt.yaml"/>
-  <arg name="planner_evaluator_config" default="planners/modules/te_yaw.yaml"/>
+  <arg name="planner_evaluator_config" default="planners/modules/te_weight.yaml"/>
   <arg name="verbose_planner" default="true"/>
-  <arg name="visualize_planner" default="false"/>
+  <arg name="visualize_planner" default="true"/>
   
   <!--  Experiment arguments -->  
   <arg name="experiment_config" default="experiment1.yaml"/>
-  <arg name="record_data" default="true"/>
+  <arg name="record_data" default="false"/>
   <arg name="record_visualization" default="false"/>
   <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
   <arg name="data_frequency" default="30.0" />

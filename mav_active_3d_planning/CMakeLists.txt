@@ -33,6 +33,7 @@ cs_add_library(${PROJECT_NAME}
         src/modules/trajectory_generators/random_linear.cpp
         src/modules/trajectory_generators/rrt.cpp
         src/modules/trajectory_generators/rrt_star.cpp
+        src/modules/trajectory_generators/feasible_rrt_star.cpp
         src/modules/trajectory_generators/uniform.cpp
         # Evaluators
         src/modules/trajectory_evaluators/simulated_sensor_evaluator.cpp

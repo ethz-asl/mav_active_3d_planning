@@ -23,9 +23,6 @@ namespace mav_active_3d_planning {
             static ModuleFactory::Registration<FrontierEvaluator> registration;
 
             // Override virtual methods
-            virtual bool storeTrajectoryInformation(TrajectorySegment *traj_in,
-                                            const std::vector <Eigen::Vector3d> &new_voxels);
-
             virtual bool computeGainFromVisibleVoxels(TrajectorySegment *traj_in);
 
             // params
@@ -38,11 +35,6 @@ namespace mav_active_3d_planning {
 
             // methods
             bool isFrontierVoxel(const Eigen::Vector3d &voxel);
-        };
-
-        // Information struct that is assigned to segments
-        struct FrontierInfo : public SimulatedSensorInfo {
-            std::vector <Eigen::Vector3d> frontier_voxels;
         };
 
     } // namespace trajectory_evaluators

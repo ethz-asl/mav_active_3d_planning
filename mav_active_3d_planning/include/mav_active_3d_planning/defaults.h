@@ -63,11 +63,11 @@ namespace mav_active_3d_planning {
         // Scale an angle to [0, 2pi]
         double angleScaled(double angle);
 
-        // Compute the difference between two angles in rad
+        // Compute the closest positive difference between two angles in rad
         double angleDifference(double angle1, double angle2);
 
         // Returns the rotation direction (+1 / -1) that is closer for two angles
-        double angleDirection(double angle1, double angle2);
+        double angleDirection(double input, double target);
 
         // Get the current next id for visualization markerarray messages
         int getNextVisualizationId(const visualization_msgs::MarkerArray &msg);

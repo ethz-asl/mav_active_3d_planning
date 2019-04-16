@@ -7,7 +7,7 @@ trajectory_evaluator:
     select_by_value: false
     
     following_evaluator:
-      type: "Frontier"
+      type: "FrontierEvaluator"
       clear_from_parents: false
       visualize_sensor_view: true
       accurate_frontiers: true

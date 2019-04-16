@@ -1,5 +1,5 @@
 trajectory_generator:
-  type: "RRTStar"
+  type: "FeasibleRRT"
   crop_segments: true
   crop_margin: 0.5
   crop_min_length: 0.2

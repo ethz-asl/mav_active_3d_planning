@@ -1,9 +1,9 @@
 trajectory_evaluator:
-  type: "RRTStarEvaluatorAdapter"
-  
-  following_evaluator:
+#  type: "RRTStarEvaluatorAdapter"
+#  
+#  following_evaluator:
     type: "SimpleYawPlanningEvaluator"
-    n_directions: 2
+    n_directions: 6
     select_by_value: false
     
     following_evaluator:

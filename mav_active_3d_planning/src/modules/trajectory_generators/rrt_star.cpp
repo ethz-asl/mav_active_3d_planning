@@ -177,7 +177,7 @@ namespace mav_active_3d_planning {
             for (int i = 0; i < candidates.size(); ++i) {
                 segment->trajectory.clear();
                 segment->parent = candidates[i];
-                if (connect_poses(candidates[i]->trajectory.back(), goal_point, &(segment->trajectory))) {
+                if (connectPoses(candidates[i]->trajectory.back(), goal_point, &(segment->trajectory))) {
                     // Feasible connection: evaluate the trajectory
                     planner_node_->trajectory_evaluator_->computeCost(segment);
                     planner_node_->trajectory_evaluator_->computeValue(segment);

@@ -65,7 +65,7 @@ namespace mav_active_3d_planning {
                     counter++;
                 }
                 goal_pos = root->trajectory.back().position_W;
-                sample_goal(&goal_pos);
+                sampleGoal(&goal_pos);
                 if (p_crop_segments_ || checkTraversable(goal_pos)) {
                     goal_found = true;
                 }
@@ -116,7 +116,7 @@ namespace mav_active_3d_planning {
                                                  -goal_pos_.y() + start_point.position_W.y()) -
                                       M_PI / 2.0);  // face direction of travel
             }
-            if (!connect_poses(start_point, goal_point, &trajectory)) {
+            if (!connectPoses(start_point, goal_point, &trajectory)) {
                 return false;
             }
 
@@ -129,7 +129,7 @@ namespace mav_active_3d_planning {
             return true;
         }
 
-        bool RRT::sample_goal(Eigen::Vector3d *goal_pos) {
+        bool RRT::sampleGoal(Eigen::Vector3d *goal_pos) {
             if (p_use_spheric_sampling_) {
                 // Bircher way (also assumes box atm, for unbiased sampling)
                 double radius = std::sqrt(std::pow(bounding_volume_->x_max - bounding_volume_->x_min, 2.0) +
@@ -151,7 +151,7 @@ namespace mav_active_3d_planning {
             }
         }
 
-        bool RRT::connect_poses(const mav_msgs::EigenTrajectoryPoint &start, const mav_msgs::EigenTrajectoryPoint &goal,
+        bool RRT::connectPoses(const mav_msgs::EigenTrajectoryPoint &start, const mav_msgs::EigenTrajectoryPoint &goal,
                                 mav_msgs::EigenTrajectoryPointVector *result) {
             // try creating a linear trajectory and check for collision
             Eigen::Vector3d start_pos = start.position_W;

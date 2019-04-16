@@ -371,8 +371,8 @@ namespace mav_active_3d_planning {
             msg.type = visualization_msgs::Marker::POINTS;
             msg.id = i;
             msg.ns = "candidate_trajectories";
-            msg.scale.x = 0.03;
-            msg.scale.y = 0.03;
+            msg.scale.x = 0.05;
+            msg.scale.y = 0.05;
             msg.action = visualization_msgs::Marker::ADD;
 
             // Color according to relative value (blue when indifferent)

@@ -72,10 +72,10 @@ namespace mav_active_3d_planning {
 
             // methods
             // find a goal position, return true on success.
-            virtual bool sample_goal(Eigen::Vector3d *goal_pos);
+            virtual bool sampleGoal(Eigen::Vector3d *goal_pos);
 
             // try connecting two poses and build a trajectory in between them. Return true on success.
-            virtual bool connect_poses(const mav_msgs::EigenTrajectoryPoint &start,
+            virtual bool connectPoses(const mav_msgs::EigenTrajectoryPoint &start,
                                        const mav_msgs::EigenTrajectoryPoint &goal,
                                        mav_msgs::EigenTrajectoryPointVector *result);
 

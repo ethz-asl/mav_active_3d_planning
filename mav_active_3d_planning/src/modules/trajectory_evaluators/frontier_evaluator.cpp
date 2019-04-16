@@ -72,20 +72,12 @@ namespace mav_active_3d_planning {
             return false;
         }
 
-        bool FrontierEvaluator::storeTrajectoryInformation(TrajectorySegment *traj_in,
-                                                  const std::vector <Eigen::Vector3d> &new_voxels) {
-            FrontierInfo *new_info = new FrontierInfo();
-            new_info->visible_voxels.assign(new_voxels.begin(), new_voxels.end());
-            traj_in->info.reset(new_info);
-            return true;
-        }
-
         bool FrontierEvaluator::computeGainFromVisibleVoxels(TrajectorySegment *traj_in) {
+            traj_in->gain = 0.0;
             if (!traj_in->info) {
-                traj_in->gain = 0.0;
                 return false;
             }
-            FrontierInfo *info = dynamic_cast<FrontierInfo *>(traj_in->info.get());
+            SimulatedSensorInfo *info = dynamic_cast<SimulatedSensorInfo *>(traj_in->info.get());
 
             // Remove observed voxels
             info->visible_voxels.erase(
@@ -96,13 +88,11 @@ namespace mav_active_3d_planning {
                     info->visible_voxels.end());
 
             // Check which voxels are frontier voxels
-            info->frontier_voxels.clear();
             for (int i = 0; i < info->visible_voxels.size(); ++i) {
                 if (isFrontierVoxel(info->visible_voxels[i])) {
-                    info->frontier_voxels.push_back(info->visible_voxels[i]);
+                    traj_in->gain += 1.0;
                 }
             }
-            traj_in->gain = (double) info->frontier_voxels.size();
             return true;
         }
 
@@ -126,13 +116,15 @@ namespace mav_active_3d_planning {
             new_msg.color.a = 1.0;
 
             // points
-            FrontierInfo *info = dynamic_cast<FrontierInfo *>(trajectory.info.get());
-            for (int i = 0; i < info->frontier_voxels.size(); ++i) {
-                geometry_msgs::Point point;
-                point.x = (double) info->frontier_voxels[i].x();
-                point.y = (double) info->frontier_voxels[i].y();
-                point.z = (double) info->frontier_voxels[i].z();
-                new_msg.points.push_back(point);
+            SimulatedSensorInfo *info = dynamic_cast<SimulatedSensorInfo *>(trajectory.info.get());
+            for (int i = 0; i < info->visible_voxels.size(); ++i) {
+                if (isFrontierVoxel(info->visible_voxels[i])) {
+                    geometry_msgs::Point point;
+                    point.x = info->visible_voxels[i].x();
+                    point.y = info->visible_voxels[i].y();
+                    point.z = info->visible_voxels[i].z();
+                    new_msg.points.push_back(point);
+                }
             }
             msg->markers.push_back(new_msg);
 
