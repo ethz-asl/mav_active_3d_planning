@@ -44,6 +44,9 @@ namespace mav_active_3d_planning {
         std::unique_ptr <TrajectoryEvaluator> trajectory_evaluator_;
         std::unique_ptr <BackTracker> back_tracker_;
 
+        // Start the planning loop
+        void planningLoop();
+
     protected:
         // ros
         ros::NodeHandle nh_;
@@ -59,6 +62,7 @@ namespace mav_active_3d_planning {
         bool running_;                      // whether to run the main loop
         Eigen::Vector3d target_position_;   // current movement goal
         double target_yaw_;
+        bool target_reached_;               // whether the goal point was reached, update based on odom input
         int vis_num_previous_trajectories_; // Counter for visualization function
         int vis_num_previous_evaluations_;
         int vis_completed_count_;
@@ -85,10 +89,13 @@ namespace mav_active_3d_planning {
         int p_min_new_tries_;               // Until no. expansion calls the next segment is not executed (0 to ignore)
         int p_max_new_tries_;               // After no. expansion calls the next segment is forced (0 to ignore)
         double p_min_new_value_;            // Until this value is found in the tree, expansion continues (0 to ignore)
+        int p_expand_batch_;                // run multiple segment expansions before rechecking conditions
         // ideas: take images only on points,
 
         // methods
         void initializePlanning();
+
+        void loopIteration();
 
         void requestNextTrajectory();
 

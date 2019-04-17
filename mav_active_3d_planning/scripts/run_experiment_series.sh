@@ -33,7 +33,7 @@ fi
 for (( i=1; i<=n_experiments; i++ ))
 do  
   # run experiment
-  roslaunch mav_active_3d_planning run_experiment.launch data_directory:=$target_dir visualize_planner:=$visualize record_visualization:=$visualize record_data:=true experiment_config:=$cfg data_frequency:=$freq time_limit:=$dur
+  roslaunch mav_active_3d_planning run_experiment.launch data_directory:=$target_dir record_data:=true visualize_planner:=$visualize record_visualization:=$visualize experiment_config:=$cfg data_frequency:=$freq time_limit:=$dur
   # run spiral
 #   roslaunch mav_active_3d_planning run_spiral.launch data_directory:=$target_dir
   # evaluate

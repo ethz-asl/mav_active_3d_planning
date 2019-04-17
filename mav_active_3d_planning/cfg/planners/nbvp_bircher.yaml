@@ -15,7 +15,7 @@ trajectory_generator:
   collision_optimistic: false 
   collision_radius: 0.7
   
-  type: "RRT"
+  type: "FeasibleRRT"
   crop_segments: false
   max_extension_range: 1.5
   use_spheric_sampling: true
@@ -38,12 +38,14 @@ trajectory_evaluator:
 
   cost_computer:
     type: "SegmentLength"
+    accumulate: true
     
   value_computer:
     type: "AccumulateValue"
     following_value_computer:
       type: "ExponentialDiscount"
       cost_scale: 0.5
+      accumulate: false
     
   next_selector:
     type: "SubsequentBest"
@@ -53,7 +55,7 @@ trajectory_evaluator:
     following_updater:
       type: "UpdateAll"
       update_gain: false
-      update_cost: false
+      update_cost: true
       update_value: true
     
 back_tracker:

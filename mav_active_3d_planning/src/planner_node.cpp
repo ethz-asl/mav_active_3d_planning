@@ -49,6 +49,8 @@ namespace mav_active_3d_planning {
         nh_private_.param("max_new_tries", p_max_new_tries_, 0);  // set 0 for infinite
         nh_private_.param("min_new_tries", p_min_new_tries_, 0);
         nh_private_.param("min_new_value", p_min_new_value_, 0.0);
+        nh_private_.param("expand_batch", p_expand_batch_, 1);
+        p_expand_batch_ = std::max(p_expand_batch_, 1);
 
         // Wait for voxblox to setup and receive first map
         ros::topic::waitForMessage<voxblox_msgs::Layer>("esdf_map_in", nh_private_);
@@ -100,45 +102,6 @@ namespace mav_active_3d_planning {
         run_srv_ = nh_private_.advertiseService("toggle_running", &PlannerNode::runSrvCallback, this);
     }
 
-    void PlannerNode::odomCallback(const nav_msgs::Odometry &msg) {
-        // This is the main loop, high odom message frequency is expected to continuously run
-        if (!running_) { return; }
-
-        Eigen::Vector3d position(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
-        double yaw = tf::getYaw(msg.pose.pose.orientation);
-
-        // Continuosly expand the trajectory space
-        expandTrajectories();
-        if (!min_new_value_reached_){
-            //  recursively check whether the minimum value is reached
-            min_new_value_reached_= checkMinNewValue(current_segment_);
-        }
-
-        // After finishing the current segment, execute the next one
-        // check goal pos reached (if tol is set)
-        if (p_replan_pos_threshold_ <= 0 || (target_position_ - position).norm() < p_replan_pos_threshold_) {
-            // check goal yaw reached (if tol is set)
-            if (p_replan_yaw_threshold_ <= 0 || defaults::angleDifference(target_yaw_, yaw) < p_replan_yaw_threshold_) {
-                if (new_segment_tries_ >= p_max_new_tries_ && p_max_new_tries_ > 0) {
-                    // Maximum tries reached: force next segment
-                    requestNextTrajectory();
-                } else {
-                    if (new_segment_tries_ < p_min_new_tries_) {
-                        return;     // check minimum tries reached
-                    }
-                    if (new_segments_ < p_min_new_segments_) {
-                        return;     // check minimum successful expansions reached
-                    }
-                    if (!min_new_value_reached_){
-                       return;      // check minimum value reached
-                    }
-                    // All requirements met
-                    requestNextTrajectory();
-                }
-            }
-        }
-    }
-
     void PlannerNode::initializePlanning() {
         // Initialize and start planning (Currently assumes MAV starts at {0,0,0} with 0 yaw!)
         target_position_ = Eigen::Vector3d(0, 0, 0);
@@ -176,6 +139,51 @@ namespace mav_active_3d_planning {
         vis_num_previous_evaluations_ = 0;
         vis_num_previous_trajectories_ = 0;
         min_new_value_reached_ = p_min_new_value_ == 0.0;
+        target_reached_ = false;
+    }
+
+    void PlannerNode::planningLoop() {
+        // This is the main loop, spinning and loop callbacks are managed explicitely for efficiency
+        if (!ros::ok()) {
+            return;
+        }
+        if (running_) {
+            loopIteration();
+        }
+        ros::spinOnce();
+        planningLoop();
+    }
+
+    void PlannerNode::loopIteration() {
+        // Continuosly expand the trajectory space
+        for (int i = 0; i < p_expand_batch_; ++i) {
+            expandTrajectories();
+        }
+
+        if (!min_new_value_reached_) {
+            //  recursively check whether the minimum value is reached
+            min_new_value_reached_ = checkMinNewValue(current_segment_);
+        }
+
+        // After finishing the current segment, execute the next one
+        if (target_reached_) {
+            if (new_segment_tries_ >= p_max_new_tries_ && p_max_new_tries_ > 0) {
+                // Maximum tries reached: force next segment
+                requestNextTrajectory();
+            } else {
+                if (new_segment_tries_ < p_min_new_tries_) {
+                    return;     // check minimum tries reached
+                }
+                if (new_segments_ < p_min_new_segments_) {
+                    return;     // check minimum successful expansions reached
+                }
+                if (!min_new_value_reached_) {
+                    return;      // check minimum value reached
+                }
+                // All requirements met
+                requestNextTrajectory();
+            }
+        }
     }
 
     void PlannerNode::requestNextTrajectory() {
@@ -281,6 +289,7 @@ namespace mav_active_3d_planning {
         new_segment_tries_ = 0;
         new_segments_ = 0;
         min_new_value_reached_ = p_min_new_value_ == 0.0;
+        target_reached_ = false;
     }
 
     void PlannerNode::expandTrajectories() {
@@ -339,6 +348,20 @@ namespace mav_active_3d_planning {
         }
     }
 
+    void PlannerNode::odomCallback(const nav_msgs::Odometry &msg) {
+        // Check whether the target position was reached
+        Eigen::Vector3d position(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
+        double yaw = tf::getYaw(msg.pose.pose.orientation);
+
+        // check goal pos reached (if tol is set)
+        if (p_replan_pos_threshold_ <= 0 || (target_position_ - position).norm() < p_replan_pos_threshold_) {
+            // check goal yaw reached (if tol is set)
+            if (p_replan_yaw_threshold_ <= 0 || defaults::angleDifference(target_yaw_, yaw) < p_replan_yaw_threshold_) {
+                target_reached_ = true;
+            }
+        }
+    }
+
     void PlannerNode::requestMovement(const TrajectorySegment &req) {
         trajectory_msgs::MultiDOFJointTrajectoryPtr msg(new trajectory_msgs::MultiDOFJointTrajectory);
         msg->header.stamp = ros::Time::now();
@@ -371,8 +394,8 @@ namespace mav_active_3d_planning {
             msg.type = visualization_msgs::Marker::POINTS;
             msg.id = i;
             msg.ns = "candidate_trajectories";
-            msg.scale.x = 0.05;
-            msg.scale.y = 0.05;
+            msg.scale.x = 0.04;
+            msg.scale.y = 0.04;
             msg.action = visualization_msgs::Marker::ADD;
 
             // Color according to relative value (blue when indifferent)
@@ -520,12 +543,12 @@ namespace mav_active_3d_planning {
     bool PlannerNode::runSrvCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) {
         res.success = true;
         if (req.data) {
-            ROS_INFO("Started planning.");
             initializePlanning();
             running_ = true;
+            ROS_INFO("Started planning.");
         } else {
-            ROS_INFO("Stopped planning.");
             running_ = false;
+            ROS_INFO("Stopped planning.");
         }
         return true;
     }
@@ -552,7 +575,6 @@ int main(int argc, char **argv) {
     ros::NodeHandle nh_private("~");
 
     mav_active_3d_planning::PlannerNode planner_node(nh, nh_private);
-
     ROS_INFO("Initialized active_3d_planner_node.");
-    ros::spin();
+    planner_node.planningLoop();
 }

@@ -6,6 +6,10 @@ namespace mav_active_3d_planning {
         // SegmentTime
         ModuleFactory::Registration<SegmentTime> SegmentTime::registration("SegmentTime");
 
+        void SegmentTime::setupFromParamMap(Module::ParamMap *param_map) {
+            setParam<bool>(param_map, "accumulate", &p_accumulate_, false);
+        }
+
         bool SegmentTime::computeCost(TrajectorySegment *traj_in) {
             if (traj_in->trajectory.size() < 2) {
                 traj_in->cost = 0.0;
@@ -13,11 +17,18 @@ namespace mav_active_3d_planning {
             }
             traj_in->cost = static_cast<double>(traj_in->trajectory.back().time_from_start_ns -
                                                 traj_in->trajectory.front().time_from_start_ns) * 1.0e-9;
+            if (p_accumulate_ && traj_in->parent) {
+                traj_in->cost += traj_in->parent->cost;
+            }
             return true;
         }
 
         // SegmentLength
         ModuleFactory::Registration<SegmentLength> SegmentLength::registration("SegmentLength");
+
+        void SegmentLength::setupFromParamMap(Module::ParamMap *param_map) {
+            setParam<bool>(param_map, "accumulate", &p_accumulate_, false);
+        }
 
         bool SegmentLength::computeCost(TrajectorySegment *traj_in) {
             if (traj_in->trajectory.size() < 2) {
@@ -32,6 +43,9 @@ namespace mav_active_3d_planning {
                 last_point = traj_in->trajectory[i].position_W;
             }
             traj_in->cost = distance;
+            if (p_accumulate_ && traj_in->parent) {
+                traj_in->cost += traj_in->parent->cost;
+            }
             return true;
         }
 

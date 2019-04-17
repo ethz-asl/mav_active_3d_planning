@@ -1,7 +1,7 @@
 trajectory_evaluator:
-#  type: "RRTStarEvaluatorAdapter"
-#  
-#  following_evaluator:
+  type: "RRTStarEvaluatorAdapter"
+  
+  following_evaluator:
     type: "SimpleYawPlanningEvaluator"
     n_directions: 6
     select_by_value: false
@@ -13,8 +13,8 @@ trajectory_evaluator:
       accurate_frontiers: true 
       bounding_volume_args: "/target_bounding_volume"
       
-      new_voxel_weight: 1.0
-      min_impact_factor: 0.1
+      new_voxel_weight: 10.0
+      min_impact_factor: 0.05
       ray_angle: 0.002454
       ray_angle: 0.002681
       use_frontier_voxels: true
@@ -26,7 +26,7 @@ trajectory_evaluator:
         focal_length: 320.0
         resolution_x: 640
         resolution_y: 480
-        downsampling_factor: 4.0
+        downsampling_factor: 3.0
         
       cost_computer:
         type: "SegmentTime"

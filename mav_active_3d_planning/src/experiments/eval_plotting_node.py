@@ -529,34 +529,42 @@ class EvalPlotting:
         x = np.array([])
         cpu_time = np.array(data['Total'], dtype=float)
         ros_time = np.array(data['RosTime'], dtype=float)
+        plan_time = y_select + y_expand + y_gain + y_cost + y_value + y_next + y_upTE + y_upTG
         cpu_use = np.array([])
+        plan_use = np.array([])
         i = 0
-        averaging_threshold = 1    # seconds, for smoothing
+        averaging_threshold = 2.0    # seconds, for smoothing
         t_curr = ros_time[0]
         x_curr = 0
         cpu_curr = cpu_time[0]
+        plan_curr = plan_time[0]
         while i + 1 < len(ros_time):
             i = i + 1
             if t_curr >= averaging_threshold:
                 cpu_use = np.append(cpu_use, cpu_curr / t_curr)
+                plan_use = np.append(plan_use, plan_curr / t_curr)
                 x_curr = x_curr + t_curr
                 x = np.append(x, x_curr)
                 t_curr = ros_time[i]
                 cpu_curr = cpu_time[i]
+                plan_curr = plan_time[i]
             else:
                 t_curr = t_curr + ros_time[i]
                 cpu_curr = cpu_curr + cpu_time[i]
+                plan_curr = plan_curr + plan_time[i]
 
         if unit == "min":
             x = np.true_divide(x, 60)
 
-        axes[2].plot(np.array([0, x[-1]]), np.array([1, 1]), linestyle='-', color='0.7', alpha=0.5)
         axes[2].plot(x, cpu_use, 'k-')
+        axes[2].plot(x, plan_use, linestyle='-', color='#5492E7')
+        axes[2].plot(np.array([0, x[-1]]), np.array([1, 1]), linestyle='-', color='0.7', alpha=0.8)
         axes[2].set_xlim(left=0, right=x[-1])
         axes[2].set_ylim(bottom=0)
         axes[2].set_ylabel('CPU Usage [cores]')
         axes[2].set_title("Planner Consumed CPU Time per Simulated Time")
         axes[2].set_xlabel('Simulated Time [%s]' % unit)
+        axes[2].legend(["Total", "Planning"], loc='upper left', fancybox=True)
 
         fig.set_size_inches(15, 15, forward=True)
         plt.tight_layout()

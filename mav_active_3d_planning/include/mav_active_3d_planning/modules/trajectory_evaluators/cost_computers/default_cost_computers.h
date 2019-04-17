@@ -21,9 +21,12 @@ namespace mav_active_3d_planning {
 
             SegmentTime() {}
 
-            void setupFromParamMap(Module::ParamMap *param_map) {}
+            void setupFromParamMap(Module::ParamMap *param_map);
 
             static ModuleFactory::Registration<SegmentTime> registration;
+
+            // params
+            bool p_accumulate_;     // True: Use total time
         };
 
         // Travelled distance of a segment
@@ -37,9 +40,12 @@ namespace mav_active_3d_planning {
 
             SegmentLength() {}
 
-            void setupFromParamMap(Module::ParamMap *param_map) {}
+            void setupFromParamMap(Module::ParamMap *param_map);
 
             static ModuleFactory::Registration<SegmentLength> registration;
+
+            // params
+            bool p_accumulate_;     // True: Use total length
         };
 
     } // namespace cost_computers
