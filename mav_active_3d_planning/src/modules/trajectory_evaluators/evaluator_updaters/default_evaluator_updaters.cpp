@@ -66,6 +66,19 @@ namespace mav_active_3d_planning {
             following_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(args, verbose_modules_);
         }
 
+        void PruneByValue::setupFromParamMap(Module::ParamMap *param_map) {
+            setParam<double>(param_map, "minimum_value", &minimum_value_, 0.0);
+            setParam<bool>(param_map, "use_relative_values", &use_relative_values_, false);
+            setParam<bool>(param_map, "include_subsequent", &include_subsequent_, true);
+
+            // Create Following updater (default does nothing)
+            std::string args;   // default args extends the parent namespace
+            std::string param_ns = (*param_map)["param_namespace"];
+            setParam<std::string>(param_map, "following_updater_args", &args, param_ns + "/following_updater");
+            following_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(args, verbose_modules_,
+                                                                                           parent_);
+        }
+
         bool PruneByValue::updateSegments(TrajectorySegment *root) {
             // Remove all segments, whose value is below the minimum value
             double absolute_minimum = getMinimumValue(root);

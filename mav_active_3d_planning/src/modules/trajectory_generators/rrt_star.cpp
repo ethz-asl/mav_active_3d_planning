@@ -107,6 +107,7 @@ namespace mav_active_3d_planning {
                 kdtree_->addPoints(0, tree_data_.points.size() - 1);
             }
             tree_is_reset_ = false;
+
             // Try rewiring non-next segments (to keept their branches alive)
             TrajectorySegment *next_root = root->children[*next_segment].get();
             std::vector < TrajectorySegment * > to_rewire;
@@ -117,6 +118,7 @@ namespace mav_active_3d_planning {
                 if (!findNearbyCandidates(to_rewire[i]->trajectory.back().position_W, &candidate_parents)) {
                     continue;
                 }
+
                 // remove all candidates that are still connected to the root
                 std::vector < TrajectorySegment * > safe_candidates;
                 TrajectorySegment *current;

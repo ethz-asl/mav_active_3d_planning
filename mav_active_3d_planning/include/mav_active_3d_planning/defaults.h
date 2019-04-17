@@ -50,7 +50,7 @@ namespace mav_active_3d_planning {
             // populate the system constraints from factory
             void setupFromParamMap(Module::ParamMap *param_map);
             bool checkParamsValid(std::string *error_message);
-
+            
             // variables
             double v_max;           // m/s, maximum absolute velocity
             double a_max ;          // m/s2, maximum absolute acceleration
