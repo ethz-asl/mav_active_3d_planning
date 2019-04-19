@@ -1,4 +1,4 @@
-expand_batch: 5
+expand_batch: 1
 
 trajectory_generator:
   type: "FeasibleRRTStar"

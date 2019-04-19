@@ -51,12 +51,10 @@ trajectory_evaluator:
     type: "SubsequentBest"
     
   evaluator_updater:
-    type: "SimulatedSensorUpdater"
-    following_updater:
-      type: "UpdateAll"
-      update_gain: false
-      update_cost: true
-      update_value: true
+    type: "UpdateAll"
+    update_gain: true
+    update_cost: true
+    update_value: true
     
 back_tracker:
   type: "RotateReverse"

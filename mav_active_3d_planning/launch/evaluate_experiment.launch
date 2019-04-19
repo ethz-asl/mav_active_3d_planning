@@ -1,6 +1,6 @@
 <launch>
   <!-- Data source Data, -->
-  <arg name="target_directory" default="/home/lukas/Documents/MT/Data" />
+  <arg name="target_directory" default="/home/lukas/Documents/MT/Data/series_nbvp15" />
   <arg name="gt_file_path" default="/home/lukas/Documents/MT/experiment1/gt_surface_pcl.ply"/>
   <arg name="method" default="recent"/>
   

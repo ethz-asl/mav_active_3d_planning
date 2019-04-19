@@ -27,7 +27,7 @@
   
   <!--  Experiment arguments -->  
   <arg name="experiment_config" default="experiment2.yaml"/>
-  <arg name="record_data" default="true"/>
+  <arg name="record_data" default="false"/>
   <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
   <arg name="data_frequency" default="15.0" />
   <arg name="time_limit" default="8.0" />

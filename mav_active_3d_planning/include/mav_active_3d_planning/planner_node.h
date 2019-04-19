@@ -44,7 +44,7 @@ namespace mav_active_3d_planning {
         std::unique_ptr <TrajectoryEvaluator> trajectory_evaluator_;
         std::unique_ptr <BackTracker> back_tracker_;
 
-        // Start the planning loop
+        // Start/Run the planning loop
         void planningLoop();
 
     protected:
@@ -83,6 +83,7 @@ namespace mav_active_3d_planning {
         double p_replan_yaw_threshold_;     // rad
         bool p_verbose_;
         bool p_visualize_;                  // Publish visualization of completed path, current gain, new candidates, ...
+        bool p_publish_traversable_;        // Same param as voxblox. Use for debugging, very detrimental to performance
         bool p_log_performance_;            // Whether to write a performance log file
         int p_max_new_segments_;            // After this count is reached no more segments are expanded (0 to ignore)
         int p_min_new_segments_;            // Until this count is reached the next segment is not executed (0 to ignore)
@@ -91,6 +92,7 @@ namespace mav_active_3d_planning {
         double p_min_new_value_;            // Until this value is found in the tree, expansion continues (0 to ignore)
         int p_expand_batch_;                // run multiple segment expansions before rechecking conditions
         // ideas: take images only on points,
+        std::string logfile_;
 
         // methods
         void initializePlanning();

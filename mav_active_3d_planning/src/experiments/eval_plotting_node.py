@@ -454,6 +454,7 @@ class EvalPlotting:
         y_upTG = np.array(data['UpdateTG'], dtype=float)
         y_upTE = np.array(data['UpdateTE'], dtype=float)
         y_vis = np.array(data['Visualization'], dtype=float)
+        y_ros = np.array(data['RosCallbacks'], dtype=float)
         y_tot = np.array(data['Total'], dtype=float)
 
         y0 = np.divide(y_select, y_tot)
@@ -465,6 +466,7 @@ class EvalPlotting:
         y6 = np.divide(y_upTG, y_tot) + y5
         y7 = np.divide(y_upTE, y_tot) + y6
         y8 = np.divide(y_vis, y_tot) + y7
+        y9 = 1.0 - np.divide(y_ros, y_tot)
 
         sum_tot = np.sum(y_tot)
         s0 = np.sum(y_select)/sum_tot*100
@@ -476,7 +478,8 @@ class EvalPlotting:
         s6 = np.sum(y_upTG)/sum_tot*100
         s7 = np.sum(y_upTE)/sum_tot*100
         s8 = np.sum(y_vis)/sum_tot*100
-        s9 = 100 - s0 - s1 - s2 - s3 - s4 - s5 - s6 - s7 - s8
+        s9 = np.sum(y_ros)/sum_tot*100
+        s10 = 100 - s0 - s1 - s2 - s3 - s4 - s5 - s6 - s7 - s8 - s9
 
         x = np.repeat(x, 2)
         x = np.concatenate((np.array([0]), x[:-1]))
@@ -489,6 +492,7 @@ class EvalPlotting:
         y6 = np.repeat(y6, 2)
         y7 = np.repeat(y7, 2)
         y8 = np.repeat(y8, 2)
+        y9 = np.repeat(y9, 2)
 
         fig = plt.figure()
         axes = [plt.subplot2grid((5, 1), (0, 0), rowspan=3), plt.subplot(5, 1, 4), plt.subplot(5, 1, 5)]
@@ -502,7 +506,8 @@ class EvalPlotting:
         axes[0].fill_between(x, y5, y6, facecolor="#00eebc", alpha=.5)
         axes[0].fill_between(x, y6, y7, facecolor="#d800dd", alpha=.5)
         axes[0].fill_between(x, y7, y8, facecolor="#a3baff", alpha=.5)
-        axes[0].fill_between(x, y8, 1, facecolor="#cccccc", alpha=.5)
+        axes[0].fill_between(x, y8, y9, facecolor="#cccccc", alpha=.5)
+        axes[0].fill_between(x, y9, 1, facecolor="#606060", alpha=.5)
         axes[0].set_xlim(left=0, right=x[-1])
         axes[0].set_ylim(bottom=0, top=1)
         axes[0].set_title("Percentage of CPU Time Spent per Function")
@@ -527,44 +532,42 @@ class EvalPlotting:
         axes[1].legend(["Total", "New"], loc='upper left', fancybox=True)
 
         x = np.array([])
-        cpu_time = np.array(data['Total'], dtype=float)
         ros_time = np.array(data['RosTime'], dtype=float)
-        plan_time = y_select + y_expand + y_gain + y_cost + y_value + y_next + y_upTE + y_upTG
-        cpu_use = np.array([])
-        plan_use = np.array([])
+        cpu_times = [np.array(data['Total'], dtype=float),
+                     y_select + y_expand + y_gain + y_cost + y_value + y_next + y_upTE + y_upTG]  # Total, Planning
+        cpu_use = [np.array([])] * len(cpu_times)
         i = 0
         averaging_threshold = 2.0    # seconds, for smoothing
         t_curr = ros_time[0]
         x_curr = 0
-        cpu_curr = cpu_time[0]
-        plan_curr = plan_time[0]
+        cpu_curr = [time[0] for time in cpu_times]
         while i + 1 < len(ros_time):
             i = i + 1
             if t_curr >= averaging_threshold:
-                cpu_use = np.append(cpu_use, cpu_curr / t_curr)
-                plan_use = np.append(plan_use, plan_curr / t_curr)
+                for j in range(len(cpu_times)):
+                    cpu_use[j] = np.append(cpu_use[j], cpu_curr[j] / t_curr)
                 x_curr = x_curr + t_curr
                 x = np.append(x, x_curr)
                 t_curr = ros_time[i]
-                cpu_curr = cpu_time[i]
-                plan_curr = plan_time[i]
+                for j in range(len(cpu_times)):
+                    cpu_curr[j] = cpu_times[j][i]
             else:
                 t_curr = t_curr + ros_time[i]
-                cpu_curr = cpu_curr + cpu_time[i]
-                plan_curr = plan_curr + plan_time[i]
+                for j in range(len(cpu_times)):
+                    cpu_curr[j] = cpu_curr[j] + cpu_times[j][i]
 
         if unit == "min":
             x = np.true_divide(x, 60)
 
-        axes[2].plot(x, cpu_use, 'k-')
-        axes[2].plot(x, plan_use, linestyle='-', color='#5492E7')
+        axes[2].plot(x, cpu_use[0], 'k-')
+        axes[2].plot(x, cpu_use[1], linestyle='-', color='#5492E7')
         axes[2].plot(np.array([0, x[-1]]), np.array([1, 1]), linestyle='-', color='0.7', alpha=0.8)
         axes[2].set_xlim(left=0, right=x[-1])
         axes[2].set_ylim(bottom=0)
         axes[2].set_ylabel('CPU Usage [cores]')
         axes[2].set_title("Planner Consumed CPU Time per Simulated Time")
         axes[2].set_xlabel('Simulated Time [%s]' % unit)
-        axes[2].legend(["Total", "Planning"], loc='upper left', fancybox=True)
+        axes[2].legend(["Process", "Planning"], loc='upper left', fancybox=True)
 
         fig.set_size_inches(15, 15, forward=True)
         plt.tight_layout()
@@ -574,8 +577,8 @@ class EvalPlotting:
         legend = ["({0:02.1f}%) Select".format(s0), "({0:02.1f}%) Expand".format(s1), "({0:02.1f}%) Gain".format(s2),
                   "({0:02.1f}%) Cost".format(s3), "({0:02.1f}%) Value".format(s4), "({0:02.1f}%) NextBest".format(s5),
                   "({0:02.1f}%) updateGen".format(s6), "({0:02.1f}%) UpdateEval".format(s7),
-                  "({0:02.1f}%) Vis".format(s8), "({0:02.1f}%) Other".format(s9)]
-        axes[0].legend(legend, loc='upper center', bbox_to_anchor=(0.5, -0.04), ncol=5, fancybox=True)
+                  "({0:02.1f}%) Vis".format(s8), "({0:02.1f}%) Other".format(s10), "({0:02.1f}%) ROS".format(s9)]
+        axes[0].legend(legend, loc='upper center', bbox_to_anchor=(0.5, -0.04), ncol=6, fancybox=True)
 
         save_name = os.path.join(target_dir, "graphs", "PerformanceOverview.png")
         plt.savefig(save_name, dpi=300, format='png', bbox_inches='tight')

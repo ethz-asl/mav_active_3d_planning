@@ -34,14 +34,18 @@ namespace mav_active_3d_planning {
 
         // When to start next trajectory, use 0 for not relevant
         nh_private_.param("replan_pos_threshold", p_replan_pos_threshold_, 0.1);
-        nh_private_.param("replan_yaw_threshold", p_replan_yaw_threshold_, 0.2);
+        nh_private_.param("replan_yaw_threshold", p_replan_yaw_threshold_, 0.1);
 
         // Logging and printing
         nh_private_.param("verbose", p_verbose_, true);
         nh_private_.param("verbose_modules", verbose_modules, false);
         nh_private_.param("build_modules_on_init", build_modules_on_init, false);
         nh_private_.param("visualize", p_visualize_, true);
+        nh_private_.param("publish_traversable", p_publish_traversable_, false);    // As in voxblox
         nh_private_.param("log_performance", p_log_performance_, false);
+        if (p_log_performance_) {
+            perf_log_data_ = std::vector<double>(6, 0.0);
+        }
 
         // Sampling constraints
         nh_private_.param("max_new_segments", p_max_new_segments_, 0);  // set 0 for infinite
@@ -95,7 +99,7 @@ namespace mav_active_3d_planning {
         target_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
                 mav_msgs::default_topics::COMMAND_TRAJECTORY, 10);
         trajectory_vis_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("trajectory_visualization", 100);
-        odom_sub_ = nh_.subscribe("odometry", 2, &PlannerNode::odomCallback, this);
+        odom_sub_ = nh_.subscribe("odometry", 1, &PlannerNode::odomCallback, this);
         get_cpu_time_srv_ = nh_private_.advertiseService("get_cpu_time", &PlannerNode::cpuSrvCallback, this);
 
         // Finish
@@ -122,11 +126,12 @@ namespace mav_active_3d_planning {
                 ROS_WARN("No directory for performance log set, performance log turned off.");
                 p_log_performance_ = false;
             } else {
-                perf_log_file_.open(log_dir + "/performance_log.csv");
-                perf_log_data_ = std::vector<double>(5, 0.0); //select, expand, gain, cost, value
+                logfile_ = log_dir + "/performance_log.csv";
+                perf_log_file_.open(logfile_.c_str());
+                perf_log_data_ = std::vector<double>(6, 0.0); //select, expand, gain, cost, value, mainLoop
                 perf_cpu_timer_ = std::clock();
                 perf_log_file_ << "RosTime,NTrajectories,NTrajAfterUpdate,Select,Expand,Gain,Cost,Value,NextBest,"
-                                  "UpdateTG,UpdateTE,Visualization,Total" << std::endl;
+                                  "UpdateTG,UpdateTE,Visualization,RosCallbacks,Total" << std::endl;
             }
         }
 
@@ -143,15 +148,20 @@ namespace mav_active_3d_planning {
     }
 
     void PlannerNode::planningLoop() {
-        // This is the main loop, spinning and loop callbacks are managed explicitely for efficiency
-        if (!ros::ok()) {
-            return;
+        // This is the main loop, spinning is managed explicitely for efficiency
+        std::clock_t timer;
+        while (ros::ok()) {
+            if (running_) {
+                loopIteration();
+            }
+            if (p_log_performance_) {
+                timer = std::clock();
+            }
+            ros::spinOnce();
+            if (p_log_performance_) {
+                perf_log_data_[5] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
+            }
         }
-        if (running_) {
-            loopIteration();
-        }
-        ros::spinOnce();
-        planningLoop();
     }
 
     void PlannerNode::loopIteration() {
@@ -248,7 +258,9 @@ namespace mav_active_3d_planning {
             timer = std::clock();
         }
         if (p_visualize_) {
-            voxblox_server_->publishTraversable();
+            if (p_publish_traversable_) {
+                voxblox_server_->publishTraversable();
+            }
             publishEvalVisualization(*current_segment_);
             publishCompletedTrajectoryVisualization(*current_segment_);
         }
@@ -278,9 +290,9 @@ namespace mav_active_3d_planning {
                 perf_log_file_ << perf_rostime << "," << num_trajectories << "," << info_count_ << "," <<
                                perf_log_data_[0] << "," << perf_log_data_[1] << "," << perf_log_data_[2] << "," <<
                                perf_log_data_[3] << "," << perf_log_data_[4] << "," << perf_next << "," <<
-                               perf_uptg << "," << perf_upte << "," << perf_vis << "," <<
-                               (double) (std::clock() - perf_cpu_timer_) / CLOCKS_PER_SEC << std::endl;
-                perf_log_data_ = std::vector<double>(5, 0.0);
+                               perf_uptg << "," << perf_upte << "," << perf_vis << "," << perf_log_data_[5] << "," <<
+                               (double) (std::clock() - perf_cpu_timer_) / CLOCKS_PER_SEC << "\n";
+                perf_log_data_ = std::vector<double>(6, 0.0);
                 perf_cpu_timer_ = std::clock();
             }
         }

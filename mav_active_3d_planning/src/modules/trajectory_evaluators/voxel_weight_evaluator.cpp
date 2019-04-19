@@ -1,7 +1,5 @@
 #include "mav_active_3d_planning/modules/trajectory_evaluators/voxel_weight_evaluator.h"
 
-#include <algorithm>
-
 namespace mav_active_3d_planning {
     namespace trajectory_evaluators {
 

@@ -26,12 +26,12 @@
   <arg name="odom_noise_model" default="ground_truth"/>
   
   <!--  Planner arguments (tg_uniform, tg_random_linear, tg_rrt, general, nbvp_bircher, te_frontier, te_yaw)-->
-  <arg name="use_separate_configs" default="true"/>
-  <arg name="planner_general_config" default="planners/general.yaml"/>
+  <arg name="use_separate_configs" default="false"/>
+  <arg name="planner_general_config" default="planners/nbvp_bircher.yaml"/>
   <arg name="planner_generator_config" default="planners/modules/tg_rrt.yaml"/>
   <arg name="planner_evaluator_config" default="planners/modules/te_weight.yaml"/>
   <arg name="verbose_planner" default="true"/>
-  <arg name="visualize_planner" default="true"/>
+  <arg name="visualize" default="true"/>
   
   <!--  Experiment arguments -->  
   <arg name="experiment_config" default="experiment1.yaml"/>
@@ -39,7 +39,7 @@
   <arg name="record_visualization" default="true"/>
   <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
   <arg name="data_frequency" default="30.0" />
-  <arg name="time_limit" default="30" />
+  <arg name="time_limit" default="10" />
   
   
   
@@ -175,6 +175,7 @@
       <param name="max_ray_length" value="$(arg ray_length)" />
       <param name="allow_clear" value="true" />
       <param name="verbose" value="$(arg verbose_voxblox)" />
+      <param name="publish_map_incremental" value="true" />
     </node>
     
     <!-- Planner -->
@@ -184,12 +185,13 @@
       <param name="use_tf_transforms" value="false" />
       <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
       <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
-      <param name="update_mesh_every_n_sec" value="0.0" />
+      <param name="update_mesh_every_n_sec" value="0.0" />   
+      <param name="publish_traversable" value="false" />         
     
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
       <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
       <param name="verbose" value="$(arg verbose_planner)" />
-      <param name="visualize" value="$(arg visualize_planner)" />
+      <param name="visualize" value="$(arg visualize)" />
       <param name="log_performance" value="$(arg record_data)" />
     
       <!-- Experiment dependent -->
@@ -210,5 +212,5 @@
  </group>
 
   <!-- RVIZ Visualization -->
-  <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiment_visualization.rviz"/>
+  <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiment_visualization.rviz" if="$(arg visualize)"/>
 </launch>

@@ -88,7 +88,7 @@ namespace mav_active_3d_planning {
         if (!nh.getParam("type", *type)) {
             type_default = " (default)";
         }
-        (*map)["verbose_text"] = "\n************************************************************\nCreating Module '"
+        (*map)["verbose_text"] = "\n******************** New Module ********************\nCreating Module '"
                                  + *type + "'" + type_default + " from namespace '" + args + "' with parameters:";
         (*map)["param_namespace"] = args;   // also log the namespace for other modules as default
         return true;
