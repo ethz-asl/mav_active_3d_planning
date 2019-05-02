@@ -61,7 +61,7 @@ trajectory_evaluator:
       min_impact_factor: 0.05
       ray_angle_x: 0.002454
       ray_angle_y: 0.002681
-      use_frontier_voxels: true
+      use_frontier_voxels: false
        
       sensor_model:
         mounting_translation_x: -0.00607641 
@@ -73,12 +73,21 @@ trajectory_evaluator:
         mounting_rotation_z: 0.00972055
         mounting_rotation_w: 0.99771
         
-        type: "IterativeRayCaster"
+#        type: "IterativeRayCaster"
+#        sampling_time: 0.0
+#        ray_length: 5.0
+#        focal_length: 320.0
+#        resolution_x: 640 # h_fov 90 deg
+#        resolution_y: 172 # Results in v_fov 30
+#        downsampling_factor: 3.0
+
+        type: "IterativeRayCasterLidar"
         sampling_time: 0.0
         ray_length: 5.0
-        focal_length: 320.0
-        resolution_x: 640 # h_fov 90 deg
-        resolution_y: 172 # Results in v_fov 30
+        field_of_view_x: 360.0
+        field_of_view_y: 30.0
+        resolution_x: 1024
+        resolution_y: 128
         downsampling_factor: 3.0
         
       cost_computer:
@@ -95,13 +104,13 @@ trajectory_evaluator:
         type: "YawPlanningUpdater"
         select_by_value: false
         dynamic_trajectories: true
+#        following_updater:
+#          type: "SimulatedSensorUpdater"
         following_updater:
-          type: "SimulatedSensorUpdater"
-          following_updater:
-            type: "UpdateAll"
-            update_gain: false
-            update_cost: false
-            update_value: true
+          type: "UpdateAll"
+          update_gain: true
+          update_cost: false
+          update_value: true
 
 back_tracker:
   type: "RotateReverse"

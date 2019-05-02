@@ -26,6 +26,7 @@ cs_add_library(${PROJECT_NAME}
         src/modules/trajectory_evaluators/value_computers/default_value_computers.cpp
         src/modules/trajectory_evaluators/sensor_models/sensor_model.cpp
         src/modules/trajectory_evaluators/sensor_models/camera_model.cpp
+        src/modules/trajectory_evaluators/sensor_models/lidar_model.cpp
         src/modules/trajectory_generators/generator_updaters/default_generator_updaters.cpp
         src/modules/trajectory_generators/segment_selectors/default_segment_selectors.cpp
         # Generators
@@ -45,6 +46,7 @@ cs_add_library(${PROJECT_NAME}
         # Other Modules
         src/modules/trajectory_evaluators/sensor_models/simple_ray_caster.cpp
         src/modules/trajectory_evaluators/sensor_models/iterative_ray_caster.cpp
+        src/modules/trajectory_evaluators/sensor_models/iterative_ray_caster_lidar.cpp
         src/modules/trajectory_evaluators/evaluator_updaters/simulated_sensor_updaters.cpp
         src/modules/trajectory_evaluators/evaluator_updaters/yaw_planning_updaters.cpp
         )
