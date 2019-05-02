@@ -27,9 +27,9 @@ namespace mav_active_3d_planning {
             // factory access
             RRTStar() {}
 
-            void setupFromParamMap(Module::ParamMap *param_map);
+            virtual void setupFromParamMap(Module::ParamMap *param_map);
 
-            bool checkParamsValid(std::string *error_message);
+            virtual bool checkParamsValid(std::string *error_message);
 
             static ModuleFactory::Registration<RRTStar> registration;
 

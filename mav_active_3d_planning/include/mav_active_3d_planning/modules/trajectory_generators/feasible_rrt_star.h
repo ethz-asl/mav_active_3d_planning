@@ -3,33 +3,15 @@
 
 #include "mav_active_3d_planning/modules/trajectory_generators/rrt_star.h"
 
+#include <mav_trajectory_generation/polynomial_optimization_nonlinear.h>
+#include <mav_trajectory_generation_ros/feasibility_analytic.h>
+
 
 namespace mav_active_3d_planning {
     namespace trajectory_generators {
 
-        // Implementations of the RRT and RRTStar classese, where generated segments obey the system constraints. The
+        // Implementations of the RRTStar classes, where generated segments obey the system constraints. The
         // velocity at the end of segments is set to 0.0.
-        class FeasibleRRT : public RRT {
-        protected:
-            friend ModuleFactory;
-            friend class FeasibleRRTStar;
-
-            // factory access
-            FeasibleRRT() {}
-
-            static ModuleFactory::Registration <FeasibleRRT> registration;
-
-            // Overwrite virtual method to create constrained trajectories
-            bool connectPoses(const mav_msgs::EigenTrajectoryPoint &start,
-                              const mav_msgs::EigenTrajectoryPoint &goal,
-                              mav_msgs::EigenTrajectoryPointVector *result);
-
-            // core trajectory generation implementation for both classes
-            static bool connectPosesFeasible(const mav_msgs::EigenTrajectoryPoint &start,
-                                             const mav_msgs::EigenTrajectoryPoint &goal,
-                                             mav_msgs::EigenTrajectoryPointVector *result, double v_max, double a_max,
-                                             double yaw_rate_max, double sampling_rate);
-        };
 
         class FeasibleRRTStar : public RRTStar {
         protected:
@@ -40,11 +22,30 @@ namespace mav_active_3d_planning {
 
             static ModuleFactory::Registration <FeasibleRRTStar> registration;
 
+            virtual void setupFromParamMap(Module::ParamMap *param_map);
+
             // Overwrite virtual method to create constrained trajectories
             bool connectPoses(const mav_msgs::EigenTrajectoryPoint &start,
                               const mav_msgs::EigenTrajectoryPoint &goal,
                               mav_msgs::EigenTrajectoryPointVector *result);
 
+            // optimization settings
+            mav_trajectory_generation::FeasibilityAnalytic feasibility_check_;
+            mav_trajectory_generation::NonlinearOptimizationParameters parameters_;
+
+            // methods
+            void optimizeVertices(mav_trajectory_generation::Vertex::Vector *vertices,
+                                  mav_trajectory_generation::Segment::Vector *segments,
+                                  mav_trajectory_generation::Trajectory *trajectory);
+
+            bool checkInputFeasible(const mav_trajectory_generation::Segment::Vector &segments);
+
+            bool checkTrajectoryCollision(const mav_msgs::EigenTrajectoryPoint::Vector &states);
+
+            bool connectPosesFeasible(const mav_msgs::EigenTrajectoryPoint &start,
+                                      const mav_msgs::EigenTrajectoryPoint &goal,
+                                      mav_msgs::EigenTrajectoryPointVector *result, double v_max, double a_max,
+                                      double yaw_rate_max, double sampling_rate);
         };
 
     } // namespace trajectory_generators
