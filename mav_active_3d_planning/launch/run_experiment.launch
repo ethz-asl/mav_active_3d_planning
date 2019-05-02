@@ -196,8 +196,8 @@
     
       <!-- Experiment dependent -->
       <param name="trajectory_evaluator/sensor_model/ray_length" value="$(arg ray_length)" />
-      <param name="trajectory_evaluator/bounding_volume_args" value="/target_bounding_volume" />
-      <param name="trajectory_generator/bounding_volume_args" value="/map_bounding_volume" />
+<!--      <param name="trajectory_evaluator/bounding_volume_args" value="/target_bounding_volume" />-->
+<!--      <param name="trajectory_generator/bounding_volume_args" value="/map_bounding_volume" />-->
       <param name="trajectory_generator/system_constraints_args" value="/planner/system_constraints" />
       
       <!-- General Config -->    
