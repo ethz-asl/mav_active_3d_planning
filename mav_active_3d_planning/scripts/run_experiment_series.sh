@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # *** Args (need to be set) ***
-n_experiments=1
-target_dir="/home/lukas/Documents/MT/Data/series_nbvp15"		# Can reuse same dir to add experiments
+n_experiments=5
+target_dir="/home/lukas/Documents/MT/Data/series_semilocal"		# Can reuse same dir to add experiments
 clear_voxblox_maps=true		# Irreversibly remove maps after evaluation to save disk space
 visualize=true		# Publish and record visualization (save diskspace and computation time)
 experiment=1		# For auto configs of exp1/2 (city/windmill)

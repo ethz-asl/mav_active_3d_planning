@@ -21,10 +21,17 @@ namespace mav_active_3d_planning {
             setParam<double>(param_map, "crop_min_length", &p_crop_min_length_, 0.2);
             setParam<double>(param_map, "sampling_rate", &p_sampling_rate_, 20.0);
             setParam<double>(param_map, "max_extension_range", &p_max_extension_range_, 1.0);
-            setParam<bool>(param_map, "use_spheric_sampling", &p_use_spheric_sampling_, false);
+            setParam<std::string>(param_map, "sampling_mode", &p_sampling_mode_, std::string("uniform"));
             setParam<bool>(param_map, "sample_yaw", &p_sample_yaw_, true);
             setParam<int>(param_map, "maximum_tries", &p_maximum_tries_, 1000);
+            setParam<int>(param_map, "semilocal_sampling_count", &p_semilocal_count_, 10);
+            setParam<double>(param_map, "semilocal_sampling_radius_max", &p_semilocal_radius_max_, 1.0);
+            setParam<double>(param_map, "semilocal_sampling_radius_min", &p_semilocal_radius_min_, 0.2);
             previous_root_ = nullptr;
+
+            std::string p_sampling_mode_; // uniform, spheric, semilocal
+            double p_semilocal_radius_;     // Only used for semilocal sampling, radius where points are counted
+            int p_semilocal_count_;
 
             // setup parent
             TrajectoryGenerator::setupFromParamMap(param_map);
@@ -35,8 +42,24 @@ namespace mav_active_3d_planning {
                 *error_message = "sampling_rate expected > 0";
                 return false;
             }
-            if (p_crop_margin_ <= 0.0) {
+            if (p_crop_segments_ && p_crop_margin_ <= 0.0) {
                 *error_message = "crop_margin expected > 0";
+                return false;
+            }
+            if (p_sampling_mode_ != "uniform" && p_sampling_mode_ != "spheric" && p_sampling_mode_ != "semilocal") {
+                *error_message = "unknown sampling mode '" + p_sampling_mode_ + "'";
+                return false;
+            }
+            if (p_sampling_mode_ == "semilocal" && p_semilocal_count_ < 1) {
+                *error_message = "semilocal_sampling_count expected > 0";
+                return false;
+            }
+            if (p_sampling_mode_ == "semilocal" && p_semilocal_radius_max_ <= 0.0) {
+                *error_message = "semilocal_sampling_radius_max expected > 0";
+                return false;
+            }
+            if (p_sampling_mode_ == "semilocal" && p_semilocal_radius_max_ <p_semilocal_radius_min_) {
+                *error_message = "semilocal_sampling_radius_max expected > semilocal_sampling_radius_min";
                 return false;
             }
             return TrajectoryGenerator::checkParamsValid(error_message);
@@ -130,16 +153,7 @@ namespace mav_active_3d_planning {
         }
 
         bool RRT::sampleGoal(Eigen::Vector3d *goal_pos) {
-            if (p_use_spheric_sampling_) {
-                // Bircher way (also assumes box atm, for unbiased sampling)
-                double radius = std::sqrt(std::pow(bounding_volume_->x_max - bounding_volume_->x_min, 2.0) +
-                                          std::pow(bounding_volume_->y_max - bounding_volume_->y_min, 2.0) +
-                                          std::pow(bounding_volume_->z_max - bounding_volume_->z_min, 2.0));
-                for (int i = 0; i < 3; i++) {
-                    (*goal_pos)[i] += 2.0 * radius * (((double) rand()) / ((double) RAND_MAX) - 0.5);
-                }
-                return true;
-            } else {
+            if (p_sampling_mode_ == "uniform") {
                 // sample from bounding volume (assumes box atm)
                 (*goal_pos)[0] = bounding_volume_->x_min +
                                  (double) rand() / RAND_MAX * (bounding_volume_->x_max - bounding_volume_->x_min);
@@ -148,11 +162,52 @@ namespace mav_active_3d_planning {
                 (*goal_pos)[2] = bounding_volume_->z_min +
                                  (double) rand() / RAND_MAX * (bounding_volume_->z_max - bounding_volume_->z_min);
                 return true;
+
+            } else if (p_sampling_mode_ == "spheric") {
+                // Bircher way (for unbiased sampling, also assumes box atm)
+                double radius = std::sqrt(std::pow(bounding_volume_->x_max - bounding_volume_->x_min, 2.0) +
+                                          std::pow(bounding_volume_->y_max - bounding_volume_->y_min, 2.0) +
+                                          std::pow(bounding_volume_->z_max - bounding_volume_->z_min, 2.0));
+                for (int i = 0; i < 3; i++) {
+                    (*goal_pos)[i] += 2.0 * radius * (((double) rand()) / ((double) RAND_MAX) - 0.5);
+                }
+                return true;
+            } else if (p_sampling_mode_ == "semilocal") {
+                // Check whether the minimum number of local points is achieved
+                double query_pt[3] = {goal_pos->x(), goal_pos->y(), goal_pos->z()};
+                std::size_t ret_index[p_semilocal_count_];
+                double out_dist[p_semilocal_count_];
+                nanoflann::KNNResultSet<double> resultSet(p_semilocal_count_);
+                resultSet.init(ret_index, out_dist);
+                kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10));
+
+                if (resultSet.size() == p_semilocal_count_) {
+                    if (out_dist[p_semilocal_count_ - 1] <= p_semilocal_radius_max_ * p_semilocal_radius_max_) {
+                        // Enough local points, sample anywhere from area
+                        (*goal_pos)[0] = bounding_volume_->x_min +
+                                         (double) rand() / RAND_MAX *
+                                         (bounding_volume_->x_max - bounding_volume_->x_min);
+                        (*goal_pos)[1] = bounding_volume_->y_min +
+                                         (double) rand() / RAND_MAX *
+                                         (bounding_volume_->y_max - bounding_volume_->y_min);
+                        (*goal_pos)[2] = bounding_volume_->z_min +
+                                         (double) rand() / RAND_MAX *
+                                         (bounding_volume_->z_max - bounding_volume_->z_min);
+                        return true;
+                    }
+                }
+                // Not enough local points found, sample from local sphere
+                double theta = 2.0 * M_PI * (double) rand() / (double) RAND_MAX;
+                double phi = acos(1.0 - 2.0 * (double) rand() / (double) RAND_MAX);
+                double rho = p_semilocal_radius_min_ + ((double) rand() / (double) RAND_MAX) *
+                                                       (p_semilocal_radius_max_ - p_semilocal_radius_min_);
+                *goal_pos += rho * Eigen::Vector3d(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi));
+                return true;
             }
         }
 
         bool RRT::connectPoses(const mav_msgs::EigenTrajectoryPoint &start, const mav_msgs::EigenTrajectoryPoint &goal,
-                                mav_msgs::EigenTrajectoryPointVector *result) {
+                               mav_msgs::EigenTrajectoryPointVector *result) {
             // try creating a linear trajectory and check for collision
             Eigen::Vector3d start_pos = start.position_W;
             Eigen::Vector3d direction = goal.position_W - start_pos;

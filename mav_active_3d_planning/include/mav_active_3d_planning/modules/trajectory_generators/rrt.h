@@ -58,7 +58,10 @@ namespace mav_active_3d_planning {
             double p_crop_min_length_;      // Cropped segments below this length are discarded
             double p_sampling_rate_;        // Hz
             double p_max_extension_range_;  // m (set 0.0 to ignore)
-            bool p_use_spheric_sampling_;   // True to use bircher way of sampling, false just sample map bounding box
+            std::string p_sampling_mode_  ; // uniform, spheric, semilocal
+            double p_semilocal_radius_max_; // Only used for semilocal sampling, radius where points are counted
+            double p_semilocal_radius_min_; // Only used for semilocal sampling, min distance of new points
+            int p_semilocal_count_;         // Only used for semilocal sampling, min number of points in radius
             bool p_sample_yaw_;             // True: random yaw, false: face direction of travel
             int p_maximum_tries_;           // sampling tries, 0 for inf
 

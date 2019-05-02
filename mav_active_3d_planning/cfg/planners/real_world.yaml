@@ -24,10 +24,14 @@ trajectory_generator:
   crop_margin: 0.5
   crop_min_length: 0.2
   max_extension_range: 2.0
-  use_spheric_sampling: true
   maximum_tries: 1000
   sampling_rate: 20.0
   sample_yaw: true
+  
+  sampling_mode: "spheric"
+  semilocal_sampling_count: 10
+  semilocal_sampling_radius_max: 1.5
+  semilocal_sampling_radius_min: 0.3
   
   rewire_root: true
   rewire_intermediate: true
@@ -73,8 +77,8 @@ trajectory_evaluator:
         sampling_time: 0.0
         ray_length: 5.0
         focal_length: 320.0
-        resolution_x: 640
-        resolution_y: 480
+        resolution_x: 640 # h_fov 90 deg
+        resolution_y: 172 # Results in v_fov 30
         downsampling_factor: 3.0
         
       cost_computer:

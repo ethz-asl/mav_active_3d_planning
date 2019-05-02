@@ -135,6 +135,7 @@
       <param name="ns_mav" value="/$(arg mav_name)" />
       <param name="ns_gazebo" value="/gazebo" />
       <param name="monitor" value="true" />
+      <param name="initial_position" value="[0, 0, 2]" />
       <param name="horizon" value="20" />
       <remap from="ue_raw_in" to="unreal_ros_client/ue_sensor_raw" />
       <remap from="ue_out_in" to="unreal_sensor_model/ue_sensor_out" />
