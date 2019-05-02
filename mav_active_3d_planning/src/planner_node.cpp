@@ -107,10 +107,6 @@ namespace mav_active_3d_planning {
     }
 
     void PlannerNode::initializePlanning() {
-        // Initialize and start planning (Currently assumes MAV starts at {0,0,0} with 0 yaw!)
-        target_position_ = Eigen::Vector3d(0, 0, 0);
-        target_yaw_ = 0.0;
-
         // Setup initial trajectory Segment
         current_segment_ = std::unique_ptr<TrajectorySegment>(new TrajectorySegment());
         mav_msgs::EigenTrajectoryPoint trajectory_point;
@@ -144,7 +140,7 @@ namespace mav_active_3d_planning {
         vis_num_previous_evaluations_ = 0;
         vis_num_previous_trajectories_ = 0;
         min_new_value_reached_ = p_min_new_value_ == 0.0;
-        target_reached_ = false;
+        target_reached_ = true;
     }
 
     void PlannerNode::planningLoop() {
@@ -361,16 +357,24 @@ namespace mav_active_3d_planning {
     }
 
     void PlannerNode::odomCallback(const nav_msgs::Odometry &msg) {
-        // Check whether the target position was reached
-        Eigen::Vector3d position(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
-        double yaw = tf::getYaw(msg.pose.pose.orientation);
+        if (running_) {
+            // Check whether the target position was reached
+            Eigen::Vector3d position(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
+            double yaw = tf::getYaw(msg.pose.pose.orientation);
 
-        // check goal pos reached (if tol is set)
-        if (p_replan_pos_threshold_ <= 0 || (target_position_ - position).norm() < p_replan_pos_threshold_) {
-            // check goal yaw reached (if tol is set)
-            if (p_replan_yaw_threshold_ <= 0 || defaults::angleDifference(target_yaw_, yaw) < p_replan_yaw_threshold_) {
-                target_reached_ = true;
+            // check goal pos reached (if tol is set)
+            if (p_replan_pos_threshold_ <= 0 || (target_position_ - position).norm() < p_replan_pos_threshold_) {
+                // check goal yaw reached (if tol is set)
+                if (p_replan_yaw_threshold_ <= 0 ||
+                    defaults::angleDifference(target_yaw_, yaw) < p_replan_yaw_threshold_) {
+                    target_reached_ = true;
+                }
             }
+        } else {
+            // Store the current position and yaw as target for the next time planning is started
+            target_position_ =
+                    Eigen::Vector3d(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
+            target_yaw_ = tf::getYaw(msg.pose.pose.orientation);
         }
     }
 

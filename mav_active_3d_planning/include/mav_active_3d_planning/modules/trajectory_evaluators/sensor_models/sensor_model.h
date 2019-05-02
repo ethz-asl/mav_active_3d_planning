@@ -40,6 +40,10 @@ namespace mav_active_3d_planning {
         voxblox::FloatingPoint c_voxel_size_;
         voxblox::FloatingPoint c_block_size_;
 
+        // mounting transform from body (pose) to sensor , in body frame
+        Eigen::Vector3d mounting_translation_;  // x,y,z [m]
+        Eigen::Quaterniond mounting_rotation_;  // x,y,z,w quaternion
+
         // changes the input point to the center of the corresponding voxel
         bool getVoxelCenter(Eigen::Vector3d *point);
     };

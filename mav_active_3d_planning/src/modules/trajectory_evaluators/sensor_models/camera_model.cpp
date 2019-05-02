@@ -16,14 +16,19 @@ namespace mav_active_3d_planning {
 
             // Get all visible voxels
             for (int i = 0; i < indices.size(); ++i) {
+                // Get camera pose / apply mounting transform
+                Eigen::Vector3d position = traj_in.trajectory[indices[i]].position_W;
+                Eigen::Quaterniond orientation = traj_in.trajectory[indices[i]].orientation_W_B;
+                position = position + orientation * mounting_translation_;
+                orientation = orientation * mounting_rotation_;
+
+                // Get visible voxels
                 if (!p_test_) {
-                    getVisibleVoxels(result, traj_in.trajectory[indices[i]].position_W,
-                                     traj_in.trajectory[indices[i]].orientation_W_B);
+                    getVisibleVoxels(result, position, orientation);
                 } else {
                     // Time the performance of raycasters
                     auto start_time = std::chrono::high_resolution_clock::now();
-                    getVisibleVoxels(result, traj_in.trajectory[indices[i]].position_W,
-                                     traj_in.trajectory[indices[i]].orientation_W_B);
+                    getVisibleVoxels(result, position, orientation);
                     auto end_time = std::chrono::high_resolution_clock::now();
                     time_count_.push_back((double) ((end_time - start_time) / std::chrono::milliseconds(1)));
                     if (time_count_.size() % 20 == 0) {
@@ -74,8 +79,11 @@ namespace mav_active_3d_planning {
             sampleViewpoints(&indices, traj_in);
 
             for (int i = 0; i < indices.size(); ++i) {
-                visualizeSingleView(msg, traj_in.trajectory[indices[i]].position_W,
-                                    traj_in.trajectory[indices[i]].orientation_W_B);
+                Eigen::Vector3d position = traj_in.trajectory[indices[i]].position_W;
+                Eigen::Quaterniond orientation = traj_in.trajectory[indices[i]].orientation_W_B;
+                position = position + orientation * mounting_translation_;
+                orientation = orientation * mounting_rotation_;
+                visualizeSingleView(msg, position, orientation);
             }
         }
 

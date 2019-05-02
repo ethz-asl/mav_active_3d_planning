@@ -10,6 +10,18 @@ namespace mav_active_3d_planning {
             // Cache constants from voxblox
             c_voxel_size_ = voxblox_ptr_->getEsdfMapPtr()->voxel_size();
             c_block_size_ = voxblox_ptr_->getEsdfMapPtr()->block_size();
+
+            // setup mounting transform
+            double tx, ty, tz, rx, ry, rz, rw;
+            setParam<double>(param_map, "mounting_translation_x", &tx, 0.0);
+            setParam<double>(param_map, "mounting_translation_y", &ty, 0.0);
+            setParam<double>(param_map, "mounting_translation_z", &tz, 0.0);
+            setParam<double>(param_map, "mounting_rotation_x", &rx, 0.0);
+            setParam<double>(param_map, "mounting_rotation_y", &ry, 0.0);
+            setParam<double>(param_map, "mounting_rotation_z", &rz, 0.0);
+            setParam<double>(param_map, "mounting_rotation_w", &rw, 1.0);
+            mounting_translation_ = Eigen::Vector3d(tx, ty, tz);
+            mounting_rotation_ = Eigen::Quaterniond(rw, rx, ry, rz).normalized();
         }
 
         bool SensorModel::getVoxelCenter(Eigen::Vector3d *point) {
