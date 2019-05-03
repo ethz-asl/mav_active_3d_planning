@@ -47,6 +47,10 @@ namespace mav_active_3d_planning {
         // Start/Run the planning loop
         void planningLoop();
 
+        // Accessors
+        Eigen::Vector3d getCurrentPosition() const { return current_position_; }
+        Eigen::Quaterniond getCurrentOrientation() const { return current_orientation_; }
+
     protected:
         // ros
         ros::NodeHandle nh_;
@@ -62,6 +66,8 @@ namespace mav_active_3d_planning {
         bool running_;                      // whether to run the main loop
         Eigen::Vector3d target_position_;   // current movement goal
         double target_yaw_;
+        Eigen::Vector3d current_position_;  // Current pose of the mav
+        Eigen::Quaterniond current_orientation_;
         bool target_reached_;               // whether the goal point was reached, update based on odom input
         int vis_num_previous_trajectories_; // Counter for visualization function
         int vis_num_previous_evaluations_;

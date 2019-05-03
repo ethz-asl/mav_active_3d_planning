@@ -6,6 +6,7 @@ namespace mav_active_3d_planning {
     void TrajectoryGenerator::setupFromParamMap(Module::ParamMap *param_map) {
         setParam<bool>(param_map, "collision_optimistic", &p_collision_optimistic_, false);
         setParam<double>(param_map, "collision_radius", &p_collision_radius_, 0.35);
+        setParam<double>(param_map, "clearing_radius", &p_clearing_radius_, 0.0);
         std::string ns = (*param_map)["param_namespace"];
         setParam<std::string>(param_map, "segment_selector_args", &p_selector_args_, ns + "/segment_selector");
         setParam<std::string>(param_map, "generator_updater_args", &p_updater_args_, ns + "/generator_updater");
@@ -17,8 +18,8 @@ namespace mav_active_3d_planning {
         system_constraints_ = ModuleFactory::Instance()->createModule<defaults::SystemConstraints>(temp_args,
                                                                                                    verbose_modules_);
         // Get the voxblox server
-        voxblox_ptr_.reset(dynamic_cast<PlannerNode *>(ModuleFactory::Instance()->readLinkableModule(
-                "PlannerNode"))->voxblox_server_.get());
+        planner_node_ = dynamic_cast<PlannerNode *>(ModuleFactory::Instance()->readLinkableModule("PlannerNode"));
+        voxblox_ptr_.reset(planner_node_->voxblox_server_.get());
     }
 
     bool TrajectoryGenerator::checkTraversable(const Eigen::Vector3d &position) {
@@ -27,7 +28,13 @@ namespace mav_active_3d_planning {
         }
         double distance = 0.0;
         if (voxblox_ptr_->getEsdfMapPtr()->getDistanceAtPosition(position, &distance)) {
+            // This means the voxel is observed
             return (distance > p_collision_radius_);
+        }
+        if (clearing_radius_ > 0.0){
+            if ((planner_node_->getCurrentPosition()-position).norm() < clearing_radius_){
+                return true;
+            }
         }
         return p_collision_optimistic_;
     }

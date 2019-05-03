@@ -24,8 +24,13 @@ trajectory_generator:
         x_max: 2.25
         y_min: -2.6
         y_max: 1
-        z_min: 0.3
+        z_min: -0.3
         z_max: 2.75
+        
+  system_constraints:
+    v_max: 0.5
+    a_max: 0.5
+    yaw_rate_max: 0.7
   
   type: "FeasibleRRTStar"
   crop_segments: true
@@ -77,7 +82,7 @@ trajectory_evaluator:
       min_impact_factor: 0.05
       ray_angle_x: 0.002454
       ray_angle_y: 0.002681
-      use_frontier_voxels: true
+      use_frontier_voxels: false
        
       sensor_model:
         mounting_translation_x: -0.00607641 
@@ -89,22 +94,22 @@ trajectory_evaluator:
         mounting_rotation_z: 0.00972055
         mounting_rotation_w: 0.99771
         
-        type: "IterativeRayCaster"
-        sampling_time: 0.0
-        ray_length: 5.0
-        focal_length: 320.0
-        resolution_x: 640 # h_fov 90 deg
-        resolution_y: 172 # Results in v_fov 30
-        downsampling_factor: 3.0
-
-#        type: "IterativeRayCasterLidar"
+#        type: "IterativeRayCaster"
 #        sampling_time: 0.0
 #        ray_length: 5.0
-#        field_of_view_x: 360.0
-#        field_of_view_y: 30.0
-#        resolution_x: 1024
-#        resolution_y: 128
+#        focal_length: 320.0
+#        resolution_x: 640 # h_fov 90 deg
+#        resolution_y: 172 # Results in v_fov 30
 #        downsampling_factor: 3.0
+
+        type: "IterativeRayCasterLidar"
+        sampling_time: 0.0
+        ray_length: 5.0
+        field_of_view_x: 360.0
+        field_of_view_y: 30.0
+        resolution_x: 1024
+        resolution_y: 128
+        downsampling_factor: 3.0
         
       cost_computer:
         type: "SegmentTime"

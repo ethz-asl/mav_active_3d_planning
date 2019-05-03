@@ -108,6 +108,8 @@ namespace mav_active_3d_planning {
 
     void PlannerNode::initializePlanning() {
         // Setup initial trajectory Segment
+        target_position_ = current_position_;
+        target_yaw_ = current_orientation_.toRotationMatrix().eulerAngles(2, 1, 0)[0];
         current_segment_ = std::unique_ptr<TrajectorySegment>(new TrajectorySegment());
         mav_msgs::EigenTrajectoryPoint trajectory_point;
         trajectory_point.position_W = target_position_;
@@ -357,9 +359,11 @@ namespace mav_active_3d_planning {
     }
 
     void PlannerNode::odomCallback(const nav_msgs::Odometry &msg) {
-        if (running_) {
+        // Track the current pose
+        current_position_ = Eigen::Vector3d(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
+        current_orientation_ = Eigen::Quaterniond(msg.pose.pose.orientation.w, msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z);
+        if (running_ && !target_reached_) {
             // Check whether the target position was reached
-            Eigen::Vector3d position(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
             double yaw = tf::getYaw(msg.pose.pose.orientation);
 
             // check goal pos reached (if tol is set)
@@ -370,11 +374,6 @@ namespace mav_active_3d_planning {
                     target_reached_ = true;
                 }
             }
-        } else {
-            // Store the current position and yaw as target for the next time planning is started
-            target_position_ =
-                    Eigen::Vector3d(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
-            target_yaw_ = tf::getYaw(msg.pose.pose.orientation);
         }
     }
 

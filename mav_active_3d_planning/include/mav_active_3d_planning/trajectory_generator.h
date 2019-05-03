@@ -16,6 +16,7 @@ namespace mav_active_3d_planning {
     // Forward declaration
     class SegmentSelector;
     class GeneratorUpdater;
+    class PlannerNode;
 
     // Base class for trajectory generation to provide uniform interface with other classes
     class TrajectoryGenerator : public Module {
@@ -41,6 +42,7 @@ namespace mav_active_3d_planning {
 
         // Pointer to the esdf server for collision checking (and others)
         std::shared_ptr<voxblox::EsdfServer> voxblox_ptr_;
+        PlannerNode* planner_node_;     // Parent ref for position checking
 
         // bounding box
         std::unique_ptr<defaults::BoundingVolume> bounding_volume_;
@@ -53,6 +55,7 @@ namespace mav_active_3d_planning {
         // Parameters
         bool p_collision_optimistic_;
         double p_collision_radius_;
+        double p_clearing_radius_;          // Unknown space within clearing radius is considered traversable
         std::string p_selector_args_;
         std::string p_updater_args_;
 
