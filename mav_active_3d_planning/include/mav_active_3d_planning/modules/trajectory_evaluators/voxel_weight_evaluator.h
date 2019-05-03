@@ -34,8 +34,8 @@ namespace mav_active_3d_planning {
             // params
             double p_min_impact_factor_;    // Minimum expected change, the gain is set at 0 here.
             double p_new_voxel_weight_;     // Multiply unobserved voxels by this weight to balance quality/exploration
-            bool p_use_frontier_voxels_;    // False: count all unobserved voxels, true: use frontier
-            double p_ray_angle_x_;            // Angle [rad] that is spanned between 2 pixels in x direction, i.e. fov/res
+            double p_frontier_voxel_weight_;  // Multiply frontier voxels by this weight
+            double p_ray_angle_x_;            // Angle [rad] spanned between 2 pixels in x direction, i.e. fov/res
             double p_ray_angle_y_;
 
             // constants

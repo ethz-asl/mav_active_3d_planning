@@ -31,8 +31,8 @@ namespace mav_active_3d_planning {
             // This means the voxel is observed
             return (distance > p_collision_radius_);
         }
-        if (clearing_radius_ > 0.0){
-            if ((planner_node_->getCurrentPosition()-position).norm() < clearing_radius_){
+        if (p_clearing_radius_ > 0.0){
+            if ((planner_node_->getCurrentPosition()-position).norm() < p_clearing_radius_){
                 return true;
             }
         }

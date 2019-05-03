@@ -7,9 +7,9 @@ namespace mav_active_3d_planning {
 
         void VoxelWeightEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
             FrontierEvaluator::setupFromParamMap(param_map);
-            setParam<bool>(param_map, "use_frontier_voxels", &p_use_frontier_voxels_, false);
+            setParam<double>(param_map, "frontier_voxel_weight", &p_frontier_voxel_weight_, 1.0);
             setParam<double>(param_map, "min_impact_factor", &p_min_impact_factor_, 0.0);
-            setParam<double>(param_map, "new_voxel_weight", &p_new_voxel_weight_, 1.0);
+            setParam<double>(param_map, "new_voxel_weight", &p_new_voxel_weight_, 0.01);
             setParam<double>(param_map, "ray_angle_x", &p_ray_angle_x_, 0.0025);
             setParam<double>(param_map, "ray_angle_y", &p_ray_angle_y_, 0.0025);
 
@@ -69,9 +69,9 @@ namespace mav_active_3d_planning {
                 }
             }
             // Unobserved voxels
-            if (p_use_frontier_voxels_) {
-                if (!isFrontierVoxel(voxel)) {
-                    return 0.0;
+            if (p_frontier_voxel_weight_ > 0.0) {
+                if (isFrontierVoxel(voxel)) {
+                    return p_frontier_voxel_weight_;
                 }
             }
             return p_new_voxel_weight_;
@@ -106,16 +106,22 @@ namespace mav_active_3d_planning {
                     point.z = (double) info->visible_voxels[i].z();
                     new_msg.points.push_back(point);
                     std_msgs::ColorRGBA color;
-                    color.a = 0.5;
-                    if (value == p_new_voxel_weight_) {
+                    if (value == p_frontier_voxel_weight_) {
                         color.r = 0.6;
                         color.g = 0.4;
                         color.b = 1.0;
+                        color.a = 0.5;
+                    } else if (value == p_new_voxel_weight_) {
+                        color.r = 0.0;
+                        color.g = 0.75;
+                        color.b = 1.0;
+                        color.a = 0.1;
                     } else {
                         double frac = (value - p_min_impact_factor_) / (1.0 - p_min_impact_factor_);
                         color.r = std::min((0.5 - frac) * 2.0 + 1.0, 1.0);
                         color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
                         color.b = 0.0;
+                        color.a = 0.5;
                     }
                     new_msg.colors.push_back(color);
                 }

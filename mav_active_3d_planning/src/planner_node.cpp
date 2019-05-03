@@ -109,7 +109,8 @@ namespace mav_active_3d_planning {
     void PlannerNode::initializePlanning() {
         // Setup initial trajectory Segment
         target_position_ = current_position_;
-        target_yaw_ = current_orientation_.toRotationMatrix().eulerAngles(2, 1, 0)[0];
+        target_yaw_ = tf::getYaw(tf::Quaternion(current_orientation_.x(), current_orientation_.y(), current_orientation_.z(),
+                current_orientation_.w()));   // tf yaw gets better results than eigen-euler conversion here
         current_segment_ = std::unique_ptr<TrajectorySegment>(new TrajectorySegment());
         mav_msgs::EigenTrajectoryPoint trajectory_point;
         trajectory_point.position_W = target_position_;
@@ -360,15 +361,16 @@ namespace mav_active_3d_planning {
 
     void PlannerNode::odomCallback(const nav_msgs::Odometry &msg) {
         // Track the current pose
-        current_position_ = Eigen::Vector3d(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
-        current_orientation_ = Eigen::Quaterniond(msg.pose.pose.orientation.w, msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z);
+        current_position_ = Eigen::Vector3d(msg.pose.pose.position.x, msg.pose.pose.position.y,
+                                            msg.pose.pose.position.z);
+        current_orientation_ = Eigen::Quaterniond(msg.pose.pose.orientation.w, msg.pose.pose.orientation.x,
+                                                  msg.pose.pose.orientation.y, msg.pose.pose.orientation.z);
         if (running_ && !target_reached_) {
-            // Check whether the target position was reached
-            double yaw = tf::getYaw(msg.pose.pose.orientation);
-
             // check goal pos reached (if tol is set)
-            if (p_replan_pos_threshold_ <= 0 || (target_position_ - position).norm() < p_replan_pos_threshold_) {
+            if (p_replan_pos_threshold_ <= 0 ||
+                (target_position_ - current_position_).norm() < p_replan_pos_threshold_) {
                 // check goal yaw reached (if tol is set)
+                double yaw = tf::getYaw(msg.pose.pose.orientation);
                 if (p_replan_yaw_threshold_ <= 0 ||
                     defaults::angleDifference(target_yaw_, yaw) < p_replan_yaw_threshold_) {
                     target_reached_ = true;
@@ -541,7 +543,7 @@ namespace mav_active_3d_planning {
         trajectory_vis_pub_.publish(msg);
     }
 
-    bool PlannerNode::checkMinNewValue(const std::unique_ptr<TrajectorySegment> &segment){
+    bool PlannerNode::checkMinNewValue(const std::unique_ptr <TrajectorySegment> &segment) {
         // Recursively check wehter the minimum value is reached
         if (segment->value >= p_min_new_value_) {
             return true;

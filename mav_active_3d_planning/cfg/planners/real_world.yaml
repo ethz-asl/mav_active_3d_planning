@@ -25,7 +25,7 @@ trajectory_generator:
         x_max: 2.25
         y_min: -2.6
         y_max: 1
-        z_min: -0.3
+        z_min: 0.3
         z_max: 2.75
         
   system_constraints:
@@ -77,9 +77,9 @@ trajectory_evaluator:
       clear_from_parents: false
       visualize_sensor_view: true
       accurate_frontiers: true 
-      bounding_volume_args: "/target_bounding_volume"
       
-      new_voxel_weight: 10.0
+      frontier_voxel_weight: 10.0
+      new_voxel_weight: 0.01
       min_impact_factor: 0.05
       ray_angle_x: 0.002454
       ray_angle_y: 0.002681
@@ -126,8 +126,6 @@ trajectory_evaluator:
         type: "YawPlanningUpdater"
         select_by_value: false
         dynamic_trajectories: true
-#        following_updater:
-#          type: "SimulatedSensorUpdater"
         following_updater:
           type: "UpdateAll"
           update_gain: true
@@ -136,7 +134,7 @@ trajectory_evaluator:
 
 back_tracker:
   type: "RotateReverse"
-  turn_rate: 1.57
+  turn_rate: 0.7
   update_rate: 2.0
   sampling_rate: 20.0
   n_rotations: 1
