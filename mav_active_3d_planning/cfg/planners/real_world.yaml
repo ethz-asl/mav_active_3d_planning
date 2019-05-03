@@ -18,6 +18,7 @@ expand_batch: 1
 trajectory_generator:
   collision_optimistic: false 
   collision_radius: 1.2
+  clearing_radius: 0.5
   
   bounding_volume:
         x_min: -2.75
