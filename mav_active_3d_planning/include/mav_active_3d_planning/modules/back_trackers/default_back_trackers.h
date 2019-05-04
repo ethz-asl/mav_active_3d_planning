@@ -61,8 +61,8 @@ namespace mav_active_3d_planning {
             double current_rotation_;
 
             // methods
-            bool rotate(TrajectorySegment *target);
-            bool reverse(TrajectorySegment *target);
+            virtual bool rotate(TrajectorySegment *target);
+            virtual bool reverse(TrajectorySegment *target);
         };
 
     } // namespace back_trackers

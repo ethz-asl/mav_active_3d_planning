@@ -93,7 +93,7 @@ namespace mav_active_3d_planning {
                 mav_msgs::EigenTrajectoryPoint trajectory_point;
                 trajectory_point.position_W = target->trajectory.back().position_W;
                 yaw += turn_rate_ / sampling_rate_;
-                trajectory_point.setFromYaw(yaw);
+                trajectory_point.setFromYaw(defaults::angleScaled(yaw));
                 trajectory_point.time_from_start_ns =
                         static_cast<int64_t>((double) i / sampling_rate_ * 1.0e9);
                 new_segment->trajectory.push_back(trajectory_point);
@@ -103,6 +103,7 @@ namespace mav_active_3d_planning {
             last_position_ = new_segment->trajectory.back().position_W;
             return true;
         }
+
         bool RotateReverse::reverse(TrajectorySegment *target){
             // Reverse the last registered segment.
             mav_msgs::EigenTrajectoryPointVector to_reverse = stack_.back();

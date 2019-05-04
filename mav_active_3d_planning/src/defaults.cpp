@@ -19,6 +19,9 @@ namespace mav_active_3d_planning {
             setParam<double>(param_map, "y_max", &y_max, 0.0);
             setParam<double>(param_map, "z_min", &z_min, 0.0);
             setParam<double>(param_map, "z_max", &z_max, 0.0);
+            setParam<double>(param_map, "rotation", &rotation, 0.0);
+
+            rotation_quat = Eigen::AngleAxis<double>(rotation * M_PI / -180.0, Eigen::Vector3d::UnitZ());
 
             // Check params span a valid volume (This is not a compulsory check to allow the unspecified (default)
             // case, where the volume is not checked)
@@ -30,13 +33,15 @@ namespace mav_active_3d_planning {
         }
 
         bool BoundingVolume::contains(const Eigen::Vector3d &point) {
-            if (!is_setup) { return true; } // Uninitialized boxes always return true, so can always check them
-            if (point.x() < x_min) { return false; }
-            if (point.x() > x_max) { return false; }
-            if (point.y() < y_min) { return false; }
-            if (point.y() > y_max) { return false; }
-            if (point.z() < z_min) { return false; }
-            if (point.z() > z_max) { return false; }
+            Eigen::Vector3d rotated_point = rotation_quat * point;
+//            rotated_point = rotated_point * rotation_quat;
+            if (!is_setup) { return true; } // Uninitialized boxes always return true, so can check them by default
+            if (rotated_point.x() < x_min) { return false; }
+            if (rotated_point.x() > x_max) { return false; }
+            if (rotated_point.y() < y_min) { return false; }
+            if (rotated_point.y() > y_max) { return false; }
+            if (rotated_point.z() < z_min) { return false; }
+            if (rotated_point.z() > z_max) { return false; }
             return true;
         }
 

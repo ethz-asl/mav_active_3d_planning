@@ -46,7 +46,7 @@
   
 
   <!-- *** Setup experiment params, data, nodes *** -->
-  <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg experiment_config)"/>
+  <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/experiments/$(arg experiment_config)"/>
 
   <!-- Setup empty gazebo world for physics-->
   <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find rotors_gazebo)/models"/>
@@ -212,5 +212,5 @@
  </group>
 
   <!-- RVIZ Visualization -->
-  <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiment_visualization.rviz" if="$(arg visualize)"/>
+  <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiments/experiment_visualization.rviz" if="$(arg visualize)"/>
 </launch>

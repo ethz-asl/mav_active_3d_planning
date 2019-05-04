@@ -32,7 +32,8 @@ namespace mav_active_3d_planning {
 
             // variables
             bool is_setup;
-            double x_min, x_max, y_min, y_max, z_min, z_max;
+            double x_min, x_max, y_min, y_max, z_min, z_max, rotation;   // meters, rotation around Z in deg
+            Eigen::Quaterniond rotation_quat;
 
         protected:
             static ModuleFactory::Registration<BoundingVolume> registration;
