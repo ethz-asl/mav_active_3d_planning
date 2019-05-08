@@ -83,6 +83,27 @@ namespace mav_active_3d_planning {
             bool p_accumulate_;     // true: return total gain divided by total cost
         };
 
+        // Computes efficiency as gain divided by cost, where future gains are discounted per segment
+        class DiscountedRelativeGain : public ValueComputer {
+        public:
+            // override virtual functions
+            bool computeValue(TrajectorySegment *traj_in);
+
+        protected:
+            friend ModuleFactory;
+
+            // factory access
+            DiscountedRelativeGain() {}
+            void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<DiscountedRelativeGain> registration;
+
+            // params
+            bool p_discount_factor_;
+
+            // recursively compute the discounted gain sum
+            void iterate(TrajectorySegment *current, double *factor, double *gain, double *cost);
+        };
+
     } // namespace value_computers
 } // namepsace mav_active_3d_planning
 #endif // MAV_ACTIVE_3D_PLANNING_VALUE_COMPUTERS_DEFAULT_VALUE_COMPUTERS_H

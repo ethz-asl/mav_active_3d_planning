@@ -88,5 +88,35 @@ namespace mav_active_3d_planning {
             setParam<bool>(param_map, "accumulate", &p_accumulate_, true);
         }
 
+        // DiscountedRelativeGain
+        ModuleFactory::Registration<DiscountedRelativeGain> DiscountedRelativeGain::registration("DiscountedRelativeGain");
+
+        bool DiscountedRelativeGain::computeValue(TrajectorySegment *traj_in) {
+            double gain = 0.0;
+            double cost = 0.0;
+            double factor = 1.0;
+            iterate(traj_in, &factor, &gain, &cost);
+            if (cost == 0.0) {
+                traj_in->value = 0.0;
+            } else {
+                traj_in->value = gain / cost;
+            }
+            return true;
+        }
+
+        void DiscountedRelativeGain::setupFromParamMap(Module::ParamMap *param_map) {
+            setParam<bool>(param_map, "discount_factor", &p_discount_factor_, 0.9);
+        }
+
+        void DiscountedRelativeGain::iterate(TrajectorySegment *current, double *factor, double *gain, double *cost){
+            // iterate up to root
+            if (current->parent) {
+                iterate(current->parent, factor, gain, cost);
+            }
+            *gain += current->gain * *factor;
+            *cost += current->cost;
+            *factor *= p_discount_factor_;
+        }
+
     } // namespace value_computers
 } // namepsace mav_active_3d_planning

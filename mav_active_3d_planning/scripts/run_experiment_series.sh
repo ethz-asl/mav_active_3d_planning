@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # *** Args (need to be set) ***
-n_experiments=1
-target_dir="/home/lukas/Documents/MT/Data/cost_dist_rel"		# Can reuse same dir to add experiments
+n_experiments=5
+target_dir="/home/lukas/Documents/MT/Data/pot_length"		# Can reuse same dir to add experiments
 clear_voxblox_maps=true		# Irreversibly remove maps after evaluation to save disk space
 experiment=1		# For auto configs of exp1/2 (city/windmill)
 
