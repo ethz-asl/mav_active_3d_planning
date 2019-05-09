@@ -17,6 +17,127 @@ from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
 Script to plot all sorts of spontaneous stuff
 """
 
+
+def plot_sub2():
+    path = "/home/lukas/Documents/MT/DataFinal/subsampling"
+    x = np.array([1, 2, 3, 4, 5, 8, 10, 15])
+
+    data4 = read_data(os.path.join(path, "sub_test_4", "orientation_data.csv"))
+    data8 = read_data(os.path.join(path, "sub_test_8", "orientation_data.csv"))
+
+    # plot args
+    plt.rcParams.update({'font.size': 16})
+
+    # Next
+    plt.plot(x, data4['NextValMean'], 'b-', linewidth=2)       # NextSeg, NextOri, BestSeg, BestOri
+    plt.plot(x, data8['NextValMean'], 'r--', linewidth=2)
+    plt.errorbar(x, np.array(data4['NextValMean'], dtype=float), yerr=np.array(data4['NextValStd'], dtype=float), fmt='.b', elinewidth=2)    # NextValMean, NextValStd, BestValMean, BestValStd
+    plt.errorbar(x, np.array(data8['NextValMean'], dtype=float), yerr=np.array(data8['NextValStd'], dtype=float), fmt='.r', elinewidth=2)
+    plt.ylabel('Relative Best Value Loss [%]')
+    plt.ylim(bottom=0)
+
+
+
+    #finish
+    plt.legend(["$n_{ori}=4$", "$n_{ori}=8$"], loc='lower left')
+    plt.xlim(left=0, right=16)
+    plt.xticks(x, x)
+    plt.xlabel("Sub-Sampling Factor $f_{sub}$ [-]")
+    plt.show()
+
+
+def plot_sub():
+    path = "/home/lukas/Documents/MT/DataFinal/subsampling"
+    x = np.array([1, 2, 3, 4, 5, 8, 10, 15])
+    dirs = ["sub_%i" % i for i in x]
+    data = []
+    for d in dirs:
+        data.append(read_data(os.path.join(path, d, "orientation_data.csv")))
+
+    # plot args
+    plt.rcParams.update({'font.size': 16})
+
+    # 1 Tree
+    # y = read_plot(data, 'TreeSizeMean')
+    # plt.errorbar(x, y[0], yerr=y[1], fmt='.b', elinewidth=2)
+    # plt.plot(x, y[0], 'b-', linewidth=2)
+    # plt.ylabel('Average Trajectory Tree Size [-]')
+    # plt.yscale("log")
+    # plt.yticks([10, 100, 1000], [10, 100, 1000])
+
+    # 2 Error
+    # y = read_plot(data, 'FinalStdError', True)       # FinalStdError
+    # plt.errorbar(x, y[0], yerr=y[1], fmt='.b', elinewidth=2)
+    # plt.plot(x, y[0], 'b-', linewidth=2)
+    # plt.ylabel('Normalized Final Error Std [%]')
+    # plt.ylim(bottom=0.5)
+
+    # 3 Time
+    # y = read_plot(data, 'T50', True)  # T95
+    # plt.errorbar(x, y[0], yerr=y[1], fmt='.b', elinewidth=2)
+    # plt.plot(x, y[0], 'b-', linewidth=2)
+    # plt.ylabel('Normalized 50% Exploration Time [%]')
+    # plt.ylim(bottom=0.5)
+
+    #finish
+    plt.xlim(left=0, right=16)
+    plt.xticks(x,x)
+    plt.xlabel("Sub-Sampling Factor $f_{sub}$ [-]")
+    plt.show()
+
+
+def plot_ori():
+    path = "/home/lukas/Documents/MT/DataFinal/orientations"
+    x = np.array([1, 2, 4, 8, 16, 32])
+    dirs = ["ori_%i" % i for i in x]
+    data = []
+    for d in dirs:
+        data.append(read_data(os.path.join(path, d, "orientation_data.csv")))
+
+    # plot args
+    axes_offset_low = 0.1
+    axes_offset_up = 4
+    plt.rcParams.update({'font.size': 16})
+
+    # 1 Tree
+    # y = read_plot(data, 'TreeSizeMean')
+    # plt.errorbar(x, y[0], yerr=y[1], fmt='.b', elinewidth=2)
+    # plt.plot(x, y[0], 'b-', linewidth=2)
+    # plt.ylabel('Average Trajectory Tree Size [-]')
+    # plt.yscale("log")
+    # plt.yticks([10, 100, 1000], [10, 100, 1000])
+
+    # 2 Error
+    # y = read_plot(data, 'FinalStdError', True)       # FinalStdError
+    # plt.errorbar(x, y[0], yerr=y[1], fmt='.b', elinewidth=2)
+    # plt.plot(x, y[0], 'b-', linewidth=2)
+    # plt.ylabel('Normalized Final Error Std [%]')
+    # plt.ylim(bottom=0.5)
+
+    # 3 Time
+    # y = read_plot(data, 'T95', True)  # T95
+    # plt.errorbar(x, y[0], yerr=y[1], fmt='.b', elinewidth=2)
+    # plt.plot(x, y[0], 'b-', linewidth=2)
+    # plt.ylabel('Normalized 95% Exploration Time [%]')
+    # plt.ylim(bottom=0.5)
+
+    # 4 Diff
+    y = read_plot(data, 'SecondMean')
+    y[0][0] = 1
+    y[1][0] = 0
+    plt.errorbar(x, y[0], yerr=y[1], fmt='.b', elinewidth=2)
+    plt.plot(x, y[0], 'b-', linewidth=2)
+    plt.ylabel('Average Relative Gain Difference [%]')
+    plt.ylim(bottom=0.0)
+
+    #finish
+    plt.xlim(left=x[0] - axes_offset_low, right=x[-1] + axes_offset_up)
+    plt.xscale("log", nonposx='clip', basex=2)
+    plt.xticks(x, x)
+    plt.xlabel("Number of orientations $n_{ori}$ [-]")
+    plt.show()
+
+
 def plot_perception():
     # data
     x = np.linspace(0, 5.0, 200)
@@ -51,7 +172,7 @@ def read_data(name):
     with open(name) as infile:
         reader = csv.reader(infile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         for row in reader:
-            if not row[0].isnumeric() and headers is None:
+            if not is_num(row[0]) and headers is None:
                 headers = row
                 for header in headers:
                     data[header] = []
@@ -62,6 +183,32 @@ def read_data(name):
     return data
 
 
+def read_plot(data, field, normalize=False):
+    means = []
+    stddevs = []
+    for d in data:
+        values = np.array(d[field], dtype=float)
+        values = values[~np.isnan(values)]
+        values = values[values >= 0]
+        means.append(np.mean(values))
+        stddevs.append(np.std(values))
+    means = np.array(means)
+    stddevs = np.array(stddevs)
+    if normalize:
+        maximum = np.max(means)
+        means /= maximum
+        stddevs /= maximum
+    return [means, stddevs]
+
+
+def is_num(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+
 if __name__ == '__main__':
-    plot_perception()
+    plot_sub2()
     print("Plotting finished successfully.")

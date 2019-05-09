@@ -105,7 +105,7 @@ namespace mav_active_3d_planning {
         }
 
         void DiscountedRelativeGain::setupFromParamMap(Module::ParamMap *param_map) {
-            setParam<bool>(param_map, "discount_factor", &p_discount_factor_, 0.9);
+            setParam<double>(param_map, "discount_factor", &p_discount_factor_, 0.9);
         }
 
         void DiscountedRelativeGain::iterate(TrajectorySegment *current, double *factor, double *gain, double *cost){
@@ -113,7 +113,7 @@ namespace mav_active_3d_planning {
             if (current->parent) {
                 iterate(current->parent, factor, gain, cost);
             }
-            *gain += current->gain * *factor;
+            *gain += *factor * current->gain;
             *cost += current->cost;
             *factor *= p_discount_factor_;
         }

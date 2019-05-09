@@ -27,7 +27,7 @@
   
   <!--  Planner arguments (tg_uniform, tg_random_linear, tg_rrt, general, nbvp_bircher, te_frontier, te_yaw, weight_planner, real_world)-->
   <arg name="use_separate_configs" default="false"/>
-  <arg name="planner_general_config" default="planners/costs.yaml"/>
+  <arg name="planner_general_config" default="planners/gain.yaml"/>
   <arg name="planner_generator_config" default="planners/modules/tg_rrt.yaml"/>
   <arg name="planner_evaluator_config" default="planners/modules/te_weight.yaml"/>
   <arg name="verbose_planner" default="true"/>

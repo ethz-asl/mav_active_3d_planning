@@ -18,8 +18,8 @@ Script to load and plot data to visualize the impact of the number of orientatio
 """
 
 # ***** Args *****
-p_target_dir = "/home/lukas/Documents/MT/DataFinal/subsampling_4"
-p_evaluate = False   # True: eval target dir, False: plot full series
+p_target_dir = "/home/lukas/Documents/MT/DataFinal/subsampling/sub_test_8"
+p_evaluate = True   # True: eval target dir, False: plot full series
 p_type = "subsampling"  # base, orientation, subsampling
 
 # Plotting args

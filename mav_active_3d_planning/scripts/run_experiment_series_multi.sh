@@ -2,7 +2,7 @@
 
 # *** Args (need to be set) ***
 n_experiments=6
-target_dir="/home/lukas/Documents/MT/Data/costs_exp_length"		# Can reuse same dir to add experiments
+target_dir="/home/lukas/Documents/MT/Data/loop_adaptive"		# Can reuse same dir to add experiments
 clear_voxblox_maps=true		# Irreversibly remove maps after evaluation to save disk space
 experiment=1		# For auto configs of exp1/2 (city/windmill)
 
@@ -45,7 +45,7 @@ roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$t
 
 
 # *** Run 2nd exp ***
-target_dir="/home/lukas/Documents/MT/Data/costs_exp_time"		# Can reuse same dir to add experiments
+target_dir="/home/lukas/Documents/MT/Data/loop_minval"		# Can reuse same dir to add experiments
 planner_cfg="planners/costs2.yaml"
 
 if [ ! -d "$target_dir" ]; then

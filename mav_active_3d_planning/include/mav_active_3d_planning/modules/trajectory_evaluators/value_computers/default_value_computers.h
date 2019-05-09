@@ -98,7 +98,7 @@ namespace mav_active_3d_planning {
             static ModuleFactory::Registration<DiscountedRelativeGain> registration;
 
             // params
-            bool p_discount_factor_;
+            double p_discount_factor_;
 
             // recursively compute the discounted gain sum
             void iterate(TrajectorySegment *current, double *factor, double *gain, double *cost);
