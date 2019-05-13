@@ -36,6 +36,7 @@ namespace mav_active_3d_planning {
             // parameters
             bool p_rewire_root_;            // if true try rewiring the children of the current segment (to keep them alive)
             bool p_rewire_intermediate_;    // If true try rewiring existing segments to new candidates if this improves their value
+            bool p_update_subsequent_;      // True: update the subtrees of rewired segments
             double p_max_rewire_range_;     // distance [m] within which rewiring is possible
             int p_n_neighbors_;             // How many knns to consider for rewiring
 

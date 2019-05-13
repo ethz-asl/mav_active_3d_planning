@@ -1,11 +1,11 @@
 <launch>
   <!-- Data source Data, -->
-  <arg name="target_directory" default="/home/lukas/Documents/MT/Data/loop_adaptive" />
+  <arg name="target_directory" default="/home/lukas/Documents/MT/Data/20190512_105133" />
   <arg name="gt_file_path" default="/home/lukas/Documents/MT/experiment1/gt_surface_pcl.ply"/>
   <arg name="method" default="single"/>
   
   <!-- what to evaluate -->
-  <arg name="series" default="true"/>
+  <arg name="series" default="false"/>
   <arg name="evaluate" default="true"/>
   <arg name="error_histogram" default="true"/>
   <arg name="create_meshes" default="true"/>

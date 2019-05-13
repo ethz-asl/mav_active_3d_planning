@@ -57,9 +57,9 @@ trajectory_evaluator:
     update_value: true
     
 back_tracker:
-  type: "RotateReverse"
-  turn_rate: 1.57
-  update_rate: 1.0
+  type: "FeasibleRotateReverse"
+  turn_rate: 0.79
+  update_rate: 0.25
   sampling_rate: 20.0
   n_rotations: 1.0
   stack_size: 10

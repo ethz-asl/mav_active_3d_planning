@@ -31,8 +31,8 @@ namespace mav_active_3d_planning {
             // This means the voxel is observed
             return (distance > p_collision_radius_);
         }
-        if (p_clearing_radius_ > 0.0){
-            if ((planner_node_->getCurrentPosition()-position).norm() < p_clearing_radius_){
+        if (p_clearing_radius_ > 0.0) {
+            if ((planner_node_->getCurrentPosition() - position).norm() < p_clearing_radius_) {
                 return true;
             }
         }
@@ -55,6 +55,13 @@ namespace mav_active_3d_planning {
                                                                                            verbose_modules_);
         }
         return generator_updater_->updateSegments(root);
+    }
+
+    bool TrajectoryGenerator::extractTrajectoryToPublish(mav_msgs::EigenTrajectoryPointVector *trajectory,
+                                                         const TrajectorySegment &segment) {
+        // Default does not manipulate the stored trajectory
+        *trajectory = segment.trajectory;
+        return true;
     }
 
 }  // namespace mav_active_3d_planning

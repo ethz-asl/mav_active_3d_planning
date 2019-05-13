@@ -4,43 +4,13 @@
 #include "mav_active_3d_planning/modules/trajectory_generators/rrt_star.h"
 #include "mav_active_3d_planning/modules/back_trackers/default_back_trackers.h"
 
-#include <mav_trajectory_generation/polynomial_optimization_nonlinear.h>
-#include <mav_trajectory_generation_ros/feasibility_analytic.h>
+#include "mav_active_3d_planning/modules/trajectory_generators/linear_mav_trajectory_generator.h"
 
 
 namespace mav_active_3d_planning {
     // Implementations of the RRT, RRTStar and RotateReverse classes, where segments are created using the
     // mav_trajectory_generation package to obey the system constraints and create smooth derivatives. The
     // velocity at the end of each segment is set to 0.0.
-
-    // Helper class that creates all trajectories
-    class LinearMavTrajectoryGeneration {
-    public:
-        LinearMavTrajectoryGeneration() {}
-
-        void setConstraints(double v_max, double a_max, double yaw_rate_max, double sampling_rate);
-
-        bool createTrajectory(const mav_msgs::EigenTrajectoryPoint &start, const mav_msgs::EigenTrajectoryPoint &goal,
-                              mav_msgs::EigenTrajectoryPointVector *result);
-
-    protected:
-        // optimization settings
-        mav_trajectory_generation::FeasibilityAnalytic feasibility_check_;
-        mav_trajectory_generation::NonlinearOptimizationParameters parameters_;
-
-        // methods
-        void optimizeVertices(mav_trajectory_generation::Vertex::Vector *vertices,
-                              mav_trajectory_generation::Segment::Vector *segments,
-                              mav_trajectory_generation::Trajectory *trajectory);
-
-        bool checkInputFeasible(const mav_trajectory_generation::Segment::Vector &segments);
-
-        // constraints
-        double v_max_;
-        double a_max_;
-        double sampling_rate_;
-    };
-
 
     namespace trajectory_generators {
 
@@ -58,10 +28,16 @@ namespace mav_active_3d_planning {
             // Segment creator
             LinearMavTrajectoryGeneration segment_generator_;
 
+            // params
+            bool p_all_semgents_feasible_;
+
             // Overwrite virtual method to create constrained trajectories
             bool connectPoses(const mav_msgs::EigenTrajectoryPoint &start,
                               const mav_msgs::EigenTrajectoryPoint &goal,
                               mav_msgs::EigenTrajectoryPointVector *result);
+
+            bool extractTrajectoryToPublish(mav_msgs::EigenTrajectoryPointVector *trajectory,
+                                            const TrajectorySegment &segment);
         };
 
         class FeasibleRRTStar : public RRTStar {
@@ -78,10 +54,16 @@ namespace mav_active_3d_planning {
             // Segment creator
             LinearMavTrajectoryGeneration segment_generator_;
 
+            // params
+            bool p_all_semgents_feasible_;
+
             // Overwrite virtual method to create constrained trajectories
             bool connectPoses(const mav_msgs::EigenTrajectoryPoint &start,
                               const mav_msgs::EigenTrajectoryPoint &goal,
                               mav_msgs::EigenTrajectoryPointVector *result);
+
+            bool extractTrajectoryToPublish(mav_msgs::EigenTrajectoryPointVector *trajectory,
+                                            const TrajectorySegment &segment);
         };
 
     } // namespace trajectory_generators

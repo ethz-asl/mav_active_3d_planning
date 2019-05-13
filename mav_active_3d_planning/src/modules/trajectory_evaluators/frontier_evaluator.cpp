@@ -11,6 +11,7 @@ namespace mav_active_3d_planning {
         void FrontierEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
             SimulatedSensorEvaluator::setupFromParamMap(param_map);
             setParam<bool>(param_map, "accurate_frontiers", &p_accurate_frontiers_, false);
+            setParam<bool>(param_map, "surface_frontiers", &p_surface_frontiers_, true);
 
             // initialize neighbor offsets
             if (!p_accurate_frontiers_) {
@@ -59,13 +60,21 @@ namespace mav_active_3d_planning {
             if (!p_accurate_frontiers_) {
                 for (int i = 0; i < 6; ++i) {
                     if (esdf_map->getDistanceAtPosition(voxel + c_neighbor_voxels_[i], &distance)) {
-                        if (distance < c_voxel_size_) { return true; }
+                        if (p_surface_frontiers_) {
+                            return distance < c_voxel_size_;
+                        } else {
+                            return true;
+                        }
                     }
                 }
             } else {
                 for (int i = 0; i < 26; ++i) {
                     if (esdf_map->getDistanceAtPosition(voxel + c_neighbor_voxels_[i], &distance)) {
-                        if (distance <= 0) { return true; }
+                        if (p_surface_frontiers_) {
+                            return distance < 0.0;
+                        } else {
+                            return true;
+                        }
                     }
                 }
             }

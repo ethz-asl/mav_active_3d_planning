@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # *** Args (need to be set) ***
-n_experiments=1
-target_dir="/home/lukas/Documents/MT/Data/gain_surface_frontier"		# Can reuse same dir to add experiments
+n_experiments=5
+target_dir="/home/lukas/Documents/MT/Data/weight_test"		# Can reuse same dir to add experiments
 clear_voxblox_maps=true		# Irreversibly remove maps after evaluation to save disk space
 experiment=1		# For auto configs of exp1/2 (city/windmill)
 

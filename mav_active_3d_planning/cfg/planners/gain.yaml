@@ -47,10 +47,11 @@ trajectory_evaluator:
     select_by_value: false
     
     following_evaluator:
-      type: "FrontierEvaluator"
+      type: "NaiveEvaluator"
       clear_from_parents: false
       visualize_sensor_view: true
       accurate_frontiers: true 
+      surface_frontiers: false
       bounding_volume_args: "/target_bounding_volume"
     
       frontier_voxel_weight: 10.0

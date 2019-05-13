@@ -49,6 +49,7 @@ cs_add_library(${PROJECT_NAME}
         src/modules/trajectory_evaluators/sensor_models/iterative_ray_caster_lidar.cpp
         src/modules/trajectory_evaluators/evaluator_updaters/simulated_sensor_updaters.cpp
         src/modules/trajectory_evaluators/evaluator_updaters/yaw_planning_updaters.cpp
+        src/modules/trajectory_generators/linear_mav_trajectory_generator.cpp
         )
 
 ############

@@ -15,7 +15,9 @@ namespace mav_active_3d_planning {
 
     // Forward declaration
     class SegmentSelector;
+
     class GeneratorUpdater;
+
     class PlannerNode;
 
     // Base class for trajectory generation to provide uniform interface with other classes
@@ -29,7 +31,7 @@ namespace mav_active_3d_planning {
         virtual bool selectSegment(TrajectorySegment **result, TrajectorySegment *root);
 
         // Expand a selected trajectory segment. Return true for successful expansion.
-        virtual bool expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment*> *new_segments) = 0;
+        virtual bool expandSegment(TrajectorySegment *target, std::vector<TrajectorySegment *> *new_segments) = 0;
 
         // Whether and how to update existing segments when a new trajectory is executed
         virtual bool updateSegments(TrajectorySegment *root);
@@ -37,20 +39,24 @@ namespace mav_active_3d_planning {
         // Utility function for collision checking. Returns true if the position is reachable.
         bool checkTraversable(const Eigen::Vector3d &position);
 
+        // in case a trajectory needs to be modified to be published
+        virtual bool
+        extractTrajectoryToPublish(mav_msgs::EigenTrajectoryPointVector *trajectory, const TrajectorySegment &segment);
+
     protected:
         TrajectoryGenerator() {}
 
         // Pointer to the esdf server for collision checking (and others)
-        std::shared_ptr<voxblox::EsdfServer> voxblox_ptr_;
-        PlannerNode* planner_node_;     // Parent ref for position checking
+        std::shared_ptr <voxblox::EsdfServer> voxblox_ptr_;
+        PlannerNode *planner_node_;     // Parent ref for position checking
 
         // bounding box
-        std::unique_ptr<defaults::BoundingVolume> bounding_volume_;
-        std::unique_ptr<defaults::SystemConstraints> system_constraints_;
+        std::unique_ptr <defaults::BoundingVolume> bounding_volume_;
+        std::unique_ptr <defaults::SystemConstraints> system_constraints_;
 
         // default modules
-        std::unique_ptr<SegmentSelector> segment_selector_;
-        std::unique_ptr<GeneratorUpdater> generator_updater_;
+        std::unique_ptr <SegmentSelector> segment_selector_;
+        std::unique_ptr <GeneratorUpdater> generator_updater_;
 
         // Parameters
         bool p_collision_optimistic_;

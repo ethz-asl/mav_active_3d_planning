@@ -20,6 +20,7 @@ namespace mav_active_3d_planning {
             RRT::setupFromParamMap(param_map);
             setParam<bool>(param_map, "rewire_root", &p_rewire_root_, false);
             setParam<bool>(param_map, "rewire_intermediate", &p_rewire_intermediate_, false);
+            setParam<bool>(param_map, "update_subsequent", &p_update_subsequent_, true);
             setParam<double>(param_map, "max_rewire_range", &p_max_rewire_range_, p_max_extension_range_ + 0.2);
             setParam<int>(param_map, "n_neighbors", &p_n_neighbors_, 10);
             c_rewire_range_square_ = p_max_rewire_range_*p_max_rewire_range_;
@@ -210,6 +211,15 @@ namespace mav_active_3d_planning {
                             // Move from existing parent
                             segment->parent->children.push_back(std::move(initial_parent->children[i]));
                             initial_parent->children.erase(initial_parent->children.begin() + i);
+                            // update subtree
+                            if (p_update_subsequent_) {
+                                std::vector<TrajectorySegment*> subtree;
+                                segment->getTree(&subtree);
+                                for (int j = 0; j < subtree.size(); ++j) {
+                                    planner_node_->trajectory_evaluator_->computeCost(subtree[j]);
+                                    planner_node_->trajectory_evaluator_->computeValue(subtree[j]);
+                                }
+                            }
                             return true;
                         }
                     }

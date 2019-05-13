@@ -380,17 +380,19 @@ namespace mav_active_3d_planning {
     }
 
     void PlannerNode::requestMovement(const TrajectorySegment &req) {
+        mav_msgs::EigenTrajectoryPointVector trajectory;
+        trajectory_generator_->extractTrajectoryToPublish(&trajectory, req);
         trajectory_msgs::MultiDOFJointTrajectoryPtr msg(new trajectory_msgs::MultiDOFJointTrajectory);
         msg->header.stamp = ros::Time::now();
         msg->joint_names.push_back("base_link");
-        int n_points = req.trajectory.size();
+        int n_points = trajectory.size();
         msg->points.resize(n_points);
         for (int i = 0; i < n_points; ++i) {
-            mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(req.trajectory[i], &msg->points[i]);
+            mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory[i], &msg->points[i]);
         }
         target_pub_.publish(msg);
-        target_position_ = req.trajectory.back().position_W;
-        target_yaw_ = req.trajectory.back().getYaw();
+        target_position_ = trajectory.back().position_W;
+        target_yaw_ = trajectory.back().getYaw();
     }
 
     void PlannerNode::publishTrajectoryVisualization(const std::vector<TrajectorySegment *> &trajectories) {

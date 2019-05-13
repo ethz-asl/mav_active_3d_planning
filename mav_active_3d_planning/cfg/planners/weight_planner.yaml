@@ -1,8 +1,8 @@
 # Base config for final weight planner
 
 # Planner node
-replan_pos_threshold: 0.12
-replan_yaw_threshold: 0.12
+replan_pos_threshold: 0.15
+replan_yaw_threshold: 0.15
 
 max_new_segments: 0
 min_new_segments: 0
@@ -18,8 +18,10 @@ expand_batch: 1
 trajectory_generator:
   collision_optimistic: false 
   collision_radius: 1.2
+  clearing_radius: 0.2
   
   type: "FeasibleRRTStar"
+  all_semgents_feasible: false
   crop_segments: true
   crop_margin: 0.5
   crop_min_length: 0.2
@@ -84,17 +86,17 @@ trajectory_evaluator:
         select_by_value: false
         dynamic_trajectories: true
         following_updater:
-          type: "SimulatedSensorUpdater"
-          following_updater:
-            type: "UpdateAll"
-            update_gain: fales
-            update_cost: false
-            update_value: true
+#          type: "SimulatedSensorUpdater"
+#          following_updater:
+          type: "UpdateAll"
+          update_gain: false
+          update_cost: false
+          update_value: true
 
 back_tracker:
-  type: "FeasibleRotateReverse"
-  turn_rate: 1.57
-  update_rate: 2.0
+  type: "RotateReverse"
+  turn_rate: 1.6
+  update_rate: 0.5
   sampling_rate: 20.0
   n_rotations: 1
   stack_size: 10

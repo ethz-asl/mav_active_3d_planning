@@ -18,9 +18,9 @@ Script to load and plot data to visualize the impact of the number of orientatio
 """
 
 # ***** Args *****
-p_target_dir = "/home/lukas/Documents/MT/DataFinal/subsampling/sub_test_8"
+p_target_dir = "/home/lukas/Documents/MT/DataFinal/costs/lin_time"
 p_evaluate = True   # True: eval target dir, False: plot full series
-p_type = "subsampling"  # base, orientation, subsampling
+p_type = "base"  # base, orientation, subsampling
 
 # Plotting args
 p_normalize = False
@@ -255,17 +255,15 @@ def evaluate():
                 best_val_orig = best_val
 
             # Exclude values where same segment is chosen
-            next_mask = next_ori == 0
-            best_mask = best_ori == 0
-            next_mask = next_mask & (child > 1)
-            best_mask = best_mask & (traj > 2)
+            next_mask = (next_seg == 0) & (child > 1) & (next_val_orig > 0)
+            best_mask = (best_seg == 0) & (traj > 2) & (best_val_orig > 0)
+
             print("Number of decisions (%): ", float(np.sum(child > 1))/len(child))
             child = child[child > 1]
 
-            next_rel = np.divide(next_val, next_val_orig)
-            best_rel = np.divide(best_val, best_val_orig)
-            next_rel = next_rel[next_mask]
-            best_rel = best_rel[best_mask]
+            next_rel = np.divide(next_val[next_mask], next_val_orig[next_mask])
+            best_rel = np.divide(best_val[best_mask], best_val_orig[best_mask])
+
             if len(best_rel) == 0:
                 best_rel = 1.0
             if len(next_rel) == 0:
