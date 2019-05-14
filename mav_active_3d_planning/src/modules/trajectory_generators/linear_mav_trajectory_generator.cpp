@@ -50,7 +50,7 @@ namespace mav_active_3d_planning {
         acc4 << start.acceleration_W, start.getYawAcc();
         for (int i = 0; i < 4; ++i) {
             if (start4[i] == goal4[i]) {
-                goal4[i] = goal4[i] + 0.01; // If a dimension has same start and stop value nlopt dies ?!
+                goal4[i] = goal4[i] + 0.001; // If a dimension has same start and stop value nlopt dies ?!
             }
         }
 

@@ -123,6 +123,32 @@ namespace mav_active_3d_planning {
             std::unique_ptr<EvaluatorUpdater> following_updater_;
         };
 
+        // Update gain, only if conditions are met (min gain, nearby)
+        class ConstrainedUpdater : public EvaluatorUpdater {
+        public:
+            // override virtual functions
+            bool updateSegments(TrajectorySegment *root);
+
+        protected:
+            friend ModuleFactory;
+
+            // factory acces
+            ConstrainedUpdater() {}
+            void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<ConstrainedUpdater> registration;
+
+            // methods
+            void updateSingle(TrajectorySegment *segment);
+
+            // params
+            double p_minimum_gain_;
+            double p_update_range_;
+            std::unique_ptr<EvaluatorUpdater> following_updater_;
+
+            // pointer to the planner node to call for updates
+            PlannerNode* planner_node_;
+        };
+
     } // namespace evaluator_updaters
 } // namepsace mav_active_3d_planning
 #endif // MAV_ACTIVE_3D_PLANNING_EVALUATOR_UPDATERS_DEFAULT_EVALUATOR_UPDATERS_H

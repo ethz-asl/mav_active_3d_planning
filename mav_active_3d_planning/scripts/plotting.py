@@ -68,15 +68,16 @@ def plot_cost():
     h = '//'      # hatches
 
     # 1 Time
-    y = read_plot(data, 'FinalExplored', False)
-    # 95 none for 0,1, missing for 2, 4 set to 30
-    bars = plt.bar(x, 1-y[0], yerr=y[1], align='center', alpha=0.8, ecolor='black', capsize=10,
-                   color=(c[0], c[0], c[1], c[1], c[2], c[2], c[3], c[3]))
-    bars[1].set_hatch(h)
-    bars[3].set_hatch(h)
-    bars[5].set_hatch(h)
-    bars[7].set_hatch(h)
-    plt.ylabel('Normalized 50% Exploration Time [%]')
+    # y = read_plot(data, 'FinalStdError', True)
+    # # 95 none for 0,1, missing for 2, 4 set to 30
+    # bars = plt.bar(x, y[0], yerr=y[1], align='center', alpha=0.8, ecolor='black', capsize=10,
+    #                color=(c[0], c[0], c[1], c[1], c[2], c[2], c[3], c[3]))
+    # bars[1].set_hatch(h)
+    # bars[3].set_hatch(h)
+    # bars[5].set_hatch(h)
+    # bars[7].set_hatch(h)
+    # # plt.ylabel('Exploration after 30 minutes [%]')
+    # # plt.ylabel('Normalized 95% Exploration Time [%]')
     # plt.ylabel('Normalized Final Error Std [%]')
 
     # #2 legend
@@ -87,14 +88,16 @@ def plot_cost():
     # plt.bar(0, 0, ecolor='black', color=c[1], hatch=h)
     # plt.bar(0, 0, ecolor='black', color=c[2])
     # plt.bar(0, 0, ecolor='black', color=c[2], hatch=h)
+    # plt.bar(0, 0, ecolor='black', color=c[3])
+    # plt.bar(0, 0, ecolor='black', color=c[3], hatch=h)
     # plt.ylim(top=100)
-    # fig.set_size_inches(20, 15, forward=True)
+    # fig.set_size_inches(25, 15, forward=True)
     # plt.legend(["A: Exponential, Distance", "B: Exponential, Time", "C: Efficiency, Distance", "D: Efficiency, Time",
-    #            "E: Discounted, Distance", "F: Discounted, Time"], loc='upper center', ncol=3)
+    #            "E: Discounted, Distance", "F: Discounted, Time", "G: Linear, Distance", "H: Linear, Time"], loc='upper center', ncol=4)
 
     #finish
     # plt.xlim(left=0, right=16)
-    plt.xticks(x, ["A", "B", "C", "D", "E", "F", "G"])
+    plt.xticks(x, ["A", "B", "C", "D", "E", "F", "G", "H"])
     plt.show()
 
 

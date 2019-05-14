@@ -29,10 +29,6 @@ namespace mav_active_3d_planning {
             setParam<double>(param_map, "semilocal_sampling_radius_min", &p_semilocal_radius_min_, 0.2);
             previous_root_ = nullptr;
 
-            std::string p_sampling_mode_; // uniform, spheric, semilocal
-            double p_semilocal_radius_;     // Only used for semilocal sampling, radius where points are counted
-            int p_semilocal_count_;
-
             // setup parent
             TrajectoryGenerator::setupFromParamMap(param_map);
         }
@@ -68,15 +64,24 @@ namespace mav_active_3d_planning {
         bool RRT::selectSegment(TrajectorySegment **result, TrajectorySegment *root) {
             // If the root has changed, reset the kdtree and populate with the current trajectory tree
             if (previous_root_ != root) {
-                std::vector < TrajectorySegment * > currrent_tree;
-                root->getTree(&currrent_tree);
-                tree_data_.clear();
-                for (int i = 0; i < currrent_tree.size(); ++i) {
-                    tree_data_.addSegment(currrent_tree[i]);
-                }
-                kdtree_ = std::unique_ptr<KDTree>(new KDTree(3, tree_data_));
-                kdtree_->addPoints(0, tree_data_.points.size() - 1);
+                resetTree(root);
                 previous_root_ = root;
+                if (p_sampling_mode_ == "semilocal") {
+                    // Check whether the minimum number of local points is achieved and store how many to go
+                    double query_pt[3] = {root->trajectory.back().position_W.x(), root->trajectory.back().position_W.y(),
+                                          root->trajectory.back().position_W.z()};
+                    std::size_t ret_index[p_semilocal_count_];
+                    double out_dist[p_semilocal_count_];
+                    nanoflann::KNNResultSet<double> resultSet(p_semilocal_count_);
+                    resultSet.init(ret_index, out_dist);
+                    kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10));
+                    semilocal_count_ = p_semilocal_count_;
+                    for (int i = 0; i < resultSet.size(); ++i){
+                        if (out_dist[p_semilocal_count_ - 1] <= p_semilocal_radius_max_ * p_semilocal_radius_max_) {
+                            semilocal_count_ -= 1;
+                        }
+                    }
+                }
             }
 
             // sample candidate points
@@ -173,36 +178,25 @@ namespace mav_active_3d_planning {
                 }
                 return true;
             } else if (p_sampling_mode_ == "semilocal") {
-                // Check whether the minimum number of local points is achieved
-                double query_pt[3] = {goal_pos->x(), goal_pos->y(), goal_pos->z()};
-                std::size_t ret_index[p_semilocal_count_];
-                double out_dist[p_semilocal_count_];
-                nanoflann::KNNResultSet<double> resultSet(p_semilocal_count_);
-                resultSet.init(ret_index, out_dist);
-                kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10));
-
-                if (resultSet.size() == p_semilocal_count_) {
-                    if (out_dist[p_semilocal_count_ - 1] <= p_semilocal_radius_max_ * p_semilocal_radius_max_) {
-                        // Enough local points, sample anywhere from area
-                        (*goal_pos)[0] = bounding_volume_->x_min +
-                                         (double) rand() / RAND_MAX *
-                                         (bounding_volume_->x_max - bounding_volume_->x_min);
-                        (*goal_pos)[1] = bounding_volume_->y_min +
-                                         (double) rand() / RAND_MAX *
-                                         (bounding_volume_->y_max - bounding_volume_->y_min);
-                        (*goal_pos)[2] = bounding_volume_->z_min +
-                                         (double) rand() / RAND_MAX *
-                                         (bounding_volume_->z_max - bounding_volume_->z_min);
-                        return true;
+                if (semilocal_count_ > 0) {
+                    // Not enough local points found, sample from local sphere
+                    double theta = 2.0 * M_PI * (double) rand() / (double) RAND_MAX;
+                    double phi = acos(1.0 - 2.0 * (double) rand() / (double) RAND_MAX);
+                    double rho = p_semilocal_radius_min_ + ((double) rand() / (double) RAND_MAX) *
+                                                           (p_semilocal_radius_max_ - p_semilocal_radius_min_);
+                    *goal_pos += rho * Eigen::Vector3d(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi));
+                    semilocal_count_ -= 1;
+                    return true;
+                } else {
+                    // sample spheric
+                    double radius = std::sqrt(std::pow(bounding_volume_->x_max - bounding_volume_->x_min, 2.0) +
+                                              std::pow(bounding_volume_->y_max - bounding_volume_->y_min, 2.0) +
+                                              std::pow(bounding_volume_->z_max - bounding_volume_->z_min, 2.0));
+                    for (int i = 0; i < 3; i++) {
+                        (*goal_pos)[i] += 2.0 * radius * (((double) rand()) / ((double) RAND_MAX) - 0.5);
                     }
+                    return true;
                 }
-                // Not enough local points found, sample from local sphere
-                double theta = 2.0 * M_PI * (double) rand() / (double) RAND_MAX;
-                double phi = acos(1.0 - 2.0 * (double) rand() / (double) RAND_MAX);
-                double rho = p_semilocal_radius_min_ + ((double) rand() / (double) RAND_MAX) *
-                                                       (p_semilocal_radius_max_ - p_semilocal_radius_min_);
-                *goal_pos += rho * Eigen::Vector3d(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi));
-                return true;
             }
         }
 
@@ -252,6 +246,18 @@ namespace mav_active_3d_planning {
             }
             *goal_pos_ = start_pos + direction;
             return true;
+        }
+
+        bool RRT::resetTree(TrajectorySegment* root){
+            // Remove everything and populate with the semgents from root
+            std::vector < TrajectorySegment * > currrent_tree;
+            root->getTree(&currrent_tree);
+            tree_data_.clear();
+            for (int i = 0; i < currrent_tree.size(); ++i) {
+                tree_data_.addSegment(currrent_tree[i]);
+            }
+            kdtree_ = std::unique_ptr<KDTree>(new KDTree(3, tree_data_));
+            kdtree_->addPoints(0, tree_data_.points.size() - 1);
         }
 
         void RRT::TreeData::clear() {

@@ -25,16 +25,20 @@ trajectory_generator:
   crop_segments: true
   crop_margin: 0.5
   crop_min_length: 0.2
-  max_extension_range: 2.0
-  use_spheric_sampling: true
+  max_extension_range: 2.5
   maximum_tries: 1000
   sampling_rate: 20.0
   sample_yaw: true
   
+  sampling_mode: "semilocal"
+  semilocal_sampling_count: 10
+  semilocal_sampling_radius_max: 1.5
+  semilocal_sampling_radius_min: 0.5
+  
   rewire_root: true
   rewire_intermediate: true
-  max_rewire_range: 2.1
-  n_neighbors: 10
+  max_rewire_range: 2.6
+  n_neighbors: 20
 
   generator_updater:
     type: "RecheckCollision"
@@ -55,7 +59,7 @@ trajectory_evaluator:
       accurate_frontiers: true 
       bounding_volume_args: "/target_bounding_volume"
     
-      frontier_voxel_weight: 10.0
+      frontier_voxel_weight: 50.0
       new_voxel_weight: 0.0
       min_impact_factor: 0.05
       ray_angle_x: 0.002454
@@ -92,6 +96,12 @@ trajectory_evaluator:
           update_gain: false
           update_cost: false
           update_value: true
+#        view_updater:
+#          type: "UpdateAll"
+#          update_gain: true
+#          update_cost: false
+#          update_value: false
+#          minimum_gain: 0.01
 
 back_tracker:
   type: "RotateReverse"

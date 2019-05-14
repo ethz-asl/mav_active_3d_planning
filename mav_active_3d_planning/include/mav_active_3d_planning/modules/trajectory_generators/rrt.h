@@ -72,6 +72,7 @@ namespace mav_active_3d_planning {
             // variables
             TrajectorySegment *previous_root_;
             Eigen::Vector3d goal_pos_;
+            int semilocal_count_;
 
             // methods
             // find a goal position, return true on success.
@@ -84,6 +85,8 @@ namespace mav_active_3d_planning {
 
             // check max segment length and cropping
             virtual bool adjustGoalPosition(const Eigen::Vector3d &start_pos, Eigen::Vector3d *goal_pos_);
+
+            bool resetTree(TrajectorySegment* root);
         };
 
     } // namespace trajectory_generators

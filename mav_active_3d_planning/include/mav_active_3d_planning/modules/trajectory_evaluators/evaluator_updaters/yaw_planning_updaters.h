@@ -50,6 +50,7 @@ namespace mav_active_3d_planning {
 
             // members
             std::unique_ptr<EvaluatorUpdater> following_updater_;
+            std::unique_ptr<EvaluatorUpdater> view_updater_;
             YawPlanningEvaluator* evaluator_;
 
             // params

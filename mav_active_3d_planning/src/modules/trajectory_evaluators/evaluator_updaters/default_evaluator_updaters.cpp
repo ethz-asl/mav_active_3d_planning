@@ -8,10 +8,11 @@
 namespace mav_active_3d_planning {
     namespace evaluator_updaters {
 
-        ModuleFactory::Registration<EvaluatorUpdateNothing> EvaluatorUpdateNothing::registration("EvaluatorUpdateNothing");
+        ModuleFactory::Registration <EvaluatorUpdateNothing> EvaluatorUpdateNothing::registration(
+                "EvaluatorUpdateNothing");
 
         // EvaluatorResetTree
-        ModuleFactory::Registration<EvaluatorResetTree> EvaluatorResetTree::registration("EvaluatorResetTree");
+        ModuleFactory::Registration <EvaluatorResetTree> EvaluatorResetTree::registration("EvaluatorResetTree");
 
         bool EvaluatorResetTree::updateSegments(TrajectorySegment *root) {
             root->children.clear();
@@ -19,13 +20,11 @@ namespace mav_active_3d_planning {
         }
 
         // UpdateAll
-        ModuleFactory::Registration<UpdateAll> UpdateAll::registration("UpdateAll");
+        ModuleFactory::Registration <UpdateAll> UpdateAll::registration("UpdateAll");
 
         bool UpdateAll::updateSegments(TrajectorySegment *root) {
             // recursively update all segments from root to leaves (as in the planner)
-            for (int i = 0; i < root->children.size(); ++i) {
-                updateSingle(root->children[i].get());
-            }
+            updateSingle(root);
             return following_updater_->updateSegments(root);
         }
 
@@ -43,16 +42,19 @@ namespace mav_active_3d_planning {
         }
 
         void UpdateAll::updateSingle(TrajectorySegment *segment) {
-            if (update_gain_) { planner_node_->trajectory_evaluator_->computeGain(segment); }
-            if (update_cost_) { planner_node_->trajectory_evaluator_->computeCost(segment); }
-            if (update_value_) { planner_node_->trajectory_evaluator_->computeValue(segment); }
+            if (segment->parent != nullptr) {
+                // Cannot update the root segment
+                if (update_gain_) { planner_node_->trajectory_evaluator_->computeGain(segment); }
+                if (update_cost_) { planner_node_->trajectory_evaluator_->computeCost(segment); }
+                if (update_value_) { planner_node_->trajectory_evaluator_->computeValue(segment); }
+            }
             for (int i = 0; i < segment->children.size(); ++i) {
                 updateSingle(segment->children[i].get());
             }
         }
 
         // PruneByValue
-        ModuleFactory::Registration<PruneByValue> PruneByValue::registration("PruneByValue");
+        ModuleFactory::Registration <PruneByValue> PruneByValue::registration("PruneByValue");
 
         void PruneByValue::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<double>(param_map, "minimum_value", &minimum_value_, 0.0);
@@ -124,7 +126,7 @@ namespace mav_active_3d_planning {
         }
 
         // UpdatePeriodic
-        ModuleFactory::Registration<UpdatePeriodic> UpdatePeriodic::registration("UpdatePeriodic");
+        ModuleFactory::Registration <UpdatePeriodic> UpdatePeriodic::registration("UpdatePeriodic");
 
         bool UpdatePeriodic::updateSegments(TrajectorySegment *root) {
             // Both conditions need to be met
@@ -149,6 +151,42 @@ namespace mav_active_3d_planning {
             std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_updater_args", &args, param_ns + "/following_updater");
             following_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(args, verbose_modules_);
+        }
+
+        //ConstrainedUpdater
+        ModuleFactory::Registration <ConstrainedUpdater> ConstrainedUpdater::registration("ConstrainedUpdater");
+
+        bool ConstrainedUpdater::updateSegments(TrajectorySegment *root) {
+            // recursively update all segments from root to leaves (as in the planner)
+            updateSingle(root);
+            return following_updater_->updateSegments(root);
+        }
+
+        void ConstrainedUpdater::setupFromParamMap(Module::ParamMap *param_map) {
+            setParam<double>(param_map, "minimum_gain", &p_minimum_gain_, -1e9);
+            setParam<double>(param_map, "update_range", &p_update_range_, 1e9);
+
+            // Create Following updater (default does nothing)
+            std::string args;   // default args extends the parent namespace
+            std::string param_ns = (*param_map)["param_namespace"];
+            setParam<std::string>(param_map, "following_updater_args", &args, param_ns + "/following_updater");
+            following_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(args, verbose_modules_);
+            planner_node_ = dynamic_cast<PlannerNode *>(ModuleFactory::Instance()->readLinkableModule("PlannerNode"));
+        }
+
+        void ConstrainedUpdater::updateSingle(TrajectorySegment *segment) {
+            if (segment->parent != nullptr) {
+                // Cannot update the root segment
+                if (segment->gain > p_minimum_gain_) {
+                    if ((planner_node_->getCurrentPosition() - segment->trajectory.back().position_W).norm() <=
+                        p_update_range_) {
+                        planner_node_->trajectory_evaluator_->computeGain(segment);
+                    }
+                }
+            }
+            for (int i = 0; i < segment->children.size(); ++i) {
+                updateSingle(segment->children[i].get());
+            }
         }
 
     } // namespace evaluator_updaters

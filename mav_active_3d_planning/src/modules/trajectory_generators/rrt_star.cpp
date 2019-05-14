@@ -92,20 +92,54 @@ namespace mav_active_3d_planning {
             return true;
         }
 
+        bool RRTStar::rewireIntermediate(TrajectorySegment *root) {
+            // After updating, try rewire all from inside out
+            if (!p_rewire_intermediate_) { return true; }
+            resetTree(root);
+            std::vector<TrajectorySegment*> segments;
+            segments.push_back(root);
+            int length = 0;
+            int start = 0;
+            while (segments.size() > length) {
+                // Get all segments breadth first
+                length = segments.size();
+                for (int i = start; i < length; ++i) {
+                    segments[i]->getChildren(&segments);
+                }
+                start = length;
+            }
+            // Try rewiring
+            for (int i = 0; i < segments.size(); ++i) {
+                std::vector < TrajectorySegment * > candidate_parents;
+                if (!findNearbyCandidates(segments[i]->trajectory.back().position_W, &candidate_parents)) {
+                    continue;
+                }
+                TrajectorySegment *current = segments[i];
+                while (true) {
+                    // the connection of the segment to the root cannot be rewired (loops!)
+                    candidate_parents.erase(std::remove(candidate_parents.begin(), candidate_parents.end(), current),
+                                            candidate_parents.end());
+                    if(current) {
+                        current = current->parent;
+                    } else {
+                        break;
+                    }
+                }
+                std::vector < TrajectorySegment * > new_parent = {segments[i]};
+                for (int j = 0; j < candidate_parents.size(); ++j) {
+                    rewireToBestParent(candidate_parents[j], new_parent);
+                }
+            }
+            return true;
+        }
+
         bool RRTStar::rewireRoot(TrajectorySegment *root, int *next_segment) {
             if (!p_rewire_root_) {
                 return true;
             }
             if (!tree_is_reset_) {
                 // Force reset (dangling pointers!)
-                std::vector < TrajectorySegment * > currrent_tree;
-                root->getTree(&currrent_tree);
-                tree_data_.clear();
-                for (int i = 0; i < currrent_tree.size(); ++i) {
-                    tree_data_.addSegment(currrent_tree[i]);
-                }
-                kdtree_ = std::unique_ptr<KDTree>(new KDTree(3, tree_data_));
-                kdtree_->addPoints(0, tree_data_.points.size() - 1);
+                resetTree(root);
             }
             tree_is_reset_ = false;
 
@@ -114,27 +148,16 @@ namespace mav_active_3d_planning {
             std::vector < TrajectorySegment * > to_rewire;
             root->getChildren(&to_rewire);
             to_rewire.erase(std::remove(to_rewire.begin(), to_rewire.end(), next_root), to_rewire.end());
-            for (int i = 0; i < to_rewire.size(); ++i) {
-                std::vector < TrajectorySegment * > candidate_parents;
-                if (!findNearbyCandidates(to_rewire[i]->trajectory.back().position_W, &candidate_parents)) {
-                    continue;
-                }
-
-                // remove all candidates that are still connected to the root
-                std::vector < TrajectorySegment * > safe_candidates;
-                TrajectorySegment *current;
-                for (int j = 0; j < candidate_parents.size(); ++j) {
-                    current = candidate_parents[j];
-                    while (current) {
-                        if (current == next_root) {
-                            safe_candidates.push_back(candidate_parents[j]);
-                            break;
-                        }
-                        current = current->parent;
+            bool rewired_something = true;
+            while (rewired_something) {
+                rewired_something = false;
+                for (int i = 0; i < to_rewire.size(); ++i) {
+                    if (rewireRootSingle(to_rewire[i], next_root)) {
+                        to_rewire.erase(to_rewire.begin()+i);
+                        rewired_something = true;
+                        break;
                     }
                 }
-                if (safe_candidates.empty()) { continue; }
-                rewireToBestParent(to_rewire[i], safe_candidates);
             }
 
             // Adjust the next best value
@@ -145,6 +168,33 @@ namespace mav_active_3d_planning {
                 }
             }
             return true;
+        }
+
+        bool RRTStar::rewireRootSingle(TrajectorySegment* segment, TrajectorySegment* new_root){
+            // Try rewiring a single segment
+            std::vector < TrajectorySegment * > candidate_parents;
+            if (!findNearbyCandidates(segment->trajectory.back().position_W, &candidate_parents)) {
+                return false;
+            }
+
+            // remove all candidates that are still connected to the root
+            std::vector < TrajectorySegment * > safe_candidates;
+            TrajectorySegment *current;
+            for (int i = 0; i < candidate_parents.size(); ++i) {
+                current = candidate_parents[i];
+                while (current) {
+                    if (current == new_root) {
+                        safe_candidates.push_back(candidate_parents[i]);
+                        break;
+                    }
+                    current = current->parent;
+                }
+            }
+            if (safe_candidates.empty()) {
+                return false;
+            }
+            // force rewire
+            return rewireToBestParent(segment, safe_candidates, true);
         }
 
         bool
@@ -167,7 +217,7 @@ namespace mav_active_3d_planning {
         }
 
         bool RRTStar::rewireToBestParent(TrajectorySegment *segment,
-                                         const std::vector<TrajectorySegment *> &candidates) {
+                                         const std::vector<TrajectorySegment *> &candidates, bool force_rewire) {
             // Evaluate all candidate parents and store the best one in the segment
             // Goal is the end point of the segment
             mav_msgs::EigenTrajectoryPoint goal_point = segment->trajectory.back();
@@ -184,8 +234,9 @@ namespace mav_active_3d_planning {
                     // Feasible connection: evaluate the trajectory
                     planner_node_->trajectory_evaluator_->computeCost(segment);
                     planner_node_->trajectory_evaluator_->computeValue(segment);
-                    if (best_segment.parent == nullptr || segment->value > best_segment.value) {
+                    if (best_segment.parent == nullptr || force_rewire || segment->value > best_segment.value) {
                         best_segment = segment->shallowCopy();
+                        force_rewire = false;
                     }
                 }
             }
@@ -215,7 +266,7 @@ namespace mav_active_3d_planning {
                             if (p_update_subsequent_) {
                                 std::vector<TrajectorySegment*> subtree;
                                 segment->getTree(&subtree);
-                                for (int j = 0; j < subtree.size(); ++j) {
+                                for (int j = 1; j < subtree.size(); ++j) {
                                     planner_node_->trajectory_evaluator_->computeCost(subtree[j]);
                                     planner_node_->trajectory_evaluator_->computeValue(subtree[j]);
                                 }
@@ -256,7 +307,9 @@ namespace mav_active_3d_planning {
         }
 
         bool RRTStarEvaluatorAdapter::updateSegments(TrajectorySegment *root) {
-            return following_evaluator_->updateSegments(root);
+            bool success = following_evaluator_->updateSegments(root);
+            // After updating call the generator to rewire
+            return generator_->rewireIntermediate(root) & success;
         }
 
         void RRTStarEvaluatorAdapter::visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg,

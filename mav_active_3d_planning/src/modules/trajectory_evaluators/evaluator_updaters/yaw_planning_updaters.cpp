@@ -54,10 +54,8 @@ namespace mav_active_3d_planning {
 
         bool YawPlanningUpdater::updateSegments(TrajectorySegment *root) {
             // recursively update all segments, exclude root since this is now the base with no parent
-            for (int i = 0; i < root->children.size(); ++i) {
-                updateSingle(root->children[i].get());
-            }
-            return true;
+            updateSingle(root);
+            return following_updater_->updateSegments(root);
         }
 
         void YawPlanningUpdater::setupFromParamMap(Module::ParamMap *param_map) {
@@ -71,10 +69,12 @@ namespace mav_active_3d_planning {
             std::string param_ns = (*param_map)["param_namespace"];
             setParam<std::string>(param_map, "following_updater_args", &args, param_ns + "/following_updater");
             following_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(args, verbose_modules_);
+            setParam<std::string>(param_map, "view_updater_args", &args, param_ns + "/view_updater");
+            view_updater_ = ModuleFactory::Instance()->createModule<EvaluatorUpdater>(args, verbose_modules_);
         }
 
         void YawPlanningUpdater::updateSingle(TrajectorySegment *segment) {
-            if (segment->info) {
+            if (segment->info && segment->parent != nullptr) {
                 YawPlanningInfo *info = dynamic_cast<YawPlanningInfo *>(segment->info.get());
 
                 // If requested, check whether the trajectory changed
@@ -94,7 +94,7 @@ namespace mav_active_3d_planning {
 
                 // Update all orientations with the following updater and select the best one as the main trajectory
                 // Initialization step
-                following_updater_->updateSegments(&(info->orientations[0]));
+                view_updater_->updateSegments(&(info->orientations[0]));
                 info->active_orientation = 0;
                 double best_value = info->orientations[0].gain;
                 if (p_select_by_value_) {
@@ -103,7 +103,7 @@ namespace mav_active_3d_planning {
 
                 // Update and compare all other orientations
                 for (int i = 1; i < info->orientations.size(); ++i) {
-                    following_updater_->updateSegments(&(info->orientations[i]));
+                    view_updater_->updateSegments(&(info->orientations[i]));
                     if (p_select_by_value_) {
                         if (info->orientations[i].value > best_value) {
                             info->active_orientation = i;

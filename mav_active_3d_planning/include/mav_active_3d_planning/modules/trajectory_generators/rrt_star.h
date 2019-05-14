@@ -20,6 +20,8 @@ namespace mav_active_3d_planning {
 
             bool rewireRoot(TrajectorySegment *root, int *next_segment);
 
+            bool rewireIntermediate(TrajectorySegment *root);
+
         protected:
             friend ModuleFactory;
             friend mav_active_3d_planning::trajectory_evaluators::RRTStarEvaluatorAdapter;
@@ -31,7 +33,7 @@ namespace mav_active_3d_planning {
 
             virtual bool checkParamsValid(std::string *error_message);
 
-            static ModuleFactory::Registration<RRTStar> registration;
+            static ModuleFactory::Registration <RRTStar> registration;
 
             // parameters
             bool p_rewire_root_;            // if true try rewiring the children of the current segment (to keep them alive)
@@ -52,7 +54,10 @@ namespace mav_active_3d_planning {
             // methods
             bool findNearbyCandidates(const Eigen::Vector3d &target_point, std::vector<TrajectorySegment *> *result);
 
-            bool rewireToBestParent(TrajectorySegment *segment, const std::vector <TrajectorySegment*> &candidates);
+            bool rewireToBestParent(TrajectorySegment *segment, const std::vector<TrajectorySegment *> &candidates,
+                                    bool force_rewire=false);
+
+            bool rewireRootSingle(TrajectorySegment *segment, TrajectorySegment *new_root);
         };
 
     } // namespace trajectory_generators
@@ -84,7 +89,7 @@ namespace mav_active_3d_planning {
 
             void setupFromParamMap(Module::ParamMap *param_map);
 
-            static ModuleFactory::Registration<RRTStarEvaluatorAdapter> registration;
+            static ModuleFactory::Registration <RRTStarEvaluatorAdapter> registration;
 
             // members
             std::unique_ptr <TrajectoryEvaluator> following_evaluator_;
