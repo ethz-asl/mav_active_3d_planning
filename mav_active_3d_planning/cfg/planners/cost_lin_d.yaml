@@ -76,11 +76,14 @@ trajectory_evaluator:
         downsampling_factor: 3.0
         
       cost_computer:
-        type: "SegmentTime"
-          
+        type: "SegmentLength"
+        accumulate: false
+        
       value_computer:
-        type: "RelativeGain"
-        accumulate: true
+        type: "AccumulateValue"
+        following_value_computer:
+          type: "LinearValue"
+          cost_weight: 100
         
       next_selector:
         type: "SubsequentBest"

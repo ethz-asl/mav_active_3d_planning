@@ -77,10 +77,11 @@ trajectory_evaluator:
         
       cost_computer:
         type: "SegmentTime"
-          
+        accumulate: false
+        
       value_computer:
-        type: "RelativeGain"
-        accumulate: true
+        type: "DiscountedRelativeGain"
+        discount_factor: 0.9
         
       next_selector:
         type: "SubsequentBest"

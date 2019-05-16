@@ -76,7 +76,7 @@ trajectory_evaluator:
         downsampling_factor: 3.0
         
       cost_computer:
-        type: "SegmentTime"
+        type: "SegmentLength"
           
       value_computer:
         type: "RelativeGain"

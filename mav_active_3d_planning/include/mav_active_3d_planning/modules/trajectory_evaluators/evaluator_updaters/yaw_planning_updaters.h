@@ -2,6 +2,7 @@
 #define MAV_ACTIVE_3D_PLANNING_EVALUATOR_UPDATERS_YAW_PLANNING_UPDATERS_H
 
 #include "mav_active_3d_planning/modules/trajectory_evaluators/yaw_planning_evaluators.h"
+#include "mav_active_3d_planning/planner_node.h"
 
 namespace mav_active_3d_planning {
     namespace evaluator_updaters {
@@ -50,12 +51,14 @@ namespace mav_active_3d_planning {
 
             // members
             std::unique_ptr<EvaluatorUpdater> following_updater_;
-            std::unique_ptr<EvaluatorUpdater> view_updater_;
             YawPlanningEvaluator* evaluator_;
+            PlannerNode* planner_node_;
 
             // params
             bool p_select_by_value_;
             bool p_dynamic_trajectories_;   // If true recompute the trajectories for segments that have changed
+            double p_update_range_;           // maximum distance to the robot a view needs to have to be updated
+            double p_update_gain_;            // minimum gain a view needs to be updated
 
             // methods
             void updateSingle(TrajectorySegment *segment);

@@ -18,7 +18,7 @@ Script to load and plot data to visualize the impact of the number of orientatio
 """
 
 # ***** Args *****
-p_target_dir = "/home/lukas/Documents/MT/DataFinal/costs/lin_time"
+p_target_dir = "/home/lukas/Documents/MT/DataFinal/costs/disc_time"
 p_evaluate = True   # True: eval target dir, False: plot full series
 p_type = "base"  # base, orientation, subsampling
 

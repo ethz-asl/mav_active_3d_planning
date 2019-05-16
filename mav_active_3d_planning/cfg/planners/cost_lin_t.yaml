@@ -77,10 +77,13 @@ trajectory_evaluator:
         
       cost_computer:
         type: "SegmentTime"
-          
+        accumulate: false
+        
       value_computer:
-        type: "RelativeGain"
-        accumulate: true
+        type: "AccumulateValue"
+        following_value_computer:
+          type: "LinearValue"
+          cost_weight: 50
         
       next_selector:
         type: "SubsequentBest"

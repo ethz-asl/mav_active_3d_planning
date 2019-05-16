@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # *** Args (need to be set) ***
-n_experiments=6
-target_dir="/home/lukas/Documents/MT/Data/loop_adaptive"		# Can reuse same dir to add experiments
+n_experiments=1
+target_dir="/home/lukas/Documents/MT/Data/exp_time"		# Can reuse same dir to add experiments
 clear_voxblox_maps=true		# Irreversibly remove maps after evaluation to save disk space
 experiment=1		# For auto configs of exp1/2 (city/windmill)
 
@@ -43,10 +43,10 @@ roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$t
 
 
 
-
+n_experiments=5
 # *** Run 2nd exp ***
-target_dir="/home/lukas/Documents/MT/Data/loop_minval"		# Can reuse same dir to add experiments
-planner_cfg="planners/costs2.yaml"
+target_dir="/home/lukas/Documents/MT/Data/disc_time"		# Can reuse same dir to add experiments
+planner_cfg="planners/cost_disc_t.yaml"
 
 if [ ! -d "$target_dir" ]; then
   mkdir $target_dir
@@ -60,4 +60,67 @@ done
 
 roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir series:=true 
 
+# *** Run 3rd exp ***
+target_dir="/home/lukas/Documents/MT/Data/disc_dist"		# Can reuse same dir to add experiments
+planner_cfg="planners/cost_disc_d.yaml"
+
+if [ ! -d "$target_dir" ]; then
+  mkdir $target_dir
+fi
+for (( i=1; i<=n_experiments; i++ ))
+do  
+  # run experiment
+  roslaunch mav_active_3d_planning run_experiment.launch data_directory:=$target_dir record_data:=true experiment_config:=$cfg data_frequency:=$freq time_limit:=$dur planner_general_config:=$planner_cfg
+   roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir method:=recent series:=false clear_voxblox_maps:=$clear_voxblox_maps gt_file_path:=$pcl evaluate:=true
+done
+
+roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir series:=true
+
+# *** Run 4th exp ***
+target_dir="/home/lukas/Documents/MT/Data/lin_time"		# Can reuse same dir to add experiments
+planner_cfg="planners/cost_lin_t.yaml"
+
+if [ ! -d "$target_dir" ]; then
+  mkdir $target_dir
+fi
+for (( i=1; i<=n_experiments; i++ ))
+do  
+  # run experiment
+  roslaunch mav_active_3d_planning run_experiment.launch data_directory:=$target_dir record_data:=true experiment_config:=$cfg data_frequency:=$freq time_limit:=$dur planner_general_config:=$planner_cfg
+   roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir method:=recent series:=false clear_voxblox_maps:=$clear_voxblox_maps gt_file_path:=$pcl evaluate:=true
+done
+
+roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir series:=true
+
+# *** Run 5th exp ***
+target_dir="/home/lukas/Documents/MT/Data/lin_dist"		# Can reuse same dir to add experiments
+planner_cfg="planners/cost_lin_d.yaml"
+
+if [ ! -d "$target_dir" ]; then
+  mkdir $target_dir
+fi
+for (( i=1; i<=n_experiments; i++ ))
+do  
+  # run experiment
+  roslaunch mav_active_3d_planning run_experiment.launch data_directory:=$target_dir record_data:=true experiment_config:=$cfg data_frequency:=$freq time_limit:=$dur planner_general_config:=$planner_cfg
+   roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir method:=recent series:=false clear_voxblox_maps:=$clear_voxblox_maps gt_file_path:=$pcl evaluate:=true
+done
+
+roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir series:=true
+
+# *** Run 6th exp ***
+target_dir="/home/lukas/Documents/MT/Data/rel_dist"		# Can reuse same dir to add experiments
+planner_cfg="planners/cost_rel_d.yaml"
+
+if [ ! -d "$target_dir" ]; then
+  mkdir $target_dir
+fi
+for (( i=1; i<=n_experiments; i++ ))
+do  
+  # run experiment
+  roslaunch mav_active_3d_planning run_experiment.launch data_directory:=$target_dir record_data:=true experiment_config:=$cfg data_frequency:=$freq time_limit:=$dur planner_general_config:=$planner_cfg
+   roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir method:=recent series:=false clear_voxblox_maps:=$clear_voxblox_maps gt_file_path:=$pcl evaluate:=true
+done
+
+roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir series:=true
 

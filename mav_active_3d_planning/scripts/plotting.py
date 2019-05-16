@@ -17,6 +17,44 @@ from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
 Script to plot all sorts of spontaneous stuff
 """
 
+def plot_exp1():
+    path = "/home/lukas/Documents/MT/DataFinal/Exp1"
+    dirs = ["exp1_weight", "exp1_nbvp"]
+    data = []
+    for d in dirs:
+        data.append(read_data(os.path.join(path, d, "plot_data.csv")))
+
+    # plot args
+    plt.rcParams.update({'font.size': 16})
+
+    field = 'UnknownVoxels'
+    fig = plt.figure()
+    x = np.array(data[0]['RosTimeM'][1:], dtype=float) / 60
+    y = np.array(data[0][field+'M'][1:], dtype=float)
+    ye = np.array(data[0][field+'S'][1:], dtype=float)
+    plt.plot(x, y, 'b-')
+    plt.fill_between(x, y-ye, y+ye, facecolor='b', alpha=.2)
+    x = np.array(data[1]['RosTimeM'][1:], dtype=float) / 60
+    y = np.array(data[1][field + 'M'][1:], dtype=float)
+    ye = np.array(data[1][field + 'S'][1:], dtype=float)
+    plt.plot(x, y, 'r--')
+    plt.fill_between(x, y - ye, y + ye, facecolor='r', alpha=.2)
+
+    # plt.ylabel('Reconstruction Error Mean [m]')
+    plt.ylabel('Unobserverd Surface Points [%]')
+    plt.xlabel('Simulated Time [min]')
+    plt.xlim(left=0, right=30)
+    # plt.ylim(bottom=0)
+
+
+    # plt.ylim(top=100)
+    fig.set_size_inches(15, 7, forward=True)
+    plt.legend(["Our Method", "NBV-Planner"])   #loc='upper center',
+
+    #finish
+    # plt.xlim(left=0, right=16)
+    plt.show()
+
 
 def plot_gain():
     path = "/home/lukas/Documents/MT/DataFinal/gains"
@@ -56,7 +94,7 @@ def plot_gain():
 
 def plot_cost():
     path = "/home/lukas/Documents/MT/DataFinal/costs"
-    dirs = ["exp_dist", "exp_time", "rel_dist", "rel_time", "pot_dist", "pot_time", "lin_dist", "lin_time"]
+    dirs = ["exp_dist", "exp_time", "rel_dist", "rel_time", "disc_dist", "disc_time", "lin_dist", "lin_time"]
     data = []
     for d in dirs:
         data.append(read_data(os.path.join(path, d, "orientation_data.csv")))
@@ -68,17 +106,17 @@ def plot_cost():
     h = '//'      # hatches
 
     # 1 Time
-    # y = read_plot(data, 'FinalStdError', True)
-    # # 95 none for 0,1, missing for 2, 4 set to 30
-    # bars = plt.bar(x, y[0], yerr=y[1], align='center', alpha=0.8, ecolor='black', capsize=10,
-    #                color=(c[0], c[0], c[1], c[1], c[2], c[2], c[3], c[3]))
-    # bars[1].set_hatch(h)
-    # bars[3].set_hatch(h)
-    # bars[5].set_hatch(h)
-    # bars[7].set_hatch(h)
-    # # plt.ylabel('Exploration after 30 minutes [%]')
-    # # plt.ylabel('Normalized 95% Exploration Time [%]')
-    # plt.ylabel('Normalized Final Error Std [%]')
+    y = read_plot(data, 'T95', True)
+    # 95 none for 0,1, missing for 2, 4 set to 30
+    bars = plt.bar(x, y[0], yerr=y[1], align='center', alpha=0.8, ecolor='black', capsize=10,
+                   color=(c[0], c[0], c[1], c[1], c[2], c[2], c[3], c[3]))
+    bars[1].set_hatch(h)
+    bars[3].set_hatch(h)
+    bars[5].set_hatch(h)
+    bars[7].set_hatch(h)
+    # plt.ylabel('Exploration after 30 minutes [%]')
+    plt.ylabel('Normalized 95% Exploration Time [%]')
+    # plt.ylabel('Normalized Final Error Mean [%]')
 
     # #2 legend
     # fig = plt.figure()

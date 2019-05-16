@@ -1,73 +1,111 @@
-    back_tracker: {n_rotations: 1, sampling_rate: 20.0, stack_size: 10, turn_rate: 1.57,
-      type: FeasibleRotateReverse, update_rate: 2.0}
-    build_modules_on_init: true
-    expand_batch: 1
-    log_performance: true
-    max_new_segments: 0
-    max_new_tries: 0
-    min_new_segments: 0
-    min_new_tries: 0
-    min_new_value: 0
-    performance_log_dir: /home/lukas/Documents/MT/Data/lin_dist/20190510_160354
-    publish_traversable: false
-    replan_pos_threshold: 0.12
-    replan_yaw_threshold: 0.12
-    trajectory_evaluator:
-      bounding_volume_args: /target_bounding_volume
-      following_evaluator:
-        following_evaluator:
-          accurate_frontiers: true
-          bounding_volume_args: /target_bounding_volume
-          clear_from_parents: false
-          cost_computer: {accumulate: false, type: SegmentTime}
-          evaluator_updater:
-            dynamic_trajectories: true
-            following_updater: {type: UpdateAll, update_cost: false, update_gain: true,
-              update_value: true}
-            select_by_value: false
-            type: YawPlanningUpdater
-          frontier_voxel_weight: 10.0
-          min_impact_factor: 0.05
-          new_voxel_weight: 0.0
-          next_selector: {type: SubsequentBest}
-          ray_angle_x: 0.002454
-          ray_angle_y: 0.002681
-          sensor_model: {downsampling_factor: 3.0, focal_length: 320.0, ray_length: 5.0,
-            resolution_x: 640, resolution_y: 480, sampling_time: 0.0, type: IterativeRayCaster}
-          type: VoxelWeightEvaluator
-          use_frontier_voxels: true
-          value_computer:
-            following_value_computer: {cost_weight: 10, type: LinearValue}
-            type: AccumulateValue
-          visualize_sensor_view: true
-        n_directions: 4
+# Base config for final weight planner
+
+# Planner node
+replan_pos_threshold: 0.15
+replan_yaw_threshold: 0.15
+
+max_new_segments: 0
+min_new_segments: 0
+max_new_tries: 0
+min_new_tries: 0
+min_new_value: 0
+
+verbose_modules: true
+build_modules_on_init: true
+expand_batch: 1
+
+# TG
+trajectory_generator:
+  collision_optimistic: false 
+  collision_radius: 1.2
+  clearing_radius: 0.2
+  
+  type: "FeasibleRRTStar"
+  all_semgents_feasible: false
+  crop_segments: true
+  crop_margin: 0.5
+  crop_min_length: 0.2
+  max_extension_range: 2.5
+  maximum_tries: 1000
+  sampling_rate: 20.0
+  sample_yaw: true
+  
+  sampling_mode: "semilocal"
+  semilocal_sampling_count: 10
+  semilocal_sampling_radius_max: 1.5
+  semilocal_sampling_radius_min: 0.5
+  
+  rewire_root: true
+  rewire_intermediate: true
+  max_rewire_range: 2.6
+  n_neighbors: 20
+
+  generator_updater:
+    type: "RecheckCollision"
+  
+# TE
+trajectory_evaluator:
+  type: "RRTStarEvaluatorAdapter"
+  
+  following_evaluator:
+    type: "SimpleYawPlanningEvaluator"
+    n_directions: 6
+    select_by_value: false
+    
+    following_evaluator:
+      type: "VoxelWeightEvaluator"
+      clear_from_parents: false
+      visualize_sensor_view: true
+      accurate_frontiers: true 
+      bounding_volume_args: "/target_bounding_volume"
+    
+      frontier_voxel_weight: 50.0
+      new_voxel_weight: 0.0
+      min_impact_factor: 0.05
+      ray_angle_x: 0.002454
+      ray_angle_y: 0.002681
+      use_frontier_voxels: true
+       
+      sensor_model:
+        type: "IterativeRayCaster"
+        sampling_time: 0.0
+        ray_length: 5.0
+        focal_length: 320.0
+        resolution_x: 640
+        resolution_y: 480
+        downsampling_factor: 3.0
+        
+      cost_computer:
+        type: "SegmentTime"
+        accumulate: true
+        
+      value_computer:
+        type: "AccumulateValue"
+        following_value_computer:
+          type: "ExponentialDiscount"
+          cost_scale: 0.25
+          accumulate: false
+        
+      next_selector:
+        type: "SubsequentBest"
+        
+      evaluator_updater:
+        type: "YawPlanningUpdater"
         select_by_value: false
-        type: SimpleYawPlanningEvaluator
-      sensor_model: {ray_length: 5.0}
-      type: RRTStarEvaluatorAdapter
-    trajectory_generator:
-      bounding_volume_args: /map_bounding_volume
-      collision_optimistic: false
-      collision_radius: 1.2
-      crop_margin: 0.5
-      crop_min_length: 0.2
-      crop_segments: true
-      generator_updater: {type: RecheckCollision}
-      max_extension_range: 2.0
-      max_rewire_range: 2.1
-      maximum_tries: 1000
-      n_neighbors: 10
-      rewire_intermediate: true
-      rewire_root: true
-      sample_yaw: true
-      sampling_mode: spheric
-      sampling_rate: 20.0
-      system_constraints_args: /planner/system_constraints
-      type: FeasibleRRTStar
-    tsdf_voxel_size: 0.1
-    tsdf_voxels_per_side: 16
-    update_mesh_every_n_sec: 0.0
-    use_tf_transforms: false
-    verbose: true
-    verbose_modules: true
-    visualize: true
+        dynamic_trajectories: true
+        update_range: 3.0
+        update_gain: 0
+        following_updater:
+          type: "UpdateAll"
+          update_gain: false
+          update_cost: false
+          update_value: true
+
+back_tracker:
+  type: "RotateReverse"
+  turn_rate: 1.6
+  update_rate: 0.5
+  sampling_rate: 20.0
+  n_rotations: 1
+  stack_size: 10
+

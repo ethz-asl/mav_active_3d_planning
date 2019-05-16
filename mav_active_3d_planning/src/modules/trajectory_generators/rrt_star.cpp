@@ -18,8 +18,9 @@ namespace mav_active_3d_planning {
 
         void RRTStar::setupFromParamMap(Module::ParamMap *param_map) {
             RRT::setupFromParamMap(param_map);
-            setParam<bool>(param_map, "rewire_root", &p_rewire_root_, false);
-            setParam<bool>(param_map, "rewire_intermediate", &p_rewire_intermediate_, false);
+            setParam<bool>(param_map, "rewire_root", &p_rewire_root_, true);
+            setParam<bool>(param_map, "rewire_intermediate", &p_rewire_intermediate_, true);
+            setParam<bool>(param_map, "rewire_update", &p_rewire_update_, true);
             setParam<bool>(param_map, "update_subsequent", &p_update_subsequent_, true);
             setParam<double>(param_map, "max_rewire_range", &p_max_rewire_range_, p_max_extension_range_ + 0.2);
             setParam<int>(param_map, "n_neighbors", &p_n_neighbors_, 10);
@@ -94,7 +95,7 @@ namespace mav_active_3d_planning {
 
         bool RRTStar::rewireIntermediate(TrajectorySegment *root) {
             // After updating, try rewire all from inside out
-            if (!p_rewire_intermediate_) { return true; }
+            if (!p_rewire_update_) { return true; }
             resetTree(root);
             std::vector<TrajectorySegment*> segments;
             segments.push_back(root);
