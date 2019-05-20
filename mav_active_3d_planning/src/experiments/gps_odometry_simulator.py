@@ -20,8 +20,8 @@ class GPSSimulator:
         '''  Initialize ros node and read params '''
         # Parse parameters
         self.position_uncertainty = rospy.get_param('~position_uncertainty', 0.03)  # [m]
-        self.roll_pitch_uncertainty = rospy.get_param('~roll_pitch_uncertainty', 1)  # [deg]
-        self.yaw_uncertainty = rospy.get_param('~yaw_uncertainty', 3)  # [deg]
+        self.roll_pitch_uncertainty = rospy.get_param('~roll_pitch_uncertainty', 1.0)  # [deg]
+        self.yaw_uncertainty = rospy.get_param('~yaw_uncertainty', 3.0)  # [deg]
         self.crop_frequency = rospy.get_param('~crop_frequency', 0.0)  # Hz (0 for max throughput)
         self.noise_model = rospy.get_param('~noise_model', "ground_truth")  # ground_truth, uniform, gaussian, random_walk
         self.publish_difference = rospy.get_param('~publish_difference', True)
@@ -45,7 +45,8 @@ class GPSSimulator:
         elif self.noise_model == "random_walk":
             self.apply_noise = self.apply_noise_random_walk
             self.current_offset = np.array([0.0] * 6)
-            self.walk_speed_range = [rospy.get_param('~walk_speed_min', 0.1), rospy.get_param('~walk_speed_max', 0.15)]
+            # Random walk speed in percent of maximum offset per second
+            self.walk_speed_range = [rospy.get_param('~walk_speed_min', 0.2), rospy.get_param('~walk_speed_max', 0.4)]
             self.max_tries = rospy.get_param('~max_tries', 20)
         else:
             rospy.logerr("Unknown GPS noise model '" + self.noise_model + "'!")
@@ -63,13 +64,11 @@ class GPSSimulator:
         ''' Apply some artificial noise to the odom msg and republish. '''
 
         # Check wether the current frequency is above the desired one
+        now = rospy.Time.now()
         if self.crop_frequency > 0.0:
-            now = rospy.Time.now()
             time_diff = (now - self.previous_time).to_sec()
             if float(self.measure_length) / (np.sum(np.array(self.times)) + time_diff) > self.crop_frequency:
                 return
-            self.times.append(time_diff)
-            self.previous_time = now
 
         # Original pose
         if self.publish_difference:
@@ -79,7 +78,7 @@ class GPSSimulator:
                                  ros_data.pose.pose.position.z])
 
         # Apply noise
-        self.apply_noise(ros_data)
+        ros_data = self.apply_noise(ros_data)
 
         # Publish difference
         if self.publish_difference:
@@ -111,11 +110,15 @@ class GPSSimulator:
                                      (ros_data.pose.pose.orientation.x, ros_data.pose.pose.orientation.y,
                                       ros_data.pose.pose.orientation.z, ros_data.pose.pose.orientation.w),
                                      ros_data.header.stamp, "camera_link", "world")
+        # Update time count
+        if self.crop_frequency > 0.0:
+            self.times.append(time_diff)
+        self.previous_time = now
 
     @staticmethod
     def apply_noise_none(ros_data):
         # Continue with ground truth
-        return
+        return ros_data
 
     def apply_noise_uniform(self, ros_data):
         # apply uniform random offsets (jumpy!)
@@ -138,6 +141,7 @@ class GPSSimulator:
         ros_data.pose.pose.orientation.y = orientation[1]
         ros_data.pose.pose.orientation.z = orientation[2]
         ros_data.pose.pose.orientation.w = orientation[3]
+        return ros_data
 
     def apply_noise_gaussian(self, ros_data):
         # apply gaussian random offsets, bounded by 2x stddev (jumpy!)
@@ -162,6 +166,7 @@ class GPSSimulator:
         ros_data.pose.pose.orientation.y = orientation[1]
         ros_data.pose.pose.orientation.z = orientation[2]
         ros_data.pose.pose.orientation.w = orientation[3]
+        return ros_data
 
     def apply_noise_random_walk(self, ros_data):
         # Random walk in 3d, bounded by position_uncertainty radius sphere. Angles walk independently.
@@ -186,7 +191,7 @@ class GPSSimulator:
         while count < self.max_tries:
             offset = random.uniform(self.walk_speed_range[0], self.walk_speed_range[1]) * time_diff * \
                      self.roll_pitch_uncertainty
-            offset *= (1 - 2 * random.randrange(2))
+            offset *= (1.0 - 2.0 * random.randrange(2))
             if math.fabs(self.current_offset[3] + offset) < self.roll_pitch_uncertainty:
                 self.current_offset[3] = self.current_offset[3] + offset
                 break
@@ -198,7 +203,7 @@ class GPSSimulator:
         while count < self.max_tries:
             offset = random.uniform(self.walk_speed_range[0],
                                     self.walk_speed_range[1]) * time_diff * self.roll_pitch_uncertainty
-            offset *= (1 - 2 * random.randrange(2))
+            offset *= (1.0 - 2.0 * random.randrange(2))
             if math.fabs(self.current_offset[4] + offset) < self.roll_pitch_uncertainty:
                 self.current_offset[4] = self.current_offset[4] + offset
                 break
@@ -232,6 +237,7 @@ class GPSSimulator:
         ros_data.pose.pose.orientation.y = orientation[1]
         ros_data.pose.pose.orientation.z = orientation[2]
         ros_data.pose.pose.orientation.w = orientation[3]
+        return ros_data
 
     @staticmethod
     def add_angle(angle, to_add):

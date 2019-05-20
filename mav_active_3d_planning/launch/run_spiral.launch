@@ -22,15 +22,15 @@
   <arg name="maximum_distance" default="0.0"/>
 
  <!-- Odometry  arguments (random_walk, ground_truth)-->
-  <arg name="use_rovio" default="true"/>
+  <arg name="use_rovio" default="false"/>
   <arg name="odom_noise_model" default="random_walk"/>
   
   <!--  Experiment arguments -->  
-  <arg name="experiment_config" default="experiment2.yaml"/>
-  <arg name="record_data" default="false"/>
+  <arg name="experiment_config" default="experiments/experiment2.yaml"/>
+  <arg name="record_data" default="true"/>
   <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
   <arg name="data_frequency" default="15.0" />
-  <arg name="time_limit" default="8.0" />
+  <arg name="time_limit" default="15" />
   
   
   
@@ -102,7 +102,7 @@
     <!-- Unreal vision client -->
     <node name="unreal_ros_client" pkg="unreal_cv_ros" type="unreal_ros_client.py" required="true" output="screen">
       <param name="mode" value="$(arg uecv_mode)"/>
-      <param name="publish_tf" value="true"/>
+      <param name="publish_tf" value="false"/>
       <param name="collision_on" value="true"/>
       <param name="slowdown" value="$(arg slowdown)"/>
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
@@ -114,8 +114,8 @@
       <param name="flatten_distance" value="$(arg flatten_distance)"/>
       <param name="model_type" value="$(arg model_type)" />
       <param name="maximum_distance" value="$(arg maximum_distance)" />
-      <param name="k_mu_1" value="0.006" />
-      <param name="k_sigma_1" value="0.006" />
+      <param name="k_mu_2" value="0.0024" />
+      <param name="k_sigma_2" value="0.0024" />
       <remap from="ue_sensor_raw" to="unreal_ros_client/ue_sensor_raw" />
       <param name="publish_gray_images" value="$(arg use_rovio)" />
     </node>
@@ -170,10 +170,10 @@
     <!-- Planner -->
     <node name="planner_node" pkg="mav_active_3d_planning" type="exp2_spiral_publisher.py" output="screen" >
       <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
-      <param name="loop_time" value="120.0" />
+      <param name="loop_time" value="83.0" />
     </node> 
  </group>
 
   <!-- RVIZ Visualization -->
-  <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiment_visualization.rviz"/>
+  <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiments/experiment_visualization.rviz"/>
 </launch>

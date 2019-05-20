@@ -18,8 +18,8 @@ Script to plot all sorts of spontaneous stuff
 """
 
 def plot_exp1():
-    path = "/home/lukas/Documents/MT/DataFinal/Exp1"
-    dirs = ["exp1_weight", "exp1_nbvp"]
+    path = "/home/lukas/Documents/MT/DataFinal/Exp2"
+    dirs = ["exp2_weight", "exp2_nbvp", "exp2_spiral"]
     data = []
     for d in dirs:
         data.append(read_data(os.path.join(path, d, "plot_data.csv")))
@@ -27,29 +27,41 @@ def plot_exp1():
     # plot args
     plt.rcParams.update({'font.size': 16})
 
-    field = 'UnknownVoxels'
+    field = 'StdDevError'
     fig = plt.figure()
     x = np.array(data[0]['RosTimeM'][1:], dtype=float) / 60
     y = np.array(data[0][field+'M'][1:], dtype=float)
+    # y = (y-0.022)/0.978
     ye = np.array(data[0][field+'S'][1:], dtype=float)
     plt.plot(x, y, 'b-')
     plt.fill_between(x, y-ye, y+ye, facecolor='b', alpha=.2)
+
     x = np.array(data[1]['RosTimeM'][1:], dtype=float) / 60
     y = np.array(data[1][field + 'M'][1:], dtype=float)
+    # y = (y-0.022)/0.978
     ye = np.array(data[1][field + 'S'][1:], dtype=float)
     plt.plot(x, y, 'r--')
     plt.fill_between(x, y - ye, y + ye, facecolor='r', alpha=.2)
 
-    # plt.ylabel('Reconstruction Error Mean [m]')
-    plt.ylabel('Unobserverd Surface Points [%]')
-    plt.xlabel('Simulated Time [min]')
-    plt.xlim(left=0, right=30)
-    # plt.ylim(bottom=0)
+    x = np.array(data[2]['RosTimeM'][1:], dtype=float) / 60
+    y = np.array(data[2][field + 'M'][1:], dtype=float)
+    # y = (y-0.022)/0.978
+    ye = np.array(data[2][field + 'S'][1:], dtype=float)
+    y = np.append(y, y[-1])
+    ye = np.append(ye, ye[-1])
+    x = np.append(x, 15)
+    plt.plot(x, y, 'k-.')
+    plt.fill_between(x, y - ye, y + ye, facecolor='k', alpha=.2)
 
+    plt.ylabel('Reconstruction Error Standard Deviatio [m]')
+    # plt.ylabel('Unobserverd Surface Points [%]')
+    plt.xlabel('Simulated Time [min]')
+    plt.xlim(left=0, right=15)
+    # plt.ylim(bottom=0)
 
     # plt.ylim(top=100)
     fig.set_size_inches(15, 7, forward=True)
-    plt.legend(["Our Method", "NBV-Planner"])   #loc='upper center',
+    plt.legend(["Our Method", "NBV-Planner", "Spiral"])   #loc='upper center',
 
     #finish
     # plt.xlim(left=0, right=16)
@@ -329,5 +341,5 @@ def is_num(s):
 
 
 if __name__ == '__main__':
-    plot_cost()
+    plot_exp1()
     print("Plotting finished successfully.")
