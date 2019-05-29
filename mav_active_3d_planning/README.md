@@ -22,10 +22,25 @@ For additional information and see the wiki.
 
   
 # Installation
-TODO
+Installation instructions on Linux:
+
+Move to your catkin workspace: 
+```
+cd catkin_ws/src
+```
+Install using a SSH key: 
+```
+git clone git@github.com:ethz-asl/asldoc-2018-ma-schmid.git
+```
+Compile: 
+```
+catkin build mav_active_3d_planning
+```
 
 ## Dependencies
 To run the mav_active_3d_planning simulation framework, the following packages are required: `gazebo_ros`, `rotors_gazebo`, `mav_nonlinear_mpc`, `mav_lowlevel_attitude_controller`, `voxblox_ros` and `unreal_cv_ros`.
+
+To build all modules, the following module dependencies are reuqired: `mav_trajectory_generation`.
 
 ## Data Repository
 Related ressources can be downloaded from [here](https://www.polybox.ethz.ch/index.php/s/6vhPDINcISbEogg). 
