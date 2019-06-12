@@ -18,7 +18,7 @@ namespace mav_active_3d_planning {
             setParam<double>(param_map, "distance", &p_distance_, 1.0);
             setParam<double>(param_map, "yaw_angle", &p_yaw_angle_, 1.571);
             setParam<double>(param_map, "ascent_angle", &p_ascent_angle_, 0.523);
-            setParam<double>(param_map, "p_sampling_rate", &p_sampling_rate_, 20.0);
+            setParam<double>(param_map, "sampling_rate", &p_sampling_rate_, 20.0);
             setParam<int>(param_map, "n_segments", &p_n_segments_, 5);
 
             c_yaw_rate_ = std::min(p_yaw_angle_ * system_constraints_->v_max / p_distance_ / 2.0, system_constraints_->yaw_rate_max);

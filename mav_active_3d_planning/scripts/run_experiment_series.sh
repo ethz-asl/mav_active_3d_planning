@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # *** Args (need to be set) ***
-n_experiments=3
+n_experiments=10
 target_dir="/home/lukas/Documents/MT/Data/exp2_spiral"		# Can reuse same dir to add experiments
 clear_voxblox_maps=true		# Irreversibly remove maps after evaluation to save disk space
 experiment=2		# For auto configs of exp1/2 (city/windmill)

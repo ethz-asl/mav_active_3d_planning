@@ -21,13 +21,13 @@ trajectory_generator:
   clearing_radius: 0.5
   
   bounding_volume:
-        x_min: -23
-        x_max: 1.5
-        y_min: 3.5
-        y_max: 22
-        z_min: -0.3
-        z_max: 6
-        rotation: -15
+    x_min: -23
+    x_max: 1.5
+    y_min: 3.5
+    y_max: 22
+    z_min: -0.3
+    z_max: 6
+    rotation: -15
         
   system_constraints:
     v_max: 0.5

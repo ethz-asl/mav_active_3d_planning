@@ -5,10 +5,10 @@
   <arg name="verbose_gazebo" default="false"/>
 
   <!-- Voxblox arguments -->
-  <arg name="voxel_size" default="0.20"/>
+  <arg name="voxel_size" default="0.10"/>
   <arg name="voxels_per_side" default="16"/>
   <arg name="ray_length" default="5.0"/>
-  <arg name="method" default="fast"/>
+  <arg name="method" default="merged"/>
   <arg name="verbose_voxblox" default="false"/>
     
   <!-- Unreal Routine arguments -->
@@ -17,38 +17,33 @@
   <arg name="delay" default="3.0"/>  
   
   <!-- Unreal Sensor arguments (ground_truth, kinect, gaussian_depth_noise)-->
-  <arg name="model_type" default="ground_truth"/>
-  <arg name="flatten_distance" default="5.5"/>
+  <arg name="model_type" default="gaussian_depth_noise"/>
+  <arg name="flatten_distance" default="6.0"/>
   <arg name="maximum_distance" default="0.0"/>
   
   <!-- Odometry  arguments (random_walk, ground_truth)-->
   <arg name="use_rovio" default="false"/>
-  <arg name="odom_noise_model" default="ground_truth"/>
+  <arg name="odom_noise_model" default="random_walk"/>
   
-  <!--  Planner arguments (tg_uniform, tg_random_linear, tg_rrt, general, nbvp_bircher, te_frontier, te_yaw)-->
-  <arg name="use_separate_configs" default="false"/>
-  <arg name="planner_general_config" default="planners/real_world.yaml"/>
-  <arg name="planner_generator_config" default="planners/modules/tg_rrt.yaml"/>
-  <arg name="planner_evaluator_config" default="planners/modules/te_weight.yaml"/>
+  <!--  Planner arguments-->
+  <arg name="planner_config" default="planners/example_config.yaml"/>
   <arg name="verbose_planner" default="true"/>
   <arg name="visualize" default="true"/>
   
   <!--  Experiment arguments -->  
   <arg name="experiment_config" default="experiment1.yaml"/>
   <arg name="record_data" default="false"/>
-  <arg name="record_visualization" default="true"/>
+  <arg name="record_visualization" default="false"/>
   <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
   <arg name="data_frequency" default="30.0" />
-  <arg name="time_limit" default="10" />
+  <arg name="time_limit" default="30" />
   
   
   
   
 
   <!-- *** Setup experiment params, data, nodes *** -->
-  <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg experiment_config)"/>
-
-<node pkg="rosbag" type="play" name="player" output="screen" args="-r 1 /home/lukas/Documents/MT/Real_Test/2019-04-15-15-18-16.bag"/>
+  <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/experiments/$(arg experiment_config)"/>
 
   <!-- Setup empty gazebo world for physics-->
   <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find rotors_gazebo)/models"/>
@@ -125,8 +120,8 @@
       <param name="model_type" value="$(arg model_type)" />
       <param name="maximum_distance" value="$(arg maximum_distance)" />
       <param name="publish_gray_images" value="$(arg use_rovio)" />
-      <param name="k_mu_1" value="0.006" />
-      <param name="k_sigma_1" value="0.006" />
+      <param name="k_mu_2" value="0.0024" />
+      <param name="k_sigma_2" value="0.0024" />
       <remap from="ue_sensor_raw" to="unreal_ros_client/ue_sensor_raw" />
     </node>
 
@@ -135,7 +130,6 @@
       <param name="ns_mav" value="/$(arg mav_name)" />
       <param name="ns_gazebo" value="/gazebo" />
       <param name="monitor" value="true" />
-      <param name="initial_position" value="[0, 0, 2]" />
       <param name="horizon" value="20" />
       <remap from="ue_raw_in" to="unreal_ros_client/ue_sensor_raw" />
       <remap from="ue_out_in" to="unreal_sensor_model/ue_sensor_out" />
@@ -164,11 +158,10 @@
   <group ns="planner">
     <!-- Voxblox -->
     <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
-      <remap from="pointcloud" to="/penguin/os1_node/points"/>
-<!--      <remap from="pointcloud" to="/unreal/unreal_sensor_model/ue_sensor_out"/>-->
+      <remap from="pointcloud" to="/unreal/unreal_sensor_model/ue_sensor_out"/>
       <remap from="transform" to="/$(arg mav_name)/rovio/transform" if="$(arg use_rovio)"/>
       <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/voxblox/transforms.yaml" if="$(arg use_rovio)"/> 
-      <param name="use_tf_transforms" value="true"/>
+      <param name="use_tf_transforms" value="$(eval arg('use_rovio') == false)"/>
       <param name="publish_tsdf_map" value="true" />
       <param name="publish_esdf_map" value="true" />
       <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
@@ -180,11 +173,11 @@
       <param name="allow_clear" value="true" />
       <param name="verbose" value="$(arg verbose_voxblox)" />
       <param name="publish_map_incremental" value="true" />
-      <param name="publish_traversable" value="true" />
     </node>
     
     <!-- Planner -->
     <node name="planner_node" pkg="mav_active_3d_planning" type="planner_node" output="screen" >
+		  <!-- Voxblox Server -->
       <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
       <remap from="planner_node/tsdf_map_in" to="voxblox_node/tsdf_map_out" />
       <param name="use_tf_transforms" value="false" />
@@ -193,6 +186,7 @@
       <param name="update_mesh_every_n_sec" value="0.0" />   
       <param name="publish_traversable" value="false" />         
     
+    	<!-- General Settings -->
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
       <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
       <param name="verbose" value="$(arg verbose_planner)" />
@@ -203,19 +197,12 @@
       <param name="trajectory_evaluator/sensor_model/ray_length" value="$(arg ray_length)" />
       <param name="trajectory_evaluator/bounding_volume_args" value="/target_bounding_volume" />
       <param name="trajectory_generator/bounding_volume_args" value="/map_bounding_volume" />
-      <param name="trajectory_generator/system_constraints_args" value="/planner/system_constraints" />
       
-      <!-- General Config -->    
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_general_config)"/>
+      <!-- Build the Planner by Configuration -->    
+      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_config)"/>
     </node>    
-    
-    <!-- Modular config -->    
-    <group if="$(arg use_separate_configs)">
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_generator_config)" ns="planner_node"/>
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_evaluator_config)" ns="planner_node"/> 
-    </group>
  </group>
 
   <!-- RVIZ Visualization -->
-  <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiment_visualization.rviz" if="$(arg visualize)"/>
+  <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiments/experiment_visualization.rviz" if="$(arg visualize)"/>
 </launch>
