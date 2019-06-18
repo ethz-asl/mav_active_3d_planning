@@ -25,6 +25,8 @@ namespace mav_active_3d_planning {
             // params
             double cost_weight_;
             double gain_weight_;
+            bool p_accumulate_cost_;     // If true first accumulate all cost, then discount
+            bool p_accumulate_gain_;     // If true first accumulate all cost, then discount
         };
 
         // Discount the gain with an exponential term of the cost
@@ -43,7 +45,8 @@ namespace mav_active_3d_planning {
 
             // params
             double p_cost_scale_;
-            bool p_accumulate_;     // If true first accumulate all gain and cost, then discount
+            bool p_accumulate_cost_;     // If true first accumulate all cost, then discount
+            bool p_accumulate_gain_;     // If true first accumulate all gain, then discount
 
         };
 
