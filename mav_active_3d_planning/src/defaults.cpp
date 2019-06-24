@@ -33,9 +33,8 @@ namespace mav_active_3d_planning {
         }
 
         bool BoundingVolume::contains(const Eigen::Vector3d &point) {
-            Eigen::Vector3d rotated_point = rotation_quat * point;
-//            rotated_point = rotated_point * rotation_quat;
             if (!is_setup) { return true; } // Uninitialized boxes always return true, so can check them by default
+            Eigen::Vector3d rotated_point = rotation_quat * point;
             if (rotated_point.x() < x_min) { return false; }
             if (rotated_point.x() > x_max) { return false; }
             if (rotated_point.y() < y_min) { return false; }
