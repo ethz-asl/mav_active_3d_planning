@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import rospy
-import rosgraph
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
 from Tkinter import *
@@ -17,7 +16,7 @@ To get a bounding box:
 - Hit 'Compute'
 - Copy + paste the output into the cfg
 
-Visualize a bounding box:
+Visualize a bounding box in RVIZ:
 - Copy + paste a cfg into the output textfield
 - Hit 'Visualize'
 """
