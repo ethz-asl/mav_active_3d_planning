@@ -1,6 +1,13 @@
-mav_active_3d_planning contains code for  voxblox based active path planning in unknown environments with the goal of optimizing a 3D-reconstruction gain such as exploration and quality while minimizing a cost. 
+The mav_active_3d_planning package is dedicated to the design, evaluation and application of active path planning algorithms for MAVs. We provide a framework for creating, evaluating and employing primarily sampling based, receding horizon algorithms that optimize a gain while minimizing a cost, for example exploration and quality against execution time in the case of autonomous 3D reconstruction. 
 
-We provide a framework for buidling and evaluating sampling based, receding horizon planners.
+# Paper
+If you find this package useful for your research, please consider citing:
+```
+@beingWritten{
+  A paper is currently being written.
+  The repo is for confidential use only at the moment.
+}
+```
 
 # Table of Contents
 **Installation**
@@ -13,12 +20,12 @@ We provide a framework for buidling and evaluating sampling based, receding hori
 * [Run an Experiment](#Run-an-Experiment)
 
 **Documentation**
-* [Planner Structure](https://github.com/ethz-asl/asldoc-2018-ma-schmid/wiki/Planner-Structure)
-* [Planner Design Framework](https://github.com/ethz-asl/asldoc-2018-ma-schmid/wiki/Planner-Design-Framework)
-* [Running and Evaluating a Simulated Experiment](https://github.com/ethz-asl/asldoc-2018-ma-schmid/wiki/Running-and-Evaluating-a-Simulated-Experiment)
-* [Code Index](https://github.com/ethz-asl/asldoc-2018-ma-schmid/wiki/Code-Index)
+* [Planner Structure](https://github.com/ethz-asl/mav_active_3d_planning/wiki/Planner-Structure)
+* [Planner Design Framework](https://github.com/ethz-asl/mav_active_3d_planning/wiki/Planner-Design-Framework)
+* [Running and Evaluating a Simulated Experiment](https://github.com/ethz-asl/mav_active_3d_planning/wiki/Running-and-Evaluating-a-Simulated-Experiment)
+* [Code Index](https://github.com/ethz-asl/mav_active_3d_planning/wiki/Code-Index)
 
-For additional information and see the wiki.
+For additional information please see the wiki.
 
   
 # Installation
@@ -30,7 +37,7 @@ cd catkin_ws/src
 ```
 Install using a SSH key: 
 ```
-git clone git@github.com:ethz-asl/asldoc-2018-ma-schmid.git
+git clone git@github.com:ethz-asl/mav_active_3d_planning.git
 ```
 Compile: 
 ```
@@ -38,9 +45,7 @@ catkin build mav_active_3d_planning
 ```
 
 ## Dependencies
-To run the mav_active_3d_planning simulation framework, the following packages are required: `gazebo_ros`, `rotors_gazebo`, `mav_nonlinear_mpc`, `mav_lowlevel_attitude_controller`, `voxblox_ros` and `unreal_cv_ros`.
-
-To build all modules, the following module dependencies are reuqired: `mav_trajectory_generation`.
+To run the mav_active_3d_planning simulation framework, the following ROS packages are required: `gazebo_ros`, `rotors_gazebo`, `mav_nonlinear_mpc`, `mav_lowlevel_attitude_controller`, `mav_trajectory_generation`, `voxblox_ros` and `unreal_cv_ros`. All packages are available at [ethz-asl](https://github.com/ethz-asl).
 
 ## Data Repository
 Related ressources can be downloaded from [here](https://www.polybox.ethz.ch/index.php/s/6vhPDINcISbEogg). 
