@@ -1,5 +1,5 @@
 #include "mav_active_3d_planning/modules/trajectory_evaluators/evaluator_updaters/default_evaluator_updaters.h"
-#include "mav_active_3d_planning/planner_node.h"
+#include "mav_active_3d_planning/planner_node_class.h"
 
 #include <vector>
 #include <algorithm>

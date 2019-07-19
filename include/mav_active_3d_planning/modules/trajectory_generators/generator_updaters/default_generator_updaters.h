@@ -2,7 +2,7 @@
 #define MAV_ACTIVE_3D_PLANNING_GENERATOR_UPDATERS_DEFAULT_GENERATOR_UPDATERS_H
 
 #include "mav_active_3d_planning/trajectory_generator.h"
-#include "mav_active_3d_planning/planner_node.h"
+#include "mav_active_3d_planning/planner_node_class.h"
 
 namespace mav_active_3d_planning {
     namespace generator_updaters {

@@ -1,5 +1,5 @@
 #include "mav_active_3d_planning/modules/trajectory_evaluators/sensor_models/sensor_model.h"
-#include "mav_active_3d_planning/planner_node.h"
+#include "mav_active_3d_planning/planner_node_class.h"
 
 namespace mav_active_3d_planning {
 

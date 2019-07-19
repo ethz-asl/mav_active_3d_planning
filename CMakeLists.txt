@@ -12,6 +12,8 @@ catkin_package()
 # LIBRARIES #
 #############
 cs_add_library(${PROJECT_NAME}
+        # Planner Node class
+        src/planner_node_class.cpp
         # Core
         src/defaults.cpp
         src/module_factory.cpp

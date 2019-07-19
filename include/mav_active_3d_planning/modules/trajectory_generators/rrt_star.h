@@ -3,7 +3,7 @@
 
 #include "mav_active_3d_planning/modules/trajectory_generators/rrt.h"
 #include "mav_active_3d_planning/trajectory_evaluator.h"
-#include "mav_active_3d_planning/planner_node.h"
+#include "mav_active_3d_planning/planner_node_class.h"
 
 
 namespace mav_active_3d_planning {

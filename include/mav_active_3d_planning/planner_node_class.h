@@ -1,5 +1,5 @@
-#ifndef MAV_ACTIVE_3D_PLANNING_PLANNER_NODE_H_
-#define MAV_ACTIVE_3D_PLANNING_PLANNER_NODE_H_
+#ifndef MAV_ACTIVE_3D_PLANNING_PLANNER_NODE_CLASS_H_
+#define MAV_ACTIVE_3D_PLANNING_PLANNER_NODE_CLASS_H_
 
 #include "mav_active_3d_planning/trajectory_segment.h"
 #include "mav_active_3d_planning/trajectory_generator.h"
@@ -129,5 +129,5 @@ namespace mav_active_3d_planning {
     };
 
 } // namespace mav_active_3d_planning
-#endif  // MAV_ACTIVE_3D_PLANNING_PLANNER_NODE_H_
+#endif  // MAV_ACTIVE_3D_PLANNING_PLANNER_NODE_CLASS_H_
 
