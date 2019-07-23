@@ -11,8 +11,8 @@ If you find this package useful for your research, please consider citing:
 
 # Table of Contents
 **Installation**
-* [Installation](#Installation)
 * [Dependencies](#Dependencies)
+* [Installation](#Installation)
 * [Data Repository](#Data-Repository)
 
 **Examples**
@@ -27,8 +27,20 @@ If you find this package useful for your research, please consider citing:
 
 For additional information please see the wiki.
 
-  
 # Installation
+## Dependencies
+**ROS Packages:**
+
+The mav_active_3d_planning package depends on the following ROS packages:
+* `voxblox` ([https://github.com/ethz-asl/voxblox](https://github.com/ethz-asl/voxblox))
+* `mav_trajectory_generation` ([https://github.com/ethz-asl/mav_trajectory_generation](https://github.com/ethz-asl/mav_trajectory_generation))
+
+To run the full simulation, these additional packages are needed: 
+* `unreal_cv_ros` ([https://github.com/ethz-asl/unreal_cv_ros](https://github.com/ethz-asl/unreal_cv_ros))
+* `rotors_simulator` ([https://github.com/ethz-asl/rotors_simulator](https://github.com/ethz-asl/rotors_simulator))
+* `mav_control_rw` ([https://github.com/ethz-asl/mav_control_rw](https://github.com/ethz-asl/mav_control_rw))
+
+## Installation
 Installation instructions on Linux:
 
 Move to your catkin workspace: 
@@ -44,11 +56,8 @@ Compile:
 catkin build mav_active_3d_planning
 ```
 
-## Dependencies
-To run the mav_active_3d_planning simulation framework, the following ROS packages are required: `gazebo_ros`, `rotors_gazebo`, `mav_nonlinear_mpc`, `mav_lowlevel_attitude_controller`, `mav_trajectory_generation`, `voxblox_ros` and `unreal_cv_ros`. All packages are available at [ethz-asl](https://github.com/ethz-asl).
-
 ## Data Repository
-Related ressources can be downloaded from [here](https://www.polybox.ethz.ch/index.php/s/6vhPDINcISbEogg). 
+Related ressources, such as experiment scenarios and ground truth point clouds, can be downloaded from [here](https://www.polybox.ethz.ch/index.php/s/6vhPDINcISbEogg). 
 
 # Examples
 ## Configuring a Planner
