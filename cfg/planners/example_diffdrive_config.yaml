@@ -15,7 +15,7 @@ build_modules_on_init: true
 trajectory_generator:
   collision_optimistic: false 
   collision_radius: 0.1 #0.7
-  type: "Uniform"
+  type: "DiffDriveTrajectoryGeneration"
   
   # Generator Params
   n_segments: 5

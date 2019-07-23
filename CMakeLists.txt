@@ -38,6 +38,7 @@ cs_add_library(${PROJECT_NAME}
         src/modules/trajectory_generators/rrt_star.cpp
         src/modules/trajectory_generators/feasible_rrt_star.cpp
         src/modules/trajectory_generators/uniform.cpp
+        src/modules/trajectory_generators/diffdrive_trajectory_generation.cpp
         # Evaluators
         src/modules/trajectory_evaluators/simulated_sensor_evaluator.cpp
         src/modules/trajectory_evaluators/naive_evaluator.cpp

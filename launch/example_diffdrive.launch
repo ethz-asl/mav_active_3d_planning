@@ -26,12 +26,12 @@
   <arg name="odom_noise_model" default="random_walk"/>
   
   <!--  Planner arguments-->
-  <arg name="planner_config" default="planners/example_config.yaml"/>
+  <arg name="planner_config" default="planners/example_diffdrive_config.yaml"/>
   <arg name="verbose_planner" default="true"/>
   <arg name="visualize" default="true"/>
   
   <!--  Experiment arguments -->  
-  <arg name="experiment_config" default="experiment1.yaml"/>
+  <arg name="experiment_config" default="calibrationarena.yaml"/>
   <arg name="record_data" default="false"/>
   <arg name="record_visualization" default="false"/>
   <arg name="data_directory" default="/mnt/sevensense_external/doc_ma_huberya/data"/> 
