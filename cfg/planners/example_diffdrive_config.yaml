@@ -44,8 +44,9 @@ trajectory_generator:
   
 # Specifying a trajectory evaluator
 trajectory_evaluator:
-  type: "NaiveEvaluator"
-  
+  #type: "NaiveEvaluator"
+  type: "CalibrationEvaluator"
+
   # Evaluator params and sensor model for simulated sensor evaluators
   clear_from_parents: false
   camera_params_ns: "/unreal/unreal_ros_client/camera_params"

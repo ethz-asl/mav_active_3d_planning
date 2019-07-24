@@ -38,17 +38,21 @@ namespace mav_active_3d_planning {
             double p_sampling_rate_;
             int p_n_segments_;
             int p_max_tries_;
+            double max_dyaw_; //[rad/s]
+            double max_vel_; //[m/s]
+            double max_acc_; //[m/s²]
+            double max_time_; //[s]
 
             // optimization settings
             mav_trajectory_generation::FeasibilityAnalytic feasibility_check_;
             mav_trajectory_generation::NonlinearOptimizationParameters parameters_;
 
             // methods
-            void sampleGoalPose(double *yaw, Eigen::Vector3d *goal_pos, const Eigen::Vector3d &start_pos);
+            //void sampleGoalPose(double *yaw, Eigen::Vector3d *goal_pos, const Eigen::Vector3d &start_pos);
 
-            void optimizeVertices(mav_trajectory_generation::Vertex::Vector *vertices,
+            /*void optimizeVertices(mav_trajectory_generation::Vertex::Vector *vertices,
                                   mav_trajectory_generation::Segment::Vector *segments,
-                                  mav_trajectory_generation::Trajectory *trajectory);
+                                  mav_trajectory_generation::Trajectory *trajectory);*/
 
             bool checkInputFeasible(const mav_trajectory_generation::Segment::Vector &segments);
 
