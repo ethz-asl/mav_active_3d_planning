@@ -14,14 +14,15 @@ build_modules_on_init: true
 # Specifying a trajectory generator
 trajectory_generator:
   collision_optimistic: false 
-  collision_radius: 0.1 #0.7
+  collision_radius: 0.7
   type: "DiffDriveTrajectoryGeneration"
   
   # Generator Params
   n_segments: 5
-  distance: 1.5  
-  yaw_angle: 1.2
-  ascent_angle: 0.523
+  max_dyaw: 1
+  max_acc: 1
+  max_vel: 4
+  max_time: 5
   sampling_rate: 20
   
   # System constraints
@@ -64,6 +65,7 @@ trajectory_evaluator:
   # Choose a cost
   cost_computer:
     type: "SegmentTime"
+    accumulate: true
     
   # How to compute the values
   value_computer:

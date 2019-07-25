@@ -186,12 +186,15 @@ namespace mav_active_3d_planning {
                 requestNextTrajectory();
             } else {
                 if (new_segment_tries_ < p_min_new_tries_) {
+                    ROS_INFO("Exiting because min tries was not reached!");
                     return;     // check minimum tries reached
                 }
                 if (new_segments_ < p_min_new_segments_) {
+                    ROS_INFO("Exiting because min new segments was not reached!");
                     return;     // check minimum successful expansions reached
                 }
                 if (!min_new_value_reached_) {
+                    ROS_INFO("Exiting because min value was not reached!");
                     return;      // check minimum value reached
                 }
                 // All requirements met

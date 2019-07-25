@@ -19,7 +19,7 @@ namespace mav_active_3d_planning {
             setParam<double>(param_map, "sampling_rate", &p_sampling_rate_, 0.5);
             setParam<int>(param_map, "n_segments", &p_n_segments_, 5);
             setParam<int>(param_map, "max_tries", &p_max_tries_, 100);
-            setParam<double>(param_map, "max_dyaw", &max_dyaw_, 0.3);
+            setParam<double>(param_map, "max_dyaw", &max_dyaw_, 1);
             setParam<double>(param_map, "max_acc", &max_acc_, 1);
             setParam<double>(param_map, "max_vel", &max_vel_, 4);
             setParam<double>(param_map, "max_time", &max_time_, 5);
@@ -124,88 +124,11 @@ namespace mav_active_3d_planning {
                 new_segments->push_back(new_segment);
                 valid_segments++;
 
-                
-                /*// new random target
-                double yaw;
-                Eigen::Vector3d goal_pos;
-                sampleGoalPose(&yaw, &goal_pos, start_pos);
-
-                // create trajectory (4D)
-                Eigen::Vector4d start4, goal4, vel4, acc4;
-                start4 << start_pos, target->trajectory.back().getYaw();
-                goal4 << goal_pos, yaw;
-                vel4 << target->trajectory.back().velocity_W, target->trajectory.back().getYawRate();
-                acc4 << target->trajectory.back().acceleration_W, target->trajectory.back().getYawAcc();
-
-                mav_trajectory_generation::Vertex::Vector vertices;
-                mav_trajectory_generation::Vertex start(4), goal(4);
-                start.makeStartOrEnd(start4, mav_trajectory_generation::derivative_order::ACCELERATION);
-                start.addConstraint(mav_trajectory_generation::derivative_order::VELOCITY, vel4);
-                start.addConstraint(mav_trajectory_generation::derivative_order::ACCELERATION, acc4);
-                vertices.push_back(start);
-                goal.makeStartOrEnd(goal4, mav_trajectory_generation::derivative_order::ACCELERATION);
-
-                // test: add some goal velocity
-                Eigen::Vector4d constraint4;
-                constraint4 << 0.5 * (goal_pos - start_pos).normalized(), 0;
-                goal.addConstraint(mav_trajectory_generation::derivative_order::VELOCITY, constraint4);
-                vertices.push_back(goal);
-
-                // Optimize
-                mav_trajectory_generation::Segment::Vector segments;
-                mav_trajectory_generation::Trajectory trajectory;
-                optimizeVertices(&vertices, &segments, &trajectory);
-
-                // check input feasibility
-                if (!checkInputFeasible(segments)) {
-                    continue;
-                }
-
-                // convert to EigenTrajectory
-                mav_msgs::EigenTrajectoryPoint::Vector states;
-                if (!mav_trajectory_generation::sampleWholeTrajectory(trajectory, 1.0 / p_sampling_rate_, &states)) {
-                    continue;
-                }
-
-                // Check collision
-                if (!checkTrajectoryCollision(states)) {
-                    continue;
-                }
-
-                // Build result
-                TrajectorySegment *new_segment = target->spawnChild();
-                new_segment->trajectory = states;
-                new_segments->push_back(new_segment);
-                valid_segments++;*/
             }
             // Feasible solution found?
             return (valid_segments > 0);
         }
 
-        /*void DiffDriveTrajectoryGeneration::sampleGoalPose(double *yaw, Eigen::Vector3d *goal_pos,
-                                                     const Eigen::Vector3d &start_pos) {
-            *yaw = (double) rand() * 2.0 * M_PI / RAND_MAX;
-            double theta = -M_PI/2;
-            double range = p_distance_min_ + (double) rand() / RAND_MAX * (p_distance_max_ - p_distance_min_);
-            *goal_pos = start_pos + range * Eigen::Vector3d(sin(theta) * cos(*yaw), sin(theta) * sin(*yaw), cos(theta));
-        }*/
-
-        /*void DiffDriveTrajectoryGeneration::optimizeVertices(mav_trajectory_generation::Vertex::Vector *vertices,
-                                                       mav_trajectory_generation::Segment::Vector *segments,
-                                                       mav_trajectory_generation::Trajectory *trajectory) {
-            std::vector<double> segment_times = mav_trajectory_generation::estimateSegmentTimes(*vertices,
-                                                                                                system_constraints_->v_max,
-                                                                                                system_constraints_->a_max);
-            mav_trajectory_generation::PolynomialOptimizationNonLinear<10> opt(4, parameters_);
-            opt.setupFromVertices(*vertices, segment_times, mav_trajectory_generation::derivative_order::ACCELERATION);
-            opt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::VELOCITY,
-                                              system_constraints_->v_max);
-            opt.addMaximumMagnitudeConstraint(mav_trajectory_generation::derivative_order::ACCELERATION,
-                                              system_constraints_->a_max);
-            opt.optimize();
-            opt.getPolynomialOptimizationRef().getSegments(segments);
-            opt.getTrajectory(trajectory);
-        }*/
 
         bool DiffDriveTrajectoryGeneration::checkInputFeasible(const mav_trajectory_generation::Segment::Vector &/*segments*/) {
             /*for (int i = 0; i < segments.size(); ++i) {
