@@ -17,9 +17,9 @@ target_bounding_volume:
   z_min: -1.5
   z_max: 5
   
-# System Constraints
+# System Constraints (I dont think we use them/want them to be restrictiv)
 planner:
   system_constraints:
-    v_max: 1.0
-    a_max: 1.0
-    yaw_rate_max: 1.57
+    v_max: 10
+    a_max: 10
+    yaw_rate_max: 5

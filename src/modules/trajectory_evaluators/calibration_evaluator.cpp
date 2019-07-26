@@ -47,10 +47,12 @@ namespace mav_active_3d_planning {
             mav_active_3d_planning::EvaluateTrajectoryService srv;
             srv.request.posesStamped = poses_stamped;
             if(evaluation_client.call(srv)) {
+                std::cout<<"success"<<std::endl;
                 traj_in->gain = srv.response.quality;
                 return true;
             }
             else {
+                std::cout<<"no success"<<std::endl;
                 traj_in->gain = 0.0;
                 return false;
             }
