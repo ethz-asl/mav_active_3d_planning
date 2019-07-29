@@ -96,7 +96,7 @@ namespace mav_active_3d_planning {
                 // Initialization step
                 int test = info->active_orientation;
                 bool in_reach = (planner_node_->getCurrentPosition()-segment->trajectory.back().position_W).norm() <= p_update_range_;
-                if (in_reach & info->orientations[0].gain > p_update_gain_) {
+                if (in_reach && info->orientations[0].gain > p_update_gain_) {
                     evaluator_->following_evaluator_->computeGain(&(info->orientations[0]));
                 }
                 info->active_orientation = 0;
@@ -107,7 +107,7 @@ namespace mav_active_3d_planning {
 
                 // Update and compare all other orientations
                 for (int i = 1; i < info->orientations.size(); ++i) {
-                    if (in_reach & info->orientations[i].gain > p_update_gain_) {
+                    if (in_reach && info->orientations[i].gain > p_update_gain_) {
                         evaluator_->following_evaluator_->computeGain(&(info->orientations[i]));
                     }
                     if (p_select_by_value_) {
