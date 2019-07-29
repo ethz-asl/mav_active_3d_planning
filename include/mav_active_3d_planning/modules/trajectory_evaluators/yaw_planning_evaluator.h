@@ -14,12 +14,12 @@ namespace mav_active_3d_planning {
         public:
 
             // Override virtual functions
-            bool computeGain(TrajectorySegment *traj_in);
-            bool computeCost(TrajectorySegment *traj_in);
-            bool computeValue(TrajectorySegment *traj_in);
-            int selectNextBest(TrajectorySegment *traj_in);
-            bool updateSegments(TrajectorySegment *root);
-            virtual void visualizeTrajectoryValue(visualization_msgs::MarkerArray* msg, const TrajectorySegment &trajectory);
+            bool computeGain(TrajectorySegment *traj_in) override;
+            bool computeCost(TrajectorySegment *traj_in) override;
+            bool computeValue(TrajectorySegment *traj_in) override;
+            int selectNextBest(TrajectorySegment *traj_in) override;
+            bool updateSegments(TrajectorySegment *root) override;
+            void visualizeTrajectoryValue(visualization_msgs::MarkerArray* msg, const TrajectorySegment &trajectory) override;
 
         protected:
             friend ModuleFactory;

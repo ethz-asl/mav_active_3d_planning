@@ -94,7 +94,6 @@ namespace mav_active_3d_planning {
 
                 // Update all orientations with the view updater and select the best one as the main trajectory
                 // Initialization step
-                int test = info->active_orientation;
                 bool in_reach = (planner_node_->getCurrentPosition()-segment->trajectory.back().position_W).norm() <= p_update_range_;
                 if (in_reach && info->orientations[0].gain > p_update_gain_) {
                     evaluator_->following_evaluator_->computeGain(&(info->orientations[0]));

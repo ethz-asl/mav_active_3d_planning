@@ -44,6 +44,7 @@ cs_add_library(${PROJECT_NAME}
         src/modules/trajectory_evaluators/voxel_weight_evaluator.cpp
         src/modules/trajectory_evaluators/yaw_planning_evaluator.cpp
         src/modules/trajectory_evaluators/simple_yaw_planning_evaluator.cpp
+        src/modules/trajectory_evaluators/continuous_yaw_planning_evaluator.cpp
         # Other Modules
         src/modules/trajectory_evaluators/sensor_models/simple_ray_caster.cpp
         src/modules/trajectory_evaluators/sensor_models/iterative_ray_caster.cpp

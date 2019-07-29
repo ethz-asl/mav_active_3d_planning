@@ -102,8 +102,8 @@ namespace mav_active_3d_planning {
         }
 
         bool YawPlanningEvaluator::checkParamsValid(std::string *error_message) {
-            if (p_n_directions_ < 2) {
-                *error_message = "n_directions expected > 1";
+            if (p_n_directions_ < 1) {
+                *error_message = "n_directions expected > 0";
                 return false;
             }
             return TrajectoryEvaluator::checkParamsValid(error_message);
