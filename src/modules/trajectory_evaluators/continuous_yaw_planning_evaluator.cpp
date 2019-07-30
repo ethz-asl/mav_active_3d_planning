@@ -30,12 +30,12 @@ namespace mav_active_3d_planning {
             if (segment->parent && segment->info) {
                 double dist = (planner_node_->getCurrentPosition() - segment->trajectory.back().position_W).norm();
                 if (p_update_range_ == 0.0 || p_update_range_ > dist) {
-                    bool update_all = (!p_update_separate_segments_) & (segment->gain > p_update_gain_);
+                    bool update_all = (~p_update_separate_segments_) & (segment->gain > p_update_gain_);
                     YawPlanningInfo *info = dynamic_cast<YawPlanningInfo *>(segment->info.get());
                     for (int i = 0; i < info->orientations.size(); ++i) {
                         if (update_all || info->orientations[i].gain > p_update_gain_) {
                             // all conditions met: update gain of segment
-                            following_evaluator_->updateSegments(&(info->orientations[i]));
+                            following_evaluator_->computeGain(&(info->orientations[i]));
                         }
                     }
                 }
@@ -71,6 +71,10 @@ namespace mav_active_3d_planning {
             info->active_orientation = max_index;
 
             // always recompute cost and value, since trajectory can change
+            segment->gain = 0.0;
+            for (int j = 0; j < p_n_sections_fov_; ++j) {
+                segment->gain += info->orientations[(max_index + j) % n_ori].gain;
+            }
             following_evaluator_->computeCost(segment);
             following_evaluator_->computeValue(segment);
         }
