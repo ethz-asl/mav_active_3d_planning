@@ -107,6 +107,28 @@ namespace mav_active_3d_planning {
             void iterate(TrajectorySegment *current, double *factor, double *gain, double *cost);
         };
 
+        // Computes the value as the aberag of gains
+        class AverageGain : public ValueComputer {
+        public:
+            // override virtual functions
+            bool computeValue(TrajectorySegment *traj_in) override;
+
+        protected:
+            friend ModuleFactory;
+
+            // factory access
+            AverageGain() {}
+            void setupFromParamMap(Module::ParamMap *param_map);
+            static ModuleFactory::Registration<AverageGain> registration;
+
+            // params
+            double p_discount_factor_;
+
+            // recursively compute the discounted gain sum
+            void iterate(TrajectorySegment *current, double *factor, double *gain, double *cost);
+        };
+
+
     } // namespace value_computers
 } // namepsace mav_active_3d_planning
 #endif // MAV_ACTIVE_3D_PLANNING_VALUE_COMPUTERS_DEFAULT_VALUE_COMPUTERS_H

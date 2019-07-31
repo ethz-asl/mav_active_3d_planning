@@ -29,9 +29,9 @@ namespace mav_active_3d_planning {
             for(auto&& eigen_trajectory_point_vector : traj_in->trajectory){
                 geometry_msgs::PoseStamped p;
                 if(eigen_trajectory_point_vector.timestamp_ns >= 0){
-                    p.header.stamp.nsec = eigen_trajectory_point_vector.timestamp_ns;
+                    p.header.stamp.fromNSec(eigen_trajectory_point_vector.timestamp_ns);
                 } else {
-                    p.header.stamp.nsec = eigen_trajectory_point_vector.time_from_start_ns;
+                    p.header.stamp.fromNSec(eigen_trajectory_point_vector.time_from_start_ns);
                 }
                 p.pose.position.x = eigen_trajectory_point_vector.position_W.x();
                 p.pose.position.y = eigen_trajectory_point_vector.position_W.y();
@@ -47,12 +47,10 @@ namespace mav_active_3d_planning {
             mav_active_3d_planning::EvaluateTrajectoryService srv;
             srv.request.posesStamped = poses_stamped;
             if(evaluation_client.call(srv)) {
-                std::cout<<"success"<<std::endl;
                 traj_in->gain = srv.response.quality;
                 return true;
             }
             else {
-                std::cout<<"no success"<<std::endl;
                 traj_in->gain = 0.0;
                 return false;
             }

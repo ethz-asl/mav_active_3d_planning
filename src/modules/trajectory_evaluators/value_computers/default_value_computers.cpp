@@ -69,6 +69,7 @@ namespace mav_active_3d_planning {
             setParam<bool>(param_map, "accumulate_cost", &p_accumulate_cost_, false);
             setParam<bool>(param_map, "accumulate_gain", &p_accumulate_gain_, false);
         }
+        
 
         // AccumulateValue
         ModuleFactory::Registration<AccumulateValue> AccumulateValue::registration("AccumulateValue");
@@ -144,6 +145,30 @@ namespace mav_active_3d_planning {
             *gain += *factor * current->gain;
             *cost += current->cost;
             *factor *= p_discount_factor_;
+        }
+
+        // AverageGain
+        ModuleFactory::Registration<AverageGain> AverageGain::registration("AverageGain");
+
+        bool AverageGain::computeValue(TrajectorySegment *traj_in) {
+            double gain = traj_in->gain;
+            int nseg = 1;
+            TrajectorySegment *current = traj_in->parent;
+            while (current) {
+                gain += current->gain;
+                current = current->parent;
+                nseg+=1;
+            }
+            traj_in->value = gain / nseg;
+            return true;
+        }
+
+        void AverageGain::setupFromParamMap(Module::ParamMap *param_map) {
+            // Create Following value computer
+            std::string args;   // default args extends the parent namespace
+            std::string param_ns = (*param_map)["param_namespace"];
+            setParam<std::string>(param_map, "following_value_computer_args", &args,
+                                  param_ns + "/following_value_computer");
         }
 
     } // namespace value_computers

@@ -49,5 +49,18 @@ namespace mav_active_3d_planning {
             return true;
         }
 
+        // NoCost
+        ModuleFactory::Registration<NoCost> NoCost::registration("NoCost");
+
+        void NoCost::setupFromParamMap(Module::ParamMap *param_map) {}
+
+        bool NoCost::computeCost(TrajectorySegment *traj_in) {
+            traj_in -> cost = 0.0;
+            if (traj_in->trajectory.size() < 2) {
+                return false;
+            }
+            return true;
+        }
+
     } // namespace cost_computers
 } // namepsace mav_active_3d_planning

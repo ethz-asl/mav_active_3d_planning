@@ -48,6 +48,25 @@ namespace mav_active_3d_planning {
             bool p_accumulate_;     // True: Use total length
         };
 
+        // Travelled distance of a segment
+        class NoCost : public CostComputer {
+        public:
+            // override virtual functions
+            bool computeCost(TrajectorySegment *traj_in) override;
+
+        protected:
+            friend ModuleFactory;
+
+            NoCost() {}
+
+            void setupFromParamMap(Module::ParamMap *param_map);
+
+            static ModuleFactory::Registration<NoCost> registration;
+
+            // params
+            bool p_accumulate_;     // True: Use total length
+        };
+
     } // namespace cost_computers
 } // namepsace mav_active_3d_planning
 

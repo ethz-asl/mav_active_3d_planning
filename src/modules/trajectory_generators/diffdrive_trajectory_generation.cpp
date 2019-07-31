@@ -89,16 +89,23 @@ namespace mav_active_3d_planning {
                 if(std::abs(acc) > max_acc_ || time > max_time_) {
                     continue;
                 }
-
+                //std::cout << "new segment"<<std::endl;
                 mav_msgs::EigenTrajectoryPoint::Vector states;
                 auto currpos = start_pos; //getting position via super simple integration (1st order)
                 for(int i = 0; i <= time * p_sampling_rate_; ++i){
                     auto time_from_start = double(i)/p_sampling_rate_;
+                    
                     auto curryaw = start_yaw_W + dyaw * time_from_start;
                     auto currorientation_W_B = Eigen::Quaterniond(std::cos(curryaw/2), 0, 0, std::sin(curryaw/2));
                     auto currvel_W = currorientation_W_B * Eigen::Vector3d(start_vel_B_x + acc * time_from_start, 0, 0);
                     currpos += 1.0/p_sampling_rate_ * currvel_W;
-                    states.push_back(
+                    mav_msgs::EigenTrajectoryPoint trajectory_point;
+                    trajectory_point.position_W = currpos;
+                    trajectory_point.setFromYaw(defaults::angleScaled(curryaw));
+                    //std::cout << i << " gives " << static_cast<int64_t>(time_from_start * 1.0e9) << std::endl; seems ok
+                    trajectory_point.time_from_start_ns = static_cast<int64_t>(time_from_start * 1.0e9);
+                    states.push_back(trajectory_point);
+                    /*states.push_back(
                         mav_msgs::EigenTrajectoryPoint(
                             time_from_start * 10e9,
                             currpos,
@@ -110,7 +117,7 @@ namespace mav_active_3d_planning {
                             Eigen::Vector3d(0, 0, dyaw),
                             Eigen::Vector3d(0, 0, 0)
                         )
-                    );
+                    );*/
                 }
 
                 // Check collision
