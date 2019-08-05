@@ -28,7 +28,6 @@ namespace mav_active_3d_planning {
         bool ContinuousYawPlanningEvaluator::updateSingle(TrajectorySegment *segment) {
             // recursively update the tree
             if (segment->parent && segment->info) {
-                int updated_sections = 0;
                 double dist = (planner_node_->getCurrentPosition() - segment->trajectory.back().position_W).norm();
                 if (p_update_range_ == 0.0 || p_update_range_ > dist) {
                     bool update_all = (~p_update_sections_separate_) & (segment->gain > p_update_gain_);
@@ -37,15 +36,11 @@ namespace mav_active_3d_planning {
                         if (update_all || info->orientations[i].gain > p_update_gain_) {
                             // all conditions met: update gain of segment
                             following_evaluator_->computeGain(&(info->orientations[i]));
-                            updated_sections++;
                         }
                     }
                 }
                 // Update trajectory
-                if (updated_sections > 0) {
-                    setBestYaw(segment);
-                    std::cout << "Updated a segment (" << updated_sections << " sections)" << std::endl;
-                }
+                setBestYaw(segment);
             }
 
             // propagate through tree

@@ -65,8 +65,8 @@ trajectory_evaluator:
       bounding_volume_args: "/target_bounding_volume"
     
       frontier_voxel_weight: 100.0
-      new_voxel_weight: 0.0
-      min_impact_factor: 0.1
+      new_voxel_weight: 0.00
+      min_impact_factor: 0.05
       ray_angle_x: 0.002454
       ray_angle_y: 0.002681
       use_frontier_voxels: true

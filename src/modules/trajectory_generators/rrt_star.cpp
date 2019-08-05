@@ -98,38 +98,41 @@ namespace mav_active_3d_planning {
             if (!p_rewire_update_) { return true; }
             resetTree(root);
             std::vector<TrajectorySegment*> segments;
-            segments.push_back(root);
-            int length = 0;
-            int start = 0;
-            while (segments.size() > length) {
-                // Get all segments breadth first
-                length = segments.size();
-                for (int i = start; i < length; ++i) {
-                    segments[i]->getChildren(&segments);
-                }
-                start = length;
+
+            // order w.r.t distance
+            root->getTree(&segments);
+            std::vector<std::pair<double, TrajectorySegment*>> distance_pairs;
+
+            for (int i = 1; i<segments.size(); ++i) {
+                distance_pairs.push_back(std::make_pair((segments[i]->trajectory.back().position_W - root->trajectory.back().position_W).norm(), segments[i]));
             }
-            // Try rewiring
-            for (int i = 0; i < segments.size(); ++i) {
-                std::vector < TrajectorySegment * > candidate_parents;
-                if (!findNearbyCandidates(segments[i]->trajectory.back().position_W, &candidate_parents)) {
+            std::sort(distance_pairs.begin(), distance_pairs.end());
+
+            // rewire
+            std::vector < TrajectorySegment * > candidate_parents;
+            std::vector < TrajectorySegment * > safe_parents;
+            for (int i = 0; i < distance_pairs.size(); ++i) {
+                candidate_parents.clear();
+                if (!findNearbyCandidates(distance_pairs[i].second->trajectory.back().position_W, &candidate_parents)) {
                     continue;
                 }
-                TrajectorySegment *current = segments[i];
-                while (true) {
-                    // the connection of the segment to the root cannot be rewired (loops!)
-                    candidate_parents.erase(std::remove(candidate_parents.begin(), candidate_parents.end(), current),
-                                            candidate_parents.end());
-                    if(current) {
-                        current = current->parent;
-                    } else {
-                        break;
+                safe_parents.clear();
+                for (int j = 0; j < candidate_parents.size(); ++j) {
+                    // cannot rewire to own children (loops!)
+                    TrajectorySegment *current = candidate_parents[j];
+                    while (true) {
+                        if (current) {
+                            if (current == distance_pairs[i].second) {
+                                break;
+                            }
+                            current = current->parent;
+                        } else {
+                            safe_parents.push_back(candidate_parents[j]);
+                            break;
+                        }
                     }
                 }
-                std::vector < TrajectorySegment * > new_parent = {segments[i]};
-                for (int j = 0; j < candidate_parents.size(); ++j) {
-                    rewireToBestParent(candidate_parents[j], new_parent);
-                }
+                rewireToBestParent(distance_pairs[i].second, safe_parents);
             }
             return true;
         }
