@@ -13,6 +13,7 @@ min_new_value: 0
 verbose_modules: true
 build_modules_on_init: true
 expand_batch: 1
+color_from_gain: true
 
 # TG
 trajectory_generator:

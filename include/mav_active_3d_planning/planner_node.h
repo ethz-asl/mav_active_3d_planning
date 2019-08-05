@@ -97,6 +97,7 @@ namespace mav_active_3d_planning {
         int p_max_new_tries_;               // After no. expansion calls the next segment is forced (0 to ignore)
         double p_min_new_value_;            // Until this value is found in the tree, expansion continues (0 to ignore)
         int p_expand_batch_;                // run multiple segment expansions before rechecking conditions
+        bool p_color_from_gain_;            // true: color segments by gain, false: color
         // ideas: take images only on points,
         std::string logfile_;
 

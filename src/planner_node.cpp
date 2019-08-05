@@ -46,6 +46,8 @@ namespace mav_active_3d_planning {
         if (p_log_performance_) {
             perf_log_data_ = std::vector<double>(6, 0.0);
         }
+        nh_private_.param("color_from_gain", p_color_from_gain_, false);
+
 
         // Sampling constraints
         nh_private_.param("max_new_segments", p_max_new_segments_, 0);  // set 0 for infinite
@@ -397,10 +399,27 @@ namespace mav_active_3d_planning {
 
     void PlannerNode::publishTrajectoryVisualization(const std::vector<TrajectorySegment *> &trajectories) {
         // Display all trajectories in the input and erase previous ones
-        double max_value = (*std::max_element(trajectories.begin(), trajectories.end(),
-                                              TrajectorySegment::comparePtr))->value;
-        double min_value = (*std::min_element(trajectories.begin(), trajectories.end(),
-                                              TrajectorySegment::comparePtr))->value;
+        double max_value = 0.0;
+        double min_value = 0.0;
+        if (p_color_from_gain_){
+            // color according to gain only
+            max_value = trajectories[0]->gain;
+            min_value = trajectories[0]->gain;
+            for (int i = 0; i < trajectories.size(); ++i){
+                if (trajectories[i]->gain > max_value) {
+                    max_value = trajectories[i]->gain;
+                }
+                if (trajectories[i]->gain < min_value) {
+                    min_value = trajectories[i]->gain;
+                }
+            }
+        } else {
+            // color according to value
+            max_value = (*std::max_element(trajectories.begin(), trajectories.end(),
+                                           TrajectorySegment::comparePtr))->value;
+            min_value = (*std::min_element(trajectories.begin(), trajectories.end(),
+                                           TrajectorySegment::comparePtr))->value;
+        }
 
         visualization_msgs::MarkerArray array_msg;
         visualization_msgs::Marker msg;
@@ -419,7 +438,11 @@ namespace mav_active_3d_planning {
 
             // Color according to relative value (blue when indifferent)
             if (max_value != min_value) {
-                double frac = (trajectories[i]->value - min_value) / (max_value - min_value);
+                double frac = trajectories[i]->value;
+                if (p_color_from_gain_){
+                    frac = trajectories[i]->gain;
+                }
+                frac = (frac - min_value) / (max_value - min_value);
                 msg.color.r = std::min((0.5 - frac) * 2.0 + 1.0, 1.0);
                 msg.color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
                 msg.color.b = 0.0;
