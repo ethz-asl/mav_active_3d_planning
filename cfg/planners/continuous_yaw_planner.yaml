@@ -53,8 +53,8 @@ trajectory_evaluator:
     n_sections_fov: 3
     select_by_value: false
     update_range: 3.0
-    update_gain: 0.1
-    update_separate_segments: false
+    update_gain: 0.0
+    update_sections_separate: false
     
     following_evaluator:
       type: "VoxelWeightEvaluator"
@@ -63,8 +63,8 @@ trajectory_evaluator:
       accurate_frontiers: true 
       bounding_volume_args: "/target_bounding_volume"
     
-      frontier_voxel_weight: 50.0
-      new_voxel_weight: 0.0
+      frontier_voxel_weight: 100.0
+      new_voxel_weight: 0.01
       min_impact_factor: 0.05
       ray_angle_x: 0.002454
       ray_angle_y: 0.002681

@@ -28,19 +28,24 @@ namespace mav_active_3d_planning {
         bool ContinuousYawPlanningEvaluator::updateSingle(TrajectorySegment *segment) {
             // recursively update the tree
             if (segment->parent && segment->info) {
+                int updated_sections = 0;
                 double dist = (planner_node_->getCurrentPosition() - segment->trajectory.back().position_W).norm();
                 if (p_update_range_ == 0.0 || p_update_range_ > dist) {
-                    bool update_all = (~p_update_separate_segments_) & (segment->gain > p_update_gain_);
+                    bool update_all = (~p_update_sections_separate_) & (segment->gain > p_update_gain_);
                     YawPlanningInfo *info = dynamic_cast<YawPlanningInfo *>(segment->info.get());
                     for (int i = 0; i < info->orientations.size(); ++i) {
                         if (update_all || info->orientations[i].gain > p_update_gain_) {
                             // all conditions met: update gain of segment
                             following_evaluator_->computeGain(&(info->orientations[i]));
+                            updated_sections++;
                         }
                     }
                 }
                 // Update trajectory
-                setBestYaw(segment);
+                if (updated_sections > 0) {
+                    setBestYaw(segment);
+                    std::cout << "Updated a segment (" << updated_sections << " sections)" << std::endl;
+                }
             }
 
             // propagate through tree
@@ -98,7 +103,7 @@ namespace mav_active_3d_planning {
             setParam<int>(param_map, "n_sections_fov", &p_n_sections_fov_, 1);
             setParam<double>(param_map, "update_range", &p_update_range_, -1.0);    // default is no updates
             setParam<double>(param_map, "update_gain", &p_update_gain_, 0.0);
-            setParam<bool>(param_map, "update_separate_segments", &p_update_separate_segments_, false);
+            setParam<bool>(param_map, "update_sections_separate", &p_update_sections_separate_, false);
 
             planner_node_ = dynamic_cast<PlannerNode *>(ModuleFactory::Instance()->readLinkableModule("PlannerNode"));
 
@@ -155,8 +160,12 @@ namespace mav_active_3d_planning {
                 new_msg.scale.z = 0.07;
                 new_msg.action = visualization_msgs::Marker::ADD;
 
-                // Color according to relative value (blue when indifferent)
-                if (max_value != min_value) {
+                // Color according to relative value (blue when indifferent, grey for values below update range)
+                if (info->orientations[i].gain <= p_update_sections_separate_){
+                    new_msg.color.r = 0.5;
+                    new_msg.color.g = 0.5;
+                    new_msg.color.b = 0.5;
+                } else if (max_value != min_value) {
                     double frac = (info->orientations[i].gain - min_value) / (max_value - min_value);
                     if (p_select_by_value_) {
                         frac = (info->orientations[i].value - min_value) / (max_value - min_value);

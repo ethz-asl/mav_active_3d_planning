@@ -35,7 +35,7 @@ namespace mav_active_3d_planning {
             int p_n_sections_fov_;          // Number of sections visible, i.e. fov/section_width
             double p_update_range_;         // Update only gains within this distance (use 0.0 to check all)
             double p_update_gain_;          // Update only gains within above this
-            bool p_update_separate_segments_;   // True: check for each section, false: check for whole segment
+            bool p_update_sections_separate_;   // True: check for each section, false: check for whole segment
 
             // variables
             PlannerNode* planner_node_;     // ref to main planner for distance checks
