@@ -24,7 +24,12 @@ namespace mav_active_3d_planning {
         private:
             std::string evaluation_service_name;
             ros::ServiceClient evaluation_client;
+            ros::Subscriber pathCompletionListener;
             ros::NodeHandle node_handle;
+            int idCounter = 0;
+            std::unordered_map<TrajectorySegment*, int> trajIdMap;
+
+            void resetMap(const std_msgs::Empty& msg);
         };
     } // namespace trajectory_evaluators
 }  // namespace mav_active_3d_planning

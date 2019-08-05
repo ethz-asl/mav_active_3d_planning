@@ -101,6 +101,7 @@ namespace mav_active_3d_planning {
         target_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
                 mav_msgs::default_topics::COMMAND_TRAJECTORY, 10);
         trajectory_vis_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("trajectory_visualization", 100);
+        target_reached_pub_ = nh_.advertise<std_msgs::Empty>("target_reached", 1);
         odom_sub_ = nh_.subscribe("odometry", 1, &PlannerNode::odomCallback, this);
         get_cpu_time_srv_ = nh_private_.advertiseService("get_cpu_time", &PlannerNode::cpuSrvCallback, this);
 
@@ -181,6 +182,9 @@ namespace mav_active_3d_planning {
 
         // After finishing the current segment, execute the next one
         if (target_reached_) {
+            /* This is a publisher to inform of target reached  */
+            target_reached_pub_.publish(std_msgs::Empty());
+
             if (new_segment_tries_ >= p_max_new_tries_ && p_max_new_tries_ > 0) {
                 // Maximum tries reached: force next segment
                 requestNextTrajectory();

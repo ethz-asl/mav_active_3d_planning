@@ -108,7 +108,7 @@ namespace mav_active_3d_planning {
         };
 
         // Computes the value as the aberag of gains
-        class AverageGain : public ValueComputer {
+        class TrivialGain : public ValueComputer {
         public:
             // override virtual functions
             bool computeValue(TrajectorySegment *traj_in) override;
@@ -117,9 +117,9 @@ namespace mav_active_3d_planning {
             friend ModuleFactory;
 
             // factory access
-            AverageGain() {}
+            TrivialGain() {}
             void setupFromParamMap(Module::ParamMap *param_map);
-            static ModuleFactory::Registration<AverageGain> registration;
+            static ModuleFactory::Registration<TrivialGain> registration;
 
             // params
             double p_discount_factor_;

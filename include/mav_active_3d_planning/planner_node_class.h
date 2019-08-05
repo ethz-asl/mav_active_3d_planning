@@ -58,6 +58,7 @@ namespace mav_active_3d_planning {
         ros::Subscriber odom_sub_;
         ros::Publisher target_pub_;
         ros::Publisher trajectory_vis_pub_;
+        ros::Publisher target_reached_pub_;
         ros::ServiceServer run_srv_;
         ros::ServiceServer get_cpu_time_srv_;
 
