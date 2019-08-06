@@ -24,8 +24,8 @@ namespace mav_active_3d_planning {
             setParam<bool>(param_map, "update_subsequent", &p_update_subsequent_, true);
             setParam<bool>(param_map, "reinsert_root", &p_reinsert_root_, true);
             setParam<double>(param_map, "max_rewire_range", &p_max_rewire_range_, p_max_extension_range_ + 0.2);
+            setParam<double>(param_map, "max_density_range", &p_max_density_range_, 0.0);
             setParam<int>(param_map, "n_neighbors", &p_n_neighbors_, 10);
-            c_rewire_range_square_ = p_max_rewire_range_*p_max_rewire_range_;
             ModuleFactory::Instance()->registerLinkableModule("RRTStarGenerator", this);
             planner_node_ = dynamic_cast<PlannerNode *>(ModuleFactory::Instance()->readLinkableModule("PlannerNode"));
         }
@@ -48,6 +48,21 @@ namespace mav_active_3d_planning {
             // Check max segment range and cropping
             if (!adjustGoalPosition(target->trajectory.back().position_W, &goal_pos_)) {
                 return false;
+            }
+
+            // Check maximum sampling density
+            if (p_max_density_range_>0.0) {
+                double query_pt[3] = {goal_pos_.x(), goal_pos_.y(), goal_pos_.z()};
+                std::size_t ret_index[1];
+                double out_dist[1];
+                nanoflann::KNNResultSet<double> resultSet(1);
+                resultSet.init(ret_index, out_dist);
+                kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10));
+                if (resultSet.size() > 0) {
+                    if (out_dist[0] <= p_max_density_range_) {
+                        return false;
+                    }
+                }
             }
 
             // Find nearby parent candidates
@@ -239,7 +254,7 @@ namespace mav_active_3d_planning {
             kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10));
             bool candidate_found = false;
             for (int i = 0; i < resultSet.size(); ++i) {
-                if (out_dist[i] <= c_rewire_range_square_) {
+                if (out_dist[i] <= p_max_rewire_range_) {
                     candidate_found = true;
                     result->push_back(tree_data_.data[ret_index[i]]);
                 }

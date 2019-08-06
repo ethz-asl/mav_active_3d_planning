@@ -8,6 +8,7 @@
 
 namespace mav_active_3d_planning {
     namespace trajectory_evaluators { class RRTStarEvaluatorAdapter; }
+    namespace generator_updaters { class SimpleRRTStarCollisionUpdater; }
     namespace trajectory_generators {
 
         // Extension of the RRT class. Use with its trajectory evaluator adapter below to find the gain, cost and value
@@ -25,6 +26,7 @@ namespace mav_active_3d_planning {
         protected:
             friend ModuleFactory;
             friend mav_active_3d_planning::trajectory_evaluators::RRTStarEvaluatorAdapter;
+            friend mav_active_3d_planning::generator_updaters::SimpleRRTStarCollisionUpdater;
 
             // factory access
             RRTStar() {}
@@ -42,10 +44,8 @@ namespace mav_active_3d_planning {
             bool p_update_subsequent_;      // True: update the subtrees of rewired segments
             bool p_reinsert_root_;          // True: reinsert the root node at next execution to guarantee rewireability
             double p_max_rewire_range_;     // distance [m] within which rewiring is possible
+            double p_max_density_range_;    // only add points if theres no point closer than this [m], 0.0 to ignore
             int p_n_neighbors_;             // How many knns to consider for rewiring
-
-            // constants
-            double c_rewire_range_square_;
 
             // variables
             bool tree_is_reset_;            // Force reset of kdtree if requestNext is called twice (dangling pointers)
