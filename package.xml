@@ -25,6 +25,7 @@
   <depend>sensor_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
+  <depend>active_calibration_comm</depend>
 
   <export>
 

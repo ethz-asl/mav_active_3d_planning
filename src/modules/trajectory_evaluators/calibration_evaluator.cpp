@@ -5,7 +5,7 @@
 
 #include <geometry_msgs/PoseStamped.h>
 
-#include <mav_active_3d_planning/EvaluateTrajectoryService.h>
+#include <active_calibration_comm/EvaluateTrajectoryService.h>
 
 namespace mav_active_3d_planning {
     namespace trajectory_evaluators {
@@ -17,7 +17,7 @@ namespace mav_active_3d_planning {
             // setup parent
             SimulatedSensorEvaluator::setupFromParamMap(param_map);
             setParam<std::string>(param_map, "evaluation_service_name", &evaluation_service_name, "");
-            evaluation_client = node_handle.serviceClient<mav_active_3d_planning::EvaluateTrajectoryService>(evaluation_service_name);
+            evaluation_client = node_handle.serviceClient<active_calibration_comm::EvaluateTrajectoryService>(evaluation_service_name);
             pathCompletionListener = node_handle.subscribe("target_reached", 1, &CalibrationEvaluator::resetMap, this);
         }
 
@@ -59,7 +59,7 @@ namespace mav_active_3d_planning {
 
                 poses_stamped.push_back(p);
             }
-            mav_active_3d_planning::EvaluateTrajectoryService srv;
+            active_calibration_comm::EvaluateTrajectoryService srv;
             srv.request.posesStamped = poses_stamped;
             if(traj_in->parent){
                 srv.request.parent = trajIdMap[traj_in->parent];

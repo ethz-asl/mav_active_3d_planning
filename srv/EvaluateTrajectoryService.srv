@@ -1,5 +1,0 @@
-geometry_msgs/PoseStamped[] posesStamped
-int32 parent
-int32 id
----
-float64 quality
