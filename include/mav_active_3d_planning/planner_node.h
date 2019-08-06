@@ -79,6 +79,8 @@ namespace mav_active_3d_planning {
         // Info+performance bookkeeping
         ros::Time info_timing_;             // Rostime for verbose and perf
         int info_count_;                    // num trajectories counter for verbose
+        int info_killed_next_;              // number of segments killed during root change
+        int info_killed_update_;            // number of segments killed during updating
         std::ofstream perf_log_file_;       // performance file
         std::vector<double> perf_log_data_; // select, expand, gain, cost, value [cpu seconds]
         std::clock_t perf_cpu_timer_;       // total time counter
@@ -97,7 +99,7 @@ namespace mav_active_3d_planning {
         int p_max_new_tries_;               // After no. expansion calls the next segment is forced (0 to ignore)
         double p_min_new_value_;            // Until this value is found in the tree, expansion continues (0 to ignore)
         int p_expand_batch_;                // run multiple segment expansions before rechecking conditions
-        bool p_color_from_gain_;            // true: color segments by gain, false: color
+        bool p_visualize_gain_;             // true: add a colored sphere according to the gain to every segment
         // ideas: take images only on points,
         std::string logfile_;
 

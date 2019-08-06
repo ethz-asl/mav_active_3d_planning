@@ -2,7 +2,7 @@
 
 # *** Args (need to be set) ***
 n_experiments=1
-target_dir="/home/lukas/Documents/MT/Data/contYawHalfUpdate"		# Can reuse same dir to add experiments
+target_dir="/home/lukas/Documents/MT/Data/test1"		# Can reuse same dir to add experiments
 clear_voxblox_maps=true		# Irreversibly remove maps after evaluation to save disk space
 experiment=1		# For auto configs of exp1/2 (city/windmill)
 
@@ -45,7 +45,7 @@ roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$t
 
 n_experiments=1
 # *** Run 2nd exp ***
-target_dir="/home/lukas/Documents/MT/Data/contYawMinUpdate"		# Can reuse same dir to add experiments
+target_dir="/home/lukas/Documents/MT/Data/test2"		# Can reuse same dir to add experiments
 planner_cfg="planners/continuous_yaw_planner2.yaml"
 
 if [ ! -d "$target_dir" ]; then
@@ -60,18 +60,21 @@ done
 
 roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir series:=true 
 
-## *** Run 3rd exp ***
-target_dir="/home/lukas/Documents/MT/Data/contYawOld"		# Can reuse same dir to add experiments
-planner_cfg="planners/weight_planner.yaml"
 
-if [ ! -d "$target_dir" ]; then
-  mkdir $target_dir
-fi
-for (( i=1; i<=n_experiments; i++ ))
-do  
-  # run experiment
-  roslaunch mav_active_3d_planning run_experiment.launch data_directory:=$target_dir record_data:=true experiment_config:=$cfg data_frequency:=$freq time_limit:=$dur planner_general_config:=$planner_cfg
-   roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir method:=recent series:=false clear_voxblox_maps:=$clear_voxblox_maps gt_file_path:=$pcl evaluate:=true
-done
 
-roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir series:=true
+
+### *** Run 3rd exp ***
+#target_dir="/home/lukas/Documents/MT/Data/contYawOld"		# Can reuse same dir to add experiments
+#planner_cfg="planners/weight_planner.yaml"
+
+#if [ ! -d "$target_dir" ]; then
+#  mkdir $target_dir
+#fi
+#for (( i=1; i<=n_experiments; i++ ))
+#do  
+#  # run experiment
+#  roslaunch mav_active_3d_planning run_experiment.launch data_directory:=$target_dir record_data:=true experiment_config:=$cfg data_frequency:=$freq time_limit:=$dur planner_general_config:=$planner_cfg
+#   roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir method:=recent series:=false clear_voxblox_maps:=$clear_voxblox_maps gt_file_path:=$pcl evaluate:=true
+#done
+
+#roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir series:=true
