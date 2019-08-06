@@ -22,6 +22,7 @@ namespace mav_active_3d_planning {
             setParam<bool>(param_map, "rewire_intermediate", &p_rewire_intermediate_, true);
             setParam<bool>(param_map, "rewire_update", &p_rewire_update_, true);
             setParam<bool>(param_map, "update_subsequent", &p_update_subsequent_, true);
+            setParam<bool>(param_map, "reinsert_root", &p_reinsert_root_, true);
             setParam<double>(param_map, "max_rewire_range", &p_max_rewire_range_, p_max_extension_range_ + 0.2);
             setParam<int>(param_map, "n_neighbors", &p_n_neighbors_, 10);
             c_rewire_range_square_ = p_max_rewire_range_*p_max_rewire_range_;
@@ -147,8 +148,9 @@ namespace mav_active_3d_planning {
             }
             tree_is_reset_ = false;
 
-            // Try rewiring non-next segments (to keept their branches alive)
             TrajectorySegment *next_root = root->children[*next_segment].get();
+
+            // Try rewiring non-next segments (to keept their branches alive)
             std::vector < TrajectorySegment * > to_rewire;
             root->getChildren(&to_rewire);
             to_rewire.erase(std::remove(to_rewire.begin(), to_rewire.end(), next_root), to_rewire.end());
@@ -160,6 +162,31 @@ namespace mav_active_3d_planning {
                         to_rewire.erase(to_rewire.begin()+i);
                         rewired_something = true;
                         break;
+                    }
+                }
+            }
+
+            // If necessary (some segments would die) reinsert old root
+            if (p_reinsert_root_ && to_rewire.size() > 0) {
+                mav_msgs::EigenTrajectoryPointVector new_trajectory;
+                if ((next_root->trajectory.back().position_W-root->trajectory.back().position_W).norm() > 0.0) {
+                    // don't reinsert zero movement nodes
+                    if (connectPoses(next_root->trajectory.back(), root->trajectory.back(), &new_trajectory)) {
+                        TrajectorySegment *reinserted_root = next_root->spawnChild();
+                        reinserted_root->trajectory = new_trajectory;
+                        // take info from old root (without value since already seen) will be discarded/updated anyways
+                        reinserted_root->info = std::move(root->info);
+                        planner_node_->trajectory_evaluator_->computeCost(reinserted_root);
+                        planner_node_->trajectory_evaluator_->computeValue(reinserted_root);
+                        tree_data_.addSegment(reinserted_root);
+                        kdtree_->addPoints(tree_data_.points.size() - 1, tree_data_.points.size() - 1);
+
+                        // rewire
+                        for (int i = 0; i < to_rewire.size(); ++i) {
+                            if (rewireRootSingle(to_rewire[i], next_root)) {
+                                to_rewire.erase(to_rewire.begin()+i);
+                            }
+                        }
                     }
                 }
             }
