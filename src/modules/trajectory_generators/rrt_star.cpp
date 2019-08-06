@@ -59,7 +59,7 @@ namespace mav_active_3d_planning {
                 resultSet.init(ret_index, out_dist);
                 kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10));
                 if (resultSet.size() > 0) {
-                    if (out_dist[0] <= p_max_density_range_) {
+                    if (out_dist[0] <= p_max_density_range_*p_max_density_range_) {
                         return false;
                     }
                 }
@@ -254,7 +254,7 @@ namespace mav_active_3d_planning {
             kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10));
             bool candidate_found = false;
             for (int i = 0; i < resultSet.size(); ++i) {
-                if (out_dist[i] <= p_max_rewire_range_) {
+                if (out_dist[i] <= p_max_rewire_range_*p_max_rewire_range_) {
                     candidate_found = true;
                     result->push_back(tree_data_.data[ret_index[i]]);
                 }
