@@ -1,7 +1,7 @@
 #ifndef MAV_ACTIVE_3D_PLANNING_EVALUATOR_UPDATERS_YAW_PLANNING_UPDATERS_H
 #define MAV_ACTIVE_3D_PLANNING_EVALUATOR_UPDATERS_YAW_PLANNING_UPDATERS_H
 
-#include "mav_active_3d_planning/modules/trajectory_evaluators/yaw_planning_evaluators.h"
+#include "mav_active_3d_planning/modules/trajectory_evaluators/yaw_planning_evaluator.h"
 #include "mav_active_3d_planning/planner_node_class.h"
 
 namespace mav_active_3d_planning {

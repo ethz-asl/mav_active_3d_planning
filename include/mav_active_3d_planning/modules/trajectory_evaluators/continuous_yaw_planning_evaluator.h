@@ -2,7 +2,7 @@
 #define MAV_ACTIVE_3D_PLANNING_TRAJECTORY_EVALUATORS_CONTINUOUS_YAW_PLANNING_EVALUATOR_H
 
 #include "mav_active_3d_planning/modules/trajectory_evaluators/yaw_planning_evaluator.h"
-#include "mav_active_3d_planning/planner_node.h"
+#include "mav_active_3d_planning/planner_node_class.h"
 
 
 namespace mav_active_3d_planning {
