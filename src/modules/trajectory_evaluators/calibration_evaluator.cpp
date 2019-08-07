@@ -33,9 +33,8 @@ namespace mav_active_3d_planning {
                 return false;
             }
             if(traj_in->parent && trajIdMap.find(traj_in->parent) == trajIdMap.end()){
-                ROS_WARN("Attempting to evaluate child before parent, skipping!");
-                traj_in->gain = std::numeric_limits<double>::min();
-                return false;
+                ROS_WARN("Attempting to evaluate child before parent, evaluating parent first!");
+                computeGainFromVisibleVoxels(traj_in->parent);
             }
             trajIdMap.emplace(traj_in, idCounter++);
 
