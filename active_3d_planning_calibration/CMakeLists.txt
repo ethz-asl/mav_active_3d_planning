@@ -17,8 +17,7 @@ cs_add_library(${PROJECT_NAME}
         src/planner/calibration_planner.cpp
         )
 
-cs_install()
-cs_export()
+
 
 ############
 # BINARIES #
@@ -28,3 +27,5 @@ cs_add_executable(calibration_planner_node
         )
 target_link_libraries(calibration_planner_node ${PROJECT_NAME})
 
+cs_install()
+cs_export()

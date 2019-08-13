@@ -3,12 +3,19 @@
 
 #include "active_3d_planning/planner/calibration_planner.h"
 
+#include <std_srvs/Empty.h>
+
 namespace active_3d_planning {
 namespace ros {
 
 CalibrationPlanner::CalibrationPlanner(const ::ros::NodeHandle &nh,
                                        const ::ros::NodeHandle &nh_private)
-    : RosPlanner(nh, nh_private) {}
+    : RosPlanner(nh, nh_private) 
+    {
+      pause_simulation_srv_=nh_.serviceClient<std_srvs::Empty>("/gazebo/pause_physics");
+      unpause_simulation_srv_=nh_.serviceClient<std_srvs::Empty>("/gazebo/unpause_physics");
+      calibrate_srv_=nh_.serviceClient<std_srvs::Empty>("/calibrate_service");
+    }
 
 void CalibrationPlanner::loopIteration() {
   // Continuosly expand the trajectory space
@@ -23,10 +30,12 @@ void CalibrationPlanner::loopIteration() {
 
   // After finishing the current segment, execute the next one
   if (target_reached_) {
-    //TODO this somehow has to block until calibration is complete
-    //ideally there is some pause functionality
-    /* This is a publisher to inform of target reached  */
+    std_srvs::Empty emptySrv;
+    pause_simulation_srv_.call(emptySrv);
+    // This is a publisher to inform of target reached
     target_reached_pub_.publish(std_msgs::Empty());
+    //calibrate_srv_.call(std_srvs::Empty);
+    unpause_simulation_srv_.call(emptySrv);
 
     if (new_segment_tries_ >= p_max_new_tries_ && p_max_new_tries_ > 0) {
       // Maximum tries reached: force next segment

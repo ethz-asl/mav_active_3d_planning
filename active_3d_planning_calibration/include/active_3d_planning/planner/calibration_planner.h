@@ -16,6 +16,10 @@ public:
 protected:
   // Start/Run the planning loop
   void loopIteration() override;
+
+  ::ros::ServiceClient pause_simulation_srv_;
+  ::ros::ServiceClient unpause_simulation_srv_;
+  ::ros::ServiceClient calibrate_srv_;
 };
 } // namespace ros
 } // namespace active_3d_planning

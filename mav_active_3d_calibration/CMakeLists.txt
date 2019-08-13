@@ -8,17 +8,3 @@ add_definitions(-std=c++11)
 
 catkin_package()
 
-#############
-# LIBRARIES #
-#############
-cs_add_library(${PROJECT_NAME}
-        src/planner/exploration_planner.cpp
-        )
-
-############
-# BINARIES #
-############
-cs_add_executable(exploration_planner_node
-        src/exploration_planner_node.cpp
-        )
-target_link_libraries(exploration_planner_node ${PROJECT_NAME})
