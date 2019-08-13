@@ -53,7 +53,7 @@ git clone git@github.com:ethz-asl/mav_active_3d_planning.git
 ```
 Compile: 
 ```
-catkin build mav_active_3d_planning
+catkin build mav_active_3d_exploration
 ```
 
 ## Data Repository
@@ -63,7 +63,7 @@ Related ressources, such as experiment scenarios and ground truth point clouds, 
 ## Configuring a Planner
 A verbose example of how to build a planner is given in `cfg/example_config.yaml`. The presented planner uses local motion primitives to expand new segments and the number of unknown voxels as gain formulation. To see the planner in action, start an unreal\_cv\_ros game, e.g. Experiment1, make sure to tab out of game control with Ctrl+Shift+F1 and then run 
 ```
-roslaunch mav_active_3d_planning example.launch
+roslaunch mav_active_3d_exploration example.launch
 ```
 The planner will be built from the config file and visualized in RVIZ. A useful parameter to set is `verbose_modules: true`, as all available params of all built modules will be printed to console. 
 
@@ -74,11 +74,11 @@ A local motion primitve based planner starting exploration.
 ## Run an Experiment
 In order to record data of the example planner, run 
 ```
-roslaunch mav_active_3d_planning example.launch record_data:=true data_directory:=/path/to/my/data_dir
+roslaunch mav_active_3d_exploration example.launch record_data:=true data_directory:=/path/to/my/data_dir
 ```
 When the experiment is finished by the time limit of 30 minutes or by pressing Ctrl+C, run 
 ```
-roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=/path/to/my/data_dir gt_file_path:=/path/to/experiment1/gt_surface_pcl.ply
+roslaunch mav_active_3d_exploration evaluate_experiment.launch target_directory:=/path/to/my/data_dir gt_file_path:=/path/to/experiment1/gt_surface_pcl.ply
 ```
 When the process is finished, the created data directory contains a folder 'Graphs', containing the evaluation results as well as a folder 'Meshes', which can be visualized using e.g. [CloudCompare](https://www.danielgm.net/cc/). 
 

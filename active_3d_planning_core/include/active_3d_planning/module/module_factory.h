@@ -1,0 +1,60 @@
+#ifndef ACTIVE_3D_PLANNING_CORE_MODULE_FACTORY_H
+#define ACTIVE_3D_PLANNING_CORE_MODULE_FACTORY_H
+
+#include <typeindex>
+#include <typeinfo>
+
+#include "active_3d_planning/module/module.h"
+#include "active_3d_planning/module/module_factory_registry.h"
+
+namespace active_3d_planning {
+
+// Base class to create modules. Setup a concrete factory for different
+// parametrization methods.
+class ModuleFactory {
+public:
+  // TODO put into cpp
+  ModuleFactory() = default;
+  virtual ~ModuleFactory() = default;
+
+  // Module creation (this is the main accessor for new modules).
+  template <class ModuleType>
+  std::unique_ptr<ModuleType> createModule(const std::string &args,
+                                           PlannerI &planner, bool verbose) {
+    // Get config
+    Module::ParamMap param_map;
+    std::string type = "NoDefaultTypeAvailable";
+    getDefaultType(std::type_index(typeid(ModuleType)), &type);
+    getParamMapAndType(&param_map, &type, args);
+    auto module = ModuleFactoryRegistry::Instance().createModule<ModuleType>(
+        type, planner, verbose);
+
+    // Setup module
+    module->setVerbose(verbose);
+    module->setupFromParamMap(&param_map);
+    module->assureParamsValid();
+    if (verbose) {
+      printVerbose(param_map);
+    }
+    return module; // maybe std move?
+  }
+
+protected:
+  // Specify default types for modules that need such (e.g. doNothing modules)
+  void getDefaultType(const std::type_index &module_index, std::string *type);
+
+  // Derived Factory responsibilities
+  // Create a param map from the arg string (ROS, string, file, ...)
+  virtual bool getParamMapAndType(Module::ParamMap *map, std::string *type,
+                                  std::string args) = 0;
+
+  // Modules add verbose param text to the map. Implement this if you want to
+  // print the result.
+  virtual void printVerbose(const Module::ParamMap &map) = 0;
+
+  // Implement this to print type errors
+  virtual void printError(const std::string &message) = 0;
+};
+
+} // namespace active_3d_planning
+#endif // ACTIVE_3D_PLANNING_CORE_MODULE_FACTORY_H
