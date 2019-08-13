@@ -90,7 +90,7 @@
       <remap from="cam0/image_raw" to="/unreal/unreal_sensor_model/ue_gray_image_out" />
       <remap from="imu0" to="ground_truth/imu" />
     </node>
-    <node name="odometry_noise_model" pkg="mav_active_3d_calibration" type="gps_odometry_simulator.py" output="screen" unless="$(arg use_rovio)">
+    <node name="odometry_noise_model" pkg="active_3d_planning_ros" type="gps_odometry_simulator.py" output="screen" unless="$(arg use_rovio)">
       <param name="position_uncertainty" value="0.05"/>
       <param name="roll_pitch_uncertainty" value="1.5" />
       <param name="yaw_uncertainty" value="5.0" />
@@ -119,7 +119,7 @@
       <param name="flatten_distance" value="$(arg flatten_distance)"/>
       <param name="model_type" value="$(arg model_type)" />
       <param name="maximum_distance" value="$(arg maximum_distance)" />
-      <param name="publish_gray_images" value="$(arg use_rovio)" />
+      <param name="publish_gray_images" value="true" />
       <param name="k_mu_2" value="0.0024" />
       <param name="k_sigma_2" value="0.0024" />
       <remap from="ue_sensor_raw" to="unreal_ros_client/ue_sensor_raw" />
@@ -136,7 +136,7 @@
     </node>
     
     <!-- Experiment launcher, data generation-->
-    <node name="eval_data_node" pkg="mav_active_3d_calibration" type="eval_data_node.py" output="screen" required="true">
+    <node name="eval_data_node" pkg="active_3d_planning_ros" type="eval_data_node.py" output="screen" required="true">
       <remap from="ue_out_in" to="unreal_sensor_model/ue_sensor_out" />
       <remap from="unreal_simulation_ready" to="simulation_manager/simulation_ready" />
       <remap from="collision" to="unreal_ros_client/collision" />

@@ -12,7 +12,7 @@
   <arg name="verbose_voxblox" default="false"/>
     
   <!-- Unreal Routine arguments -->
-  <arg name="uecv_mode" default="standard"/>
+  <arg name="uecv_mode" default="fast"/>
   <arg name="slowdown" default="0.2"/>
   <arg name="delay" default="3.0"/>  
   
@@ -157,8 +157,7 @@
 
   <group ns="planner">
     <!-- Voxblox -->
-    <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr"
-    launch-prefix="valgrind --tool=callgrind --callgrind-out-file='callgrind.voxblox.%p'">
+    <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
       <remap from="pointcloud" to="/unreal/unreal_sensor_model/ue_sensor_out"/>
       <remap from="transform" to="/$(arg mav_name)/rovio/transform" if="$(arg use_rovio)"/>
       <rosparam command="load" file="$(find mav_active_3d_exploration)/cfg/voxblox/transforms.yaml" if="$(arg use_rovio)"/> 
@@ -177,8 +176,7 @@
     </node>
     
     <!-- Planner -->
-    <node name="planner_node" pkg="mav_active_3d_exploration" type="exploration_planner_node" output="screen" 
-    launch-prefix="valgrind --tool=callgrind --callgrind-out-file='callgrind.planner.%p'">
+    <node name="planner_node" pkg="mav_active_3d_exploration" type="exploration_planner_node" output="screen">
 		  <!-- Voxblox Server -->
       <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
       <remap from="planner_node/tsdf_map_in" to="voxblox_node/tsdf_map_out" />

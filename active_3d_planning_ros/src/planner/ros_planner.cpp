@@ -96,7 +96,7 @@ RosPlanner::RosPlanner(const ::ros::NodeHandle &nh,
   // think about these
   // Subscribers and publishers
   target_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
-      "trajectory_command", 10);
+      "command/trajectory", 10);
   trajectory_vis_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(
       "trajectory_visualization", 100);
   target_reached_pub_ = nh_.advertise<std_msgs::Empty>("target_reached", 1);

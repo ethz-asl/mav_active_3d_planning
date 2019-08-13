@@ -13,7 +13,7 @@ build_modules_on_init: true
 
 # Specifying a trajectory generator
 trajectory_generator:
-  collision_optimistic: false 
+  collision_optimistic: true 
   collision_radius: 0.1 #0.7
   type: "Uniform"
   
@@ -44,7 +44,8 @@ trajectory_generator:
   
 # Specifying a trajectory evaluator
 trajectory_evaluator:
-  type: "NaiveEvaluator"
+  type: "CalibrationEvaluator"
+  evaluation_service_name: "/evaluate_trajectory"
   
   # Evaluator params and sensor model for simulated sensor evaluators
   clear_from_parents: false

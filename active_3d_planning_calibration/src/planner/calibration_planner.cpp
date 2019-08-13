@@ -34,7 +34,7 @@ void CalibrationPlanner::loopIteration() {
     pause_simulation_srv_.call(emptySrv);
     // This is a publisher to inform of target reached
     target_reached_pub_.publish(std_msgs::Empty());
-    //calibrate_srv_.call(std_srvs::Empty);
+    calibrate_srv_.call(emptySrv);
     unpause_simulation_srv_.call(emptySrv);
 
     if (new_segment_tries_ >= p_max_new_tries_ && p_max_new_tries_ > 0) {
