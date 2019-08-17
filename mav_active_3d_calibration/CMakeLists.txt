@@ -8,3 +8,12 @@ add_definitions(-std=c++11)
 
 catkin_package()
 
+############
+# BINARIES #
+############
+cs_add_executable(calibration_planner_node
+        src/mav_calibration_planner_node.cpp
+        )
+
+cs_install()
+cs_export()

@@ -2,24 +2,24 @@
 
 # Bounding boxes (in initialization frame, relative to PlayerStart)
 map_bounding_volume:
-  x_min: -8.0
-  x_max: 8.0
-  y_min: -8.0
-  y_max: 8.0
-  z_min: -1.5
-  z_max: 5.5
+  x_min: -2.0
+  x_max: 3.0
+  y_min: -2.0
+  y_max: 2.0
+  z_min: -1.0
+  z_max: 2.0
 
 target_bounding_volume:
-  x_min: -5
-  x_max: 5
-  y_min: -5
-  y_max: 5
-  z_min: -1.5
-  z_max: 5
+  x_min: -2.0
+  x_max: 3.0
+  y_min: -2.0
+  y_max: 2.0
+  z_min: -1.0
+  z_max: 2.0
   
 # System Constraints (I dont think we use them/want them to be restrictiv)
 planner:
   system_constraints:
-    v_max: 10
-    a_max: 10
-    yaw_rate_max: 5
+    v_max: 1.0
+    a_max: 1.0
+    yaw_rate_max: 0.2

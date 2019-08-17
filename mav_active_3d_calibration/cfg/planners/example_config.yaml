@@ -14,29 +14,28 @@ build_modules_on_init: true
 # Specifying a trajectory generator
 trajectory_generator:
   collision_optimistic: true 
-  collision_radius: 0.1 #0.7
-  type: "Uniform"
+  collision_radius: 0.7
+  type: "TrueRandomMavTrajectory"
   
   # Generator Params
   n_segments: 5
-  distance: 1.5  
-  yaw_angle: 1.2
-  ascent_angle: 0.523
-  sampling_rate: 20
+  distance_max: 2.0
+  distance_min: 0.5
+  sampling_rate: 0.5
   
   # System constraints
   system_constraints:
-    v_max: 0.5
-    a_max: 0.5
-    yaw_rate_max: 1.6
+    v_max: 1.0
+    a_max: 1.0
+    yaw_rate_max: 0.2
   
   # Expansion suite selection policy
   segment_selector:
     type: "RandomWeighted"
     revisit: false
     factor: 2.0
-    leaf_probability: 1.0
-    uniform_probability: 0.1
+    leaf_probability: 0.0
+    uniform_probability: 1.0
     
   # Generator Update step
   generator_updater:
@@ -63,7 +62,7 @@ trajectory_evaluator:
   
   # Choose a cost
   cost_computer:
-    type: "SegmentTime"
+    type: "NoCost"
     
   # How to compute the values
   value_computer:

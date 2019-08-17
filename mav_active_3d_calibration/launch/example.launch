@@ -17,7 +17,7 @@
   <arg name="delay" default="3.0"/>  
   
   <!-- Unreal Sensor arguments (ground_truth, kinect, gaussian_depth_noise)-->
-  <arg name="model_type" default="gaussian_depth_noise"/>
+  <arg name="model_type" default="ground_truth"/>
   <arg name="flatten_distance" default="6.0"/>
   <arg name="maximum_distance" default="0.0"/>
   
@@ -176,7 +176,7 @@
     </node>
     
     <!-- Planner -->
-    <node name="planner_node" pkg="active_3d_planning_calibration" type="calibration_planner_node" output="screen" >
+    <node name="planner_node" pkg="mav_active_3d_calibration" type="calibration_planner_node" output="screen" >
 		  <!-- Voxblox Server -->
       <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
       <remap from="planner_node/tsdf_map_in" to="voxblox_node/tsdf_map_out" />

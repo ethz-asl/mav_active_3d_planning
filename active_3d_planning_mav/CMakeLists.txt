@@ -17,6 +17,7 @@ cs_add_library(${PROJECT_NAME}
         src/module/trajectory_generator/feasible_rrt_star.cpp
         src/module/trajectory_generator/feasible_rrt.cpp
         src/module/trajectory_generator/random_mav_trajectory.cpp
+        src/module/trajectory_generator/true_random_mav_trajectory.cpp
         src/tools/linear_mav_trajectory_generator.cpp
         )
 
