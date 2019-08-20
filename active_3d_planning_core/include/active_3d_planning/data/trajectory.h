@@ -39,7 +39,7 @@ struct EigenTrajectoryPoint {
                        const Eigen::Quaterniond &_orientation,
                        const Eigen::Vector3d &_angular_velocity,
                        const Eigen::Vector3d &_angular_acceleration)
-      : time_from_start_ns(_time_from_start_ns), position_W(_position),
+      : timestamp_ns(-1), time_from_start_ns(_time_from_start_ns), position_W(_position),
         velocity_W(_velocity), acceleration_W(_acceleration), jerk_W(_jerk),
         snap_W(_snap), orientation_W_B(_orientation),
         angular_velocity_W(_angular_velocity),

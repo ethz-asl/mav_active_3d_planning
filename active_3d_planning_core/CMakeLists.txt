@@ -41,7 +41,10 @@ cs_add_library(${PROJECT_NAME}
         src/module/trajectory_evaluator/frontier_evaluator.cpp
         src/module/trajectory_evaluator/naive_evaluator.cpp
         src/module/trajectory_evaluator/next_selector/immediate_best.cpp
+        src/module/trajectory_evaluator/next_selector/random_complete.cpp
+        src/module/trajectory_evaluator/next_selector/random_next.cpp
         src/module/trajectory_evaluator/next_selector/subsequent_best.cpp
+        src/module/trajectory_evaluator/next_selector/subsequent_best_complete.cpp
         src/module/trajectory_evaluator/simple_yaw_planning_evaluator.cpp
         src/module/trajectory_evaluator/simulated_sensor_evaluator.cpp
         src/module/trajectory_evaluator/value_computers/accumulate_value.cpp
@@ -62,6 +65,7 @@ cs_add_library(${PROJECT_NAME}
         src/module/trajectory_generator/rrt.cpp
         src/module/trajectory_generator/segment_selector/greedy.cpp
         src/module/trajectory_generator/segment_selector/random_weighted.cpp
+        src/module/trajectory_generator/segment_selector/random_restricted.cpp
         src/module/trajectory_generator/uniform.cpp
         src/tools/defaults.cpp
         )

@@ -58,6 +58,9 @@ struct TrajectorySegment {
   // Recursively add pointers to all subsequent nodes to the result vector
   void getTree(std::vector<TrajectorySegment *> *result);
 
+  // Recursively add pointers to all subsequent nodes to the result vector up to given depth
+  void getTree(std::vector<TrajectorySegment *> *result, int maxdepth);
+
   // Create a shallow copy of the segment (Includes everything except the unique
   // pointers children and info, which will not be setup!)
   TrajectorySegment shallowCopy();

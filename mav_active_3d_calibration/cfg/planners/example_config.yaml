@@ -21,13 +21,13 @@ trajectory_generator:
   n_segments: 5
   distance_max: 2.0
   distance_min: 0.5
-  sampling_rate: 0.5
+  sampling_rate: 10
   
   # System constraints
   system_constraints:
     v_max: 1.0
     a_max: 1.0
-    yaw_rate_max: 0.2
+    yaw_rate_max: 0.5
   
   # Expansion suite selection policy
   segment_selector:
@@ -74,7 +74,7 @@ trajectory_evaluator:
     
   # Execution policy for available segments
   next_selector:
-    type: "SubsequentBest"
+    type: "SubsequentBestComplete"
     
   # Evaluator Update step
   evaluator_updater:

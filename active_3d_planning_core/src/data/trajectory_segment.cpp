@@ -43,6 +43,15 @@ void TrajectorySegment::getTree(std::vector<TrajectorySegment *> *result) {
   }
 }
 
+void TrajectorySegment::getTree(std::vector<TrajectorySegment *> *result, int maxdepth) {
+  result->push_back(this);
+  if(maxdepth>0){
+    for (int i = 0; i < children.size(); ++i) {
+      children[i]->getTree(result, maxdepth-1);
+    }
+  }
+}
+
 TrajectorySegment TrajectorySegment::shallowCopy() {
   TrajectorySegment copy = TrajectorySegment();
   copy.trajectory = trajectory;
