@@ -19,7 +19,7 @@ int RandomNext::selectNextBest(TrajectorySegment *traj_in) {
   for (int i = 1; i < traj_in->children.size(); ++i) {
     candidates.push_back(i);
   }
-  // randomize if multiple maxima
+  // randomize
   std::random_shuffle(candidates.begin(), candidates.end());
   return candidates[0];
 }
