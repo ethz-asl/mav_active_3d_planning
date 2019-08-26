@@ -54,11 +54,9 @@ bool CalibrationEvaluator::computeGainFromVisibleVoxels(
   std::vector<geometry_msgs::PoseStamped> poses_stamped;
   for (auto &&eigen_trajectory_point_vector : traj_in->trajectory) {
     geometry_msgs::PoseStamped p;
-    if (eigen_trajectory_point_vector.timestamp_ns >= 0) {
-      p.header.stamp.fromNSec(eigen_trajectory_point_vector.timestamp_ns);
-    } else {
-      p.header.stamp.fromNSec(eigen_trajectory_point_vector.time_from_start_ns);
-    }
+    
+    p.header.stamp.fromNSec(eigen_trajectory_point_vector.time_from_start_ns);
+    
     p.pose.position.x = eigen_trajectory_point_vector.position_W.x();
     p.pose.position.y = eigen_trajectory_point_vector.position_W.y();
     p.pose.position.z = eigen_trajectory_point_vector.position_W.z();

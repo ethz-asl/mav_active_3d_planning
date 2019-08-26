@@ -27,8 +27,16 @@ class EvalData:
         # Parse parameters
         self.ns_planner = rospy.get_param('~ns_planner', "/firefly/planner_node")
         self.planner_delay = rospy.get_param('~delay', 0.0)     # Waiting time until the planner is launched
-        self.evaluate = rospy.get_param('~evaluate', False)     # Periodically save the voxblox state
+        self.evaluate = rospy.get_param('~evaluate', False)     # Periodically save the voxblox state In reality literally blocks everything...)
         self.startup_timeout = rospy.get_param('~startup_timeout', 0.0)     # Max allowed time for startup, 0 for inf
+
+        self.eval_frequency = rospy.get_param('~eval_frequency', 5.0)  # Save rate in seconds
+        self.time_limit = rospy.get_param('~time_limit', 0.0)  # Maximum sim duration in minutes, 0 for inf
+        self.reset_unreal_cv_ros = rospy.get_param('~reset_unreal_cv_ros', True)  # On shutdown reset pose to 0
+        self.ns_unreal_cv_ros = rospy.get_param('~ns_unreal_cv_ros', "/unreal/unreal_ros_client")
+
+        self.eval_walltime_0 = None
+        self.eval_rostime_0 = None
 
         if self.evaluate:
             # Setup parameters
@@ -38,14 +46,9 @@ class EvalData:
                 sys.exit(-1)
 
             self.ns_voxblox = rospy.get_param('~ns_voxblox', "/voxblox/voxblox_node")
-            self.ns_unreal_cv_ros = rospy.get_param('~ns_unreal_cv_ros', "/unreal/unreal_ros_client")
-            self.eval_frequency = rospy.get_param('~eval_frequency', 5.0)  # Save rate in seconds
-            self.time_limit = rospy.get_param('~time_limit', 0.0)  # Maximum sim duration in minutes, 0 for inf
-            self.reset_unreal_cv_ros = rospy.get_param('~reset_unreal_cv_ros', True)  # On shutdown reset pose to 0
+
 
             # Statistics
-            self.eval_walltime_0 = None
-            self.eval_rostime_0 = None
             self.eval_n_maps = 0
             self.eval_n_pointclouds = 0
 
@@ -103,6 +106,9 @@ class EvalData:
         run_planner_srv = rospy.ServiceProxy(self.ns_planner + "/toggle_running", SetBool)
         run_planner_srv(True)
 
+        # Setup first measurements
+        self.eval_walltime_0 = time.time()
+        self.eval_rostime_0 = rospy.get_time()
         # Evaluation init
         if self.evaluate:
             self.writelog("Succesfully started the simulation.")
@@ -111,15 +117,8 @@ class EvalData:
             subprocess.check_call(["rosparam", "dump", os.path.join(self.eval_directory, "rosparams.yaml"), "/"])
             self.writelog("Dumped the parameter server into 'rosparams.yaml'.")
 
-            # Setup first measurements
-            self.eval_walltime_0 = time.time()
-            self.eval_rostime_0 = rospy.get_time()
             self.eval_n_maps = 0
             self.eval_n_pointclouds = 1
-
-            # Periodic evaluation (call once for initial measurement)
-            self.eval_callback(None)
-            rospy.Timer(rospy.Duration(self.eval_frequency), self.eval_callback)
 
             # Keep track of the (most recent) rosbag
             bag_expr = re.compile('tmp_bag_\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}\.bag.')  # Default names
@@ -132,24 +131,29 @@ class EvalData:
             else:
                 rospy.logwarn("No tmpbag found. Is rosbag recording?")
 
+        # Periodic evaluation (call once for initial measurement)
+        self.eval_callback(None)
+        rospy.Timer(rospy.Duration(self.eval_frequency), self.eval_callback)
+
         # Finish
         rospy.loginfo("\n" + "*" * 39 + "\n* Succesfully started the simulation! *\n" + "*" * 39)
 
     def eval_callback(self, _):
-        # Produce a data point
-        time_real = time.time() - self.eval_walltime_0
-        time_ros = rospy.get_time() - self.eval_rostime_0
-        map_name = "{0:05d}".format(self.eval_n_maps)
-        try:
-            cpu = self.cpu_time_srv(True)
-        except:
-            # Usually this means the planner died
-            self.stop_experiment("Planner Node died (cpu srv failed).")
-            return
-        self.eval_writer.writerow([map_name, time_ros, time_real, self.eval_n_pointclouds, float(cpu.message)])
-        self.eval_voxblox_service(os.path.join(self.eval_directory, "voxblox_maps", map_name + ".vxblx"))
-        self.eval_n_pointclouds = 0
-        self.eval_n_maps += 1
+        if self.evaluate:
+            # Produce a data point
+            time_real = time.time() - self.eval_walltime_0
+            time_ros = rospy.get_time() - self.eval_rostime_0
+            map_name = "{0:05d}".format(self.eval_n_maps)
+            try:
+                cpu = self.cpu_time_srv(True)
+            except:
+                # Usually this means the planner died
+                self.stop_experiment("Planner Node died (cpu srv failed).")
+                return
+            self.eval_writer.writerow([map_name, time_ros, time_real, self.eval_n_pointclouds, float(cpu.message)])
+            self.eval_voxblox_service(os.path.join(self.eval_directory, "voxblox_maps", map_name + ".vxblx"))
+            self.eval_n_pointclouds = 0
+            self.eval_n_maps += 1
 
         # If the time limit is reached stop the simulation
         if self.time_limit > 0.0:
@@ -179,13 +183,13 @@ class EvalData:
         reason = "Stopping the experiment: " + reason
         if self.evaluate:
             self.writelog(reason)
-            if self.reset_unreal_cv_ros:
-                try:
-                    # If unreal is running, this will reset it, otherwise map is already in initial state
-                    terminate_srv = rospy.ServiceProxy(self.ns_unreal_cv_ros + "/terminate_with_reset", SetBool)
-                    terminate_srv(True)
-                except:
-                    pass
+        if self.reset_unreal_cv_ros:
+            try:
+                # If unreal is running, this will reset it, otherwise map is already in initial state
+                terminate_srv = rospy.ServiceProxy(self.ns_unreal_cv_ros + "/terminate_with_reset", SetBool)
+                terminate_srv(True)
+            except:
+                pass
         width = len(reason) + 4
         rospy.loginfo("\n" + "*" * width + "\n* " + reason + " *\n" + "*" * width)
         rospy.signal_shutdown(reason)

@@ -42,7 +42,8 @@ int SubsequentBestComplete::selectNextBest(TrajectorySegment *traj_in) {
   //we do break info here... (TODO require info to overload operator + and fix this)
   std::vector<TrajectorySegment*> allsegs;
   auto tmptraj = bestSegment[selected];
-  while(tmptraj->parent)
+  //parent->parent because we dont want the base segment to be inserted aswell as this get choosen anyways
+  while(tmptraj->parent->parent)
   {
     allsegs.insert(allsegs.begin(), tmptraj);
     tmptraj=tmptraj->parent;
@@ -50,7 +51,6 @@ int SubsequentBestComplete::selectNextBest(TrajectorySegment *traj_in) {
 
   //add data
   auto nextraj = traj_in->children[candidates[selected]].get();
-  std::cout<<nextraj->trajectory.size()<<std::endl;
   for(auto seg : allsegs){
     auto currtime = nextraj->trajectory.back().time_from_start_ns;
     for(auto && trajPoint : seg->trajectory){
