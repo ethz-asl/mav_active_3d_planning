@@ -154,7 +154,7 @@ bool TrueRandomMavTrajectory::expandSegment(
 
 void TrueRandomMavTrajectory::sampleGoalPose(double *yaw, Eigen::Vector3d *goal_pos,
                                          const Eigen::Vector3d &start_pos) {
-  *yaw = (double)rand() * 2.0 * M_PI / RAND_MAX;
+  *yaw = (double)rand() * 2.0 * M_PI / RAND_MAX - M_PI;
   double phi = (double)rand() * 2.0 * M_PI / RAND_MAX;
   double theta = (double)rand() * M_PI / RAND_MAX;
   double range = p_distance_min_ + (double)rand() / RAND_MAX *
