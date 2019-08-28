@@ -31,6 +31,7 @@ class EvalPlotting:
         self.method = rospy.get_param('~method', 'single')
         self.ns_voxblox = rospy.get_param('~ns_eval_voxblox_node', '/eval_voxblox_node')
         self.evaluate = rospy.get_param('~evaluate', True)
+        self.evaluate_volume = rospy.get_param('~evaluate_volume', False)
         self.create_plots = rospy.get_param('~create_plots', True)
         self.show_plots = rospy.get_param('~show_plots', False)     # Auxiliary param, prob removed later
         self.create_meshes = rospy.get_param('~create_meshes', True)
@@ -104,7 +105,7 @@ class EvalPlotting:
             if not os.path.isdir(os.path.join(target_dir, "meshes")):
                 os.mkdir(os.path.join(target_dir, "meshes"))
 
-        if self.evaluate or self.create_meshes:
+        if self.evaluate or self.create_meshes or self.evaluate_volume:
             # Set params and call the voxblox evaluator
             rospy.set_param(self.ns_voxblox + "/target_directory", target_dir)
             try:
@@ -215,7 +216,9 @@ class EvalPlotting:
                                  lineterminator='\n')
         means = {}
         std_devs = {}
-        keys = ['RosTime', 'MeanError', 'StdDevError', 'UnknownVoxels', 'OutsideTruncation', 'NPointclouds', 'CPUTime']
+        keys = voxblox_data[0].keys()
+        keys.remove('RosTime')
+        keys = ['RosTime'] + keys
         prev_pcls = [0.0] * len(voxblox_data)
         for key in keys:
             means[key] = np.array([])
@@ -316,16 +319,23 @@ class EvalPlotting:
         axes[2, 0].set_xlim(left=0, right=x[-1])
 
         # Compensate unobservable voxels
-        unknown = (means['UnknownVoxels'] - self.unobservable_points_pct) / (1.0 - self.unobservable_points_pct)
-        unknown = np.maximum(unknown, np.zeros_like(unknown))
-        axes[0, 1].plot(x, unknown, 'g-')
-        axes[0, 1].fill_between(x, means['UnknownVoxels'] - std_devs['UnknownVoxels'],
-                                means['UnknownVoxels'] + std_devs['UnknownVoxels'],
-                                facecolor='g', alpha=.2)
-        axes[0, 1].plot([x[i] for i in early_stops], [means['UnknownVoxels'][i] for i in early_stops], 'kx',
-                        markersize=9, markeredgewidth=2)
-        axes[0, 1].set_ylabel('Unknown Voxels [%]')
-        axes[0, 1].set_ylim(0, 1)
+        if np.max(means['UnknownVoxels']) > 0:
+            unknown = (means['UnknownVoxels'] - self.unobservable_points_pct) / (1.0 - self.unobservable_points_pct)
+            unknown = np.maximum(unknown, np.zeros_like(unknown))
+            axes[0, 1].plot(x, unknown, 'g-')
+            axes[0, 1].fill_between(x, unknown - std_devs['UnknownVoxels'],
+                                    unknown + std_devs['UnknownVoxels'],
+                                    facecolor='g', alpha=.2)
+            axes[0, 1].plot([x[i] for i in early_stops], [means['UnknownVoxels'][i] for i in early_stops], 'kx',
+                            markersize=9, markeredgewidth=2)
+            axes[0, 1].set_ylabel('Unknown Voxels [%]')
+            axes[0, 1].set_ylim(0, 1)
+        else:
+            axes[0, 1].plot(x, means['Volume'], 'g-')
+            axes[0, 1].fill_between(x, means['Volume'] - std_devs['Volume'], means['Volume'] + std_devs['Volume'],
+                                    facecolor='g', alpha=.2)
+            axes[0, 1].set_ylabel('Explored Volume [m3]')
+            axes[0, 1].set_ylim(0, 40*40*3)
         axes[0, 1].set_xlim(left=0, right=x[-1])
         axes[1, 1].plot(x, means['NPointclouds'], 'k-')
         axes[1, 1].fill_between(x, means['NPointclouds'] - std_devs['NPointclouds'],
@@ -383,9 +393,6 @@ class EvalPlotting:
             x = np.divide(x, 60)
         meanerr = np.array(data['MeanError'])
         stddev = np.array(data['StdDevError'])
-        unknown = np.array(data['UnknownVoxels'], dtype=float)
-        unknown = (unknown - self.unobservable_points_pct)/(1.0 - self.unobservable_points_pct)  # compensate invisible
-        unknown = np.maximum(unknown, np.zeros_like(unknown))
         truncated = np.array(data['OutsideTruncation'])
         pointclouds = np.cumsum(np.array(data['NPointclouds'], dtype=float))
         ros_time = np.array(data['RosTime'], dtype=float)
@@ -411,9 +418,19 @@ class EvalPlotting:
         axes[2, 0].set_xlabel("Simulated Time [%s]" % unit)
         axes[2, 0].set_xlim(left=0, right=x[-1])
 
+        unknown = np.array(data['UnknownVoxels'], dtype=float)
+        if np.max(unknown) > 0:
+            # compensate unobservable voxels
+            unknown = (unknown - self.unobservable_points_pct) / (
+                        1.0 - self.unobservable_points_pct)  # compensate invisible
+            unknown = np.maximum(unknown, np.zeros_like(unknown))
+            axes[0, 1].set_ylabel('Unknown Voxels [%]')
+            axes[0, 1].set_ylim(0, 1)
+        else:
+            unknown = np.array(data['Volume'], dtype=float)
+            axes[0, 1].set_ylabel('Explored Volume [m3]')
+            axes[0, 1].set_ylim(0, 40*40*3)
         axes[0, 1].plot(x, unknown, 'g-')
-        axes[0, 1].set_ylabel('Unknown Voxels [%]')
-        axes[0, 1].set_ylim(0, 1)
         axes[0, 1].set_xlim(left=0, right=x[-1])
         axes[1, 1].plot(x, pointclouds, 'k-')
         axes[1, 1].set_ylabel('Processed Pointclouds [-]')

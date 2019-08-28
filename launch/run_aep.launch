@@ -36,8 +36,8 @@
   <!--  Experiment arguments -->  
   <arg name="experiment_config" default="experiment4.yaml"/>
   <arg name="record_data" default="false"/>
-  <arg name="record_visualization" default="false"/>
-  <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
+  <arg name="record_visualization" default="true"/>
+  <arg name="data_directory" default="/home/lukas/Documents/MT/Data/aep"/> 
   <arg name="data_frequency" default="30.0" />
   <arg name="time_limit" default="30" />
   
@@ -122,7 +122,6 @@
       <param name="flatten_distance" value="$(arg flatten_distance)"/>
       <param name="model_type" value="$(arg model_type)" />
       <param name="maximum_distance" value="$(arg maximum_distance)" />
-      <param name="publish_gray_images" value="$(arg use_rovio)" />
       <param name="k_mu_2" value="0.0024" />
       <param name="k_sigma_2" value="0.0024" />
       <remap from="ue_sensor_raw" to="unreal_ros_client/ue_sensor_raw" />
@@ -179,38 +178,64 @@
     </node>
     
     <!-- Planner -->
-    <node name="planner_node" pkg="mav_active_3d_planning" type="planner_node" output="screen" >
-      <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
-      <remap from="planner_node/tsdf_map_in" to="voxblox_node/tsdf_map_out" />
-      <param name="use_tf_transforms" value="false" />
-      <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
-      <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
-      <param name="update_mesh_every_n_sec" value="0.0" />   
-      <param name="publish_traversable" value="false" />         
+    <group ns="aeplanner">
+    <!-- octomap -->
+    <node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
+				<param name="publish_free_space" value="true" />
+				<param name="resolution" value="0.1" />
+				<param name="frame_id" type="string" value="map" />
+				<param name="sensor_model/max_range" value="5" />
+				<remap from="cloud_in" to="/unreal/unreal_sensor_model/ue_sensor_out" />
+			</node>
     
-      <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
-      <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
-      <param name="verbose" value="$(arg verbose_planner)" />
-      <param name="visualize" value="$(arg visualize)" />
-      <param name="log_performance" value="$(arg record_data)" />
+		  <!-- AEP -->
+		  <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/aep/config.yaml" />
+      <node pkg="nodelet" type="nodelet" name="aeplanner_nodelet_manager"  args="manager" output="screen"/>
+			<node pkg="nodelet" type="nodelet" name="AEPlannerNodelet" args="standalone aeplanner/AEPlannerNodelet aeplanner_nodelet_manager" output="screen">
+				<remap from="octomap" to="octomap_full"/>
+				<remap from="agent_pose" to="aep_adaptor/pose_out"/>
+			</node>
+			
+		  <!-- aep_adaptors -->
+			<node name="aep_adaptor" pkg="mav_active_3d_planning" type="aep_adaptor.py" output="screen" required="true">
+		    <remap from="odometry_in" to="/$(arg mav_name)/ground_truth/odometry" />
+		  </node>
+		  <node name="aep_trajectory_adapter" pkg="mav_active_3d_planning" type="aep_trajectory_adapter" output="screen" required="true">
+		    <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
+		    <remap from="traj_in" to="/mavros/setpoint_position/local" />
+		    <remap from="pose_in" to="aep_adaptor/pose_out" />
+		  </node>
+		  <!-- GP -->
+			<node name="pig" pkg="pigain" type="pig.py">
+				<remap from="pose" to="aep_adaptor/pose_out"/>
+			  <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/aep/config.yaml" />
+			</node>
+			
+		  <!-- rrtplanner  -->
+		  <node name="rrtplanner_node" pkg="rrtplanner" type="rrtplanner_node" output="screen">
+				<remap from="octomap" to="octomap_full"/>
+				<rosparam command="load" file="$(find mav_active_3d_planning)/cfg/aep/config.yaml" />
+			</node>
+			
+		  <!-- rpl  -->
+		  <node name="rpl_exploration" pkg="rpl_exploration" type="rpl_exploration" output="screen" >
+		  	<remap from="/mavros/local_position/pose" to="aep_adaptor/pose_out" />
+		    <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
+		    <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/aep/config.yaml" />
+		  </node>
+		  
+			<!-- fly to-->
+		  <node name="fly_to_server" pkg="rpl_exploration" type="fly_to">
+				<remap from="fly_to_cmd" to="/mavros/setpoint_position/local"/>
+			</node>
+ 			<!-- tf -->
+			<node pkg="tf" type="static_transform_publisher" name="tf_aep" args="0 0 0 0 0 0 1 /world /map 100"/> 
+			<node pkg="tf" type="static_transform_publisher" name="tf_aep2" args="0 0 0 0 0 0 1 /camera_link /base_link 100"/> 
+
+  </group>
     
-      <!-- Experiment dependent -->
-      <param name="trajectory_evaluator/sensor_model/ray_length" value="$(arg ray_length)" />
-      <param name="trajectory_evaluator/bounding_volume_args" value="/target_bounding_volume" />
-      <param name="trajectory_generator/bounding_volume_args" value="/map_bounding_volume" />
-      <param name="trajectory_generator/system_constraints_args" value="/planner/system_constraints" />
-      
-      <!-- General Config -->    
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_general_config)"/>
-    </node>    
-    
-    <!-- Modular config -->    
-    <group if="$(arg use_separate_configs)">
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_generator_config)" ns="planner_node"/>
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_evaluator_config)" ns="planner_node"/> 
-    </group>
  </group>
 
   <!-- RVIZ Visualization -->
-  <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiments/experiment_visualization.rviz" if="$(arg visualize)"/>
+  <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/aep/visualization.rviz" if="$(arg visualize)"/>
 </launch>

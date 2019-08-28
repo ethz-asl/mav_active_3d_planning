@@ -75,6 +75,33 @@ namespace mav_active_3d_planning {
                 }
             }
             return p_new_voxel_weight_;
+
+//            // test confidence impl.
+//            double distance;
+//            if (voxblox_ptr_->getEsdfMapPtr()->getDistanceAtPosition(voxel, &distance)) {
+//                // voxel is observed
+//                if (distance >= 0.0 && distance < c_voxel_size_) {
+//                    // Surface voxel
+//                    voxblox::Point point(voxel.x(), voxel.y(), voxel.z());
+//                    voxblox::Block<voxblox::TsdfVoxel>::Ptr block = voxblox_ptr_->getTsdfMapPtr()->getTsdfLayerPtr()->getBlockPtrByCoordinates(
+//                            point);
+//                    if (block) {
+//                        voxblox::TsdfVoxel *tsdf_voxel = block->getVoxelPtrByCoordinates(point);
+//                        if (tsdf_voxel) {
+//                            // TSDF voxel is also observed, compute the estimated impact (weight ratio)
+//                            if ((double) (tsdf_voxel->weight) / 10000.0 < 0.4) {
+//                                return 1.0;
+//                            }
+//                        }
+//                    }
+//                    return 0.0;
+//                } else {
+//                    // non-surface voxel
+//                    return 0.0;
+//                }
+//            } else {
+//                return 1.0;
+//            }
         }
 
         void VoxelWeightEvaluator::visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg,

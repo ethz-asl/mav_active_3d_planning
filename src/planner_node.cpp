@@ -36,7 +36,7 @@ namespace mav_active_3d_planning {
         nh_private_.param("replan_pos_threshold", p_replan_pos_threshold_, 0.1);
         nh_private_.param("replan_yaw_threshold", p_replan_yaw_threshold_, 0.1);
 
-        // Logging and printing
+        // Logging, printing and visualization
         nh_private_.param("verbose", p_verbose_, true);
         nh_private_.param("verbose_modules", verbose_modules, false);
         nh_private_.param("build_modules_on_init", build_modules_on_init, false);
@@ -47,7 +47,7 @@ namespace mav_active_3d_planning {
             perf_log_data_ = std::vector<double>(6, 0.0);
         }
         nh_private_.param("visualize_gain", p_visualize_gain_, false);
-
+        nh_private_.param("highlight_executed_trajectory", p_highlight_executed_trajectory_, false);
 
         // Sampling constraints
         nh_private_.param("max_new_segments", p_max_new_segments_, 0);  // set 0 for infinite
@@ -292,6 +292,7 @@ namespace mav_active_3d_planning {
         current_segment_->getTree(&trajectories_to_vis);
         info_killed_update_ = num_trajectories - trajectories_to_vis.size() - info_killed_next_;
 
+
         // Performance log and printing
         if (p_verbose_ || p_log_performance_) {
             trajectories_to_vis.clear();
@@ -397,7 +398,6 @@ namespace mav_active_3d_planning {
         trajectory_generator_->extractTrajectoryToPublish(&trajectory, req);
         trajectory_msgs::MultiDOFJointTrajectoryPtr msg(new trajectory_msgs::MultiDOFJointTrajectory);
         msg->header.stamp = ros::Time::now();
-        msg->joint_names.push_back("base_link");
         int n_points = trajectory.size();
         msg->points.resize(n_points);
         for (int i = 0; i < n_points; ++i) {
@@ -410,19 +410,24 @@ namespace mav_active_3d_planning {
 
     void PlannerNode::publishTrajectoryVisualization(const std::vector<TrajectorySegment *> &trajectories) {
         // Display all trajectories in the input and erase previous ones
-        double max_value = (*std::max_element(trajectories.begin(), trajectories.end(), TrajectorySegment::comparePtr))->value;
-        double min_value = (*std::min_element(trajectories.begin(), trajectories.end(), TrajectorySegment::comparePtr))->value;
+        double max_value = trajectories[0]->value;
+        double min_value = trajectories[0]->value;
         double max_gain = trajectories[0]->gain;
         double min_gain = trajectories[0]->gain;
-        if (p_visualize_gain_) {
-            // color according to gain only
-            for (int i = 1; i < trajectories.size(); ++i) {
-                if (trajectories[i]->gain > max_gain) {
-                    max_gain = trajectories[i]->gain;
-                }
-                if (trajectories[i]->gain < min_gain) {
-                    min_gain = trajectories[i]->gain;
-                }
+        TrajectorySegment* goal = trajectories[0];
+        for (int i = 1; i < trajectories.size(); ++i) {
+            if (trajectories[i]->value >= max_value) {
+                max_value = trajectories[i]->value;
+                goal = trajectories[i];
+            }
+            if (trajectories[i]->value < min_value) {
+                min_value = trajectories[i]->value;
+            }
+            if (trajectories[i]->gain > max_gain) {
+                max_gain = trajectories[i]->gain;
+            }
+            if (trajectories[i]->gain < min_gain) {
+                min_gain = trajectories[i]->gain;
             }
         }
 
@@ -439,20 +444,23 @@ namespace mav_active_3d_planning {
             msg.ns = "candidate_trajectories";
             msg.scale.x = 0.04;
             msg.scale.y = 0.04;
+            msg.color.a = 0.4;
             msg.action = visualization_msgs::Marker::ADD;
 
             // Color according to relative value (blue when indifferent)
             if (max_value != min_value) {
-                double frac = (trajectories[i]->value- min_value) / (max_value - min_value);
+                double frac = (trajectories[i]->value - min_value) / (max_value - min_value);
                 msg.color.r = std::min((0.5 - frac) * 2.0 + 1.0, 1.0);
                 msg.color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
                 msg.color.b = 0.0;
+                if (trajectories[i]->value == max_value) {
+                    goal = trajectories[i];
+                }
             } else {
                 msg.color.r = 0.3;
                 msg.color.g = 0.3;
                 msg.color.b = 1.0;
             }
-            msg.color.a = 0.4;
 
             // points
             for (int j = 0; j < trajectories[i]->trajectory.size(); ++j) {
@@ -464,7 +472,7 @@ namespace mav_active_3d_planning {
             }
             array_msg.markers.push_back(msg);
 
-            // gain
+            // visualize gain
             if (p_visualize_gain_) {
                 msg = visualization_msgs::Marker();
                 msg.header.frame_id = "/world";
@@ -521,6 +529,35 @@ namespace mav_active_3d_planning {
             msg.action = visualization_msgs::Marker::ADD;
             array_msg.markers.push_back(msg);
         }
+        // visualize goal
+        msg = visualization_msgs::Marker();
+        msg.header.frame_id = "/world";
+        msg.header.stamp = ros::Time::now();
+        msg.pose.orientation.w = 1.0;
+        msg.type = visualization_msgs::Marker::POINTS;
+        msg.id = 0;
+        msg.ns = "current_goal";
+        msg.scale.x = 0.1;
+        msg.scale.y = 0.1;
+        msg.color.r = 0.0;
+        msg.color.g = 0.9;
+        msg.color.b = 0.0;
+        msg.color.a = 1.0;
+        msg.action = visualization_msgs::Marker::ADD;
+        while (goal->parent) {
+            // points
+            if (goal->parent->parent) {
+                for (int j = 0; j < goal->trajectory.size(); ++j) {
+                    geometry_msgs::Point point;
+                    point.x = goal->trajectory[j].position_W[0];
+                    point.y = goal->trajectory[j].position_W[1];
+                    point.z = goal->trajectory[j].position_W[2];
+                    msg.points.push_back(point);
+                }
+            }
+            goal = goal->parent;
+        }
+        array_msg.markers.push_back(msg);
         for (int i = trajectories.size(); i < vis_num_previous_trajectories_; ++i) {
             // Setup marker message
             msg = visualization_msgs::Marker();
@@ -565,13 +602,22 @@ namespace mav_active_3d_planning {
         msg.type = visualization_msgs::Marker::POINTS;
         msg.ns = "completed_trajectory";
         msg.id = vis_completed_count_;
-        msg.scale.x = 0.03;
-        msg.scale.y = 0.03;
         msg.action = visualization_msgs::Marker::ADD;
-        msg.color.r = 0.5;
-        msg.color.g = 0.5;
-        msg.color.b = 0.5;
-        msg.color.a = 0.8;
+        if (p_highlight_executed_trajectory_) {
+            msg.scale.x = 0.1;
+            msg.scale.y = 0.1;
+            msg.color.r = 1.0;
+            msg.color.g = 0.0;
+            msg.color.b = 0.0;
+            msg.color.a = 1.0;
+        } else {
+            msg.scale.x = 0.03;
+            msg.scale.y = 0.03;
+            msg.color.r = 0.5;
+            msg.color.g = 0.5;
+            msg.color.b = 0.5;
+            msg.color.a = 0.8;
+        }
 
         // points
         for (int i = 0; i < trajectories.trajectory.size(); ++i) {

@@ -12,18 +12,19 @@ namespace mav_active_3d_planning {
             SimulatedSensorEvaluator::setupFromParamMap(param_map);
             setParam<bool>(param_map, "accurate_frontiers", &p_accurate_frontiers_, false);
             setParam<bool>(param_map, "surface_frontiers", &p_surface_frontiers_, true);
+            setParam<double>(param_map, "checking_distance", &p_checking_distance_, 1.0);
 
             // initialize neighbor offsets
+            double vs = static_cast<double>(voxblox_ptr_->getEsdfMapPtr()->voxel_size());
+            vs *= p_checking_distance_;
             if (!p_accurate_frontiers_) {
-                c_voxel_size_ = static_cast<double>(voxblox_ptr_->getEsdfMapPtr()->voxel_size());
-                c_neighbor_voxels_[0] = Eigen::Vector3d(c_voxel_size_, 0, 0);
-                c_neighbor_voxels_[1] = Eigen::Vector3d(-c_voxel_size_, 0, 0);
-                c_neighbor_voxels_[2] = Eigen::Vector3d(0, c_voxel_size_, 0);
-                c_neighbor_voxels_[3] = Eigen::Vector3d(0, -c_voxel_size_, 0);
-                c_neighbor_voxels_[4] = Eigen::Vector3d(0, 0, c_voxel_size_);
-                c_neighbor_voxels_[5] = Eigen::Vector3d(0, 0, -c_voxel_size_);
+                c_neighbor_voxels_[0] = Eigen::Vector3d(vs, 0, 0);
+                c_neighbor_voxels_[1] = Eigen::Vector3d(-vs, 0, 0);
+                c_neighbor_voxels_[2] = Eigen::Vector3d(0, vs, 0);
+                c_neighbor_voxels_[3] = Eigen::Vector3d(0, -vs, 0);
+                c_neighbor_voxels_[4] = Eigen::Vector3d(0, 0, vs);
+                c_neighbor_voxels_[5] = Eigen::Vector3d(0, 0, -vs);
             } else {
-                double vs = static_cast<double>(voxblox_ptr_->getEsdfMapPtr()->voxel_size());
                 c_neighbor_voxels_[0] = Eigen::Vector3d(vs, 0, 0);
                 c_neighbor_voxels_[1] = Eigen::Vector3d(vs, vs, 0);
                 c_neighbor_voxels_[2] = Eigen::Vector3d(vs, -vs, 0);

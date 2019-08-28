@@ -107,6 +107,25 @@ namespace mav_active_3d_planning {
             void iterate(TrajectorySegment *current, double *factor, double *gain, double *cost);
         };
 
+        // Use the best subsequent value for each segment in the subtree
+        class GlobalNormalizedGain : public ValueComputer {
+        public:
+            // override virtual functions
+            bool computeValue(TrajectorySegment *traj_in);
+
+        protected:
+            friend ModuleFactory;
+
+            // factory access
+            GlobalNormalizedGain() {}
+            static ModuleFactory::Registration<GlobalNormalizedGain> registration;
+            void setupFromParamMap(Module::ParamMap *param_map) {}
+
+
+            // methods
+            double findBest(TrajectorySegment *current, double gain, double cost);
+        };
+
     } // namespace value_computers
 } // namepsace mav_active_3d_planning
 #endif // MAV_ACTIVE_3D_PLANNING_VALUE_COMPUTERS_DEFAULT_VALUE_COMPUTERS_H

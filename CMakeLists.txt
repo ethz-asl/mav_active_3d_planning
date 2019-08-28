@@ -52,6 +52,7 @@ cs_add_library(${PROJECT_NAME}
         src/modules/trajectory_evaluators/evaluator_updaters/simulated_sensor_updaters.cpp
         src/modules/trajectory_evaluators/evaluator_updaters/yaw_planning_updaters.cpp
         src/modules/trajectory_generators/linear_mav_trajectory_generator.cpp
+        src/modules/trajectory_generators/generator_updaters/simple_rrt_star_collision_updater.cpp
         )
 
 ############
@@ -65,6 +66,11 @@ target_link_libraries(planner_node ${PROJECT_NAME})
 cs_add_executable(eval_voxblox_node
         src/experiments/eval_voxblox_node.cpp
         )
+
+cs_add_executable(aep_trajectory_adapter
+        src/experiments/aep_trajectory_adapter.cpp
+        )
+target_link_libraries(aep_trajectory_adapter ${PROJECT_NAME})
 
 #############
 ## Install ##

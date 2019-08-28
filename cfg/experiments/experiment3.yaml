@@ -1,0 +1,25 @@
+# Experiment 3 (Burger) specific parameters
+
+# Bounding boxes (in initialization frame, relative to PlayerStart)
+map_bounding_volume:
+  x_min: -2
+  x_max: 12
+  y_min: -16
+  y_max: 3
+  z_min: -2
+  z_max: 3
+
+target_bounding_volume:
+  x_min: -2
+  x_max: 12
+  y_min: -16
+  y_max: 3
+  z_min: -2
+  z_max: 3
+  
+# System Constraints
+planner:
+  system_constraints:
+    v_max: 1.0
+    a_max: 1.0
+    yaw_rate_max: 1.57

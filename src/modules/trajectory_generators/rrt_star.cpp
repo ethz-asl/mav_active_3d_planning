@@ -51,7 +51,7 @@ namespace mav_active_3d_planning {
             }
 
             // Check maximum sampling density
-            if (p_max_density_range_>0.0) {
+            if (p_max_density_range_ > 0.0) {
                 double query_pt[3] = {goal_pos_.x(), goal_pos_.y(), goal_pos_.z()};
                 std::size_t ret_index[1];
                 double out_dist[1];
@@ -59,7 +59,7 @@ namespace mav_active_3d_planning {
                 resultSet.init(ret_index, out_dist);
                 kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10));
                 if (resultSet.size() > 0) {
-                    if (out_dist[0] <= p_max_density_range_*p_max_density_range_) {
+                    if (out_dist[0] <= p_max_density_range_ * p_max_density_range_) {
                         return false;
                     }
                 }
@@ -113,14 +113,16 @@ namespace mav_active_3d_planning {
             // After updating, try rewire all from inside out
             if (!p_rewire_update_) { return true; }
             resetTree(root);
-            std::vector<TrajectorySegment*> segments;
+            std::vector < TrajectorySegment * > segments;
 
             // order w.r.t distance
             root->getTree(&segments);
-            std::vector<std::pair<double, TrajectorySegment*>> distance_pairs;
+            std::vector <std::pair<double, TrajectorySegment *>> distance_pairs;
 
-            for (int i = 1; i<segments.size(); ++i) {
-                distance_pairs.push_back(std::make_pair((segments[i]->trajectory.back().position_W - root->trajectory.back().position_W).norm(), segments[i]));
+            for (int i = 1; i < segments.size(); ++i) {
+                distance_pairs.push_back(std::make_pair(
+                        (segments[i]->trajectory.back().position_W - root->trajectory.back().position_W).norm(),
+                        segments[i]));
             }
             std::sort(distance_pairs.begin(), distance_pairs.end());
 
@@ -174,7 +176,7 @@ namespace mav_active_3d_planning {
                 rewired_something = false;
                 for (int i = 0; i < to_rewire.size(); ++i) {
                     if (rewireRootSingle(to_rewire[i], next_root)) {
-                        to_rewire.erase(to_rewire.begin()+i);
+                        to_rewire.erase(to_rewire.begin() + i);
                         rewired_something = true;
                         break;
                     }
@@ -184,9 +186,9 @@ namespace mav_active_3d_planning {
             // If necessary (some segments would die) reinsert old root
             if (p_reinsert_root_ && to_rewire.size() > 0) {
                 mav_msgs::EigenTrajectoryPointVector new_trajectory;
-                if ((next_root->trajectory.back().position_W-root->trajectory.back().position_W).norm() > 0.0) {
-                    // don't reinsert zero movement nodes
-                    if (connectPoses(next_root->trajectory.back(), root->trajectory.back(), &new_trajectory)) {
+                // don't reinsert zero movement nodes
+                if ((next_root->trajectory.back().position_W - root->trajectory.back().position_W).norm() > 0.0) {
+                    if (connectPoses(next_root->trajectory.back(), root->trajectory.back(), &new_trajectory, false)) {
                         TrajectorySegment *reinserted_root = next_root->spawnChild();
                         reinserted_root->trajectory = new_trajectory;
                         // take info from old root (without value since already seen) will be discarded/updated anyways
@@ -197,9 +199,12 @@ namespace mav_active_3d_planning {
                         kdtree_->addPoints(tree_data_.points.size() - 1, tree_data_.points.size() - 1);
 
                         // rewire
+                        int j = 0;
                         for (int i = 0; i < to_rewire.size(); ++i) {
-                            if (rewireRootSingle(to_rewire[i], next_root)) {
-                                to_rewire.erase(to_rewire.begin()+i);
+                            if (rewireRootSingle(to_rewire[j], next_root)) {
+                                to_rewire.erase(to_rewire.begin() + j);
+                            } else {
+                                ++j;
                             }
                         }
                     }
@@ -216,7 +221,7 @@ namespace mav_active_3d_planning {
             return true;
         }
 
-        bool RRTStar::rewireRootSingle(TrajectorySegment* segment, TrajectorySegment* new_root){
+        bool RRTStar::rewireRootSingle(TrajectorySegment *segment, TrajectorySegment *new_root) {
             // Try rewiring a single segment
             std::vector < TrajectorySegment * > candidate_parents;
             if (!findNearbyCandidates(segment->trajectory.back().position_W, &candidate_parents)) {
@@ -254,7 +259,7 @@ namespace mav_active_3d_planning {
             kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10));
             bool candidate_found = false;
             for (int i = 0; i < resultSet.size(); ++i) {
-                if (out_dist[i] <= p_max_rewire_range_*p_max_rewire_range_) {
+                if (out_dist[i] <= p_max_rewire_range_ * p_max_rewire_range_) {
                     candidate_found = true;
                     result->push_back(tree_data_.data[ret_index[i]]);
                 }
@@ -291,10 +296,10 @@ namespace mav_active_3d_planning {
                 return false;
             } else {
                 // Apply best segment and rewire
-                segment->cost = best_segment.cost;
-                segment->value = best_segment.value;
                 segment->parent = best_segment.parent;
                 segment->trajectory = best_segment.trajectory;
+                segment->cost = best_segment.cost;
+                planner_node_->trajectory_evaluator_->computeValue(segment);
                 if (segment->parent == initial_parent) {
                     // Back to old parent
                     return true;
@@ -310,10 +315,9 @@ namespace mav_active_3d_planning {
                             initial_parent->children.erase(initial_parent->children.begin() + i);
                             // update subtree
                             if (p_update_subsequent_) {
-                                std::vector<TrajectorySegment*> subtree;
+                                std::vector < TrajectorySegment * > subtree;
                                 segment->getTree(&subtree);
                                 for (int j = 1; j < subtree.size(); ++j) {
-                                    planner_node_->trajectory_evaluator_->computeCost(subtree[j]);
                                     planner_node_->trajectory_evaluator_->computeValue(subtree[j]);
                                 }
                             }

@@ -40,11 +40,11 @@ trajectory_generator:
   rewire_intermediate: true
   reinsert_root: true
   max_rewire_range: 2.6
-  max_density_range: 0.5
+  max_density_range: 0.0
   n_neighbors: 20
 
   generator_updater:
-    type: "SimpleRRTStarCollisionUpdater"  #"RecheckCollision"
+    type: "RecheckCollision"
   
 # TE
 trajectory_evaluator:
@@ -55,20 +55,21 @@ trajectory_evaluator:
     n_directions: 12
     n_sections_fov: 3
     select_by_value: false
-    update_range: 5.0
+    update_range: 3.0
     update_gain: 0.0
-    update_sections_separate: true
+    update_sections_separate: false
     
     following_evaluator:
       type: "VoxelWeightEvaluator"
       clear_from_parents: false
       visualize_sensor_view: true
       accurate_frontiers: true 
+      checking_distance: 2.0
       bounding_volume_args: "/target_bounding_volume"
     
-      frontier_voxel_weight: 100.0
+      frontier_voxel_weight: 1.0
       new_voxel_weight: 0.0
-      min_impact_factor: 0.01
+      min_impact_factor: 3.0
       ray_angle_x: 0.002454
       ray_angle_y: 0.002681
       use_frontier_voxels: true
@@ -86,17 +87,16 @@ trajectory_evaluator:
         type: "SegmentTime"
           
       value_computer:
-        type: "RelativeGain"
-        accumulate: true
+        type: "GlobalNormalizedGain"
         
       next_selector:
         type: "SubsequentBest"
 
 back_tracker:
-  type: "RotateReverse"
+  type: "FeasibleRotateReverse"
   turn_rate: 1.6
   update_rate: 0.5
   sampling_rate: 20.0
-  n_rotations: 1
+  n_rotations: 0
   stack_size: 10
 

@@ -77,7 +77,7 @@ namespace mav_active_3d_planning {
                 // Maximum rotations in place reached, time to reverse last segment
                 if (stack_.empty()){
                     // Nothing to reverse: rotate again
-                    current_rotation_ = 0.0;
+                    return rotate(target);
                 } else {
                     // Reverse last trajectory
                     return reverse(target);

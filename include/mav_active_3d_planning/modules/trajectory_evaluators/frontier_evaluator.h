@@ -29,6 +29,7 @@ namespace mav_active_3d_planning {
             bool p_accurate_frontiers_;     // True: explicitely compute all frontier voxels (may degrade performance),
             // false: estimate frontier voxels by checking only some neighbors (detection depends on previous views)
             bool p_surface_frontiers_;      // true: count next to occupied, false: count next to observed
+            double p_checking_distance_;    // distance in voxelsizes where we check for known voxels
 
             // constants
             double c_voxel_size_;

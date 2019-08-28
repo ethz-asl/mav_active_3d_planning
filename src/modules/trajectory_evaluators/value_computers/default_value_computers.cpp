@@ -6,22 +6,22 @@ namespace mav_active_3d_planning {
     namespace value_computers {
 
         // LinearValue
-        ModuleFactory::Registration<LinearValue> LinearValue::registration("LinearValue");
+        ModuleFactory::Registration <LinearValue> LinearValue::registration("LinearValue");
 
         bool LinearValue::computeValue(TrajectorySegment *traj_in) {
             double gain = traj_in->gain;
             double cost = traj_in->cost;
-            if (p_accumulate_cost_){
+            if (p_accumulate_cost_) {
                 // accumulate cost up to the root
-                TrajectorySegment* current = traj_in->parent;
+                TrajectorySegment *current = traj_in->parent;
                 while (current) {
                     cost += current->cost;
                     current = current->parent;
                 }
             }
-            if (p_accumulate_gain_){
+            if (p_accumulate_gain_) {
                 // accumulate gain up to the root
-                TrajectorySegment* current = traj_in->parent;
+                TrajectorySegment *current = traj_in->parent;
                 while (current) {
                     gain += current->gain;
                     current = current->parent;
@@ -39,22 +39,22 @@ namespace mav_active_3d_planning {
         }
 
         // ExponentialDiscount
-        ModuleFactory::Registration<ExponentialDiscount> ExponentialDiscount::registration("ExponentialDiscount");
+        ModuleFactory::Registration <ExponentialDiscount> ExponentialDiscount::registration("ExponentialDiscount");
 
         bool ExponentialDiscount::computeValue(TrajectorySegment *traj_in) {
             double gain = traj_in->gain;
             double cost = traj_in->cost;
-            if (p_accumulate_cost_){
+            if (p_accumulate_cost_) {
                 // accumulate cost up to the root
-                TrajectorySegment* current = traj_in->parent;
+                TrajectorySegment *current = traj_in->parent;
                 while (current) {
                     cost += current->cost;
                     current = current->parent;
                 }
             }
-            if (p_accumulate_gain_){
+            if (p_accumulate_gain_) {
                 // accumulate gain up to the root
-                TrajectorySegment* current = traj_in->parent;
+                TrajectorySegment *current = traj_in->parent;
                 while (current) {
                     gain += current->gain;
                     current = current->parent;
@@ -71,7 +71,7 @@ namespace mav_active_3d_planning {
         }
 
         // AccumulateValue
-        ModuleFactory::Registration<AccumulateValue> AccumulateValue::registration("AccumulateValue");
+        ModuleFactory::Registration <AccumulateValue> AccumulateValue::registration("AccumulateValue");
 
         bool AccumulateValue::computeValue(TrajectorySegment *traj_in) {
             following_value_computer_->computeValue(traj_in);
@@ -91,7 +91,7 @@ namespace mav_active_3d_planning {
         }
 
         // RelativeGain
-        ModuleFactory::Registration<RelativeGain> RelativeGain::registration("RelativeGain");
+        ModuleFactory::Registration <RelativeGain> RelativeGain::registration("RelativeGain");
 
         bool RelativeGain::computeValue(TrajectorySegment *traj_in) {
             double gain = traj_in->gain;
@@ -117,7 +117,8 @@ namespace mav_active_3d_planning {
         }
 
         // DiscountedRelativeGain
-        ModuleFactory::Registration<DiscountedRelativeGain> DiscountedRelativeGain::registration("DiscountedRelativeGain");
+        ModuleFactory::Registration <DiscountedRelativeGain> DiscountedRelativeGain::registration(
+                "DiscountedRelativeGain");
 
         bool DiscountedRelativeGain::computeValue(TrajectorySegment *traj_in) {
             double gain = 0.0;
@@ -136,7 +137,7 @@ namespace mav_active_3d_planning {
             setParam<double>(param_map, "discount_factor", &p_discount_factor_, 0.9);
         }
 
-        void DiscountedRelativeGain::iterate(TrajectorySegment *current, double *factor, double *gain, double *cost){
+        void DiscountedRelativeGain::iterate(TrajectorySegment *current, double *factor, double *gain, double *cost) {
             // iterate up to root
             if (current->parent) {
                 iterate(current->parent, factor, gain, cost);
@@ -144,6 +145,37 @@ namespace mav_active_3d_planning {
             *gain += *factor * current->gain;
             *cost += current->cost;
             *factor *= p_discount_factor_;
+        }
+
+        // SubsequentValue
+        ModuleFactory::Registration <GlobalNormalizedGain> GlobalNormalizedGain::registration("GlobalNormalizedGain");
+
+        bool GlobalNormalizedGain::computeValue(TrajectorySegment *traj_in) {
+            double gain = 0.0;
+            double cost = 0.0;
+            TrajectorySegment* current = traj_in->parent;
+            while (current) {
+                //propagate the new value up to the root
+                gain += current->gain;
+                cost += current->cost;
+                current = current->parent;
+            }
+            traj_in->value = findBest(traj_in, gain, cost);
+            return true;
+        }
+
+        double GlobalNormalizedGain::findBest(TrajectorySegment *current, double gain, double cost){
+        // recursively iterate towards leaf, then iterate backwards and select best value of children
+            double value = 0.0;
+            gain += current->gain;
+            cost += current->cost;
+            if (cost > 0) {
+                value = gain/cost;
+            }
+            for (int i = 0; i < current->children.size(); ++i) {
+                value = std::max(value, findBest(current->children[i].get(), gain, cost));
+            }
+            return value;
         }
 
     } // namespace value_computers

@@ -66,8 +66,8 @@ namespace mav_active_3d_planning {
         };
 
         // kdtree
-        typedef nanoflann::KDTreeSingleIndexAdaptor<nanoflann::L2_Simple_Adaptor<float, TreeData>, TreeData, 3 >
-        KDTree;
+        typedef nanoflann::KDTreeSingleIndexAdaptor<nanoflann::L2_Simple_Adaptor<float, TreeData>, TreeData, 3>
+                KDTree;
 
     private:
         ros::NodeHandle nh_;
@@ -79,8 +79,10 @@ namespace mav_active_3d_planning {
         bool p_create_meshes_;
         bool p_evaluate_;
         bool p_error_histogram_;            // create a histo with 20 bins
+        bool p_evaluate_volume_;            // true evaluate explrored volume in target bounding volume
         double p_truncation_distance_;      // leave 0.0 for 3x voxelsize
         int p_mesh_steps_;
+        double p_target_bounding_volume_[6];  // for volume evaluation, x_min, x_max, ... y, z
 
         // variables
         int mesh_counter_;
@@ -125,19 +127,27 @@ namespace mav_active_3d_planning {
         nh_private_.param("mesh_every_n_steps", p_mesh_steps_, 20);
         nh_private_.param("truncation_distance", p_truncation_distance_, 0.0);
         nh_private_.param("error_histogram", p_error_histogram_, true);
+        nh_private_.param("evaluate_volume", p_evaluate_volume_, true);
+        nh_private_.param("evaluation_bounding_volum/x_min", p_target_bounding_volume_[0], 0.0);
+        nh_private_.param("evaluation_bounding_volum/x_max", p_target_bounding_volume_[1], 0.0);
+        nh_private_.param("evaluation_bounding_volum/y_min", p_target_bounding_volume_[2], 0.0);
+        nh_private_.param("evaluation_bounding_volum/y_max", p_target_bounding_volume_[3], 0.0);
+        nh_private_.param("evaluation_bounding_volum/z_min", p_target_bounding_volume_[4], 0.0);
+        nh_private_.param("evaluation_bounding_volum/z_max", p_target_bounding_volume_[5], 0.0);
 
         // Check not previously evaluated
         std::string line;
-        if (p_evaluate_) {
+        if (p_evaluate_ || p_evaluate_volume_) {
             while (std::getline(read_log, line)) {
                 if (line == "[FLAG] Evaluated") {
                     ROS_INFO("This file was already evaluated.");
                     p_evaluate_ = false;
+                    p_evaluate_volume_ = false;
                 }
             }
         }
         read_log.close();
-        if (!p_evaluate_ && !p_create_meshes_) {
+        if (!p_evaluate_ && !p_create_meshes_ && !p_evaluate_volume_) {
             return true;
         }
 
@@ -148,18 +158,23 @@ namespace mav_active_3d_planning {
         std::string gt_path;
         nh_private_.getParam("ground_truth_path", gt_path);
         pcl::PLYReader ply_reader;
+        kdtree_ = new KDTree(3, kdtree_data_, nanoflann::KDTreeSingleIndexAdaptorParams(10));
         if (ply_reader.read(gt_path, gt_ptcloud_) != 0) {
             ROS_ERROR("Unable to load ground truth pointcloudfrom '%s'.", gt_path.c_str());
-            return false;
+            p_evaluate_ = false;
+            p_create_meshes_ = false;
+            p_error_histogram_ = false;
+            if (!p_evaluate_volume_) {
+                return false;
+            }
+        } else {
+            ROS_INFO("Succesfully loaded ground truth pointcloud from '%s'.", gt_path.c_str());
+            for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it = gt_ptcloud_.begin();
+                 it != gt_ptcloud_.end(); ++it) {
+                kdtree_data_.points.push_back(Eigen::Vector3f(it->x, it->y, it->z));
+            }
+            kdtree_->buildIndex();
         }
-        ROS_INFO("Succesfully loaded ground truth pointcloud from '%s'.", gt_path.c_str());
-
-        for (pcl::PointCloud<pcl::PointXYZRGB>::const_iterator it = gt_ptcloud_.begin();
-             it != gt_ptcloud_.end(); ++it) {
-            kdtree_data_.points.push_back(Eigen::Vector3f(it->x, it->y, it->z));
-        }
-        kdtree_ = new KDTree(3, kdtree_data_, nanoflann::KDTreeSingleIndexAdaptorParams(10));
-        kdtree_->buildIndex();
 
         // Setup hist file
         if (p_error_histogram_ && p_evaluate_) {
@@ -175,7 +190,7 @@ namespace mav_active_3d_planning {
         std::string map_name;
         int n_maps = 0;
         std::ofstream fout;
-        if (p_evaluate_) {
+        if (p_evaluate_ || p_evaluate_volume_) {
             fout.open((p_target_dir_ + "/voxblox_data_temp.csv").c_str(), std::ios::out);
         }
         ROS_INFO("Start processing maps.");
@@ -189,8 +204,8 @@ namespace mav_active_3d_planning {
                 // Check map exists
                 if (!std::ifstream((p_target_dir_ + "/voxblox_maps/" + map_name + ".vxblx").c_str())) {
                     ROS_INFO("Skipping map '%s' (non-existant)", map_name.c_str());
-                    if (p_evaluate_) {
-                        fout << line + ",0,0,0,0\n";
+                    if (p_evaluate_ || p_evaluate_volume_) {
+                        fout << line + ",0,0,0,0,0,0,0\n";
                     }
                     continue;
                 }
@@ -199,17 +214,17 @@ namespace mav_active_3d_planning {
             }
             ROS_INFO("Processing: %s", map_name.c_str());
             bool create_mesh = false;
-            if (p_create_meshes_ && mesh_counter_ >= p_mesh_steps_){
+            if (p_create_meshes_ && mesh_counter_ >= p_mesh_steps_) {
                 create_mesh = true;
                 mesh_counter_ = 0;
             }
             std::string result = evaluateSingle(map_name, create_mesh);
-            if (p_evaluate_) {
+            if (p_evaluate_ || p_evaluate_volume_) {
                 fout << line + "," + result + "\n";
             }
         }
         data_file.close();
-        if (p_evaluate_) {
+        if (p_evaluate_ || p_evaluate_volume_) {
             fout.close();
         }
         if (p_error_histogram_) {
@@ -218,13 +233,13 @@ namespace mav_active_3d_planning {
         ROS_INFO("Finished processing maps.");
 
         // Finish
-        if (p_evaluate_) {
+        if (p_evaluate_ || p_evaluate_volume_) {
             if (std::rename((p_target_dir_ + "/voxblox_data_temp.csv").c_str(),
                             (p_target_dir_ + "/voxblox_data.csv").c_str()) != 0) {
                 ROS_ERROR("Could not rename temp csv file!");
             }
             writeLog("Evaluated " + std::to_string(n_maps) +
-                     " voxblox maps. Fields: 'MeanError', 'StdDevError', 'UnknownVoxels', 'OutsideTruncation'.");
+                     " voxblox maps. Fields: 'MeanError', 'StdDevError', 'RMSE', 'UnknownVoxels', 'OutsideTruncation', 'Volume'.");
             log_file_ << "[FLAG] Evaluated\n";
         }
         if (p_create_meshes_) {
@@ -237,9 +252,9 @@ namespace mav_active_3d_planning {
 
     std::string EvaluationNode::evaluateSingle(std::string map_name, bool create_mesh) {
         if (map_name == "Header") {
-            return "MeanError,StdDevError,UnknownVoxels,OutsideTruncation";
+            return "MeanError,StdDevError,RMSE,UnknownVoxels,OutsideTruncation,Volume";
         } else if (map_name == "Unit") {
-            return "meters,meters,percent,percent";
+            return "meters,meters,meters,percent,percent,m3";
         }
 
         // Setup the voxblox map and interpolater
@@ -296,6 +311,42 @@ namespace mav_active_3d_planning {
                     abserror.push_back(std::abs(distance));
                 }
                 total_evaluated_voxels++;
+            }
+        }
+
+        // Evaluate volume
+        double volume = 0.0;
+        if (p_evaluate_volume_) {
+            voxblox::BlockIndexList blocks;
+            tsdf_layer->getAllAllocatedBlocks(&blocks);
+            const size_t vps = tsdf_layer->voxels_per_side();
+            const size_t num_voxels_per_block = vps * vps * vps;
+            const double dv = std::pow(tsdf_layer->voxel_size(), 3);
+            for (voxblox::BlockIndex &index : blocks) {
+                // Iterate over all voxels in said blocks.
+                voxblox::Block <voxblox::TsdfVoxel> &block = tsdf_layer->getBlockByIndex(index);
+                for (size_t linear_index = 0; linear_index < num_voxels_per_block;
+                     ++linear_index) {
+                    voxblox::TsdfVoxel &voxel = block.getVoxelByLinearIndex(linear_index);
+                    // Voxel parsing
+                    voxblox::Point voxel_center = block.computeCoordinatesFromLinearIndex(linear_index);
+                    if (voxel.weight < min_weight) {
+                        continue;
+                    } else if (voxel_center.x() < p_target_bounding_volume_[0]) {
+                        continue;
+                    } else if (voxel_center.x() > p_target_bounding_volume_[1]) {
+                        continue;
+                    } else if (voxel_center.y() < p_target_bounding_volume_[2]) {
+                        continue;
+                    } else if (voxel_center.y() > p_target_bounding_volume_[3]) {
+                        continue;
+                    } else if (voxel_center.z() < p_target_bounding_volume_[4]) {
+                        continue;
+                    } else if (voxel_center.z() > p_target_bounding_volume_[5]) {
+                        continue;
+                    }
+                    volume += dv;
+                }
             }
         }
 
@@ -362,41 +413,52 @@ namespace mav_active_3d_planning {
         }
 
         std::ostringstream result("");
-        if (p_evaluate_) {
-            // Evaluate result
-            double mean = 0.0;
-            for (int i = 0; i < abserror.size(); ++i) {
-                mean += abserror[i];
-            }
+        // Evaluate result
+        double mean = 0.0;
+        double rmse = 0.0;
+        for (int i = 0; i < abserror.size(); ++i) {
+            mean += abserror[i];
+            rmse += std::pow(abserror[i], 2);
+        }
+        if (total_evaluated_voxels - unknown_voxels > 0) {
             mean = mean / (total_evaluated_voxels - unknown_voxels);
-            double stddev = 0.0;
-            for (int i = 0; i < abserror.size(); ++i) {
-                stddev += std::pow(abserror[i] - mean, 2.0);
-            }
+            rmse = rmse / (total_evaluated_voxels - unknown_voxels);
+            rmse = std::sqrt(rmse);
+        }
+        double stddev = 0.0;
+        for (int i = 0; i < abserror.size(); ++i) {
+            stddev += std::pow(abserror[i] - mean, 2.0);
+        }
+        if (total_evaluated_voxels - unknown_voxels > 1) {
             stddev = sqrt(stddev / (total_evaluated_voxels - unknown_voxels - 1.0));
+        }
+        double outside = 0.0;
+        double unknown = 0.0;
+        if (total_evaluated_voxels > 0) {
+            outside = static_cast<double>(outside_truncation_voxels) / total_evaluated_voxels;
+            unknown = static_cast<double>(unknown_voxels) / total_evaluated_voxels;
+        }
 
-            // Build result
-            result << mean << "," << stddev << "," << static_cast<double>(unknown_voxels) / total_evaluated_voxels
-                   << "," << outside_truncation_voxels / static_cast<double>(total_evaluated_voxels);
+        // Build result
+        result << mean << "," << stddev << "," << rmse << ","  << unknown << "," << outside << "," << volume;
 
-            if (p_error_histogram_) {
-                // create histogram of error distribution
-                std::vector<int> histogram(hist_bins_);
-                double bin_size = truncation_distance / ((double) hist_bins_ - 1.0);
-                for (int i = 0; i < abserror.size(); ++i) {
-                    int bin = (int) floor(abserror[i] / bin_size);
-                    if (bin < 0 || bin >= hist_bins_) {
-                        std::cout << "Bin Error at bin " << bin << ", value " << abserror[i] << std::endl;
-                        continue;
-                    }
-                    histogram[bin] += 1;
+        if (p_error_histogram_) {
+            // create histogram of error distribution
+            std::vector<int> histogram(hist_bins_);
+            double bin_size = truncation_distance / ((double) hist_bins_ - 1.0);
+            for (int i = 0; i < abserror.size(); ++i) {
+                int bin = (int) floor(abserror[i] / bin_size);
+                if (bin < 0 || bin >= hist_bins_) {
+                    std::cout << "Bin Error at bin " << bin << ", value " << abserror[i] << std::endl;
+                    continue;
                 }
-                hist_file_ << map_name;
-                for (int i = 0; i < histogram.size(); ++i) {
-                    hist_file_ << "," << histogram[i];
-                }
-                hist_file_ << "\n";
+                histogram[bin] += 1;
             }
+            hist_file_ << map_name;
+            for (int i = 0; i < histogram.size(); ++i) {
+                hist_file_ << "," << histogram[i];
+            }
+            hist_file_ << "\n";
         }
         return result.str();
     }

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="mav_name" default="loon"/>
+  <arg name="namespace" default="$(arg mav_name)" />
+
+  <group ns="$(arg namespace)" >
+
+  <node pkg="mavros" type="mavros_node" name="mavros" respawn="false" clear_params="true" output="screen">
+    <rosparam command="load" file="$(find mav_startup)/parameters/mavs/loon/px4_config.yaml" />
+    <param name="capability_group" value="Core" />
+  </node>
+
+  <node pkg="odom_predictor" type="odom_predictor_node" name="odom_predictor" output="screen">
+    <remap from="odometry" to="rovio/odometry"/>
+    <remap from="imu_bias" to="rovio/imu_biases"/>
+    <remap from="imu" to="mavros/imu/data_raw"/>
+    <param name="capability_group" value="State Estimation" />
+  </node>
+
+  <node pkg="tf" type="static_transform_publisher" name="world_tf_broadcaster" args="0 0 0 0 0 0 1 world odom 100">
+    <param name="capability_group" value="Core" />
+  </node>
+
+  <!-- Boson -->
+  <node pkg="boson_ros" name="boson_ros" type="boson_ros_node" output="screen">
+    <param name="capability_group" value="Thermal" />
+  </node>
+
+  <arg name="scale" value="1.0" />
+  <arg name="calib_path" default="$(find mav_startup)/parameters/mavs/loon/camchain-boson.yaml" />
+  <arg name="input_camera_name" default="cam0" />
+
+  <node name="image_undistort_node" pkg="image_undistort" type="image_undistort_node" output="screen" clear_params="true">
+    <param name="input_camera_namespace" value="$(arg input_camera_name)"/>
+    <param name="input_camera_info_from_ros_params" value = "true"/>
+    <param name="scale" value="$(arg scale)"/>
+    <rosparam file="$(arg calib_path)"/>
+    <remap from="input/image" to="/loon/boson_ros/image_degrees_C"/>
+    <remap from="output/image" to="/loon/boson_ros/image_degrees_C_undistorted"/>
+    <param name="capability_group" value="Thermal" />
+  </node>
+
+  <!-- Boson -->
+
+  <node name="mav_nonlinear_mpc" pkg="mav_nonlinear_mpc" type="nonlinear_mpc_node" respawn="false" clear_params="true" output="screen">
+    <remap from="odometry" to="odom_predictor/predicted_odometry" />
+    <remap from="rc" to="mavros/rc/in" />
+    <rosparam file="$(find mav_startup)/parameters/mavs/$(arg mav_name)/nonlinear_mpc.yaml"/>
+    <rosparam file="$(find mav_startup)/parameters/mavs/$(arg mav_name)/disturbance_observer.yaml"/>
+    <param name="simulation" value="false"/>
+    <param name="autopilot_interface" value="mavros"/>
+
+    <remap from="command/roll_pitch_yawrate_thrust" to="mavros/setpoint_raw/roll_pitch_yawrate_thrust"/>
+    <param name="capability_group" value="Core" />
+  </node>
+
+  <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+	<arg name="inter_cam_sync_mode" value="slave" />
+	<arg name="force_mavros_triggering" value="true" />
+  	<arg name="rs435_depth_emitter_enabled" value="0" />
+	<arg name="mavros_static_time_shift" value="0.00" />
+	<arg name="trigger_control_service" value="/loon/mavros/cmd/trigger_control" />
+	<arg name="cam_imu_stamp_topic"	value="/loon/mavros/cam_imu_sync/cam_imu_stamp" />
+    	<param name="capability_group" value="Sensors" />
+  </include>
+
+  <node name="rovio" pkg="rovio" type="rovio_node" output="screen">
+    <param name="filter_config" value="$(find mav_startup)/parameters/mavs/$(arg mav_name)/rovio_filter.info" />
+    <param name="camera0_config" value="$(find mav_startup)/parameters/mavs/$(arg mav_name)/rovio_cam0.yaml" />
+    <remap from="cam0/image_raw" to="/loon/camera/infra1/image_rect_raw"/>
+    <remap from="imu0" to="/loon/mavros/imu/data_raw"/>
+    <param name="world_frame" value="odom"/>
+    <param name="capability_group" value="State Estimation" />
+  </node>
+  
+  <!-- mav_active_3d_planning -->
+  <!-- Voxblox -->
+  
+  
+  <!-- Planner -->
+
+  </group>
+</launch>
+

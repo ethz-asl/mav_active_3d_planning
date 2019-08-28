@@ -100,6 +100,7 @@ namespace mav_active_3d_planning {
         double p_min_new_value_;            // Until this value is found in the tree, expansion continues (0 to ignore)
         int p_expand_batch_;                // run multiple segment expansions before rechecking conditions
         bool p_visualize_gain_;             // true: add a colored sphere according to the gain to every segment
+        bool p_highlight_executed_trajectory_;  // true: print executed trajectory in bold red
         // ideas: take images only on points,
         std::string logfile_;
 

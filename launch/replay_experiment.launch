@@ -1,13 +1,13 @@
 <launch>
-  <arg name="data_directory" default="/home/lukas/Documents/MT/Data" />
-  <arg name="dir" default="20190603_144844" />
-  <arg name="rate" default="5"/>
+  <arg name="data_directory" default="/home/lukas/Documents/MT/RAL20/Data/Exploration" />
+  <arg name="dir" default="R4_weight/bags" />
+  <arg name="rate" default="30"/>
 
 
 
-	<!-- Play Rosbag and RVIZ -->
-	<node pkg="rosbag" type="play" name="player" output="screen" args="-r $(arg rate) $(arg data_directory)/$(arg dir)/visualization.bag"/>
+	<!-- Play Rosbag and RVIZ (visualization) -->
+	<node pkg="rosbag" type="play" name="player" output="screen" args="-r $(arg rate) $(arg data_directory)/$(arg dir)/vis3.bag -u 900"/>
 
 <!--	<node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiments/experiment_visualization.rviz"/>-->
-	<node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiments/test.rviz"/>
+	<node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiments/exp4_vis.rviz"/>
 </launch>

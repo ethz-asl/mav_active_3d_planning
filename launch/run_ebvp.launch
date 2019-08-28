@@ -27,14 +27,14 @@
   
   <!--  Planner arguments (tg_uniform, tg_random_linear, tg_rrt, general, nbvp_bircher, te_frontier, te_yaw, weight_planner, real_world)-->
   <arg name="use_separate_configs" default="false"/>
-  <arg name="planner_general_config" default="planners/weight_planner_new_vol.yaml"/>
+  <arg name="planner_general_config" default="planners/R1_weight_rrt.yaml"/>
   <arg name="planner_generator_config" default="planners/modules/tg_rrt.yaml"/>
   <arg name="planner_evaluator_config" default="planners/modules/te_weight.yaml"/>
   <arg name="verbose_planner" default="true"/>
   <arg name="visualize" default="true"/>
   
   <!--  Experiment arguments -->  
-  <arg name="experiment_config" default="experiment4.yaml"/>
+  <arg name="experiment_config" default="experiment1.yaml"/>
   <arg name="record_data" default="false"/>
   <arg name="record_visualization" default="false"/>
   <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
@@ -68,6 +68,18 @@
       <arg name="enable_logging" value="false" />
       <arg name="z" value="0" />
     </include>
+    
+<!--  EBVP local planner  -->
+    <node name="local_planner" pkg="mav_local_planner_deprecated" type="local_planner_node" output="log">
+      <param name="autostart" value="true" />
+      <param name="plan_to_start" value="true" />
+      <param name="waypoint_planner_type" value="polynomial" />
+      <param name="frame_id" value="world" />
+      <param name="yaw_policy" value="from_plan" />
+      <param name="mpc_prediction_horizon" value="300" />
+      <remap from="odometry" to="ground_truth/odometry" />
+      <param name="capability_group" value="Planning" />
+    </node>
     
     <!-- MPC trajectory tracker (0.0021 sampling time needs to match odom publish rate!)-->
     <node name="mav_nonlinear_mpc" pkg="mav_nonlinear_mpc" type="nonlinear_mpc_node" respawn="true" clear_params="true">
@@ -176,39 +188,49 @@
       <param name="allow_clear" value="true" />
       <param name="verbose" value="$(arg verbose_voxblox)" />
       <param name="publish_map_incremental" value="true" />
+<!--      ebvp changes/additions-->
+      <param name="clear_sphere_for_planning" value="true" />
     </node>
     
     <!-- Planner -->
-    <node name="planner_node" pkg="mav_active_3d_planning" type="planner_node" output="screen" >
-      <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
-      <remap from="planner_node/tsdf_map_in" to="voxblox_node/tsdf_map_out" />
-      <param name="use_tf_transforms" value="false" />
-      <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
-      <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
-      <param name="update_mesh_every_n_sec" value="0.0" />   
-      <param name="publish_traversable" value="false" />         
-    
-      <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
-      <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
-      <param name="verbose" value="$(arg verbose_planner)" />
-      <param name="visualize" value="$(arg visualize)" />
-      <param name="log_performance" value="$(arg record_data)" />
-    
-      <!-- Experiment dependent -->
-      <param name="trajectory_evaluator/sensor_model/ray_length" value="$(arg ray_length)" />
-      <param name="trajectory_evaluator/bounding_volume_args" value="/target_bounding_volume" />
-      <param name="trajectory_generator/bounding_volume_args" value="/map_bounding_volume" />
-      <param name="trajectory_generator/system_constraints_args" value="/planner/system_constraints" />
-      
-      <!-- General Config -->    
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_general_config)"/>
-    </node>    
-    
-    <!-- Modular config -->    
-    <group if="$(arg use_separate_configs)">
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_generator_config)" ns="planner_node"/>
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_evaluator_config)" ns="planner_node"/> 
-    </group>
+    <node name="map_explore" pkg="map_exp" type="map_explore" output="screen" args="">
+		  <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
+		  <remap from="map_explore/esdf_map_in" to="voxblox_node/esdf_map_out" />
+		  <remap from="map_explore/tsdf_map_in" to="voxblox_node/tsdf_map_out" />
+		  <remap from="trajectory_command" to="/$(arg mav_name)/command/trajectory" />
+		  
+
+		  <param name="tsdf_voxels_per_side" value="16" />
+		  <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
+		  <param name="esdf_voxel_size" value="$(arg voxel_size)" />
+		  <param name="esdf_voxels_per_side" value="16" />
+		  <param name="update_mesh_every_n_sec" value="0.0" />
+		  <param name="frame_id" value="world" />
+
+		  <param name="box/min_x" value="-20" />
+		  <param name="box/max_x" value="20" />
+		  <param name="box/min_y" value="-20" />
+		  <param name="box/max_y" value="20" />
+		  <param name="wp_x" value="0" />
+		  <param name="wp_y" value="0" />
+		  <param name="off_x" value="2" /> <!-- 2 -->
+		  <param name="off_y" value="0" />
+		  <param name="box/min_z" value="-2" />
+		  <param name="box/max_z" value="2" />
+		  <param name="v_max" value="1"/>
+		  <param name="a_max" value="1"/>
+		  <param name="growth_factor" value="2"/>
+		  <param name="gain_max_range" value="5"/>
+		  <param name="rrt_iterations" value="500"/>
+		  <param name="gain_threshold" value="200"/>
+		  <param name="potential_threshold" value="1000"/>
+		  <param name="close_count" value="100"/>
+
+		  <param name="publish_tsdf_map" value="false" />
+		  <param name="publish_esdf_map" value="false" />
+		  <param name="publish_slices" value="true" />
+		  <param name="slice_level" value="1.0" />
+		</node>
  </group>
 
   <!-- RVIZ Visualization -->

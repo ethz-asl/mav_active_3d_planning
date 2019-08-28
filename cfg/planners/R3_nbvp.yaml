@@ -1,7 +1,6 @@
 # Config that builds the mav_active_3d_planning implementation of the nbvp planner (bircher paper)
 verbose_modules: true
 build_modules_on_init: true
-highlight_executed_trajectory: true
 
 max_new_segments: 15
 min_new_segments: 15
@@ -14,7 +13,7 @@ replan_yaw_threshold: 0.15
     
 trajectory_generator:
   collision_optimistic: false 
-  collision_radius: 0.7
+  collision_radius: 0.5
   
   type: "FeasibleRRT"
   crop_segments: false

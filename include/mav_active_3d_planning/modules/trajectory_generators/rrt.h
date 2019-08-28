@@ -81,7 +81,8 @@ namespace mav_active_3d_planning {
             // try connecting two poses and build a trajectory in between them. Return true on success.
             virtual bool connectPoses(const mav_msgs::EigenTrajectoryPoint &start,
                                        const mav_msgs::EigenTrajectoryPoint &goal,
-                                       mav_msgs::EigenTrajectoryPointVector *result);
+                                       mav_msgs::EigenTrajectoryPointVector *result,
+                                       bool check_collision=true);
 
             // check max segment length and cropping
             virtual bool adjustGoalPosition(const Eigen::Vector3d &start_pos, Eigen::Vector3d *goal_pos_);

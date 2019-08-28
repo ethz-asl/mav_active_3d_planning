@@ -201,14 +201,16 @@ namespace mav_active_3d_planning {
         }
 
         bool RRT::connectPoses(const mav_msgs::EigenTrajectoryPoint &start, const mav_msgs::EigenTrajectoryPoint &goal,
-                               mav_msgs::EigenTrajectoryPointVector *result) {
+                               mav_msgs::EigenTrajectoryPointVector *result, bool check_collision) {
             // try creating a linear trajectory and check for collision
             Eigen::Vector3d start_pos = start.position_W;
             Eigen::Vector3d direction = goal.position_W - start_pos;
             int n_points = std::ceil(direction.norm() / (double) voxblox_ptr_->getEsdfMapPtr()->voxel_size());
-            for (int i = 0; i < n_points; ++i) {
-                if (!checkTraversable(start_pos + (double) i / (double) n_points * direction)) {
-                    return false;
+            if (check_collision) {
+                for (int i = 0; i < n_points; ++i) {
+                    if (!checkTraversable(start_pos + (double) i / (double) n_points * direction)) {
+                        return false;
+                    }
                 }
             }
 

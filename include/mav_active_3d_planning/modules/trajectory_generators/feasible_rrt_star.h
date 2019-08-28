@@ -34,7 +34,8 @@ namespace mav_active_3d_planning {
             // Overwrite virtual method to create constrained trajectories
             bool connectPoses(const mav_msgs::EigenTrajectoryPoint &start,
                               const mav_msgs::EigenTrajectoryPoint &goal,
-                              mav_msgs::EigenTrajectoryPointVector *result);
+                              mav_msgs::EigenTrajectoryPointVector *result,
+                              bool check_collision=true);
 
             bool extractTrajectoryToPublish(mav_msgs::EigenTrajectoryPointVector *trajectory,
                                             const TrajectorySegment &segment);
@@ -60,7 +61,8 @@ namespace mav_active_3d_planning {
             // Overwrite virtual method to create constrained trajectories
             bool connectPoses(const mav_msgs::EigenTrajectoryPoint &start,
                               const mav_msgs::EigenTrajectoryPoint &goal,
-                              mav_msgs::EigenTrajectoryPointVector *result);
+                              mav_msgs::EigenTrajectoryPointVector *result,
+                              bool check_collision);
 
             bool extractTrajectoryToPublish(mav_msgs::EigenTrajectoryPointVector *trajectory,
                                             const TrajectorySegment &segment);

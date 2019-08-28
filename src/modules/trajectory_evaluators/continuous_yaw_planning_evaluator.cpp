@@ -11,7 +11,7 @@ namespace mav_active_3d_planning {
     namespace trajectory_evaluators {
         using YawPlanningUpdater = mav_active_3d_planning::evaluator_updaters::YawPlanningUpdater;
 
-        ModuleFactory::Registration<ContinuousYawPlanningEvaluator> ContinuousYawPlanningEvaluator::registration(
+        ModuleFactory::Registration <ContinuousYawPlanningEvaluator> ContinuousYawPlanningEvaluator::registration(
                 "ContinuousYawPlanningEvaluator");
 
         bool ContinuousYawPlanningEvaluator::computeGain(TrajectorySegment *traj_in) {
@@ -64,9 +64,28 @@ namespace mav_active_3d_planning {
             }
 
             // find and apply best yaw
-            int max_index = std::max_element(gains.begin(), gains.end()) - gains.begin();
-            double best_yaw = defaults::angleScaled(info->orientations[max_index].trajectory.back().getYaw()) +
-                              (double) p_n_sections_fov_ / p_n_directions_ * M_PI;
+            double min_gain = gains[0];
+            double max_gain = gains[0];
+            int max_index = 0;
+            for (int i = 1; i < gains.size(); ++i) {
+                if (gains[i] > max_gain) {
+                    max_gain = gains[i];
+                    max_index = i;
+                } else if (gains[i] < min_gain) {
+                    min_gain = gains[i];
+                }
+            }
+            double best_yaw;
+            if (max_gain > min_gain || segment->trajectory.size() > 1) {
+                // got a best yaw
+                best_yaw = defaults::angleScaled(info->orientations[max_index].trajectory.back().getYaw() +
+                           (double) p_n_sections_fov_ / p_n_directions_ * M_PI);
+            } else {
+                // indifferent, use direction of travel
+                Eigen::Vector3d direction =
+                        segment->trajectory.back().position_W - segment->trajectory.front().position_W;
+                best_yaw = defaults::angleScaled(std::atan2(direction[1], direction[0]));
+            }
             setTrajectoryYaw(segment, segment->trajectory.front().getYaw(), best_yaw);
             info->active_orientation = max_index;
 
@@ -156,7 +175,7 @@ namespace mav_active_3d_planning {
                 new_msg.action = visualization_msgs::Marker::ADD;
 
                 // Color according to relative value (blue when indifferent, grey for values below update range)
-                if (info->orientations[i].gain <= p_update_sections_separate_){
+                if (info->orientations[i].gain <= p_update_sections_separate_) {
                     new_msg.color.r = 0.5;
                     new_msg.color.g = 0.5;
                     new_msg.color.b = 0.5;

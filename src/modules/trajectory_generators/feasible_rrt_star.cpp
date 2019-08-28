@@ -23,13 +23,16 @@ namespace mav_active_3d_planning {
 
         bool FeasibleRRT::connectPoses(const mav_msgs::EigenTrajectoryPoint &start,
                                        const mav_msgs::EigenTrajectoryPoint &goal,
-                                       mav_msgs::EigenTrajectoryPointVector *result) {
-            // try creating a linear trajectory and check for collision
-            Eigen::Vector3d direction = goal.position_W - start.position_W;
-            int n_points = std::ceil(direction.norm() / (double) voxblox_ptr_->getEsdfMapPtr()->voxel_size());
-            for (int i = 0; i < n_points; ++i) {
-                if (!checkTraversable(start.position_W + (double) i / (double) n_points * direction)) {
-                    return false;
+                                       mav_msgs::EigenTrajectoryPointVector *result,
+                                       bool check_collision) {
+            if (check_collision) {
+                // try creating a linear trajectory and check for collision
+                Eigen::Vector3d direction = goal.position_W - start.position_W;
+                int n_points = std::ceil(direction.norm() / (double) voxblox_ptr_->getEsdfMapPtr()->voxel_size());
+                for (int i = 0; i < n_points; ++i) {
+                    if (!checkTraversable(start.position_W + (double) i / (double) n_points * direction)) {
+                        return false;
+                    }
                 }
             }
             if (p_all_semgents_feasible_) {
@@ -47,8 +50,13 @@ namespace mav_active_3d_planning {
                 return true;
             } else {
                 // Create a smooth semgent for execution
-                return segment_generator_.createTrajectory(segment.trajectory.front(), segment.trajectory.back(),
-                                                           trajectory);
+                if (segment_generator_.createTrajectory(segment.trajectory.front(), segment.trajectory.back(),
+                                                        trajectory)) {
+                    return true;
+                } else {
+                    *trajectory = segment.trajectory;
+                    return false;
+                }
             }
         }
 
@@ -65,13 +73,16 @@ namespace mav_active_3d_planning {
 
         bool FeasibleRRTStar::connectPoses(const mav_msgs::EigenTrajectoryPoint &start,
                                            const mav_msgs::EigenTrajectoryPoint &goal,
-                                           mav_msgs::EigenTrajectoryPointVector *result) {
+                                           mav_msgs::EigenTrajectoryPointVector *result,
+                                           bool check_collision) {
             // try creating a linear trajectory and check for collision
-            Eigen::Vector3d direction = goal.position_W - start.position_W;
-            int n_points = std::ceil(direction.norm() / (double) voxblox_ptr_->getEsdfMapPtr()->voxel_size());
-            for (int i = 0; i < n_points; ++i) {
-                if (!checkTraversable(start.position_W + (double) i / (double) n_points * direction)) {
-                    return false;
+            if (check_collision) {
+                Eigen::Vector3d direction = goal.position_W - start.position_W;
+                int n_points = std::ceil(direction.norm() / (double) voxblox_ptr_->getEsdfMapPtr()->voxel_size());
+                for (int i = 0; i < n_points; ++i) {
+                    if (!checkTraversable(start.position_W + (double) i / (double) n_points * direction)) {
+                        return false;
+                    }
                 }
             }
             if (p_all_semgents_feasible_) {

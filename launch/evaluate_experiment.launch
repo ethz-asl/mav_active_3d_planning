@@ -1,21 +1,23 @@
 <launch>
   <!-- Data source Data, -->
-  <arg name="target_directory" default="/home/lukas/Documents/MT/Data" />
+  <arg name="target_directory" default="/home/lukas/Documents/MT/Data/R7_exp" />
   <arg name="gt_file_path" default="/home/lukas/Documents/MT/experiment1/gt_surface_pcl.ply"/>
+  <arg name="experiment_config" default="experiment1.yaml"/>
   <arg name="method" default="recent"/>
   
   <!-- what to evaluate -->
-  <arg name="series" default="false"/>
-  <arg name="evaluate" default="true"/>
+  <arg name="series" default="true"/>
+  <arg name="evaluate" default="false"/>
+  <arg name="evaluate_volume" default="true"/>
   <arg name="error_histogram" default="true"/>
-  <arg name="create_meshes" default="true"/>
+  <arg name="create_meshes" default="false"/>
   <arg name="create_plots" default="true"/>
   <arg name="show_plots" default="false"/>
   <arg name="clear_voxblox_maps" default="false"/>	<!-- irreversible map removal (disk space)!-->
   
   <!-- Eval args -->
   <arg name="truncation_distance" default="0.0"/>
-  <arg name="mesh_every_n_steps" default="20"/>
+  <arg name="mesh_every_n_steps" default="60"/>
 
 
 
@@ -26,6 +28,7 @@
     <param name="method" value="$(arg method)" />
     <param name="ns_eval_voxblox_node" value="/eval_voxblox_node" />
     <param name="evaluate" value="$(arg evaluate)" />
+    <param name="evaluate_volume" value="$(arg evaluate_volume)" />
     <param name="series" value="$(arg series)" />
     <param name="create_plots" value="$(arg create_plots)" />
     <param name="show_plots" value="$(arg show_plots)" />
@@ -38,7 +41,9 @@
 	  <param name="create_meshes" value="$(arg create_meshes)" />
 	  <param name="error_histogram" value="$(arg error_histogram)" />
 	  <param name="evaluate" value="$(arg evaluate)" />
+	  <param name="evaluate_volume" value="$(arg evaluate_volume)" />
 	  <param name="truncation_distance" value="$(arg truncation_distance)" />
 	  <param name="mesh_every_n_steps" value="$(arg mesh_every_n_steps)" />
+	  <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/experiments/$(arg experiment_config)"/>
 	</node>
 </launch>

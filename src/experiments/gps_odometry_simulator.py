@@ -26,7 +26,6 @@ class GPSSimulator:
         self.noise_model = rospy.get_param('~noise_model', "ground_truth")  # ground_truth, uniform, gaussian, random_walk
         self.publish_difference = rospy.get_param('~publish_difference', True)
         self.publish_tf = rospy.get_param('~publish_tf', True)
-
         # constants
         self.uncertainty = np.array([self.position_uncertainty] * 3 + [self.roll_pitch_uncertainty] * 2 +
                                     [self.yaw_uncertainty])
