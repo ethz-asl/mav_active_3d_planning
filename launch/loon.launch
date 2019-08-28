@@ -5,11 +5,13 @@
 
   <group ns="$(arg namespace)" >
 
+  <!-- mavros -->
   <node pkg="mavros" type="mavros_node" name="mavros" respawn="false" clear_params="true" output="screen">
     <rosparam command="load" file="$(find mav_startup)/parameters/mavs/loon/px4_config.yaml" />
     <param name="capability_group" value="Core" />
   </node>
 
+  <!-- odom predictor -->
   <node pkg="odom_predictor" type="odom_predictor_node" name="odom_predictor" output="screen">
     <remap from="odometry" to="rovio/odometry"/>
     <remap from="imu_bias" to="rovio/imu_biases"/>
@@ -17,7 +19,12 @@
     <param name="capability_group" value="State Estimation" />
   </node>
 
+  <!-- tf -->
   <node pkg="tf" type="static_transform_publisher" name="world_tf_broadcaster" args="0 0 0 0 0 0 1 world odom 100">
+    <param name="capability_group" value="Core" />
+  </node>
+  
+  <node pkg="tf" type="static_transform_publisher" name="camera_tf_broadcaster" args="0 0 0 0.5 -0.5 0.5 0.5 camera0 camera_link 100">
     <param name="capability_group" value="Core" />
   </node>
 
@@ -40,8 +47,7 @@
     <param name="capability_group" value="Thermal" />
   </node>
 
-  <!-- Boson -->
-
+  <!-- Control -->
   <node name="mav_nonlinear_mpc" pkg="mav_nonlinear_mpc" type="nonlinear_mpc_node" respawn="false" clear_params="true" output="screen">
     <remap from="odometry" to="odom_predictor/predicted_odometry" />
     <remap from="rc" to="mavros/rc/in" />
@@ -54,16 +60,35 @@
     <param name="capability_group" value="Core" />
   </node>
 
+  <!-- Realsense + pointclouds -->
   <include file="$(find realsense2_camera)/launch/rs_camera.launch">
-	<arg name="inter_cam_sync_mode" value="slave" />
-	<arg name="force_mavros_triggering" value="true" />
-  	<arg name="rs435_depth_emitter_enabled" value="0" />
-	<arg name="mavros_static_time_shift" value="0.00" />
-	<arg name="trigger_control_service" value="/loon/mavros/cmd/trigger_control" />
-	<arg name="cam_imu_stamp_topic"	value="/loon/mavros/cam_imu_sync/cam_imu_stamp" />
-    	<param name="capability_group" value="Sensors" />
+    <arg name="inter_cam_sync_mode" value="slave" />
+    <arg name="force_mavros_triggering" value="true" />
+    <arg name="rs435_depth_emitter_enabled" value="0" />
+    <arg name="mavros_static_time_shift" value="0.00" />
+    <arg name="trigger_control_service" value="/loon/mavros/cmd/trigger_control" />
+    <arg name="cam_imu_stamp_topic" value="/loon/mavros/cam_imu_sync/cam_imu_stamp" />
+      <param name="capability_group" value="Sensors" />
   </include>
+  
+  <node pkg="nodelet" type="nodelet" name="register_depth"
+            args="load depth_image_proc/register camera/realsense2_camera_manager false">
+    <param name="queue_size" value="20" />
+    <remap from="rgb/camera_info"  to="camera/color/camera_info" />
+    <remap from="depth/camera_info" to="camera/depth/camera_info" />
+    <remap from="depth/image_rect" to="camera/depth/image_rect_raw" />
+    <remap from="depth_registered/image_rect" to="camera/depth_registered/sw_registered/image_rect_raw" />
+  </node>
 
+  <node pkg="nodelet" type="nodelet" name="points_xyzrgb_sw_registered"
+          args="load depth_image_proc/point_cloud_xyzrgb camera/realsense2_camera_manager false">
+    <remap from="rgb/image_rect_color" to="camera/color/image_raw" />
+    <remap from="rgb/camera_info" to="camera/color/camera_info" />
+    <remap from="depth_registered/image_rect" to="camera/depth_registered/sw_registered/image_rect_raw" />
+    <remap from="depth_registered/points" to="camera/depth_registered/points" />
+  </node>
+
+  <!-- rovio -->
   <node name="rovio" pkg="rovio" type="rovio_node" output="screen">
     <param name="filter_config" value="$(find mav_startup)/parameters/mavs/$(arg mav_name)/rovio_filter.info" />
     <param name="camera0_config" value="$(find mav_startup)/parameters/mavs/$(arg mav_name)/rovio_cam0.yaml" />
@@ -73,11 +98,50 @@
     <param name="capability_group" value="State Estimation" />
   </node>
   
+  
   <!-- mav_active_3d_planning -->
+  
   <!-- Voxblox -->
-  
-  
-  <!-- Planner -->
+    <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
+      <remap from="pointcloud" to="/loon/camera/depth_registered/points"/>
+      <param name="use_tf_transforms" value="true"/>
+      <param name="publish_tsdf_map" value="true" />
+      <param name="publish_esdf_map" value="true" />
+      <param name="tsdf_voxel_size" value="0.1" />
+      <param name="tsdf_voxels_per_side" value="16" />
+      <param name="color_mode" value="color" />
+      <param name="update_mesh_every_n_sec" value="1.0" />
+      <param name="method" value="merged" />
+      <param name="max_ray_length" value="5.0" />
+      <param name="allow_clear" value="true" />
+      <param name="verbose" value="false" />
+      <param name="publish_map_incremental" value="true" />
+    </node>
+    
+    <!-- Planner -->
+    <node name="planner_node" pkg="mav_active_3d_planning" type="planner_node" output="screen" >
+      <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
+      <remap from="planner_node/tsdf_map_in" to="voxblox_node/tsdf_map_out" />
+      <remap from="odometry" to="/$(arg mav_name)/msf_core/odometry" />
+      <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
+      
+      <param name="use_tf_transforms" value="false" />
+      <param name="tsdf_voxel_size" value="0.1" />
+      <param name="tsdf_voxels_per_side" value="16" />
+      <param name="update_mesh_every_n_sec" value="0.0" />   
+      <param name="publish_traversable" value="false" />
+                     
+      <param name="verbose" value="true" />
+      <param name="visualize" value="true" />
+      <param name="log_performance" value="true" />
+    
+      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/planners/loon.yaml"/>
+    </node>  
+    
+    <!-- Helper Tools -->
+    <node pkg="mav_active_3d_planning" type="bounding_box_computer.py" name="bbox_computer" output="screen"/>
+    
+    <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiments/loon.rviz"/>
 
   </group>
 </launch>
