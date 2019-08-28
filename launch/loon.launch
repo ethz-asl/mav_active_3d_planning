@@ -97,9 +97,10 @@
     <param name="world_frame" value="odom"/>
     <param name="capability_group" value="State Estimation" />
   </node>
-  
+  </group>
   
   <!-- mav_active_3d_planning -->
+  <group ns="mav_active_3d_planning" >
   
   <!-- Voxblox -->
     <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
@@ -122,7 +123,8 @@
     <node name="planner_node" pkg="mav_active_3d_planning" type="planner_node" output="screen" >
       <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
       <remap from="planner_node/tsdf_map_in" to="voxblox_node/tsdf_map_out" />
-      <remap from="odometry" to="/$(arg mav_name)/msf_core/odometry" />
+<!--      <remap from="odometry" to="/$(arg mav_name)/msf_core/odometry" />-->
+      <remap from="odometry" to="/$(arg mav_name)/rovio/odometry" />
       <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
       
       <param name="use_tf_transforms" value="false" />
@@ -139,6 +141,11 @@
     </node>  
     
     <!-- Helper Tools -->
+    <node pkg="mav_active_3d_planning" type="testgui.py" name="testgui" output="screen">
+      <param name="pos_hold_service_topic" value="/loon/back_to_position_hold" />
+      <param name="toggle_service_topic" value="planner_node/toggle_running" />
+    </node>
+    
     <node pkg="mav_active_3d_planning" type="bounding_box_computer.py" name="bbox_computer" output="screen"/>
     
     <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiments/loon.rviz"/>
