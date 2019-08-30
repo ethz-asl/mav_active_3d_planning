@@ -66,7 +66,7 @@ def compute():
         theta_diff = math.fabs(theta2-theta1)
     else:
         theta = ((theta1 + theta2 + 90) / 2) % 90
-        theta_diff = math.min(math.fabs(theta2 - theta1 + 90), math.fabs(theta2 - theta1 - 90))
+        theta_diff = min(math.fabs(theta2 - theta1 + 90), math.fabs(theta2 - theta1 - 90))
 
     # Rotate
     s = math.sin(theta / 180 * math.pi)

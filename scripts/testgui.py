@@ -13,8 +13,9 @@ pos_hold_service_topic = "/penguin/back_to_position_hold"
 toggle_service_topic = "/planner_node/toggle_running"
 try:
     rospy.init_node("active_planning_gui")
-    rospy.get_param('~pos_hold_service_topic', pos_hold_service_topic)
-    rospy.get_param('~toggle_service_topic', toggle_service_topic)
+    pos_hold_service_topic = rospy.get_param('~pos_hold_service_topic', pos_hold_service_topic)
+    toggle_service_topic = rospy.get_param('~toggle_service_topic', toggle_service_topic)
+    rospy.loginfo("Looking for services '%s', '%s'", pos_hold_service_topic, toggle_service_topic)
     rospy.wait_for_service(pos_hold_service_topic, timeout=0.5)
     rospy.wait_for_service(toggle_service_topic, timeout=0.5)
 except:

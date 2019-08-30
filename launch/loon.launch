@@ -8,7 +8,8 @@
   <!-- mavros -->
   <node pkg="mavros" type="mavros_node" name="mavros" respawn="false" clear_params="true" output="screen">
     <rosparam command="load" file="$(find mav_startup)/parameters/mavs/loon/px4_config.yaml" />
-    <param name="capability_group" value="Core" />
+    <param name="capability_group" value="Core" />    
+    <param name="gcs_url" value="udp://@lukas-HP-Pavilion-Notebook" />
   </node>
 
   <!-- odom predictor -->
@@ -26,25 +27,6 @@
   
   <node pkg="tf" type="static_transform_publisher" name="camera_tf_broadcaster" args="0 0 0 0.5 -0.5 0.5 0.5 camera0 camera_link 100">
     <param name="capability_group" value="Core" />
-  </node>
-
-  <!-- Boson -->
-  <node pkg="boson_ros" name="boson_ros" type="boson_ros_node" output="screen">
-    <param name="capability_group" value="Thermal" />
-  </node>
-
-  <arg name="scale" value="1.0" />
-  <arg name="calib_path" default="$(find mav_startup)/parameters/mavs/loon/camchain-boson.yaml" />
-  <arg name="input_camera_name" default="cam0" />
-
-  <node name="image_undistort_node" pkg="image_undistort" type="image_undistort_node" output="screen" clear_params="true">
-    <param name="input_camera_namespace" value="$(arg input_camera_name)"/>
-    <param name="input_camera_info_from_ros_params" value = "true"/>
-    <param name="scale" value="$(arg scale)"/>
-    <rosparam file="$(arg calib_path)"/>
-    <remap from="input/image" to="/loon/boson_ros/image_degrees_C"/>
-    <remap from="output/image" to="/loon/boson_ros/image_degrees_C_undistorted"/>
-    <param name="capability_group" value="Thermal" />
   </node>
 
   <!-- Control -->
@@ -68,7 +50,7 @@
     <arg name="mavros_static_time_shift" value="0.00" />
     <arg name="trigger_control_service" value="/loon/mavros/cmd/trigger_control" />
     <arg name="cam_imu_stamp_topic" value="/loon/mavros/cam_imu_sync/cam_imu_stamp" />
-      <param name="capability_group" value="Sensors" />
+    <param name="capability_group" value="Sensors" />
   </include>
   
   <node pkg="nodelet" type="nodelet" name="register_depth"
@@ -108,7 +90,7 @@
       <param name="use_tf_transforms" value="true"/>
       <param name="publish_tsdf_map" value="true" />
       <param name="publish_esdf_map" value="true" />
-      <param name="tsdf_voxel_size" value="0.1" />
+      <param name="tsdf_voxel_size" value="0.15" />
       <param name="tsdf_voxels_per_side" value="16" />
       <param name="color_mode" value="color" />
       <param name="update_mesh_every_n_sec" value="1.0" />
@@ -128,10 +110,10 @@
       <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
       
       <param name="use_tf_transforms" value="false" />
-      <param name="tsdf_voxel_size" value="0.1" />
+      <param name="tsdf_voxel_size" value="0.15" />
       <param name="tsdf_voxels_per_side" value="16" />
       <param name="update_mesh_every_n_sec" value="0.0" />   
-      <param name="publish_traversable" value="false" />
+      <param name="publish_traversable" value="true" />
                      
       <param name="verbose" value="true" />
       <param name="visualize" value="true" />
@@ -143,7 +125,7 @@
     <!-- Helper Tools -->
     <node pkg="mav_active_3d_planning" type="testgui.py" name="testgui" output="screen">
       <param name="pos_hold_service_topic" value="/loon/back_to_position_hold" />
-      <param name="toggle_service_topic" value="planner_node/toggle_running" />
+      <param name="toggle_service_topic" value="/mav_active_3d_planning/planner_node/toggle_running" />
     </node>
     
     <node pkg="mav_active_3d_planning" type="bounding_box_computer.py" name="bbox_computer" output="screen"/>
