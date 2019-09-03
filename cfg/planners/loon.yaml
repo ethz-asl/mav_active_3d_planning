@@ -100,7 +100,7 @@ trajectory_evaluator:
       sensor_model:
         type: "IterativeRayCaster"
         sampling_time: 0.0
-        ray_length: 5.0
+        ray_length: 4.8
         focal_length: 385.0
         # full fov
 #        resolution_x: 181 # 640-79.4 / 181 cont yaw 12
