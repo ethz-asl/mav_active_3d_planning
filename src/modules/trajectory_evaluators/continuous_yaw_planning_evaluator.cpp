@@ -79,7 +79,7 @@ namespace mav_active_3d_planning {
             if (max_gain > min_gain || segment->trajectory.size() > 1) {
                 // got a best yaw
                 best_yaw = defaults::angleScaled(info->orientations[max_index].trajectory.back().getYaw() +
-                           (double) p_n_sections_fov_ / p_n_directions_ * M_PI);
+                                                 (double) p_n_sections_fov_ / p_n_directions_ * M_PI);
             } else {
                 // indifferent, use direction of travel
                 Eigen::Vector3d direction =
@@ -106,9 +106,19 @@ namespace mav_active_3d_planning {
         void
         ContinuousYawPlanningEvaluator::setTrajectoryYaw(TrajectorySegment *segment, double start_yaw,
                                                          double target_yaw) {
-            // just set the yaw of the entire trajectory to the sampled value
-            for (int i = 0; i < segment->trajectory.size(); ++i) {
-                segment->trajectory[i].setFromYaw(target_yaw);
+            int n = segment->trajectory.size();
+            if (n == 1) {
+                // only one point: set target yaw
+                segment->trajectory[0].setFromYaw(defaults::angleScaled(target_yaw));
+            } else {
+                // just set the yaw linear from start to gaol
+                double diff =
+                        defaults::angleDirection(start_yaw, target_yaw) *
+                        defaults::angleDifference(start_yaw, target_yaw);
+                for (int i = 0; i < n; ++i) {
+                    segment->trajectory[i].setFromYaw(
+                            defaults::angleScaled(start_yaw + (double) i / (double) n * diff));
+                }
             }
         }
 

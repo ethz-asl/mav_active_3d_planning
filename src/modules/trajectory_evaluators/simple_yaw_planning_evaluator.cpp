@@ -21,9 +21,19 @@ namespace mav_active_3d_planning {
 
         void
         SimpleYawPlanningEvaluator::setTrajectoryYaw(TrajectorySegment *segment, double start_yaw, double target_yaw) {
-            // just set the yaw of the entire trajectory to the sampled value
-            for (int i = 0; i < segment->trajectory.size(); ++i) {
-                segment->trajectory[i].setFromYaw(target_yaw);
+            int n = segment->trajectory.size();
+            if (n == 1) {
+                // only one point: set target yaw
+                segment->trajectory[0].setFromYaw(defaults::angleScaled(target_yaw));
+            } else {
+                // just set the yaw linear from start to gaol
+                double diff =
+                        defaults::angleDirection(start_yaw, target_yaw) *
+                        defaults::angleDifference(start_yaw, target_yaw);
+                for (int i = 0; i < n; ++i) {
+                    segment->trajectory[i].setFromYaw(
+                            defaults::angleScaled(start_yaw + (double) i / (double) n * diff));
+                }
             }
         }
 
