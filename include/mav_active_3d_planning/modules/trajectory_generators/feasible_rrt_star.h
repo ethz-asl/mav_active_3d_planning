@@ -90,6 +90,8 @@ namespace mav_active_3d_planning {
 
             // Overwrite virtual methods
             bool rotate(TrajectorySegment *target);
+
+            bool reverse(TrajectorySegment *target);
         };
 
     } // namespace back_trackers

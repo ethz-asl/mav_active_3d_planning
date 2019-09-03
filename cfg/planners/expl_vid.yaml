@@ -27,20 +27,20 @@ trajectory_generator:
   crop_segments: true
   crop_margin: 0.3
   crop_min_length: 0.3
-  max_extension_range: 1.5
+  max_extension_range: 3.0
   maximum_tries: 1000
   sampling_rate: 20.0
   sample_yaw: true
   
   sampling_mode: "semilocal"
   semilocal_sampling_count: 10
-  semilocal_sampling_radius_max: 1.5
-  semilocal_sampling_radius_min: 1.5
+  semilocal_sampling_radius_max: 3.0
+  semilocal_sampling_radius_min: 3.0
   
   rewire_root: true
   rewire_intermediate: true
   reinsert_root: true
-  max_rewire_range: 1.6
+  max_rewire_range: 3.1
   max_density_range: 0.0
   n_neighbors: 20
 
@@ -63,7 +63,7 @@ trajectory_evaluator:
     following_evaluator:
       type: "NaiveEvaluator"
       clear_from_parents: false
-      visualize_sensor_view: true
+      visualize_sensor_view: false
       bounding_volume_args: "/target_bounding_volume"
     
       sensor_model:
@@ -73,7 +73,7 @@ trajectory_evaluator:
         focal_length: 320.0
         resolution_x: 172 # 640-90/172-30/127-22.5 deg fov
         resolution_y: 480
-        downsampling_factor: 3.0
+        downsampling_factor: 5.0
         
       cost_computer:
         type: "SegmentTime"

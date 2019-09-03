@@ -35,9 +35,9 @@ fi
 
 
 # *** 1st exp ***
-n_experiments=1
-target_dir="/home/lukas/Documents/MT/Data/R7_exp_t"		# Can reuse same dir to add experiments
-planner_cfg="planners/R7_c_exp_t.yaml"
+n_experiments=5
+target_dir="/home/lukas/Documents/MT/Data/R6_surface_rays"		# Can reuse same dir to add experiments
+planner_cfg="planners/R6_surface_rays.yaml"
 
 echo "Starting experiment${experiment} series of ${n_experiments} runs at '${target_dir}'!"
 if [ ! -d "$target_dir" ]; then

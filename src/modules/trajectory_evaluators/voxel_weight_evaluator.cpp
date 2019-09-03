@@ -76,6 +76,7 @@ namespace mav_active_3d_planning {
             }
             return p_new_voxel_weight_;
 
+
 //            // test confidence impl.
 //            double distance;
 //            if (voxblox_ptr_->getEsdfMapPtr()->getDistanceAtPosition(voxel, &distance)) {

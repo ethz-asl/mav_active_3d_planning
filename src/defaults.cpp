@@ -51,6 +51,7 @@ namespace mav_active_3d_planning {
             setParam<double>(param_map, "v_max", &v_max, 1.0);
             setParam<double>(param_map, "a_max", &a_max, 1.0);
             setParam<double>(param_map, "yaw_rate_max", &yaw_rate_max, M_PI / 2.0);
+            setParam<double>(param_map, "yaw_accel_max", &yaw_accel_max, M_PI / 2.0);
         }
 
         bool SystemConstraints::checkParamsValid(std::string *error_message) {

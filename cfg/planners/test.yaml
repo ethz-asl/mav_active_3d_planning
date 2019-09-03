@@ -4,9 +4,9 @@
 replan_pos_threshold: 0.15
 replan_yaw_threshold: 0.15
 
-max_new_segments: 0   # todo
-min_new_segments: 0
-max_new_tries: 0
+max_new_segments: 0
+min_new_segments: 15
+max_new_tries: 1000
 min_new_tries: 0
 min_new_value: 0
 
@@ -18,11 +18,12 @@ highlight_executed_trajectory: true
 
 # TG
 trajectory_generator:
-  collision_optimistic: false  # todo
-  collision_radius: 1.0
-  clearing_radius: 0.5
+  collision_optimistic: false 
+  collision_radius: 1.2
+  clearing_radius: 0.0
   
   type: "FeasibleRRTStar"
+  system_constraints_args: "/planner/system_constraints"
   all_semgents_feasible: false
   crop_segments: true
   crop_margin: 0.3
@@ -43,24 +44,9 @@ trajectory_generator:
   max_rewire_range: 1.6
   max_density_range: 0.0
   n_neighbors: 20
-  
-  bounding_volume:
-    x_min: -2.0
-    x_max: 2.0
-    y_min: -1.0
-    y_max: 10.0
-    z_min: 1.0
-    z_max: 3.0
-    rotation: 0.0
 
   generator_updater:
     type: "RecheckCollision"
-    
-  system_constraints:
-    v_max: 0.5
-    a_max: 0.2
-    yaw_rate_max: 0.3
-    yaw_accel_max: 0.3
   
 # TE
 trajectory_evaluator:
@@ -68,7 +54,7 @@ trajectory_evaluator:
   
   following_evaluator:
     type: "ContinuousYawPlanningEvaluator"
-    n_directions: 16
+    n_directions: 12
     n_sections_fov: 3
     select_by_value: false
     update_range: 3.0
@@ -81,53 +67,23 @@ trajectory_evaluator:
       visualize_sensor_view: true
       accurate_frontiers: true 
       checking_distance: 2.0
+      bounding_volume_args: "/target_bounding_volume"
+    
       frontier_voxel_weight: 1.0
       new_voxel_weight: 0.0
       min_impact_factor: 0.01
-      ray_angle_x: 0.00217
-      ray_angle_y: 0.00232
+      ray_angle_x: 0.002454
+      ray_angle_y: 0.002681
       use_frontier_voxels: true
-            
-#      bounding_volume:
-#        x_min: -1.079
-#        x_max: 0.914
-#        y_min: -4.983
-#        y_max: 1.079
-#        z_min: -1.000
-#        z_max: 1.000
-#        rotation: 85.269
        
       sensor_model:
         type: "IterativeRayCaster"
         sampling_time: 0.0
         ray_length: 5.0
-        focal_length: 385.0
-        # full fov
-#        resolution_x: 181 # 640-79.4 / 181 cont yaw 12
-#        resolution_y: 480 # 480-63.8
-        # reduced fov
-#        resolution_x: 164 # 560-72 / 164 cont yaw 15/3, 250 cont yaw 10/2
-#        resolution_y: 446 # 446-60
-        # more reduced fov (depth)
-        resolution_x: 153 # 514-67.5 / 153 cont yaw 16/3
-        resolution_y: 200 # 280-40, 200-30
+        focal_length: 320.0
+        resolution_x: 172 # 640-90/172-30/127-22.5 deg fov
+        resolution_y: 480
         downsampling_factor: 3.0
-        
-        # relative to imu, requires imu coord shift...
-#        mounting_translation_x: 0.009552984223402516
-#        mounting_translation_y: -0.004970312430909841
-#        mounting_translation_z: -0.1486855190135599
-#        mounting_rotation_x: -0.5627113
-#        mounting_rotation_y: 0.564155
-#        mounting_rotation_z: -0.4185156
-#        mounting_rotation_w: 0.4358093
-        mounting_translation_x: 0.15
-        mounting_translation_y: 0.0
-        mounting_translation_z: 0.0
-        mounting_rotation_x: 0
-        mounting_rotation_y: 0.1305262
-        mounting_rotation_z: 0
-        mounting_rotation_w: 0.9914449
         
       cost_computer:
         type: "SegmentTime"
@@ -140,7 +96,7 @@ trajectory_evaluator:
 
 back_tracker:
   type: "FeasibleRotateReverse"
-  turn_rate: 0.3
+  turn_rate: 1.6
   update_rate: 0.5
   sampling_rate: 20.0
   n_rotations: 0

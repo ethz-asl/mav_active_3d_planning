@@ -442,8 +442,8 @@ namespace mav_active_3d_planning {
             msg.type = visualization_msgs::Marker::POINTS;
             msg.id = i;
             msg.ns = "candidate_trajectories";
-            msg.scale.x = 0.04;
-            msg.scale.y = 0.04;
+            msg.scale.x = 0.05;
+            msg.scale.y = 0.05  ;
             msg.color.a = 0.4;
             msg.action = visualization_msgs::Marker::ADD;
 
@@ -611,8 +611,8 @@ namespace mav_active_3d_planning {
             msg.color.b = 0.0;
             msg.color.a = 1.0;
         } else {
-            msg.scale.x = 0.03;
-            msg.scale.y = 0.03;
+            msg.scale.x = 0.05;
+            msg.scale.y = 0.05;
             msg.color.r = 0.5;
             msg.color.g = 0.5;
             msg.color.b = 0.5;

@@ -56,6 +56,7 @@ namespace mav_active_3d_planning {
             double v_max;           // m/s, maximum absolute velocity
             double a_max ;          // m/s2, maximum absolute acceleration
             double yaw_rate_max;    // rad/s, maximum yaw rate
+            double yaw_accel_max;   // rad/s2, maximum yaw acceleration
 
         protected:
             static ModuleFactory::Registration<SystemConstraints> registration;

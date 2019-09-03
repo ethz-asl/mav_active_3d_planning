@@ -18,7 +18,8 @@ namespace mav_active_3d_planning {
             RRT::setupFromParamMap(param_map);
             setParam<bool>(param_map, "all_semgents_feasible", &p_all_semgents_feasible_, false);
             segment_generator_.setConstraints(system_constraints_->v_max, system_constraints_->a_max,
-                                              system_constraints_->yaw_rate_max, p_sampling_rate_);
+                                              system_constraints_->yaw_rate_max, system_constraints_->yaw_accel_max,
+                                              p_sampling_rate_);
         }
 
         bool FeasibleRRT::connectPoses(const mav_msgs::EigenTrajectoryPoint &start,
@@ -67,7 +68,8 @@ namespace mav_active_3d_planning {
             RRTStar::setupFromParamMap(param_map);
             setParam<bool>(param_map, "all_semgents_feasible", &p_all_semgents_feasible_, false);
             segment_generator_.setConstraints(system_constraints_->v_max, system_constraints_->a_max,
-                                              system_constraints_->yaw_rate_max, p_sampling_rate_);
+                                              system_constraints_->yaw_rate_max, system_constraints_->yaw_accel_max,
+                                              p_sampling_rate_);
 
         }
 
@@ -101,9 +103,10 @@ namespace mav_active_3d_planning {
             } else {
                 // Create a smooth semgent for execution
                 if (segment_generator_.createTrajectory(segment.trajectory.front(), segment.trajectory.back(),
-                                                           trajectory)) {
+                                                        trajectory)) {
                     return true;
                 } else {
+                    // trajectory generation failed, use old trajectory
                     *trajectory = segment.trajectory;
                     return false;
                 }
@@ -120,7 +123,13 @@ namespace mav_active_3d_planning {
         void FeasibleRotateReverse::setupFromParamMap(Module::ParamMap *param_map) {
             // Setup parent and segment creator
             RotateReverse::setupFromParamMap(param_map);
-            segment_generator_.setConstraints(1.0, 1.0, turn_rate_, sampling_rate_);    // velocities don't matter
+            std::string ns = (*param_map)["param_namespace"];
+            std::string temp_args;
+            setParam<std::string>(param_map, "system_constraints_args", &temp_args, ns + "/system_constraints");
+            std::unique_ptr <defaults::SystemConstraints> constraints = ModuleFactory::Instance()->createModule<defaults::SystemConstraints>(
+                    temp_args, verbose_modules_);
+            segment_generator_.setConstraints(constraints->v_max, constraints->a_max, constraints->yaw_rate_max,
+                                              constraints->yaw_accel_max, sampling_rate_);
         }
 
         bool FeasibleRotateReverse::rotate(TrajectorySegment *target) {
@@ -138,6 +147,23 @@ namespace mav_active_3d_planning {
             } else {
                 // if mav_trajectory_generation failed for some reason use the old implementation to not die
                 return RotateReverse::rotate(target);
+            }
+        }
+
+        bool FeasibleRotateReverse::reverse(TrajectorySegment *target) {
+            // Reverse the last registered segment. Assume linear segments as for the feasible RRT!
+            mav_msgs::EigenTrajectoryPointVector to_reverse = stack_.back();
+            mav_msgs::EigenTrajectoryPointVector trajectory;
+            if (segment_generator_.createTrajectory(to_reverse.back(), to_reverse.front(), &trajectory)) {
+                TrajectorySegment *new_segment = target->spawnChild();
+                new_segment->trajectory = trajectory;
+                last_yaw_ = new_segment->trajectory.back().getYaw();
+                last_position_ = new_segment->trajectory.back().position_W;
+                stack_.pop_back();
+                return true;
+            } else {
+                // if mav_trajectory_generation failed for some reason use the old implementation to not die
+                return RotateReverse::reverse(target);
             }
         }
 

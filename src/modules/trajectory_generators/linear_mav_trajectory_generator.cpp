@@ -9,14 +9,14 @@
 namespace mav_active_3d_planning {
 
     void LinearMavTrajectoryGeneration::setConstraints(double v_max, double a_max, double yaw_rate_max,
-                                                       double sampling_rate) {
+                                                       double yaw_accel_max, double sampling_rate) {
         // Other constraints are currently not exposed (could also be)
         typedef mav_trajectory_generation::InputConstraintType ICT;
         mav_trajectory_generation::InputConstraints input_constraints;
         input_constraints.addConstraint(ICT::kFMin, 0.5 * 9.81); // minimum acceleration in [m/s/s].
         input_constraints.addConstraint(ICT::kFMax, 1.5 * 9.81); // maximum acceleration in [m/s/s].
         input_constraints.addConstraint(ICT::kVMax, v_max); // maximum velocity in [m/s].
-        input_constraints.addConstraint(ICT::kOmegaXYMax, M_PI / 2.0); // maximum roll/pitch rates in [rad/s].
+        input_constraints.addConstraint(ICT::kOmegaXYMax, yaw_accel_max); // maximum roll/pitch rates in [rad/s].
         input_constraints.addConstraint(ICT::kOmegaZMax, yaw_rate_max); // max yaw rate [rad/s].
         input_constraints.addConstraint(ICT::kOmegaZDotMax, M_PI); // maximum yaw acceleration in [rad/s/s]..
         feasibility_check_ = mav_trajectory_generation::FeasibilityAnalytic(input_constraints);
@@ -36,6 +36,7 @@ namespace mav_active_3d_planning {
         v_max_ = v_max;
         a_max_ = a_max;
         yaw_rate_max_ = yaw_rate_max;
+        yaw_accel_max_ = yaw_accel_max;
         sampling_rate_ = sampling_rate;
     }
 

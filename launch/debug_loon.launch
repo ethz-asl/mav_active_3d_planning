@@ -1,0 +1,13 @@
+<launch>
+  <arg name="data_directory" default="/home/lukas/Documents/1908_ExperimentsLukas" />
+  <arg name="dir" default="8" />
+  <arg name="rate" default="1"/>
+	<!-- drift: 3,(5), strange yaw: 1,2,5,8 , not flying: 6,7 -->
+
+
+	<!-- Play Rosbag and RVIZ (visualization) -->
+	<node pkg="rosbag" type="play" name="player" output="screen" args="-r $(arg rate) $(arg data_directory)/$(arg dir).bag"/>
+
+<!--	<node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiments/experiment_visualization.rviz"/>-->
+	<node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiments/debug_loon.rviz"/>
+</launch>

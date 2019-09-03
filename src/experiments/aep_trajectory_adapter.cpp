@@ -60,7 +60,7 @@ namespace mav_active_3d_planning {
 
         pose_sub_ = nh_.subscribe("pose_in", 1, &AEPTrajectoryAdapter::poseCallback, this);
         traj_sub_ = nh_.subscribe("traj_in", 1, &AEPTrajectoryAdapter::trajCallback, this);
-        generator_.setConstraints(1.0, 1.0, 1.57, 20.0);  // v, a, yaw, sampling_rate
+        generator_.setConstraints(1.0, 1.0, 1.57, 1.57, 20.0);  // v, a, yaw_rate, yaw_accel, sampling_rate
     }
 
     void AEPTrajectoryAdapter::poseCallback(const geometry_msgs::PoseStamped &msg) {

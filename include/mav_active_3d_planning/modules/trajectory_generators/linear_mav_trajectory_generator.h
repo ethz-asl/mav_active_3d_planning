@@ -12,7 +12,7 @@ namespace mav_active_3d_planning {
     public:
         LinearMavTrajectoryGeneration() {}
 
-        void setConstraints(double v_max, double a_max, double yaw_rate_max, double sampling_rate);
+        void setConstraints(double v_max, double a_max, double yaw_rate_max, double yaw_accel_max, double sampling_rate);
 
         // Create feasible trajectory with feasibility checks and smooth derivatives
         bool createTrajectory(const mav_msgs::EigenTrajectoryPoint &start, const mav_msgs::EigenTrajectoryPoint &goal,
@@ -38,6 +38,7 @@ namespace mav_active_3d_planning {
         double v_max_;
         double a_max_;
         double yaw_rate_max_;
+        double yaw_accel_max_;
         double sampling_rate_;
     };
 
