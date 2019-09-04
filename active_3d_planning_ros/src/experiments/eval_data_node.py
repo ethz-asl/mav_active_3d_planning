@@ -96,7 +96,15 @@ class EvalData:
 
         # Launch planner (by service, every planner needs to advertise this service when ready)
         rospy.loginfo("Waiting for planner to be ready...")
-        rospy.wait_for_service(self.ns_planner + "/toggle_running")
+        #use same timeout as for unreal
+        if self.startup_timeout > 0.0:
+            try:
+                rospy.wait_for_service(self.ns_planner + "/toggle_running", self.startup_timeout)
+            except rospy.ROSException:
+                self.stop_experiment("Planner startup failed (timeout after " + str(self.startup_timeout) + "s).")
+                return
+        else:
+            rospy.wait_for_service(self.ns_planner + "/toggle_running")
 
         if self.planner_delay > 0:
             rospy.loginfo("Waiting for planner to be ready... done. Launch in %d seconds.", self.planner_delay)
