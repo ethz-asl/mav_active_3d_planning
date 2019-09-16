@@ -445,6 +445,10 @@ void RosPlanner::requestMovement(const TrajectorySegment &req) {
   target_yaw_ = trajectory.back().getYaw();
 }
 
+void RosPlanner::publishVisualization(const VisualizationMarkers& markers){
+  //TODO(schmluk) publish stuff
+}
+
 void RosPlanner::publishTrajectoryVisualization(
     const std::vector<TrajectorySegment *> &trajectories) {
   // Display all trajectories in the input and erase previous ones
@@ -674,6 +678,7 @@ void RosPlanner::publishCompletedTrajectoryVisualization(
   vis_completed_count_++;
 }
 
+//TODO fix this
 void RosPlanner::publishEvalVisualization(const TrajectorySegment &trajectory) {
   // Visualize the gain of the current segment
   visualization_msgs::MarkerArray msg;

@@ -27,7 +27,7 @@ public:
   virtual TrajectoryGenerator &getTrajectoryGenerator() = 0;
   virtual TrajectoryEvaluator &getTrajectoryEvaluator() = 0;
 
-  virtual VisualizerI &getVisualizer() = 0;
+  virtual void publishVisualization(const VisualizationMarkers& markers) = 0;
 
   virtual ModuleFactory &getFactory() = 0;
 

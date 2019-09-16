@@ -101,7 +101,7 @@ void CameraModel::visualizeSingleView(VisualizerI &visualizer,
                                       const Eigen::Quaterniond &orientation) {
   VisualizationMarker marker;
 
-  marker.type = Marker::LINE_LIST;
+  marker.type = VisualizationMarker::LINE_LIST;
   marker.scale.x() = 0.02;
   marker.color.r = 1.0;
   marker.color.g = 1.0;
@@ -117,6 +117,8 @@ void CameraModel::visualizeSingleView(VisualizerI &visualizer,
   Eigen::Vector3d top[res_x + 1];
   Eigen::Vector3d bottom[res_x + 1];
 
+  Eigen::Vector3d direction;
+  
   for (int i = 0; i <= res_y; ++i) {
     getDirectionVector(&direction, 0.0, (double)i / (double)res_y);
     left[i] = position + p_ray_length_ * (orientation * direction);

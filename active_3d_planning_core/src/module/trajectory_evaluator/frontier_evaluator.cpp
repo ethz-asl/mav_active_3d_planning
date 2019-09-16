@@ -122,7 +122,7 @@ void FrontierEvaluator::visualizeTrajectoryValue(
     return;
   }
   VisualizationMarker marker;
-  marker.type = Marker::CUBE_LIST;
+  marker.type = VisualizationMarker::CUBE_LIST;
   double voxel_size = voxblox_.voxel_size();
   marker.scale.x = voxel_size;
   marker.scale.y = voxel_size;

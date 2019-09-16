@@ -181,11 +181,11 @@ void ContinuousYawPlanningEvaluator::visualizeTrajectoryValue(
 
     marker.position = info->orientations[i].trajectory.back().position_W;
     marker.orientation = info->orientations[i].trajectory.back().orientation_W_B;
-    marker.type = Marker::ARROW;
+    marker.type = VisualizationMarker::ARROW;
     marker.scale.x() = 0.6;
     marker.scale.y() = 0.07;
     marker.scale.z() = 0.07;
-    marker.action = Marker::ADD;
+    marker.action = VisualizationMarker::ADD;
 
     // Color according to relative value (blue when indifferent, grey for values
     // below update range)

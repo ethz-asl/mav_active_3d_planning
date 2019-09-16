@@ -60,6 +60,8 @@ public:
     return *trajectory_evaluator_;
   }
 
+  virtual void publishVisualization(const VisualizationMarkers& markers) override;
+
   virtual ModuleFactory &getFactory() override { return factory_; }
 
   // maybe want to get rid of voxblox at some point

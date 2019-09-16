@@ -102,7 +102,7 @@ void LidarModel::visualizeSingleView(VisualizerI& visualizer,
                                      const Eigen::Quaterniond &orientation) {
   VisualizationMarker marker;
 
-  marker.type = Marker::LINE_LIST;
+  marker.type = VisualizationMarker::LINE_LIST;
   marker.scale.x() = 0.02;
   marker.color.r = 1.0;
   marker.color.g = 1.0;

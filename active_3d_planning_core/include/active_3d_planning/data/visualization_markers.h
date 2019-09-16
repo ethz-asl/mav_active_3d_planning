@@ -1,5 +1,5 @@
-#ifndef ACTIVE_3D_PLANNING_CORE_TOOLS_VISUALIZER_H
-#define ACTIVE_3D_PLANNING_CORE_TOOLS_VISUALIZER_H
+#ifndef ACTIVE_3D_PLANNING_CORE_DATA_VISUALILZATION_MARKERS_H
+#define ACTIVE_3D_PLANNING_CORE_DATA_VISUALILZATION_MARKERS_H
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -42,10 +42,10 @@ struct VisualizationMarker {
   std::vector<Color> colors;
 };
 
-class VisualizerI {
-  virtual ~VisualizerI() = default;
+struct VisualizationMarkers {
 
-  virtual void addMarker(const VisualizationMarker &marker) = 0;
-};
+    virtual void addMarker(const VisualizationMarker &marker); //TODO implement + datastructure for container
+}
+
 } // namespace active_3d_planning
-#endif /* ACTIVE_3D_PLANNING_CORE_TOOLS_VISUALIZER_H */
+#endif /* ACTIVE_3D_PLANNING_CORE_DATA_VISUALILZATION_MARKERS_H */
