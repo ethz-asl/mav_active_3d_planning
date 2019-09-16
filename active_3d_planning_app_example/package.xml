@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>active_3d_planning_application_example</name>
+  <name>active_3d_planning_app_example</name>
   <version>0.0.0</version>
   <description>Sampling-based Online Informative Path Planning.</description>
 

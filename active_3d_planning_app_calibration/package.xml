@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>mav_active_3d_calibration</name>
+  <name>active_3d_planning_app_calibration</name>
   <version>0.0.0</version>
   <description>Active path planning for 3D reconstruction using voxblox.</description>
 

@@ -14,7 +14,7 @@
   <depend>active_3d_planning_core</depend>
   <depend>active_3d_planning_ros</depend>
   <depend>active_3d_planning_mav</depend>
-  <depend>active_3d_planning_application_example</depend>
+  <depend>active_3d_planning_app_example</depend>
 
   <export>
     <metapackage/>
