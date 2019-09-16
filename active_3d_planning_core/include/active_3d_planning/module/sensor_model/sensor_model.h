@@ -5,12 +5,17 @@
 #include "active_3d_planning/data/trajectory_segment.h"
 
 #include <Eigen/Core>
-#include <voxblox_ros/esdf_server.h>
 
 #include <memory>
 #include <string>
 
+namespace voxblox {
+class EsdfMap;
+}
+
 namespace active_3d_planning {
+
+class VisualizerI;
 
 // Base class that interfaces with sensor based evaluators.
 class SensorModel : public Module {
@@ -24,18 +29,18 @@ public:
                                  const TrajectorySegment &traj_in) = 0;
 
   // Implement this function to allow visualization of the sensing bounds
-  virtual void visualizeSensorView(visualization_msgs::MarkerArray *msg,
+  virtual void visualizeSensorView(VisualizerI& visualizer,
                                    const TrajectorySegment &trajectory) = 0;
 
   virtual void setupFromParamMap(Module::ParamMap *param_map) override;
 
 protected:
   // voxblox map
-  voxblox::EsdfServer &voxblox_;
+  voxblox::EsdfMap &voxblox_;
 
   // constants
-  voxblox::FloatingPoint c_voxel_size_;
-  voxblox::FloatingPoint c_block_size_;
+  double c_voxel_size_;
+  double c_block_size_;
 
   // mounting transform from body (pose) to sensor , in body frame
   Eigen::Vector3d mounting_translation_; // x,y,z [m]

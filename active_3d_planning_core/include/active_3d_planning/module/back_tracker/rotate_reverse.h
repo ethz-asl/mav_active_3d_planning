@@ -13,14 +13,14 @@ namespace back_tracker {
 // Try rotating in place, if nothing found reverse most recent segments
 class RotateReverse : public BackTracker {
 public:
-  // implement virtual functions
-  bool segmentIsExecuted(const TrajectorySegment &segment);
-  bool trackBack(TrajectorySegment *target);
-
-  // factory access
   RotateReverse(PlannerI &planner);
-  void setupFromParamMap(Module::ParamMap *param_map);
-  bool checkParamsValid(std::string *error_message);
+
+  // implement virtual functions
+  bool segmentIsExecuted(const TrajectorySegment &segment) override;
+  bool trackBack(TrajectorySegment *target) override;
+
+  void setupFromParamMap(Module::ParamMap *param_map) override;
+  bool checkParamsValid(std::string *error_message) override;
 
 protected:
   static ModuleFactoryRegistry::Registration<RotateReverse> registration;

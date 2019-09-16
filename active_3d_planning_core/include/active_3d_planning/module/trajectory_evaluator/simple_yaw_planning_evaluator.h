@@ -15,7 +15,7 @@ class SimpleYawPlanningEvaluator : public YawPlanningEvaluator {
 public:
   SimpleYawPlanningEvaluator(PlannerI &planner);
   // Override virtual functions
-  void visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg,
+  void visualizeTrajectoryValue(VisualizerI& visualizer,
                                 const TrajectorySegment &trajectory) override;
 
   void setupFromParamMap(Module::ParamMap *param_map) override;

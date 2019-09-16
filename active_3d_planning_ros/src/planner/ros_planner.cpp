@@ -427,6 +427,7 @@ void RosPlanner::odomCallback(const nav_msgs::Odometry &msg) {
   }
 }
 
+//TODO outsource this to visualizer
 void RosPlanner::requestMovement(const TrajectorySegment &req) {
   EigenTrajectoryPointVector trajectory;
   trajectory_generator_->extractTrajectoryToPublish(&trajectory, req);

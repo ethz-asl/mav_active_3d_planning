@@ -113,7 +113,7 @@ bool YawPlanningEvaluator::updateSegments(TrajectorySegment *root) {
 }
 
 void YawPlanningEvaluator::visualizeTrajectoryValue(
-    visualization_msgs::MarkerArray *msg, const TrajectorySegment &trajectory) {
+    VisualizerI& visualizer, const TrajectorySegment &trajectory) {
   if (!trajectory.info) {
     return;
   }
@@ -122,7 +122,7 @@ void YawPlanningEvaluator::visualizeTrajectoryValue(
   // Let the followup evaluator draw the visualization of the selected
   // orientation
   following_evaluator_->visualizeTrajectoryValue(
-      msg, info->orientations[info->active_orientation]);
+      visualizer, info->orientations[info->active_orientation]);
 }
 
 } // namespace trajectory_evaluator

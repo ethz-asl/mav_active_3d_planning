@@ -36,7 +36,7 @@ bool TrajectoryGenerator::checkTraversable(const Eigen::Vector3d &position) {
     return false;
   }
   double distance = 0.0;
-  if (voxblox_.getEsdfMapPtr()->getDistanceAtPosition(position, &distance)) {
+  if (voxblox_.getDistanceAtPosition(position, &distance)) {
     // This means the voxel is observed
     return (distance > p_collision_radius_);
   }

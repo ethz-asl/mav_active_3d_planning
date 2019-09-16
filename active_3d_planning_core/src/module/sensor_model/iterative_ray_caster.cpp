@@ -77,7 +77,7 @@ bool IterativeRayCaster::getVisibleVoxels(
 
           // Check voxel occupied
           map_distance = 0.0;
-          if (voxblox_.getEsdfMapPtr()->getDistanceAtPosition(
+          if (voxblox_.getDistanceAtPosition(
                   current_position, &map_distance)) {
             if (map_distance < 0.0) {
               // Occlusion, mark neighboring rays as occluded

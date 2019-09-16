@@ -24,7 +24,7 @@ public:
   bool computeGain(TrajectorySegment *traj_in) override;
 
   virtual void
-  visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg,
+  visualizeTrajectoryValue(VisualizerI& visualizer,
                            const TrajectorySegment &trajectory) override;
 
   virtual void setupFromParamMap(Module::ParamMap *param_map) override;

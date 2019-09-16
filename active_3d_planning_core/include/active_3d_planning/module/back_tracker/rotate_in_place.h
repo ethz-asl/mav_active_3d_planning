@@ -11,7 +11,7 @@ class RotateInPlace : public BackTracker {
 public:
   RotateInPlace(PlannerI &planner);
   // implement virtual functions
-  bool trackBack(TrajectorySegment *target);
+  bool trackBack(TrajectorySegment *target) override;
   void setupFromParamMap(Module::ParamMap *param_map) override;
   bool checkParamsValid(std::string *error_message) override;
 

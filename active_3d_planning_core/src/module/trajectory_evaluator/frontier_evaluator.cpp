@@ -1,6 +1,7 @@
 #include "active_3d_planning/module/trajectory_evaluator/frontier_evaluator.h"
 
 #include <algorithm>
+#include <voxblox/core/esdf_map.h>
 
 namespace active_3d_planning {
 namespace trajectory_evaluator {
@@ -20,15 +21,15 @@ void FrontierEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
   setParam<double>(param_map, "checking_distance", &p_checking_distance_, 1.0);
 
   // initialize neighbor offsets
-  double vs = static_cast<double>(voxblox_.getEsdfMapPtr()->voxel_size());
-  vs *= p_checking_distance_;
+  c_voxel_size_ = static_cast<double>(voxblox_.voxel_size());
+  auto vs = c_voxel_size_ * p_checking_distance_;
   if (!p_accurate_frontiers_) {
-      c_neighbor_voxels_[0] = Eigen::Vector3d(vs, 0, 0);
-      c_neighbor_voxels_[1] = Eigen::Vector3d(-vs, 0, 0);
-      c_neighbor_voxels_[2] = Eigen::Vector3d(0, vs, 0);
-      c_neighbor_voxels_[3] = Eigen::Vector3d(0, -vs, 0);
-      c_neighbor_voxels_[4] = Eigen::Vector3d(0, 0, vs);
-      c_neighbor_voxels_[5] = Eigen::Vector3d(0, 0, -vs);
+    c_neighbor_voxels_[0] = Eigen::Vector3d(vs, 0, 0);
+    c_neighbor_voxels_[1] = Eigen::Vector3d(-vs, 0, 0);
+    c_neighbor_voxels_[2] = Eigen::Vector3d(0, vs, 0);
+    c_neighbor_voxels_[3] = Eigen::Vector3d(0, -vs, 0);
+    c_neighbor_voxels_[4] = Eigen::Vector3d(0, 0, vs);
+    c_neighbor_voxels_[5] = Eigen::Vector3d(0, 0, -vs);
   } else {
     c_neighbor_voxels_[0] = Eigen::Vector3d(vs, 0, 0);
     c_neighbor_voxels_[1] = Eigen::Vector3d(vs, vs, 0);
@@ -60,12 +61,11 @@ void FrontierEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
 }
 
 bool FrontierEvaluator::isFrontierVoxel(const Eigen::Vector3d &voxel) {
-  voxblox::EsdfMap *esdf_map = voxblox_.getEsdfMapPtr().get();
   double distance;
   // Check all neighboring voxels
   if (!p_accurate_frontiers_) {
     for (int i = 0; i < 6; ++i) {
-      if (esdf_map->getDistanceAtPosition(voxel + c_neighbor_voxels_[i],
+      if (voxblox_.getDistanceAtPosition(voxel + c_neighbor_voxels_[i],
                                           &distance)) {
         if (p_surface_frontiers_) {
           return distance < c_voxel_size_;
@@ -76,7 +76,7 @@ bool FrontierEvaluator::isFrontierVoxel(const Eigen::Vector3d &voxel) {
     }
   } else {
     for (int i = 0; i < 26; ++i) {
-      if (esdf_map->getDistanceAtPosition(voxel + c_neighbor_voxels_[i],
+      if (voxblox_.getDistanceAtPosition(voxel + c_neighbor_voxels_[i],
                                           &distance)) {
         if (p_surface_frontiers_) {
           return distance < 0.0;
@@ -102,7 +102,7 @@ bool FrontierEvaluator::computeGainFromVisibleVoxels(
   info->visible_voxels.erase(
       std::remove_if(info->visible_voxels.begin(), info->visible_voxels.end(),
                      [this](const Eigen::Vector3d &voxel) {
-                       return voxblox_.getEsdfMapPtr()->isObserved(voxel);
+                       return voxblox_.isObserved(voxel);
                      }),
       info->visible_voxels.end());
 
@@ -116,44 +116,34 @@ bool FrontierEvaluator::computeGainFromVisibleVoxels(
 }
 
 void FrontierEvaluator::visualizeTrajectoryValue(
-    visualization_msgs::MarkerArray *msg, const TrajectorySegment &trajectory) {
+    VisualizerI &visualizer, const TrajectorySegment &trajectory) {
   // Default implementation displays all frontier voxels
   if (!trajectory.info) {
     return;
   }
-  visualization_msgs::Marker new_msg;
-  new_msg.header.frame_id = "/world";
-  new_msg.ns = "evaluation";
-  new_msg.header.stamp = ros::Time::now();
-  new_msg.id = defaults::getNextVisualizationId(*msg);
-  new_msg.pose.orientation.w = 1.0;
-  new_msg.type = visualization_msgs::Marker::CUBE_LIST;
-  voxblox::FloatingPoint voxel_size =
-      voxblox_.getEsdfMapPtr()->voxel_size();
-  new_msg.scale.x = (double)voxel_size;
-  new_msg.scale.y = (double)voxel_size;
-  new_msg.scale.z = (double)voxel_size;
-  new_msg.color.r = 1.0;
-  new_msg.color.g = 0.8;
-  new_msg.color.b = 0.0;
-  new_msg.color.a = 1.0;
+  VisualizationMarker marker;
+  marker.type = Marker::CUBE_LIST;
+  double voxel_size = voxblox_.voxel_size();
+  marker.scale.x = voxel_size;
+  marker.scale.y = voxel_size;
+  marker.scale.z = voxel_size;
+  marker.color.r = 1.0;
+  marker.color.g = 0.8;
+  marker.color.b = 0.0;
+  marker.color.a = 1.0;
 
   // points
   SimulatedSensorInfo *info =
       reinterpret_cast<SimulatedSensorInfo *>(trajectory.info.get());
   for (int i = 0; i < info->visible_voxels.size(); ++i) {
     if (isFrontierVoxel(info->visible_voxels[i])) {
-      geometry_msgs::Point point;
-      point.x = info->visible_voxels[i].x();
-      point.y = info->visible_voxels[i].y();
-      point.z = info->visible_voxels[i].z();
-      new_msg.points.push_back(point);
+      marker.points.push_back(info->visible_voxels[i]);
     }
   }
-  msg->markers.push_back(new_msg);
+  visualizer.push_back(marker);
 
   if (p_visualize_sensor_view_) {
-    sensor_model_->visualizeSensorView(msg, trajectory);
+    sensor_model_->visualizeSensorView(visualizer, trajectory);
   }
 }
 

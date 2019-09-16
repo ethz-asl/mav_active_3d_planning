@@ -7,11 +7,13 @@
 
 // TODO get voxblox out
 #include <Eigen/Core>
-#include <visualization_msgs/Marker.h>
-#include <voxblox_ros/esdf_server.h>
 
 #include <memory>
 #include <string>
+
+namespace voxblox {
+class EsdfMap;
+}
 
 namespace active_3d_planning {
 
@@ -20,6 +22,8 @@ class CostComputer;
 class ValueComputer;
 class NextSelector;
 class EvaluatorUpdater;
+
+class VisualizerI;
 
 // Base class for trajectory evaluators to provide uniform interface with other
 // classes
@@ -46,13 +50,13 @@ public:
 
   // Implement this method to allow visualization of the information gain during
   // simulation
-  virtual void visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg,
+  virtual void visualizeTrajectoryValue(VisualizerI& visualizer,
                                         const TrajectorySegment &trajectory) {}
 
   virtual void setupFromParamMap(Module::ParamMap *param_map);
 protected:
   // Voxblox map
-  voxblox::EsdfServer &voxblox_;
+  voxblox::EsdfMap &voxblox_;
 
   // bounding volume of interesting target
   std::unique_ptr<defaults::BoundingVolume> bounding_volume_;

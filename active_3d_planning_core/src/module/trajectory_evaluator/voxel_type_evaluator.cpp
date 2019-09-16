@@ -57,7 +57,7 @@ bool VoxelTypeEvaluator::computeGainFromVisibleVoxels(
   for (int i = 0; i < info->visible_voxels.size(); ++i) {
     double distance = 0.0;
     if (bounding_volume_->contains(info->visible_voxels[i])) {
-      if (voxblox_.getEsdfMapPtr()->getDistanceAtPosition(
+      if (voxblox_.getDistanceAtPosition(
               info->visible_voxels[i], &distance)) {
         if (distance < 0.0) {
           traj_in->gain += p_gain_occupied_;
@@ -68,7 +68,7 @@ bool VoxelTypeEvaluator::computeGainFromVisibleVoxels(
         traj_in->gain += p_gain_unknown_;
       }
     } else {
-      if (voxblox_.getEsdfMapPtr()->getDistanceAtPosition(
+      if (voxblox_.getDistanceAtPosition(
               info->visible_voxels[i], &distance)) {
         if (distance < 0.0) {
           traj_in->gain += p_gain_occupied_outer_;

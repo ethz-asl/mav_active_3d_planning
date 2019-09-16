@@ -1,6 +1,8 @@
 #include "active_3d_planning/module/sensor_model/sensor_model.h"
 #include "active_3d_planning/planner/planner_I.h"
 
+#include <voxblox/core/esdf_map.h>
+
 namespace active_3d_planning {
 
 SensorModel::SensorModel(PlannerI &planner)
@@ -9,8 +11,8 @@ SensorModel::SensorModel(PlannerI &planner)
 // SensorModel
 void SensorModel::setupFromParamMap(Module::ParamMap *param_map) {
   // Cache constants from voxblox
-  c_voxel_size_ = voxblox_.getEsdfMapPtr()->voxel_size();
-  c_block_size_ = voxblox_.getEsdfMapPtr()->block_size();
+  c_voxel_size_ = voxblox_.voxel_size();
+  c_block_size_ = voxblox_.block_size();
 
   // setup mounting transform
   double tx, ty, tz, rx, ry, rz, rw;
@@ -27,10 +29,9 @@ void SensorModel::setupFromParamMap(Module::ParamMap *param_map) {
 
 bool SensorModel::getVoxelCenter(Eigen::Vector3d *point) {
   // Move the input point to the voxel center of its voxel
-  voxblox::BlockIndex block_id = voxblox_.getEsdfMapPtr()
-                                     ->getEsdfLayerPtr()
-                                     ->computeBlockIndexFromCoordinates(
-                                         point->cast<voxblox::FloatingPoint>());
+  voxblox::BlockIndex block_id =
+      voxblox_.getEsdfLayerPtr()->computeBlockIndexFromCoordinates(
+          point->cast<voxblox::FloatingPoint>());
   Eigen::Vector3d center_point =
       voxblox::getOriginPointFromGridIndex(block_id, c_block_size_)
           .cast<double>();

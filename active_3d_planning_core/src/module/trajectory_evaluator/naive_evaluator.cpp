@@ -28,7 +28,7 @@ bool NaiveEvaluator::computeGainFromVisibleVoxels(TrajectorySegment *traj_in) {
   info->visible_voxels.erase(
       std::remove_if(info->visible_voxels.begin(), info->visible_voxels.end(),
                      [this](const Eigen::Vector3d &voxel) {
-                       return voxblox_.getEsdfMapPtr()->isObserved(voxel);
+                       return voxblox_.isObserved(voxel);
                      }),
       info->visible_voxels.end());
   traj_in->gain = (double)info->visible_voxels.size();

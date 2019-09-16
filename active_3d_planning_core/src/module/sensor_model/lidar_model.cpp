@@ -48,7 +48,7 @@ bool LidarModel::getVisibleVoxelsFromTrajectory(
           stddev += std::pow(time_count_[i] - mean, 2.0);
         }
         stddev = std::sqrt(stddev / time_count_.size());
-        ROS_INFO("Raycasting: Mean: %.2f ms, Stddev: %.2f ms", mean, stddev);
+        LOG(INFO) << "Raycasting: Mean: " << mean << " ms, Stddev: " << stddev << " ms";
       }
     }
   }
@@ -81,7 +81,7 @@ void LidarModel::sampleViewpoints(std::vector<int> *result,
   }
 }
 
-void LidarModel::visualizeSensorView(visualization_msgs::MarkerArray *msg,
+void LidarModel::visualizeSensorView(VisualizerI& visualizer,
                                      const TrajectorySegment &traj_in) {
   std::vector<int> indices;
   sampleViewpoints(&indices, traj_in);
@@ -92,93 +92,64 @@ void LidarModel::visualizeSensorView(visualization_msgs::MarkerArray *msg,
         traj_in.trajectory[indices[i]].orientation_W_B;
     position = position + orientation * mounting_translation_;
     orientation = orientation * mounting_rotation_;
-    visualizeSingleView(msg, position, orientation);
+    visualizeSingleView(bisualizer, position, orientation);
   }
 }
 
-void LidarModel::visualizeSingleView(visualization_msgs::MarkerArray *msg,
+//TODO deduplicate with camera_model.cpp
+void LidarModel::visualizeSingleView(VisualizerI& visualizer,
                                      const Eigen::Vector3d &position,
                                      const Eigen::Quaterniond &orientation) {
+  VisualizationMarker marker;
+
+  marker.type = Marker::LINE_LIST;
+  marker.scale.x() = 0.02;
+  marker.color.r = 1.0;
+  marker.color.g = 1.0;
+  marker.color.b = 1.0;
+  marker.color.a = 1.0;
   // Get boundary lines
   int res_x = ceil(p_ray_length_ * p_fov_x_ / 0.25);
   int res_y = ceil(p_ray_length_ * p_fov_y_ / 0.25);
-  geometry_msgs::Point left[res_y + 1];
-  geometry_msgs::Point right[res_y + 1];
-  geometry_msgs::Point top[res_x + 1];
-  geometry_msgs::Point bottom[res_x + 1];
-  Eigen::Vector3d direction;
+  Eigen::Vector3d left[res_y + 1];
+  Eigen::Vector3d right[res_y + 1];
+  Eigen::Vector3d top[res_x + 1];
+  Eigen::Vector3d bottom[res_x + 1];
 
   for (int i = 0; i <= res_y; ++i) {
     getDirectionVector(&direction, 0.0, (double)i / (double)res_y);
-    Eigen::Vector3d point =
-        position + p_ray_length_ * (orientation * direction);
-    left[i] = geometry_msgs::Point();
-    left[i].x = point.x();
-    left[i].y = point.y();
-    left[i].z = point.z();
+    left[i] = position + p_ray_length_ * (orientation * direction);
     getDirectionVector(&direction, 1.0, (double)i / (double)res_y);
-    point = position + p_ray_length_ * (orientation * direction);
-    right[i] = geometry_msgs::Point();
-    right[i].x = point.x();
-    right[i].y = point.y();
-    right[i].z = point.z();
+    right[i] = position + p_ray_length_ * (orientation * direction);
   }
   for (int i = 0; i <= res_x; ++i) {
     getDirectionVector(&direction, (double)i / (double)res_x, 0.0);
-    Eigen::Vector3d point =
-        position + p_ray_length_ * (orientation * direction);
-    bottom[i] = geometry_msgs::Point();
-    bottom[i].x = point.x();
-    bottom[i].y = point.y();
-    bottom[i].z = point.z();
+    bottom[i] = position + p_ray_length_ * (orientation * direction);
     getDirectionVector(&direction, (double)i / (double)res_x, 1.0);
-    point = position + p_ray_length_ * (orientation * direction);
-    top[i] = geometry_msgs::Point();
-    top[i].x = point.x();
-    top[i].y = point.y();
-    top[i].z = point.z();
+    top[i] = position + p_ray_length_ * (orientation * direction);
   }
 
-  // Build message
-  visualization_msgs::Marker new_msg;
-  new_msg.ns = "evaluation";
-  new_msg.header.stamp = ros::Time::now();
-  new_msg.header.frame_id = "/world";
-  new_msg.id = defaults::getNextVisualizationId(*msg);
-  new_msg.pose.orientation.w = 1.0;
-  new_msg.type = visualization_msgs::Marker::LINE_LIST;
-  new_msg.scale.x = 0.02;
-  new_msg.color.r = 1.0;
-  new_msg.color.g = 1.0;
-  new_msg.color.b = 1.0;
-  new_msg.color.a = 1.0;
-
-  // points
-  geometry_msgs::Point center;
-  center.x = position.x();
-  center.y = position.y();
-  center.z = position.z();
-  new_msg.points.push_back(center);
-  new_msg.points.push_back(left[0]);
-  new_msg.points.push_back(center);
-  new_msg.points.push_back(left[res_y]);
-  new_msg.points.push_back(center);
-  new_msg.points.push_back(right[0]);
-  new_msg.points.push_back(center);
-  new_msg.points.push_back(right[res_y]);
+  marker.points.push_back(position);
+  marker.points.push_back(left[0]);
+  marker.points.push_back(position);
+  marker.points.push_back(left[res_y]);
+  marker.points.push_back(position);
+  marker.points.push_back(right[0]);
+  marker.points.push_back(position);
+  marker.points.push_back(right[res_y]);
   for (int i = 1; i <= res_x; ++i) {
-    new_msg.points.push_back(top[i - 1]);
-    new_msg.points.push_back(top[i]);
-    new_msg.points.push_back(bottom[i - 1]);
-    new_msg.points.push_back(bottom[i]);
+    marker.points.push_back(top[i - 1]);
+    marker.points.push_back(top[i]);
+    marker.points.push_back(bottom[i - 1]);
+    marker.points.push_back(bottom[i]);
   }
   for (int i = 1; i <= res_y; ++i) {
-    new_msg.points.push_back(left[i - 1]);
-    new_msg.points.push_back(left[i]);
-    new_msg.points.push_back(right[i - 1]);
-    new_msg.points.push_back(right[i]);
+    marker.points.push_back(left[i - 1]);
+    marker.points.push_back(left[i]);
+    marker.points.push_back(right[i - 1]);
+    marker.points.push_back(right[i]);
   }
-  msg->markers.push_back(new_msg);
+  visualizer.addMarker(marker);
 }
 
 void LidarModel::getDirectionVector(Eigen::Vector3d *result, double relative_x,

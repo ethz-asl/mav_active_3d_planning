@@ -1,5 +1,7 @@
 #include "active_3d_planning/module/trajectory_evaluator/voxel_weight_evaluator.h"
 
+#include <voxblox/core/tsdf_map.h>
+
 namespace active_3d_planning {
 namespace trajectory_evaluator {
 
@@ -7,7 +9,7 @@ ModuleFactoryRegistry::Registration<VoxelWeightEvaluator>
     VoxelWeightEvaluator::registration("VoxelWeightEvaluator");
 
 VoxelWeightEvaluator::VoxelWeightEvaluator(PlannerI &planner)
-    : FrontierEvaluator(planner) {}
+    : FrontierEvaluator(planner), voxblox_tsdf_(planner.getTsdfMap()) {}
 
 void VoxelWeightEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
   FrontierEvaluator::setupFromParamMap(param_map);
@@ -19,7 +21,7 @@ void VoxelWeightEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
   setParam<double>(param_map, "ray_angle_y", &p_ray_angle_y_, 0.0025);
 
   // cache voxblox constants
-  c_voxel_size_ = (double)voxblox_.getEsdfMapPtr()->voxel_size();
+  c_voxel_size_ = (double)voxblox_.voxel_size();
 }
 
 bool VoxelWeightEvaluator::storeTrajectoryInformation(
@@ -50,15 +52,14 @@ bool VoxelWeightEvaluator::computeGainFromVisibleVoxels(
 double VoxelWeightEvaluator::getVoxelValue(const Eigen::Vector3d &voxel,
                                            const Eigen::Vector3d &origin) {
   double distance;
-  if (voxblox_.getEsdfMapPtr()->getDistanceAtPosition(voxel, &distance)) {
+  if (voxblox_.getDistanceAtPosition(voxel, &distance)) {
     // voxel is observed
     if (distance >= 0.0 && distance < c_voxel_size_) {
       // Surface voxel
       voxblox::Point point(voxel.x(), voxel.y(), voxel.z());
       voxblox::Block<voxblox::TsdfVoxel>::Ptr block =
-          voxblox_.getTsdfMapPtr()
-              ->getTsdfLayerPtr()
-              ->getBlockPtrByCoordinates(point);
+          voxblox_.getTsdfMapPtr()->getTsdfLayerPtr()->getBlockPtrByCoordinates(
+              point);
       if (block) {
         voxblox::TsdfVoxel *tsdf_voxel = block->getVoxelPtrByCoordinates(point);
         if (tsdf_voxel) {
@@ -93,23 +94,17 @@ double VoxelWeightEvaluator::getVoxelValue(const Eigen::Vector3d &voxel,
 }
 
 void VoxelWeightEvaluator::visualizeTrajectoryValue(
-    visualization_msgs::MarkerArray *msg, const TrajectorySegment &trajectory) {
+    VisualizerI &visualizer, const TrajectorySegment &trajectory) {
   // Display all voxels that contribute to the gain. max_impact-min_impact as
   // green-red, unknwon voxels purple
   if (!trajectory.info) {
     return;
   }
-  visualization_msgs::Marker new_msg;
-  new_msg.header.frame_id = "/world";
-  new_msg.ns = "evaluation";
-  new_msg.header.stamp = ros::Time::now();
-  new_msg.id = defaults::getNextVisualizationId(*msg);
-  new_msg.pose.orientation.w = 1.0;
-  new_msg.type = visualization_msgs::Marker::CUBE_LIST;
-  new_msg.scale.x = c_voxel_size_;
-  new_msg.scale.y = c_voxel_size_;
-  new_msg.scale.z = c_voxel_size_;
-  new_msg.colors.clear();
+  VisualizationMarker marker;
+  marker.type = VisualizationMarker::CUBE_LIST;
+  marker.scale.x = c_voxel_size_;
+  marker.scale.y = c_voxel_size_;
+  marker.scale.z = c_voxel_size_;
 
   // points
   double value;
@@ -119,12 +114,8 @@ void VoxelWeightEvaluator::visualizeTrajectoryValue(
   for (int i = 0; i < info->visible_voxels.size(); ++i) {
     value = getVoxelValue(info->visible_voxels[i], origin);
     if (value > 0.0) {
-      geometry_msgs::Point point;
-      point.x = (double)info->visible_voxels[i].x();
-      point.y = (double)info->visible_voxels[i].y();
-      point.z = (double)info->visible_voxels[i].z();
-      new_msg.points.push_back(point);
-      std_msgs::ColorRGBA color;
+      marker.points.push_back(info->visible_voxels[i]);
+      Color color;
       if (value == p_frontier_voxel_weight_) {
         color.r = 0.6;
         color.g = 0.4;
@@ -143,13 +134,13 @@ void VoxelWeightEvaluator::visualizeTrajectoryValue(
         color.b = 0.0;
         color.a = 0.5;
       }
-      new_msg.colors.push_back(color);
+      marker.colors.push_back(color);
     }
   }
-  msg->markers.push_back(new_msg);
+  visualizer.addMarker(marker);
 
   if (p_visualize_sensor_view_) {
-    sensor_model_->visualizeSensorView(msg, trajectory);
+    sensor_model_->visualizeSensorView(visualizer, trajectory);
   }
 }
 

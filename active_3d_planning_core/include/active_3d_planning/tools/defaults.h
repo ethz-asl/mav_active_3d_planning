@@ -5,7 +5,6 @@
 #include <vector>
 
 #include <Eigen/Core>
-#include <visualization_msgs/MarkerArray.h>
 
 #include <active_3d_planning/module/module_factory_registry.h>
 #include <active_3d_planning/data/trajectory_segment.h>
@@ -73,9 +72,6 @@ double angleDifference(double angle1, double angle2);
 
 // Returns the rotation direction (+1 / -1) that is closer for two angles
 double angleDirection(double input, double target);
-
-// Get the current next id for visualization markerarray messages
-int getNextVisualizationId(const visualization_msgs::MarkerArray &msg);
 
 } // namespace defaults
 

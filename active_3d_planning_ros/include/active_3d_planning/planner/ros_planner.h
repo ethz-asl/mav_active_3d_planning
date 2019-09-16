@@ -1,11 +1,11 @@
 #ifndef ACTIVE_3D_PLANNING_ROS_ROS_PLANNER_H_
 #define ACTIVE_3D_PLANNING_ROS_ROS_PLANNER_H_
 
+#include "active_3d_planning/data/trajectory_segment.h"
 #include "active_3d_planning/module/back_tracker.h"
 #include "active_3d_planning/module/module_factory_ros.h"
 #include "active_3d_planning/module/trajectory_evaluator.h"
 #include "active_3d_planning/module/trajectory_generator.h"
-#include "active_3d_planning/data/trajectory_segment.h"
 #include "active_3d_planning/planner/planner_I.h"
 #include "active_3d_planning/tools/defaults.h"
 
@@ -63,7 +63,12 @@ public:
   virtual ModuleFactory &getFactory() override { return factory_; }
 
   // maybe want to get rid of voxblox at some point
-  virtual voxblox::EsdfServer &getMap() override { return *voxblox_server_; }
+  virtual voxblox::EsdfMap &getMap() override {
+    return *(voxblox_server_->getEsdfMapPtr());
+  }
+  virtual voxblox::TsdfMap &getTsdfMap() override {
+    return *(voxblox_server_->getTsdfMapPtr());
+  }
 
 protected:
   // factory
@@ -102,7 +107,7 @@ protected:
   bool min_new_value_reached_;
 
   // Info+performance bookkeeping
-  ::ros::Time info_timing_;       // Rostime for verbose and perf
+  ::ros::Time info_timing_;     // Rostime for verbose and perf
   int info_count_;              // num trajectories counter for verbose
   int info_killed_next_;        // number of segments killed during root change
   int info_killed_update_;      // number of segments killed during updating
@@ -140,7 +145,7 @@ protected:
   std::string logfile_;
 
   // methods
-  void initializePlanning(); 
+  void initializePlanning();
 
   virtual void loopIteration();
 

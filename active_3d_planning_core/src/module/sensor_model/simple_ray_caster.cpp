@@ -48,7 +48,7 @@ bool SimpleRayCaster::getVisibleVoxels(std::vector<Eigen::Vector3d> *result,
 
         // Check voxel occupied
         double map_distance = 0.0;
-        if (voxblox_.getEsdfMapPtr()->getDistanceAtPosition(current_position,
+        if (voxblox_.getDistanceAtPosition(current_position,
                                                             &map_distance)) {
           if (map_distance < 0.0) {
             break;

@@ -4,6 +4,7 @@
 
 #include "active_3d_planning/planner/planner_I.h"
 #include "active_3d_planning/tools/defaults.h"
+#include "active_3d_planning/tools/visualizer_I.h"
 
 #include <cmath>
 #include <vector>
@@ -143,7 +144,7 @@ void ContinuousYawPlanningEvaluator::setTrajectoryYaw(
 }
 
 void ContinuousYawPlanningEvaluator::visualizeTrajectoryValue(
-    visualization_msgs::MarkerArray *msg, const TrajectorySegment &trajectory) {
+    VisualizerI &visualizer, const TrajectorySegment &trajectory) {
   if (!trajectory.info) {
     return;
   }
@@ -176,37 +177,22 @@ void ContinuousYawPlanningEvaluator::visualizeTrajectoryValue(
   }
   for (int i = 0; i < info->orientations.size(); ++i) {
     // Setup marker message
-    visualization_msgs::Marker new_msg;
-    new_msg.header.frame_id = "/world";
-    new_msg.ns = "evaluation";
-    new_msg.header.stamp = ros::Time::now();
-    new_msg.pose.position.x =
-        info->orientations[i].trajectory.back().position_W.x();
-    new_msg.pose.position.y =
-        info->orientations[i].trajectory.back().position_W.y();
-    new_msg.pose.position.z =
-        info->orientations[i].trajectory.back().position_W.z();
-    new_msg.pose.orientation.x =
-        info->orientations[i].trajectory.back().orientation_W_B.x();
-    new_msg.pose.orientation.y =
-        info->orientations[i].trajectory.back().orientation_W_B.y();
-    new_msg.pose.orientation.z =
-        info->orientations[i].trajectory.back().orientation_W_B.z();
-    new_msg.pose.orientation.w =
-        info->orientations[i].trajectory.back().orientation_W_B.w();
-    new_msg.type = visualization_msgs::Marker::ARROW;
-    new_msg.id = defaults::getNextVisualizationId(*msg);
-    new_msg.scale.x = 0.6;
-    new_msg.scale.y = 0.07;
-    new_msg.scale.z = 0.07;
-    new_msg.action = visualization_msgs::Marker::ADD;
+    VisualizationMarker marker;
+
+    marker.position = info->orientations[i].trajectory.back().position_W;
+    marker.orientation = info->orientations[i].trajectory.back().orientation_W_B;
+    marker.type = Marker::ARROW;
+    marker.scale.x() = 0.6;
+    marker.scale.y() = 0.07;
+    marker.scale.z() = 0.07;
+    marker.action = Marker::ADD;
 
     // Color according to relative value (blue when indifferent, grey for values
     // below update range)
     if (info->orientations[i].gain <= p_update_sections_separate_) {
-      new_msg.color.r = 0.5;
-      new_msg.color.g = 0.5;
-      new_msg.color.b = 0.5;
+      marker.color.r = 0.5;
+      marker.color.g = 0.5;
+      marker.color.b = 0.5;
     } else if (max_value != min_value) {
       double frac =
           (info->orientations[i].gain - min_value) / (max_value - min_value);
@@ -214,23 +200,23 @@ void ContinuousYawPlanningEvaluator::visualizeTrajectoryValue(
         frac =
             (info->orientations[i].value - min_value) / (max_value - min_value);
       }
-      new_msg.color.r = std::min((0.5 - frac) * 2.0 + 1.0, 1.0);
-      new_msg.color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
-      new_msg.color.b = 0.0;
+      marker.color.r = std::min((0.5 - frac) * 2.0 + 1.0, 1.0);
+      marker.color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
+      marker.color.b = 0.0;
     } else {
-      new_msg.color.r = 0.3;
-      new_msg.color.g = 0.3;
-      new_msg.color.b = 1.0;
+      marker.color.r = 0.3;
+      marker.color.g = 0.3;
+      marker.color.b = 1.0;
     }
-    new_msg.color.a = 0.4;
-    msg->markers.push_back(new_msg);
+    marker.color.a = 0.4;
+    visualizer.addMarker(marker);
   }
 
   // Followup
   if (p_visualize_followup_) {
     for (int i = 0; i < p_n_sections_fov_; ++i) {
       following_evaluator_->visualizeTrajectoryValue(
-          msg,
+          visualizer,
           info->orientations[(info->active_orientation + i) % p_n_directions_]);
     }
   }

@@ -4,13 +4,15 @@
 #include <Eigen/Dense>
 
 namespace voxblox {
-class EsdfServer;
-}
+class EsdfMap;
+class TsdfMap;
+} // namespace voxblox
 namespace active_3d_planning {
 
 class BackTracker;
 class TrajectoryGenerator;
 class TrajectoryEvaluator;
+class VisualizerI;
 
 class ModuleFactory;
 
@@ -25,10 +27,13 @@ public:
   virtual TrajectoryGenerator &getTrajectoryGenerator() = 0;
   virtual TrajectoryEvaluator &getTrajectoryEvaluator() = 0;
 
+  virtual VisualizerI &getVisualizer() = 0;
+
   virtual ModuleFactory &getFactory() = 0;
 
   // maybe want to get rid of voxblox at some point
-  virtual voxblox::EsdfServer &getMap() = 0;
+  virtual voxblox::EsdfMap &getMap() = 0;
+  virtual voxblox::TsdfMap &getTsdfMap() = 0;
 };
 } // namespace active_3d_planning
 

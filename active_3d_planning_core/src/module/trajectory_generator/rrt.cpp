@@ -233,8 +233,7 @@ bool RRT::connectPoses(const EigenTrajectoryPoint &start,
   // try creating a linear trajectory and check for collision
   Eigen::Vector3d start_pos = start.position_W;
   Eigen::Vector3d direction = goal.position_W - start_pos;
-  int n_points = std::ceil(direction.norm() /
-                           (double)voxblox_.getEsdfMapPtr()->voxel_size());
+  int n_points = std::ceil(direction.norm() / (double)voxblox_.voxel_size());
   if (check_collision) {
     for (int i = 0; i < n_points; ++i) {
       if (!checkTraversable(start_pos +
@@ -268,8 +267,7 @@ bool RRT::adjustGoalPosition(const Eigen::Vector3d &start_pos,
   }
   if (p_crop_segments_) {
     // if the full length cannot be reached, crop it
-    int n_points = std::ceil(direction.norm() /
-                             (double)voxblox_.getEsdfMapPtr()->voxel_size());
+    int n_points = std::ceil(direction.norm() / (double)voxblox_.voxel_size());
     for (int i = 0; i < n_points; ++i) {
       if (!checkTraversable(start_pos +
                             (double)i / (double)n_points * direction)) {

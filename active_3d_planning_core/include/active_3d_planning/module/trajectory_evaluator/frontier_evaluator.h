@@ -12,7 +12,7 @@ public:
   FrontierEvaluator(PlannerI &planner);
   // Override virtual methods
   virtual void
-  visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg,
+  visualizeTrajectoryValue(VisualizerI& visualizer,
                            const TrajectorySegment &trajectory) override;
 
   virtual void setupFromParamMap(Module::ParamMap *param_map) override;

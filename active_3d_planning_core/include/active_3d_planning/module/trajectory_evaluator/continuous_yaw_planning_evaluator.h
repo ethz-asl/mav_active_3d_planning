@@ -20,7 +20,7 @@ public:
   // Override virtual functions
   bool computeGain(TrajectorySegment *traj_in) override;
   bool updateSegments(TrajectorySegment *root) override;
-  void visualizeTrajectoryValue(visualization_msgs::MarkerArray *msg,
+  void visualizeTrajectoryValue(VisualizerI& visualizer,
                                 const TrajectorySegment &trajectory) override;
 
   void setupFromParamMap(Module::ParamMap *param_map) override;

@@ -124,14 +124,5 @@ double angleDirection(double input, double target) {
   }
 }
 
-// Visualization message
-int getNextVisualizationId(const visualization_msgs::MarkerArray &msg) {
-  if (msg.markers.empty()) {
-    return 0;
-  } else {
-    return msg.markers.back().id + 1;
-  }
-}
-
 } // namespace defaults
 } // namespace mav_active_3d_planning

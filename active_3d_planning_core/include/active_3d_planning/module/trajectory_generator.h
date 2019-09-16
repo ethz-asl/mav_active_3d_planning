@@ -6,10 +6,13 @@
 #include "active_3d_planning/tools/defaults.h"
 
 #include <Eigen/Core>
-#include <voxblox_ros/esdf_server.h>
 
 #include <string>
 #include <vector>
+
+namespace voxblox {
+class EsdfMap;
+}
 
 namespace active_3d_planning {
 
@@ -54,8 +57,8 @@ public:
   virtual void setupFromParamMap(Module::ParamMap *param_map);
 
 protected:
-  // Pointer to the esdf server for collision checking (and others)
-  voxblox::EsdfServer &voxblox_;
+  // Pointer to the esdf map for collision checking (and others)
+  voxblox::EsdfMap &voxblox_;
 
   // bounding box
   std::unique_ptr<defaults::BoundingVolume> bounding_volume_;

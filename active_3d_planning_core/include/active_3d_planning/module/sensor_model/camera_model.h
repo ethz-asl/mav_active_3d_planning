@@ -27,7 +27,7 @@ public:
                                  const TrajectorySegment &traj_in) override;
 
   // Display camera view bounds
-  void visualizeSensorView(visualization_msgs::MarkerArray *msg,
+  void visualizeSensorView(VisualizerI &visualizer,
                            const TrajectorySegment &traj_in) override;
 
   virtual void setupFromParamMap(Module::ParamMap *param_map) override;
@@ -56,7 +56,7 @@ protected:
   // needed
   void sampleViewpoints(std::vector<int> *result,
                         const TrajectorySegment &traj_in);
-  void visualizeSingleView(visualization_msgs::MarkerArray *msg,
+  void visualizeSingleView(VisualizerI& visualizer,
                            const Eigen::Vector3d &position,
                            const Eigen::Quaterniond &orientation);
   // get the direction vector for camera pointing in x_direction at pixel with
