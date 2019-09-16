@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>active_3d_planning_calibration</name>
+  <version>0.0.0</version>
+  <description>Active path planning for 3D calibration</description>
+
+  <maintainer email="schmluk@student.ethz.ch">Lukas Schmid</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>catkin_simple</buildtool_depend>
+
+  <depend>active_3d_planning_core</depend>
+  <depend>active_3d_planning_ros</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+
+</package>

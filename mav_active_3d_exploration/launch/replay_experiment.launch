@@ -1,0 +1,12 @@
+<launch>
+  <arg name="data_directory" default="/home/lukas/Documents/MT/RAL20/Data/Exploration" />
+  <arg name="dir" default="R4_weight/bags" />
+  <arg name="rate" default="5"/>
+
+
+
+	<!-- Play Rosbag and RVIZ (visualization) -->
+	<node pkg="rosbag" type="play" name="player" output="screen" args="-r $(arg rate) $(arg data_directory)/$(arg dir)/visualization.bag"/>
+
+	<node type="rviz" name="rviz_replay" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiments/experiment_visualization.rviz"/>
+</launch>
