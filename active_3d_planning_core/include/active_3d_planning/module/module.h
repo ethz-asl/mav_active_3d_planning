@@ -14,14 +14,15 @@
 
 namespace active_3d_planning {
 class PlannerI;
+
 // Base class for all modules, provides creation functionalities through the
 // factory
-class Module {
+class ModuleBase {
 public:
   typedef std::map<std::string, std::string> ParamMap;
 
-  Module(PlannerI &planner);
-  virtual ~Module() = default;
+  ModuleBase();
+  virtual ~ModuleBase() = default;
 
   // factory method that sets up the module from a param map
   virtual void setupFromParamMap(ParamMap *param_map) = 0;
@@ -66,7 +67,17 @@ protected:
 
   // whether to display the module creation info
   bool verbose_modules_;
-  PlannerI &planner_;
+};
+
+// Base class for all modules except the planner, which reference the master module (planner)
+class Module : public ModuleBase {
+public:
+    Module(PlannerI &planner);
+    virtual ~Module() = default;
+
+protected:
+    // associated master module (the planner)
+    PlannerI &planner_;
 };
 } // namespace active_3d_planning
 #endif // ACTIVE_3D_PLANNING_CORE_MODULE_H

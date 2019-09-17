@@ -12,7 +12,7 @@ namespace active_3d_planning {
 class BackTracker;
 class TrajectoryGenerator;
 class TrajectoryEvaluator;
-class VisualizerI;
+//class VisualizerI;
 
 class ModuleFactory;
 
@@ -27,7 +27,7 @@ public:
   virtual TrajectoryGenerator &getTrajectoryGenerator() = 0;
   virtual TrajectoryEvaluator &getTrajectoryEvaluator() = 0;
 
-  virtual void publishVisualization(const VisualizationMarkers& markers) = 0;
+//  virtual void publishVisualization(const VisualizationMarkers& markers) = 0;
 
   virtual ModuleFactory &getFactory() = 0;
 
