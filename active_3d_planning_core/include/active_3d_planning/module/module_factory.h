@@ -47,14 +47,14 @@ public:
   // retrieved here
   Module *readLinkableModule(const std::string &name);
 
+    // Derived Factory responsibilities
+    // Create a param map from the arg string (ROS, string, file, ...)
+    virtual bool getParamMapAndType(Module::ParamMap *map, std::string *type,
+                                    std::string args) = 0;
+
 protected:
   // Specify default types for modules that need such (e.g. doNothing modules)
   void getDefaultType(const std::type_index &module_index, std::string *type);
-
-  // Derived Factory responsibilities
-  // Create a param map from the arg string (ROS, string, file, ...)
-  virtual bool getParamMapAndType(Module::ParamMap *map, std::string *type,
-                                  std::string args) = 0;
 
   // Modules add verbose param text to the map. Implement this if you want to
   // print the result.
