@@ -9,12 +9,11 @@
   <license>BSD</license>
 
   <buildtool_depend>catkin</buildtool_depend>
-  <buildtool_depend>catkin_simple</buildtool_depend>
 
-  <depend>active_3d_planning_core</depend>
-  <depend>active_3d_planning_ros</depend>
-  <depend>active_3d_planning_mav</depend>
-  <depend>active_3d_planning_app_example</depend>
+  <exec_depend>active_3d_planning_core</exec_depend>
+  <exec_depend>active_3d_planning_ros</exec_depend>
+  <exec_depend>active_3d_planning_mav</exec_depend>
+  <exec_depend>active_3d_planning_app_example</exec_depend>
 
   <export>
     <metapackage/>

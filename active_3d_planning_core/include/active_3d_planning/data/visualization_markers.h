@@ -3,6 +3,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <vector>
 
 namespace active_3d_planning {
 
@@ -12,10 +13,9 @@ struct Color {
   double b = 0;
   double a = 1;
 };
-// TODO default values
+
 struct VisualizationMarker {
-  // TODO but all necessary information here
-  // from ROS msg documentation
+    // from ROS visualization_msgs/marker.msg documentation (Only relevant fields)
   unsigned char ARROW = 0;
   unsigned char CUBE = 1;
   unsigned char SPHERE = 2;
@@ -34,6 +34,8 @@ struct VisualizationMarker {
   unsigned char DELETEALL = 3;
   int type = 0;
   int action = 0;
+  int id = 0;
+  std::string ns = "";
   Eigen::Vector3d position;
   Eigen::Quaterniond orientation;
   Eigen::Vector3d scale;
@@ -43,9 +45,12 @@ struct VisualizationMarker {
 };
 
 struct VisualizationMarkers {
+    std::vector<VisualizationMarker>markers;
 
-    virtual void addMarker(const VisualizationMarker &marker); //TODO implement + datastructure for container
-}
+    // access
+    virtual void addMarker(const VisualizationMarker &marker);
+    int getNextVisualizationId();
+};
 
 } // namespace active_3d_planning
 #endif /* ACTIVE_3D_PLANNING_CORE_DATA_VISUALILZATION_MARKERS_H */

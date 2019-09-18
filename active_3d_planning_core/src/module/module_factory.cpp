@@ -31,7 +31,7 @@ Module *ModuleFactory::readLinkableModule(const std::string &name) {
       linkable_module_list_.find(name);
   if (it == linkable_module_list_.end()) {
     printError("No module with name '" + name +
-               "' is registered in the linkable moduels list.");
+               "' is registered in the linkable modules list.");
     return nullptr;
   }
   return it->second;
