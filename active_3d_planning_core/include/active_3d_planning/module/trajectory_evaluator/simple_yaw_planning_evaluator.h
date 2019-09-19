@@ -15,7 +15,7 @@ class SimpleYawPlanningEvaluator : public YawPlanningEvaluator {
 public:
   SimpleYawPlanningEvaluator(PlannerI &planner);
   // Override virtual functions
-  void visualizeTrajectoryValue(VisualizerI& visualizer,
+  void visualizeTrajectoryValue(VisualizationMarkers *markers,
                                 const TrajectorySegment &trajectory) override;
 
   void setupFromParamMap(Module::ParamMap *param_map) override;
@@ -31,9 +31,9 @@ protected:
                               // orientation
 
   // methods
-  double sampleYaw(double original_yaw, int sample);
+  double sampleYaw(double original_yaw, int sample) override;
   void setTrajectoryYaw(TrajectorySegment *segment, double start_yaw,
-                        double target_yaw);
+                        double target_yaw) override;
 };
 
 } // namespace trajectory_evaluator

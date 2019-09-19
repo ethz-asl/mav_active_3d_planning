@@ -2,6 +2,7 @@
 #define ACTIVE_3D_PLANNING_CORE_TRAJECTORY_EVALUATOR_FRONTIER_EVALUATOR_H
 
 #include "active_3d_planning/module/trajectory_evaluator/simulated_sensor_evaluator.h"
+#include "active_3d_planning/map/occupancy_map.h"
 
 namespace active_3d_planning {
 namespace trajectory_evaluator {
@@ -12,7 +13,7 @@ public:
   FrontierEvaluator(PlannerI &planner);
   // Override virtual methods
   virtual void
-  visualizeTrajectoryValue(VisualizerI& visualizer,
+  visualizeTrajectoryValue(VisualizationMarkers *markers,
                            const TrajectorySegment &trajectory) override;
 
   virtual void setupFromParamMap(Module::ParamMap *param_map) override;
@@ -23,6 +24,9 @@ protected:
   // Override virtual methods
   virtual bool
   computeGainFromVisibleVoxels(TrajectorySegment *traj_in) override;
+
+  // map
+  OccupancyMap *map_;
 
   // params
   bool p_accurate_frontiers_; // True: explicitely compute all frontier voxels

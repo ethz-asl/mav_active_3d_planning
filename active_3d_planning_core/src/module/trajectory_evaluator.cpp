@@ -5,7 +5,7 @@
 
 namespace active_3d_planning {
 
-TrajectoryEvaluator::TrajectoryEvaluator(PlannerI &planner) : Module(planner), voxblox_(planner.getMap()) {}
+TrajectoryEvaluator::TrajectoryEvaluator(PlannerI &planner) : Module(planner) {}
 
 void TrajectoryEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
   // Get the args to build the modules, default is a namespace extension

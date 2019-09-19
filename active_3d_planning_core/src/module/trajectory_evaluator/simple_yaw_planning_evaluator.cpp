@@ -41,8 +41,7 @@ void SimpleYawPlanningEvaluator::setupFromParamMap(
   YawPlanningEvaluator::setupFromParamMap(param_map);
 }
 
-void SimpleYawPlanningEvaluator::visualizeTrajectoryValue(
-    VisualizerI &visualizer, const TrajectorySegment &trajectory) {
+void SimpleYawPlanningEvaluator::visualizeTrajectoryValue(VisualizationMarkers *markers, const TrajectorySegment &trajectory) {
   if (!trajectory.info) {
     return;
   }
@@ -76,13 +75,12 @@ void SimpleYawPlanningEvaluator::visualizeTrajectoryValue(
   for (int i = 0; i < info->orientations.size(); ++i) {
     // Setup marker message
     VisualizationMarker marker;
-    marker.pose.position = info->orientations[i].trajectory.back().position_W;
-    marker.pose.orientation =
-        info->orientations[i].trajectory.back().orientation_W_B;
+    marker.position = info->orientations[i].trajectory.back().position_W;
+    marker.orientation =info->orientations[i].trajectory.back().orientation_W_B;
     marker.type = VisualizationMarker::ARROW;
-    marker.scale.x = 0.6;
-    marker.scale.y = 0.07;
-    marker.scale.z = 0.07;
+    marker.scale.x() = 0.6;
+    marker.scale.y() = 0.07;
+    marker.scale.z() = 0.07;
     marker.action = VisualizationMarker::ADD;
 
     // Color according to relative value (blue when indifferent)
@@ -102,13 +100,13 @@ void SimpleYawPlanningEvaluator::visualizeTrajectoryValue(
       marker.color.b = 1.0;
     }
     marker.color.a = 0.4;
-    visualizer.addMarker(marker);
+    markers->addMarker(marker);
   }
 
   // Followup
   if (p_visualize_followup_) {
     following_evaluator_->visualizeTrajectoryValue(
-        visualizer, info->orientations[info->active_orientation]);
+        markers, info->orientations[info->active_orientation]);
   }
 }
 

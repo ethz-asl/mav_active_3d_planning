@@ -2,6 +2,7 @@
 #define ACTIVE_3D_PLANNING_CORE_SENSOR_MODEL_LIDAR_MODEL_H
 
 #include "active_3d_planning/data/trajectory_segment.h"
+#include "active_3d_planning/data/visualization_markers.h"
 #include "active_3d_planning/module/sensor_model/sensor_model.h"
 
 namespace active_3d_planning {
@@ -27,7 +28,7 @@ public:
                                  const TrajectorySegment &traj_in) override;
 
   // Display camera view bounds
-  void visualizeSensorView(VisualizerI& visualizer,
+  void visualizeSensorView(VisualizationMarkers *markers,
                            const TrajectorySegment &traj_in) override;
 
   virtual void setupFromParamMap(Module::ParamMap *param_map) override;
@@ -54,9 +55,9 @@ protected:
   // needed
   void sampleViewpoints(std::vector<int> *result,
                         const TrajectorySegment &traj_in);
-  void visualizeSingleView(VisualizerI& visualizer,
+  void visualizeSingleView(VisualizationMarkers *markers,
                            const Eigen::Vector3d &position,
-                           const Eigen::Quaterniond &orientation) override;
+                           const Eigen::Quaterniond &orientation);
   // get the direction vector for camera pointing in x_direction at pixel with
   // relative x, y position [0, 1]
   void getDirectionVector(Eigen::Vector3d *result, double relative_x,

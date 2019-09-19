@@ -4,15 +4,13 @@
 #include "active_3d_planning/data/trajectory_segment.h"
 #include "active_3d_planning/module/module_factory_registry.h"
 #include "active_3d_planning/tools/defaults.h"
+#include <active_3d_planning/planner/planner_I.h>
 
 #include <Eigen/Core>
 
 #include <string>
 #include <vector>
 
-namespace voxblox {
-class EsdfMap;
-}
 
 namespace active_3d_planning {
 
@@ -21,9 +19,6 @@ class SegmentSelector;
 
 class GeneratorUpdater;
 
-class PlannerI;
-
-struct EigenTrajectoryPoint;
 
 // Base class for trajectory generation to provide uniform interface with other
 // classes
@@ -54,11 +49,9 @@ public:
   extractTrajectoryToPublish(EigenTrajectoryPointVector *trajectory,
                              const TrajectorySegment &segment);
 
-  virtual void setupFromParamMap(Module::ParamMap *param_map);
+  virtual void setupFromParamMap(Module::ParamMap *param_map) override;
 
 protected:
-  // Pointer to the esdf map for collision checking (and others)
-  voxblox::EsdfMap &voxblox_;
 
   // bounding box
   std::unique_ptr<defaults::BoundingVolume> bounding_volume_;

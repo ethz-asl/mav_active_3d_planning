@@ -11,9 +11,9 @@
 #include <typeinfo>
 
 #include "active_3d_planning/module/module_factory_registry.h"
+#include <active_3d_planning/planner/planner_I.h>
 
 namespace active_3d_planning {
-class PlannerI;
 
 // Base class for all modules, provides creation functionalities through the
 // factory

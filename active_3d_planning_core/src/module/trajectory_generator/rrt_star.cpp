@@ -397,8 +397,8 @@ bool RRTStarEvaluatorAdapter::updateSegments(TrajectorySegment *root) {
 }
 
 void RRTStarEvaluatorAdapter::visualizeTrajectoryValue(
-    VisualizerI& visualizer, const TrajectorySegment &trajectory) {
-  following_evaluator_->visualizeTrajectoryValue(visualizer, trajectory);
+        VisualizationMarkers *markers, const TrajectorySegment &trajectory) {
+  following_evaluator_->visualizeTrajectoryValue(markers, trajectory);
 }
 
 void RRTStarEvaluatorAdapter::setupFromParamMap(Module::ParamMap *param_map) {

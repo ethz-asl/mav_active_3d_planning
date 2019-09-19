@@ -89,7 +89,7 @@ public:
 
   bool updateSegments(TrajectorySegment *root) override;
 
-  void visualizeTrajectoryValue(VisualizerI& visualizer,
+  void visualizeTrajectoryValue(VisualizationMarkers *markers,
                                 const TrajectorySegment &trajectory);
 
   void setupFromParamMap(Module::ParamMap *param_map) override;

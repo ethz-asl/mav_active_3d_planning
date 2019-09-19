@@ -2,18 +2,15 @@
 #define ACTIVE_3D_PLANNING_CORE_TRAJECTORY_EVALUATOR_H
 
 #include <active_3d_planning/data/trajectory_segment.h>
+#include <active_3d_planning/data/visualization_markers.h>
 #include <active_3d_planning/module/module_factory_registry.h>
 #include <active_3d_planning/tools/defaults.h>
 
-// TODO get voxblox out
 #include <Eigen/Core>
 
 #include <memory>
 #include <string>
 
-namespace voxblox {
-class EsdfMap;
-}
 
 namespace active_3d_planning {
 
@@ -22,8 +19,6 @@ class CostComputer;
 class ValueComputer;
 class NextSelector;
 class EvaluatorUpdater;
-
-class VisualizerI;
 
 // Base class for trajectory evaluators to provide uniform interface with other
 // classes
@@ -50,13 +45,11 @@ public:
 
   // Implement this method to allow visualization of the information gain during
   // simulation
-  virtual void visualizeTrajectoryValue(VisualizerI& visualizer,
+  virtual void visualizeTrajectoryValue(VisualizationMarkers *markers,
                                         const TrajectorySegment &trajectory) {}
 
   virtual void setupFromParamMap(Module::ParamMap *param_map);
 protected:
-  // Voxblox map
-  voxblox::EsdfMap &voxblox_;
 
   // bounding volume of interesting target
   std::unique_ptr<defaults::BoundingVolume> bounding_volume_;

@@ -1,12 +1,11 @@
 #include "active_3d_planning/module/trajectory_generator.h"
 
 #include "active_3d_planning/module/module_factory.h"
-#include "active_3d_planning/planner/planner_I.h"
+#include "active_3d_planning/map/map.h"
 
 namespace active_3d_planning {
 
-TrajectoryGenerator::TrajectoryGenerator(PlannerI &planner)
-    : Module(planner), voxblox_(planner.getMap()) {}
+TrajectoryGenerator::TrajectoryGenerator(PlannerI &planner) : Module(planner) {}
 
 void TrajectoryGenerator::setupFromParamMap(Module::ParamMap *param_map) {
   setParam<bool>(param_map, "collision_optimistic", &p_collision_optimistic_,
@@ -32,13 +31,13 @@ void TrajectoryGenerator::setupFromParamMap(Module::ParamMap *param_map) {
 }
 
 bool TrajectoryGenerator::checkTraversable(const Eigen::Vector3d &position) {
+    // check bounding volume
   if (!bounding_volume_->contains(position)) {
     return false;
   }
-  double distance = 0.0;
-  if (voxblox_.getDistanceAtPosition(position, &distance)) {
-    // This means the voxel is observed
-    return (distance > p_collision_radius_);
+  //
+  if (planner_.getMap().isObserved(position)){
+      return planner_.getMap().isTraversable(position);
   }
   if (p_clearing_radius_ > 0.0) {
     if ((planner_.getCurrentPosition() - position).norm() <

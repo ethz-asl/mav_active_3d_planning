@@ -1,11 +1,11 @@
 #include "active_3d_planning/module/sensor_model/camera_model.h"
 
 #include "active_3d_planning/tools/defaults.h"
-#include "active_3d_planning/tools/visualizer_I.h"
 
 #include <algorithm>
 #include <chrono>
 #include <vector>
+#include <glog/logging.h>
 
 namespace active_3d_planning {
 namespace sensor_model {
@@ -81,7 +81,7 @@ void CameraModel::sampleViewpoints(std::vector<int> *result,
   }
 }
 
-void CameraModel::visualizeSensorView(VisualizerI &visualizer,
+void CameraModel::visualizeSensorView(VisualizationMarkers *markers,
                                       const TrajectorySegment &traj_in) {
   std::vector<int> indices;
   sampleViewpoints(&indices, traj_in);
@@ -92,15 +92,14 @@ void CameraModel::visualizeSensorView(VisualizerI &visualizer,
         traj_in.trajectory[indices[i]].orientation_W_B;
     position = position + orientation * mounting_translation_;
     orientation = orientation * mounting_rotation_;
-    visualizeSingleView(visualizer, position, orientation);
+    visualizeSingleView(markers, position, orientation);
   }
 }
 
-void CameraModel::visualizeSingleView(VisualizerI &visualizer,
+void CameraModel::visualizeSingleView(VisualizationMarkers *markers,
                                       const Eigen::Vector3d &position,
                                       const Eigen::Quaterniond &orientation) {
   VisualizationMarker marker;
-
   marker.type = VisualizationMarker::LINE_LIST;
   marker.scale.x() = 0.02;
   marker.color.r = 1.0;
@@ -152,7 +151,7 @@ void CameraModel::visualizeSingleView(VisualizerI &visualizer,
     marker.points.push_back(right[i - 1]);
     marker.points.push_back(right[i]);
   }
-  visualizer.addMarker(marker);
+  markers->addMarker(marker);
 }
 
 void CameraModel::getDirectionVector(Eigen::Vector3d *result, double relative_x,

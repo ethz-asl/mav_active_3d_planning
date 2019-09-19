@@ -16,6 +16,7 @@ cs_add_library(${PROJECT_NAME}
         src/data/trajectory_segment.cpp
         src/data/visualization_markers.cpp
         src/planner/online_planner.cpp
+        src/map/map.cpp
         src/module/back_tracker.cpp
         src/module/back_tracker/rotate_in_place.cpp
         src/module/back_tracker/rotate_reverse.cpp

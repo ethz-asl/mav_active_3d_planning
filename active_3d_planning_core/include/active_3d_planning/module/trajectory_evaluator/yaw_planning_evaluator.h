@@ -21,7 +21,7 @@ public:
   bool computeValue(TrajectorySegment *traj_in) override;
   int selectNextBest(TrajectorySegment *traj_in) override;
   bool updateSegments(TrajectorySegment *root) override;
-  void visualizeTrajectoryValue(VisualizerI& visualizer,
+  void visualizeTrajectoryValue(VisualizationMarkers *markers,
                                 const TrajectorySegment &trajectory) override;
 
   void setupFromParamMap(Module::ParamMap *param_map) override;

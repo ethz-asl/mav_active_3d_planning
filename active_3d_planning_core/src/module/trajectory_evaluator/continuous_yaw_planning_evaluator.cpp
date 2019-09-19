@@ -4,7 +4,6 @@
 
 #include "active_3d_planning/planner/planner_I.h"
 #include "active_3d_planning/tools/defaults.h"
-#include "active_3d_planning/tools/visualizer_I.h"
 
 #include <cmath>
 #include <vector>
@@ -144,7 +143,7 @@ void ContinuousYawPlanningEvaluator::setTrajectoryYaw(
 }
 
 void ContinuousYawPlanningEvaluator::visualizeTrajectoryValue(
-    VisualizerI &visualizer, const TrajectorySegment &trajectory) {
+        VisualizationMarkers *markers, const TrajectorySegment &trajectory) {
   if (!trajectory.info) {
     return;
   }
@@ -209,14 +208,13 @@ void ContinuousYawPlanningEvaluator::visualizeTrajectoryValue(
       marker.color.b = 1.0;
     }
     marker.color.a = 0.4;
-    visualizer.addMarker(marker);
+    markers->addMarker(marker);
   }
 
   // Followup
   if (p_visualize_followup_) {
     for (int i = 0; i < p_n_sections_fov_; ++i) {
-      following_evaluator_->visualizeTrajectoryValue(
-          visualizer,
+      following_evaluator_->visualizeTrajectoryValue(markers,
           info->orientations[(info->active_orientation + i) % p_n_directions_]);
     }
   }

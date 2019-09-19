@@ -2,10 +2,8 @@
 #define ACTIVE_3D_PLANNING_CORE_TRAJECTORY_EVALUATOR_VOXEL_WEIGHT_EVALUATOR_H
 
 #include "active_3d_planning/module/trajectory_evaluator/frontier_evaluator.h"
+#include "active_3d_planning/map/tsdf_map.h"
 
-namespace voxblox {
-class TsdfMap;
-}
 
 namespace active_3d_planning {
 namespace trajectory_evaluator {
@@ -20,7 +18,7 @@ class VoxelWeightEvaluator : public FrontierEvaluator {
 public:
   VoxelWeightEvaluator(PlannerI &planner);
   // Override virtual methods
-  void visualizeTrajectoryValue(VisualizerI &visualizer,
+  void visualizeTrajectoryValue(VisualizationMarkers *markers,
                                 const TrajectorySegment &trajectory) override;
 
   void setupFromParamMap(Module::ParamMap *param_map) override;
@@ -35,7 +33,8 @@ protected:
 
   bool computeGainFromVisibleVoxels(TrajectorySegment *traj_in) override;
 
-  voxblox::TsdfMap &voxblox_tsdf_;
+  // map
+  TSDFMap *map_;
 
   // params
   double p_min_impact_factor_; // Minimum expected change, the gain is set at 0

@@ -17,9 +17,14 @@ void SimulatedSensorEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
   setParam<bool>(param_map, "visualize_sensor_view", &p_visualize_sensor_view_,
                  false);
 
+    // setup map
+    map_ = dynamic_cast<OccupancyMap*>(&(planner_.getMap()));
+    if (!map_) {
+        planner_.printError("'SimulatedSensorEvaluator' requires a map of type 'OccupancyMap'!");
+    }
+
   // Register link for simulated sensor udpaters
-  planner_.getFactory().registerLinkableModule("SimulatedSensorEvaluator",
-                                                    this);
+  planner_.getFactory().registerLinkableModule("SimulatedSensorEvaluator", this);
 
   // Create sensor model
   std::string args; // default args extends the parent namespace
@@ -83,18 +88,17 @@ bool SimulatedSensorEvaluator::storeTrajectoryInformation(
 
 // Base Visualization: just display all visible voxels
 void SimulatedSensorEvaluator::visualizeTrajectoryValue(
-    VisualizerI& visualizer, const TrajectorySegment &trajectory) {
+            VisualizationMarkers *markers, const TrajectorySegment &trajectory) {
   if (!trajectory.info) {
     return;
   }
   // Default implementation displays all visible voxels
   VisualizationMarker marker;
   marker.type = VisualizationMarker::CUBE_LIST;
-  double voxel_size =
-      voxblox_.voxel_size();
-  marker.scale.x = voxel_size;
-  marker.scale.y = voxel_size;
-  marker.scale.z = voxel_size;
+  double voxel_size = map_->getVoxelSize();
+  marker.scale.x() = voxel_size;
+  marker.scale.y()= voxel_size;
+  marker.scale.z() = voxel_size;
   marker.color.r = 1.0;
   marker.color.g = 0.8;
   marker.color.b = 0.0;
@@ -104,12 +108,12 @@ void SimulatedSensorEvaluator::visualizeTrajectoryValue(
   SimulatedSensorInfo *info =
       reinterpret_cast<SimulatedSensorInfo *>(trajectory.info.get());
   for (int i = 0; i < info->visible_voxels.size(); ++i) {
-    maker.points.push_back(info->visible_voxels[i]);
+    marker.points.push_back(info->visible_voxels[i]);
   }
-  visualizer.addMarker(maker);
+  markers->addMarker(marker);
 
   if (p_visualize_sensor_view_) {
-    sensor_model_->visualizeSensorView(visualizer, trajectory);
+    sensor_model_->visualizeSensorView(markers, trajectory);
   }
 }
 

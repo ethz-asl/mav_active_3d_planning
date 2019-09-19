@@ -233,7 +233,7 @@ bool RRT::connectPoses(const EigenTrajectoryPoint &start,
   // try creating a linear trajectory and check for collision
   Eigen::Vector3d start_pos = start.position_W;
   Eigen::Vector3d direction = goal.position_W - start_pos;
-  int n_points = std::ceil(direction.norm() / (double)voxblox_.voxel_size());
+  int n_points = std::ceil(direction.norm() / p_sampling_rate_ * system_constraints_->v_max);
   if (check_collision) {
     for (int i = 0; i < n_points; ++i) {
       if (!checkTraversable(start_pos +
@@ -267,17 +267,17 @@ bool RRT::adjustGoalPosition(const Eigen::Vector3d &start_pos,
   }
   if (p_crop_segments_) {
     // if the full length cannot be reached, crop it
-    int n_points = std::ceil(direction.norm() / (double)voxblox_.voxel_size());
-    for (int i = 0; i < n_points; ++i) {
-      if (!checkTraversable(start_pos +
-                            (double)i / (double)n_points * direction)) {
-        double length = direction.norm() * (double)(i - 1) / (double)n_points -
-                        p_crop_margin_;
-        if (length <= p_crop_min_length_) {
-          return false;
-        }
-        direction *= length / direction.norm();
-        break;
+      int n_points = std::ceil(direction.norm() / p_sampling_rate_ * system_constraints_->v_max);
+      for (int i = 0; i < n_points; ++i) {
+          if (!checkTraversable(start_pos +
+                                (double)i / (double)n_points * direction)) {
+            double length = direction.norm() * (double)(i - 1) / (double)n_points -
+                            p_crop_margin_;
+            if (length <= p_crop_min_length_) {
+              return false;
+            }
+            direction *= length / direction.norm();
+            break;
       }
     }
   }

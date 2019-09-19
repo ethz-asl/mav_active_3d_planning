@@ -1,5 +1,4 @@
 #define _USE_MATH_DEFINES
-#define _POSIX_SOURCE
 
 #include "active_3d_planning/planner/online_planner.h"
 
@@ -8,11 +7,13 @@
 #include <iostream>
 #include <random>
 #include <sstream>
+#include <chrono>
+#include <iomanip>
 
 namespace active_3d_planning {
 
-    OnlinePlanner::OnlinePlanner(ModuleFactory* factory, std::string module_args)
-            : factory_(factory), running_(false) {
+    OnlinePlanner::OnlinePlanner(ModuleFactory* factory, const std::string &module_args)
+            : factory_(factory), running_(true), planning_(false) {
 
         // Setup Params
         bool verbose_modules;
@@ -22,30 +23,61 @@ namespace active_3d_planning {
         factory_->getParamMapAndType(&param_map, &type, module_args);
 
         // Logging, printing and visualization
-        setParam<bool>(param_map, "verbose", &p_verbose_, true);
-        setParam<bool>(param_map, "verbose_modules", &verbose_modules, true);
-        setParam<bool>(param_map, "build_modules_on_init", &build_modules_on_init, false);
-        setParam<bool>(param_map, "visualize", &p_visualize_, true);
-        setParam<bool>(param_map, "log_performance", &p_log_performance_, false);
-        setParam<bool>(param_map, "visualize_gain", &p_visualize_gain_, false);
-        setParam<bool>(param_map, "highlight_executed_trajectory", &p_highlight_executed_trajectory_, false);
+        setParam<bool>(&param_map, "verbose", &p_verbose_, true);
+        setParam<bool>(&param_map, "verbose_modules", &verbose_modules, true);
+        setParam<bool>(&param_map, "build_modules_on_init", &build_modules_on_init, false);
+        setParam<bool>(&param_map, "visualize", &p_visualize_, true);
+        setParam<bool>(&param_map, "log_performance", &p_log_performance_, false);
+        setParam<bool>(&param_map, "visualize_gain", &p_visualize_gain_, false);
+        setParam<bool>(&param_map, "highlight_executed_trajectory", &p_highlight_executed_trajectory_, false);
 
         // Sampling constraints
-        setParam<int>(param_map, "max_new_segments", &p_max_new_segments_, 0);  // set 0 for infinite
-        setParam<int>(param_map, "min_new_segments", &p_min_new_segments_, 0);
-        setParam<int>(param_map, "max_new_tries", &p_max_new_tries_, 0);        // set 0 for infinite
-        setParam<int>(param_map, "min_new_tries", &p_min_new_tries_, 0);
-        setParam<double>(param_map, "min_new_value", &p_min_new_value_, 0.0);
-        setParam<int>(param_map, "expand_batch", &p_expand_batch_, 1);
+        setParam<int>(&param_map, "max_new_segments", &p_max_new_segments_, 0);  // set 0 for infinite
+        setParam<int>(&param_map, "min_new_segments", &p_min_new_segments_, 0);
+        setParam<int>(&param_map, "max_new_tries", &p_max_new_tries_, 0);        // set 0 for infinite
+        setParam<int>(&param_map, "min_new_tries", &p_min_new_tries_, 0);
+        setParam<double>(&param_map, "min_new_value", &p_min_new_value_, 0.0);
+        setParam<int>(&param_map, "expand_batch", &p_expand_batch_, 1);
         p_expand_batch_ = std::max(p_expand_batch_, 1);
 
         // Setup members
-        trajectory_generator_ = factory_->createModule<TrajectoryGenerator>(
-                ns + "/trajectory_generator", *this, verbose_modules);
+        std::string args; // default args extends the parent namespace
+        std::string param_ns = param_map["param_namespace"];
+        setParam<std::string>(&param_map, "map_args", &args,
+                              param_ns + "/map");
+        map_ = getFactory().createModule<Map>(args, *this, verbose_modules);
+        setParam<std::string>(&param_map, "trajectory_generator_args", &args,
+                              param_ns + "/trajectory_generator");
+        trajectory_generator_ = getFactory().createModule<TrajectoryGenerator>(
+                args, *this, verbose_modules);
+        setParam<std::string>(&param_map, "trajectory_evaluator_args", &args,
+                              param_ns + "/trajectory_evaluator");
         trajectory_evaluator_ = getFactory().createModule<TrajectoryEvaluator>(
-                ns + "/trajectory_evaluator", *this, verbose_modules);
+                args, *this, verbose_modules);
+        setParam<std::string>(&param_map, "back_tracker_args", &args,
+                              param_ns + "/back_tracker");
         back_tracker_ = getFactory().createModule<BackTracker>(
-                ns + "/back_tracker", *this, verbose_modules);
+                args, *this, verbose_modules);
+
+        // Setup performance log
+        if (p_log_performance_) {
+            std::string log_dir("");
+            setParam<std::string>(&param_map, "performance_log_dir", &log_dir, "");
+            if (log_dir == "") {
+                // Wait for this param until planning start so it can be set after
+                // constructor (e.g. from other nodes)
+                printWarning("No directory for performance log set, performance log turned off.");
+                p_log_performance_ = false;
+            } else {
+                logfile_ = log_dir + "/performance_log.csv";
+                perf_log_file_.open(logfile_.c_str());
+                perf_log_data_ = std::vector<double>(5, 0.0); // select, expand, gain, cost, value
+                perf_cpu_timer_ = std::clock();
+                perf_log_file_ << "RunTime,NTrajectories,NTrajAfterUpdate,Select,Expand,Gain,"
+                                  "Cost,Value,NextBest,UpdateTG,UpdateTE,Visualization,Total"
+                               << std::endl;
+            }
+        }
 
         // Force lazy initialization of modules (call every function once)
         if (build_modules_on_init) {
@@ -72,86 +104,48 @@ namespace active_3d_planning {
             temp_segment.spawnChild()->trajectory.push_back(trajectory_point);
             trajectory_evaluator_->selectNextBest(&temp_segment);
         }
+    }
 
-        // Subscribers and publishers
-        target_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
-                "command/trajectory", 10);
-        trajectory_vis_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(
-                "trajectory_visualization", 100);
-        target_reached_pub_ = nh_.advertise<std_msgs::Empty>("target_reached", 1);
-        odom_sub_ = nh_.subscribe("odometry", 1, &RosPlanner::odomCallback, this);
-        get_cpu_time_srv_ = nh_private_.advertiseService(
-                "get_cpu_time", &RosPlanner::cpuSrvCallback, this);
-
-        // Finish
-        run_srv_ = nh_private_.advertiseService("toggle_running",
-                                                &RosPlanner::runSrvCallback, this);
+    // logging and printing: default to std::cout
+    void OnlinePlanner::printInfo(const std::string &text){
+        std::cout << "Info: " << text << std::endl;
+    }
+    void OnlinePlanner::printWarning(const std::string &text){
+        std::cout << "Warning: " << text << std::endl;
+    }
+    void OnlinePlanner::printError(const std::string &text){
+        std::cout << "Error: " << text << std::endl;
     }
 
     void OnlinePlanner::initializePlanning() {
-        // Setup initial trajectory Segment
+        // Setup initial trajectory Segment at current location
         target_position_ = current_position_;
-        target_yaw_ = tf::getYaw(tf::Quaternion(
-                current_orientation_.x(), current_orientation_.y(),
-                current_orientation_.z(),
-                current_orientation_
-                        .w())); // tf yaw gets better results than eigen-euler conversion here
-        current_segment_ =
-                std::unique_ptr<TrajectorySegment>(new TrajectorySegment());
+        target_yaw_ = yawFromQuaternion(current_orientation_);
+        current_segment_ = std::unique_ptr<TrajectorySegment>(new TrajectorySegment());
         EigenTrajectoryPoint trajectory_point;
         trajectory_point.position_W = target_position_;
         trajectory_point.setFromYaw(target_yaw_);
         current_segment_->trajectory.push_back(trajectory_point);
 
-        // Setup performance log
-        if (p_log_performance_) {
-            std::string log_dir("");
-            if (!nh_private_.getParam("performance_log_dir", log_dir)) {
-                // Wait for this param until planning start so it can be set after
-                // constructor (e.g. from other nodes)
-                ROS_WARN(
-                        "No directory for performance log set, performance log turned off.");
-                p_log_performance_ = false;
-            } else {
-                logfile_ = log_dir + "/performance_log.csv";
-                perf_log_file_.open(logfile_.c_str());
-                perf_log_data_ = std::vector<double>(
-                        6, 0.0); // select, expand, gain, cost, value, mainLoop
-                perf_cpu_timer_ = std::clock();
-                perf_log_file_ << "RosTime,NTrajectories,NTrajAfterUpdate,Select,Expand,"
-                                  "Gain,Cost,Value,NextBest,"
-                                  "UpdateTG,UpdateTE,Visualization,RosCallbacks,Total"
-                               << std::endl;
-            }
-        }
-
         // Setup counters
-        cpu_srv_timer_ = std::clock();
-        info_timing_ = ::ros::Time::now();
+        info_timing_ = std::clock();
         info_count_ = 1;
         info_killed_next_ = 0;
         info_killed_update_ = 0;
         new_segments_ = 0;
         new_segment_tries_ = 0;
-        vis_num_previous_evaluations_ = 0;
-        vis_num_previous_trajectories_ = 0;
         min_new_value_reached_ = p_min_new_value_ == 0.0;
+        vis_completed_count_ = 0;
+
+        // Launch expansion as current goal is considered reached
         target_reached_ = true;
     }
 
     void OnlinePlanner::planningLoop() {
-        // This is the main loop, spinning is managed explicitely for efficiency
-        std::clock_t timer;
-        while (::ros::ok()) {
-            if (running_) {
+        // This is the main loop, adjust updating as necessary
+        while (running_) {
+            if (planning_) {
                 loopIteration();
-            }
-            if (p_log_performance_) {
-                timer = std::clock();
-            }
-            ::ros::spinOnce();
-            if (p_log_performance_) {
-                perf_log_data_[5] += (double)(std::clock() - timer) / CLOCKS_PER_SEC;
             }
         }
     }
@@ -169,23 +163,17 @@ namespace active_3d_planning {
 
         // After finishing the current segment, execute the next one
         if (target_reached_) {
-            /* This is a publisher to inform of target reached  */
-            target_reached_pub_.publish(std_msgs::Empty());
-
             if (new_segment_tries_ >= p_max_new_tries_ && p_max_new_tries_ > 0) {
                 // Maximum tries reached: force next segment
                 requestNextTrajectory();
             } else {
                 if (new_segment_tries_ < p_min_new_tries_) {
-                    ROS_INFO("Exiting because min tries was not reached!");
                     return; // check minimum tries reached
                 }
                 if (new_segments_ < p_min_new_segments_) {
-                    ROS_INFO("Exiting because min new segments was not reached!");
                     return; // check minimum successful expansions reached
                 }
                 if (!min_new_value_reached_) {
-                    ROS_INFO("Exiting because min value was not reached!");
                     return; // check minimum value reached
                 }
                 // All requirements met
@@ -202,7 +190,7 @@ namespace active_3d_planning {
         }
 
         // Performance tracking
-        double perf_rostime;
+        double perf_runtime;
         double perf_vis = 0.0;
         double perf_next;
         double perf_uptg;
@@ -222,14 +210,14 @@ namespace active_3d_planning {
         }
         int num_trajectories = trajectories_to_vis.size();
         if (p_verbose_ || p_log_performance_) {
-            perf_rostime = (::ros::Time::now() - info_timing_).toSec();
-            info_timing_ = ::ros::Time::now();
+            perf_runtime = std::chrono::duration<double>(std::clock() - info_timing_).count();
+            info_timing_ = std::clock();
             if (p_verbose_) {
-                ROS_INFO("Replanning!\n"
-                         "(%.2fs elapsed, %i new, %i total, %i killed by root change, %i "
-                         "killed while updating)",
-                         perf_rostime, num_trajectories - info_count_ + 1,
-                         num_trajectories, info_killed_next_ + 1, info_killed_update_);
+                std::stringstream ss;
+                ss << "Replanning!\n(" << std::setprecision(3) <<"s elapsed, " << num_trajectories - info_count_ + 1 <<
+                    " new, " << num_trajectories <<" total, " << info_killed_next_ + 1 <<" killed by root change, " <<
+                    info_killed_update_ <<  "killed while updating)";
+                printInfo(ss.str());
             }
         }
         if (p_log_performance_) {
@@ -238,8 +226,7 @@ namespace active_3d_planning {
         }
 
         // Select best next trajectory and update root
-        int next_segment =
-                trajectory_evaluator_->selectNextBest(current_segment_.get());
+        int next_segment = trajectory_evaluator_->selectNextBest(current_segment_.get());
         current_segment_ = std::move(current_segment_->children[next_segment]);
         current_segment_->parent = nullptr;
         current_segment_->gain = 0.0;
@@ -253,20 +240,19 @@ namespace active_3d_planning {
         info_killed_next_ = num_trajectories - trajectories_to_vis.size();
 
         // Move
-        requestMovement(*current_segment_);
-        back_tracker_->segmentIsExecuted(*current_segment_.get());
-
-        // Force Esdf update, so next trajectories can be evaluated
-        voxblox_server_->updateEsdf();
+        EigenTrajectoryPointVector trajectory;
+        trajectory_generator_->extractTrajectoryToPublish(&trajectory, *current_segment_);
+        current_segment_->trajectory = trajectory;
+        requestMovement(trajectory);
+        target_position_ = trajectory.back().position_W;
+        target_yaw_ = trajectory.back().getYaw();
+        back_tracker_->segmentIsExecuted(*current_segment_);
 
         // Visualize
         if (p_log_performance_) {
             timer = std::clock();
         }
         if (p_visualize_) {
-            if (p_publish_traversable_) {
-                voxblox_server_->publishTraversable();
-            }
             publishEvalVisualization(*current_segment_);
             publishCompletedTrajectoryVisualization(*current_segment_);
         }
@@ -287,8 +273,7 @@ namespace active_3d_planning {
         }
         trajectories_to_vis.clear();
         current_segment_->getTree(&trajectories_to_vis);
-        info_killed_update_ =
-                num_trajectories - trajectories_to_vis.size() - info_killed_next_;
+        info_killed_update_ = num_trajectories - trajectories_to_vis.size() - info_killed_next_;
 
         // Performance log and printing
         if (p_verbose_ || p_log_performance_) {
@@ -297,16 +282,14 @@ namespace active_3d_planning {
             info_count_ = trajectories_to_vis.size();
 
             if (p_log_performance_) {
-                perf_log_file_ << perf_rostime << "," << num_trajectories << ","
+                perf_log_file_ << perf_runtime << "," << num_trajectories << ","
                                << info_count_ << "," << perf_log_data_[0] << ","
                                << perf_log_data_[1] << "," << perf_log_data_[2] << ","
                                << perf_log_data_[3] << "," << perf_log_data_[4] << ","
                                << perf_next << "," << perf_uptg << "," << perf_upte << ","
-                               << perf_vis << "," << perf_log_data_[5] << ","
-                               << (double)(std::clock() - perf_cpu_timer_) /
-                                  CLOCKS_PER_SEC
-                               << "\n";
-                perf_log_data_ = std::vector<double>(6, 0.0);
+                               << perf_vis << ","  << (double)(std::clock() - perf_cpu_timer_) /
+                                  CLOCKS_PER_SEC << "\n";
+                perf_log_data_ = std::vector<double>(perf_log_data_.size(), 0.0);   // reset count
                 perf_cpu_timer_ = std::clock();
             }
         }
@@ -331,8 +314,7 @@ namespace active_3d_planning {
             timer = std::clock();
         }
         TrajectorySegment *expansion_target;
-        trajectory_generator_->selectSegment(&expansion_target,
-                                             current_segment_.get());
+        trajectory_generator_->selectSegment(&expansion_target, current_segment_.get());
         if (p_log_performance_) {
             perf_log_data_[0] += (double)(std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
@@ -340,8 +322,7 @@ namespace active_3d_planning {
 
         // Expand the target
         std::vector<TrajectorySegment *> created_segments;
-        bool success =
-                trajectory_generator_->expandSegment(expansion_target, &created_segments);
+        bool success = trajectory_generator_->expandSegment(expansion_target, &created_segments);
         if (p_log_performance_) {
             perf_log_data_[1] += (double)(std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
@@ -375,54 +356,7 @@ namespace active_3d_planning {
         }
         if (p_log_performance_) {
             perf_log_data_[4] += (double)(std::clock() - timer) / CLOCKS_PER_SEC;
-            timer = std::clock();
         }
-    }
-
-    void OnlinePlanner::odomCallback(const nav_msgs::Odometry &msg) {
-        // Track the current pose
-        current_position_ =
-                Eigen::Vector3d(msg.pose.pose.position.x, msg.pose.pose.position.y,
-                                msg.pose.pose.position.z);
-        current_orientation_ = Eigen::Quaterniond(
-                msg.pose.pose.orientation.w, msg.pose.pose.orientation.x,
-                msg.pose.pose.orientation.y, msg.pose.pose.orientation.z);
-        if (running_ && !target_reached_) {
-            // check goal pos reached (if tol is set)
-            if (p_replan_pos_threshold_ <= 0 ||
-                (target_position_ - current_position_).norm() <
-                p_replan_pos_threshold_) {
-                // check goal yaw reached (if tol is set)
-                double yaw = tf::getYaw(msg.pose.pose.orientation);
-                if (p_replan_yaw_threshold_ <= 0 ||
-                    defaults::angleDifference(target_yaw_, yaw) <
-                    p_replan_yaw_threshold_) {
-                    target_reached_ = true;
-                }
-            }
-        }
-    }
-
-//TODO outsource this to visualizer
-    void OnlinePlanner::requestMovement(const TrajectorySegment &req) {
-        EigenTrajectoryPointVector trajectory;
-        trajectory_generator_->extractTrajectoryToPublish(&trajectory, req);
-        trajectory_msgs::MultiDOFJointTrajectoryPtr msg(
-                new trajectory_msgs::MultiDOFJointTrajectory);
-        msg->header.stamp = ::ros::Time::now();
-        msg->joint_names.push_back("base_link");
-        int n_points = trajectory.size();
-        msg->points.resize(n_points);
-        for (int i = 0; i < n_points; ++i) {
-            msgMultiDofJointTrajectoryPointFromEigen(trajectory[i], &msg->points[i]);
-        }
-        target_pub_.publish(msg);
-        target_position_ = trajectory.back().position_W;
-        target_yaw_ = trajectory.back().getYaw();
-    }
-
-    void OnlinePlanner::publishVisualization(const VisualizationMarkers& markers){
-        //TODO(schmluk) publish stuff
     }
 
     void OnlinePlanner::publishTrajectoryVisualization(
@@ -449,21 +383,19 @@ namespace active_3d_planning {
             }
         }
 
-        visualization_msgs::MarkerArray array_msg;
-        visualization_msgs::Marker msg;
+        VisualizationMarkers value_markers, gain_markers, text_markers, goal_markers;
+        VisualizationMarker msg;
         for (int i = 0; i < trajectories.size(); ++i) {
             // Setup marker message
-            msg = visualization_msgs::Marker();
-            msg.header.frame_id = "/world";
-            msg.header.stamp = ::ros::Time::now();
-            msg.pose.orientation.w = 1.0;
-            msg.type = visualization_msgs::Marker::POINTS;
+            msg = VisualizationMarker();
+            msg.orientation.w() = 1.0;
+            msg.type = VisualizationMarker::POINTS;
             msg.id = i;
             msg.ns = "candidate_trajectories";
-            msg.scale.x = 0.04;
-            msg.scale.y = 0.04;
+            msg.scale.x() = 0.04;
+            msg.scale.y() = 0.04;
             msg.color.a = 0.4;
-            msg.action = visualization_msgs::Marker::ADD;
+            msg.action = VisualizationMarker::ADD;
 
             // Color according to relative value (blue when indifferent)
             if (max_value != min_value) {
@@ -483,35 +415,26 @@ namespace active_3d_planning {
 
             // points
             for (int j = 0; j < trajectories[i]->trajectory.size(); ++j) {
-                geometry_msgs::Point point;
-                point.x = trajectories[i]->trajectory[j].position_W[0];
-                point.y = trajectories[i]->trajectory[j].position_W[1];
-                point.z = trajectories[i]->trajectory[j].position_W[2];
-                msg.points.push_back(point);
+                msg.points.push_back(trajectories[i]->trajectory[j].position_W);
             }
-            array_msg.markers.push_back(msg);
+            value_markers.addMarker(msg);
 
             // visualize gain
             if (p_visualize_gain_) {
-                msg = visualization_msgs::Marker();
-                msg.header.frame_id = "/world";
-                msg.header.stamp = ::ros::Time::now();
-                msg.pose.orientation.w = 1.0;
-                msg.type = visualization_msgs::Marker::SPHERE;
-                msg.action = visualization_msgs::Marker::ADD;
+                msg = VisualizationMarker();
+                msg.orientation.w() = 1.0;
+                msg.type = VisualizationMarker::SPHERE;
+                msg.action = VisualizationMarker::ADD;
                 msg.id = i;
                 msg.ns = "gains";
-                msg.scale.x = 0.15;
-                msg.scale.y = 0.15;
-                msg.scale.z = 0.15;
-                msg.pose.position.x = trajectories[i]->trajectory.back().position_W[0];
-                msg.pose.position.y = trajectories[i]->trajectory.back().position_W[1];
-                msg.pose.position.z = trajectories[i]->trajectory.back().position_W[2];
+                msg.scale.x() = 0.15;
+                msg.scale.y() = 0.15;
+                msg.scale.z() = 0.15;
+                msg.position = trajectories[i]->trajectory.back().position_W;
 
                 // Color according to relative value (blue when indifferent)
                 if (min_gain != max_gain) {
-                    double frac =
-                            (trajectories[i]->gain - min_gain) / (max_gain - min_gain);
+                    double frac = (trajectories[i]->gain - min_gain) / (max_gain - min_gain);
                     msg.color.r = std::min((0.5 - frac) * 2.0 + 1.0, 1.0);
                     msg.color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
                     msg.color.b = 0.0;
@@ -521,119 +444,80 @@ namespace active_3d_planning {
                     msg.color.b = 1.0;
                 }
                 msg.color.a = 1.0;
-                array_msg.markers.push_back(msg);
+                gain_markers.addMarker(msg);
             }
 
             // Text
-            msg = visualization_msgs::Marker();
-            msg.header.frame_id = "/world";
-            msg.header.stamp = ::ros::Time::now();
-            msg.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+            msg = VisualizationMarker();
+            msg.type = VisualizationMarker::TEXT_VIEW_FACING;
             msg.id = i;
             msg.ns = "candidate_text";
-            msg.scale.x = 0.2;
-            msg.scale.y = 0.2;
-            msg.scale.z = 0.2;
+            msg.scale.x() = 0.2;
+            msg.scale.y() = 0.2;
+            msg.scale.z() = 0.2;
             msg.color.r = 0.0f;
             msg.color.g = 0.0f;
             msg.color.b = 0.0f;
             msg.color.a = 1.0;
-            msg.pose.position.x = trajectories[i]->trajectory.back().position_W[0];
-            msg.pose.position.y = trajectories[i]->trajectory.back().position_W[1];
-            msg.pose.position.z = trajectories[i]->trajectory.back().position_W[2];
+            msg.position = trajectories[i]->trajectory.back().position_W;
             std::stringstream stream;
             stream << std::fixed << std::setprecision(2) << trajectories[i]->gain << "/"
                    << std::fixed << std::setprecision(2) << trajectories[i]->cost << "/"
                    << std::fixed << std::setprecision(2) << trajectories[i]->value;
             msg.text = stream.str();
-            msg.action = visualization_msgs::Marker::ADD;
-            array_msg.markers.push_back(msg);
+            msg.action = VisualizationMarker::ADD;
+            text_markers.addMarker(msg);
         }
         // visualize goal
-        msg = visualization_msgs::Marker();
-        msg.header.frame_id = "/world";
-        msg.header.stamp = ::ros::Time::now();
-        msg.pose.orientation.w = 1.0;
-        msg.type = visualization_msgs::Marker::POINTS;
+        msg = VisualizationMarker();
+        msg.orientation.w() = 1.0;
+        msg.type = VisualizationMarker::POINTS;
         msg.id = 0;
         msg.ns = "current_goal";
-        msg.scale.x = 0.1;
-        msg.scale.y = 0.1;
+        msg.scale.x() = 0.1;
+        msg.scale.y() = 0.1;
         msg.color.r = 0.0;
         msg.color.g = 0.9;
         msg.color.b = 0.0;
         msg.color.a = 1.0;
-        msg.action = visualization_msgs::Marker::ADD;
+        msg.action = VisualizationMarker::ADD;
         while (goal->parent) {
             // points
             if (goal->parent->parent) {
                 for (int j = 0; j < goal->trajectory.size(); ++j) {
-                    geometry_msgs::Point point;
-                    point.x = goal->trajectory[j].position_W[0];
-                    point.y = goal->trajectory[j].position_W[1];
-                    point.z = goal->trajectory[j].position_W[2];
-                    msg.points.push_back(point);
+                    msg.points.push_back(goal->trajectory[j].position_W);
                 }
             }
             goal = goal->parent;
         }
-        array_msg.markers.push_back(msg);
-        for (int i = trajectories.size(); i < vis_num_previous_trajectories_; ++i) {
-            // Setup marker message
-            msg = visualization_msgs::Marker();
-            msg.header.frame_id = "/world";
-            msg.header.stamp = ::ros::Time::now();
-            msg.type = visualization_msgs::Marker::POINTS;
-            msg.id = i;
-            msg.ns = "candidate_trajectories";
-            msg.action = visualization_msgs::Marker::DELETE;
-            array_msg.markers.push_back(msg);
+        goal_markers.addMarker(msg);
 
-            // gain
-            msg = visualization_msgs::Marker();
-            msg.header.frame_id = "/world";
-            msg.header.stamp = ::ros::Time::now();
-            msg.type = visualization_msgs::Marker::SPHERE;
-            msg.id = i;
-            msg.ns = "gains";
-            msg.action = visualization_msgs::Marker::DELETE;
-            array_msg.markers.push_back(msg);
-
-            // Text
-            msg = visualization_msgs::Marker();
-            msg.header.frame_id = "/world";
-            msg.header.stamp = ::ros::Time::now();
-            msg.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
-            msg.id = i;
-            msg.ns = "candidate_text";
-            msg.action = visualization_msgs::Marker::DELETE;
-            array_msg.markers.push_back(msg);
-        }
-        trajectory_vis_pub_.publish(array_msg);
-        vis_num_previous_trajectories_ = trajectories.size();
+        // visualize
+        publishVisualization(value_markers);
+        publishVisualization(gain_markers);
+        publishVisualization(text_markers);
+        publishVisualization(goal_markers);
     }
 
-    void RosPlanner::publishCompletedTrajectoryVisualization(
+    void OnlinePlanner::publishCompletedTrajectoryVisualization(
             const TrajectorySegment &trajectories) {
         // Continuously increment the already traveled path
-        visualization_msgs::Marker msg;
-        msg.header.frame_id = "/world";
-        msg.header.stamp = ::ros::Time::now();
-        msg.pose.orientation.w = 1.0;
-        msg.type = visualization_msgs::Marker::POINTS;
+        VisualizationMarker msg;
+        msg.orientation.w() = 1.0;
+        msg.type = VisualizationMarker::POINTS;
         msg.ns = "completed_trajectory";
         msg.id = vis_completed_count_;
-        msg.action = visualization_msgs::Marker::ADD;
+        msg.action = VisualizationMarker::ADD;
         if (p_highlight_executed_trajectory_) {
-            msg.scale.x = 0.1;
-            msg.scale.y = 0.1;
+            msg.scale.x() = 0.1;
+            msg.scale.y() = 0.1;
             msg.color.r = 1.0;
             msg.color.g = 0.0;
             msg.color.b = 0.0;
             msg.color.a = 1.0;
         } else {
-            msg.scale.x = 0.03;
-            msg.scale.y = 0.03;
+            msg.scale.x() = 0.03;
+            msg.scale.y() = 0.03;
             msg.color.r = 0.5;
             msg.color.g = 0.5;
             msg.color.b = 0.5;
@@ -642,39 +526,19 @@ namespace active_3d_planning {
 
         // points
         for (int i = 0; i < trajectories.trajectory.size(); ++i) {
-            geometry_msgs::Point point;
-            point.x = trajectories.trajectory[i].position_W[0];
-            point.y = trajectories.trajectory[i].position_W[1];
-            point.z = trajectories.trajectory[i].position_W[2];
-            msg.points.push_back(point);
+            msg.points.push_back(trajectories.trajectory[i].position_W);
         }
-        visualization_msgs::MarkerArray array_msg;
-        array_msg.markers.push_back(msg);
-        trajectory_vis_pub_.publish(array_msg);
+        VisualizationMarkers array_msg;
+        array_msg.addMarker(msg);
+        publishVisualization(array_msg);
         vis_completed_count_++;
     }
 
-//TODO fix this
     void OnlinePlanner::publishEvalVisualization(const TrajectorySegment &trajectory) {
         // Visualize the gain of the current segment
-        visualization_msgs::MarkerArray msg;
+        VisualizationMarkers msg;
         trajectory_evaluator_->visualizeTrajectoryValue(&msg, trajectory);
-        if (msg.markers.size() < vis_num_previous_evaluations_) {
-            int temp_num_evals = msg.markers.size();
-            // Make sure previous visualization is cleared again
-            for (int i = msg.markers.size(); i < vis_num_previous_evaluations_; ++i) {
-                // Setup marker message
-                visualization_msgs::Marker new_msg;
-                new_msg.header.frame_id = "/world";
-                new_msg.header.stamp = ::ros::Time::now();
-                new_msg.id = i;
-                new_msg.ns = "evaluation";
-                new_msg.action = visualization_msgs::Marker::DELETE;
-                msg.markers.push_back(new_msg);
-            }
-            vis_num_previous_evaluations_ = temp_num_evals;
-        }
-        trajectory_vis_pub_.publish(msg);
+        publishVisualization(msg);
     }
 
     bool OnlinePlanner::checkMinNewValue(
@@ -690,31 +554,6 @@ namespace active_3d_planning {
             }
         }
         return false;
-    }
-
-    bool OnlinePlanner::runSrvCallback(std_srvs::SetBool::Request &req,
-                                    std_srvs::SetBool::Response &res) {
-        res.success = true;
-        if (req.data) {
-            initializePlanning();
-            running_ = true;
-            ROS_INFO("Started planning.");
-        } else {
-            running_ = false;
-            ROS_INFO("Stopped planning.");
-        }
-        return true;
-    }
-
-    bool OnlinePlanner::cpuSrvCallback(std_srvs::SetBool::Request &req,
-                                    std_srvs::SetBool::Response &res) {
-        double time = (double)(std::clock() - cpu_srv_timer_) / CLOCKS_PER_SEC;
-        cpu_srv_timer_ = std::clock();
-
-        // Just return cpu time as the service message
-        res.message = std::to_string(time).c_str();
-        res.success = true;
-        return true;
     }
 
 } // namespace active_3d_planning

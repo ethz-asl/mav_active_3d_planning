@@ -6,6 +6,10 @@ namespace active_3d_planning {
         markers.push_back(marker);
     }
 
+    std::vector<VisualizationMarker>&VisualizationMarkers::getMarkers(){
+        return markers;
+    }
+
     int VisualizationMarkers::getNextVisualizationId() {
         if (markers.empty()) {
             return 0;

@@ -1,7 +1,5 @@
 #include <active_3d_planning/module/module.h>
 
-#include <active_3d_planning/planner/planner_I.h>
-
 namespace active_3d_planning {
 
     ModuleBase::ModuleBase() : verbose_modules_(false) {}

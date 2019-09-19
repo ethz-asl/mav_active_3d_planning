@@ -2,6 +2,7 @@
 #define ACTIVE_3D_PLANNING_CORE_TRAJECTORY_EVALUATOR_VOXEL_TYPE_EVALUATOR_H
 
 #include "active_3d_planning/module/trajectory_evaluator/simulated_sensor_evaluator.h"
+#include "active_3d_planning/map/occupancy_map.h"
 
 namespace active_3d_planning {
 namespace trajectory_evaluator {
@@ -19,6 +20,7 @@ protected:
 
   // members
   std::unique_ptr<defaults::BoundingVolume> outer_volume_;
+  OccupancyMap *map_;
 
   // parameters
   double p_gain_unknown_;

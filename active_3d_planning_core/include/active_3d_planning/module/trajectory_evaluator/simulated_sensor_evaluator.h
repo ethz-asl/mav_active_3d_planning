@@ -3,6 +3,7 @@
 
 #include "active_3d_planning/module/sensor_model/sensor_model.h"
 #include "active_3d_planning/module/trajectory_evaluator.h"
+#include "active_3d_planning/map/occupancy_map.h"
 
 #include <vector>
 
@@ -24,7 +25,7 @@ public:
   bool computeGain(TrajectorySegment *traj_in) override;
 
   virtual void
-  visualizeTrajectoryValue(VisualizerI& visualizer,
+  visualizeTrajectoryValue(VisualizationMarkers *markers,
                            const TrajectorySegment &trajectory) override;
 
   virtual void setupFromParamMap(Module::ParamMap *param_map) override;
@@ -33,6 +34,7 @@ protected:
   friend evaluator_updater::SimulatedSensorUpdater;
   // members
   std::unique_ptr<SensorModel> sensor_model_;
+  OccupancyMap *map_;
 
   // parameters
   bool p_clear_from_parents_;

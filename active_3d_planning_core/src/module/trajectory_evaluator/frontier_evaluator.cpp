@@ -1,7 +1,6 @@
 #include "active_3d_planning/module/trajectory_evaluator/frontier_evaluator.h"
 
 #include <algorithm>
-#include <voxblox/core/esdf_map.h>
 
 namespace active_3d_planning {
 namespace trajectory_evaluator {
@@ -20,8 +19,14 @@ void FrontierEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
   setParam<bool>(param_map, "surface_frontiers", &p_surface_frontiers_, true);
   setParam<double>(param_map, "checking_distance", &p_checking_distance_, 1.0);
 
+    // setup map
+    map_ = dynamic_cast<OccupancyMap*>(&(planner_.getMap()));
+    if (!map_) {
+        planner_.printError("'FrontierEvaluator' requires a map of type 'OccupancyMap'!");
+    }
+
   // initialize neighbor offsets
-  c_voxel_size_ = static_cast<double>(voxblox_.voxel_size());
+  c_voxel_size_ = map_->getVoxelSize();
   auto vs = c_voxel_size_ * p_checking_distance_;
   if (!p_accurate_frontiers_) {
     c_neighbor_voxels_[0] = Eigen::Vector3d(vs, 0, 0);
@@ -61,29 +66,31 @@ void FrontierEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
 }
 
 bool FrontierEvaluator::isFrontierVoxel(const Eigen::Vector3d &voxel) {
-  double distance;
   // Check all neighboring voxels
-  if (!p_accurate_frontiers_) {
+    unsigned char voxel_state;
+    if (!p_accurate_frontiers_) {
     for (int i = 0; i < 6; ++i) {
-      if (voxblox_.getDistanceAtPosition(voxel + c_neighbor_voxels_[i],
-                                          &distance)) {
+        voxel_state = map_->getVoxelState(voxel + c_neighbor_voxels_[i]);
+        if (voxel_state==OccupancyMap::UNKNOWN){
+            continue;
+        }
         if (p_surface_frontiers_) {
-          return distance < c_voxel_size_;
+          return voxel_state==OccupancyMap::OCCUPIED;
         } else {
           return true;
         }
-      }
     }
   } else {
     for (int i = 0; i < 26; ++i) {
-      if (voxblox_.getDistanceAtPosition(voxel + c_neighbor_voxels_[i],
-                                          &distance)) {
-        if (p_surface_frontiers_) {
-          return distance < 0.0;
-        } else {
-          return true;
+        voxel_state = map_->getVoxelState(voxel + c_neighbor_voxels_[i]);
+        if (voxel_state==OccupancyMap::UNKNOWN){
+            continue;
         }
-      }
+        if (p_surface_frontiers_) {
+            return voxel_state==OccupancyMap::OCCUPIED;
+        } else {
+            return true;
+        }
     }
   }
   return false;
@@ -102,7 +109,7 @@ bool FrontierEvaluator::computeGainFromVisibleVoxels(
   info->visible_voxels.erase(
       std::remove_if(info->visible_voxels.begin(), info->visible_voxels.end(),
                      [this](const Eigen::Vector3d &voxel) {
-                       return voxblox_.isObserved(voxel);
+                       return map_->isObserved(voxel);
                      }),
       info->visible_voxels.end());
 
@@ -116,17 +123,17 @@ bool FrontierEvaluator::computeGainFromVisibleVoxels(
 }
 
 void FrontierEvaluator::visualizeTrajectoryValue(
-    VisualizerI &visualizer, const TrajectorySegment &trajectory) {
+    VisualizationMarkers *markers, const TrajectorySegment &trajectory) {
   // Default implementation displays all frontier voxels
   if (!trajectory.info) {
     return;
   }
   VisualizationMarker marker;
   marker.type = VisualizationMarker::CUBE_LIST;
-  double voxel_size = voxblox_.voxel_size();
-  marker.scale.x = voxel_size;
-  marker.scale.y = voxel_size;
-  marker.scale.z = voxel_size;
+  double voxel_size = map_->getVoxelSize();
+  marker.scale.x() = voxel_size;
+  marker.scale.y() = voxel_size;
+  marker.scale.z() = voxel_size;
   marker.color.r = 1.0;
   marker.color.g = 0.8;
   marker.color.b = 0.0;
@@ -140,10 +147,10 @@ void FrontierEvaluator::visualizeTrajectoryValue(
       marker.points.push_back(info->visible_voxels[i]);
     }
   }
-  visualizer.push_back(marker);
+  markers->addMarker(marker);
 
   if (p_visualize_sensor_view_) {
-    sensor_model_->visualizeSensorView(visualizer, trajectory);
+    sensor_model_->visualizeSensorView(markers, trajectory);
   }
 }
 

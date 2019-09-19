@@ -1,7 +1,5 @@
 #include "active_3d_planning/module/trajectory_evaluator/voxel_weight_evaluator.h"
 
-#include <voxblox/core/tsdf_map.h>
-
 namespace active_3d_planning {
 namespace trajectory_evaluator {
 
@@ -9,7 +7,7 @@ ModuleFactoryRegistry::Registration<VoxelWeightEvaluator>
     VoxelWeightEvaluator::registration("VoxelWeightEvaluator");
 
 VoxelWeightEvaluator::VoxelWeightEvaluator(PlannerI &planner)
-    : FrontierEvaluator(planner), voxblox_tsdf_(planner.getTsdfMap()) {}
+    : FrontierEvaluator(planner) {}
 
 void VoxelWeightEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
   FrontierEvaluator::setupFromParamMap(param_map);
@@ -20,8 +18,14 @@ void VoxelWeightEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
   setParam<double>(param_map, "ray_angle_x", &p_ray_angle_x_, 0.0025);
   setParam<double>(param_map, "ray_angle_y", &p_ray_angle_y_, 0.0025);
 
-  // cache voxblox constants
-  c_voxel_size_ = (double)voxblox_.voxel_size();
+    // setup map
+    map_ = dynamic_cast<TSDFMap*>(&(planner_.getMap()));
+    if (!map_) {
+        planner_.printError("'VoxelWeightEvaluator' requires a map of type 'TSDFMap'!");
+    }
+
+    // cache voxblox constants
+  c_voxel_size_ = map_->getVoxelSize();
 }
 
 bool VoxelWeightEvaluator::storeTrajectoryInformation(
@@ -51,60 +55,43 @@ bool VoxelWeightEvaluator::computeGainFromVisibleVoxels(
 
 double VoxelWeightEvaluator::getVoxelValue(const Eigen::Vector3d &voxel,
                                            const Eigen::Vector3d &origin) {
-  double distance;
-  if (voxblox_.getDistanceAtPosition(voxel, &distance)) {
-    // voxel is observed
-    if (distance >= 0.0 && distance < c_voxel_size_) {
-      // Surface voxel
-      voxblox::Point point(voxel.x(), voxel.y(), voxel.z());
-      voxblox::Block<voxblox::TsdfVoxel>::Ptr block =
-          voxblox_.getTsdfMapPtr()->getTsdfLayerPtr()->getBlockPtrByCoordinates(
-              point);
-      if (block) {
-        voxblox::TsdfVoxel *tsdf_voxel = block->getVoxelPtrByCoordinates(point);
-        if (tsdf_voxel) {
-          // TSDF voxel is also observed, compute the estimated impact (weight
-          // ratio)
-          double z = (voxel - origin).norm();
-          double spanned_angle = 2.0 * atan2(c_voxel_size_, z * 2.0);
-          double new_weight = std::pow(spanned_angle, 2.0) /
-                              (p_ray_angle_x_ * p_ray_angle_y_) /
-                              std::pow(z, 2.0);
-          double gain =
-              new_weight / (new_weight + (double)(tsdf_voxel->weight));
-          if (gain > p_min_impact_factor_) {
-            return gain;
-          } else {
-            return 0.0;
-          }
-        }
+    unsigned char voxel_state = map_->getVoxelState(voxel);
+    if (voxel_state==TSDFMap::OCCUPIED) {
+        // Surface voxel
+      double z = (voxel - origin).norm();
+      double spanned_angle = 2.0 * atan2(c_voxel_size_, z * 2.0);
+      double new_weight = std::pow(spanned_angle, 2.0) /
+                          (p_ray_angle_x_ * p_ray_angle_y_) /
+                          std::pow(z, 2.0);
+      double gain =
+          new_weight / (new_weight + map_->getVoxelWeight(voxel));
+      if (gain > p_min_impact_factor_) {
+        return gain;
       }
-    } else {
-      // non-surface voxel
-      return 0.0;
+    } else if (voxel_state == TSDFMap::UNKNOWN) {
+        // Unobserved voxels
+        if (p_frontier_voxel_weight_ > 0.0) {
+            if (isFrontierVoxel(voxel)) {
+                return p_frontier_voxel_weight_;
+            }
+        }
+        return p_new_voxel_weight_;
     }
-  }
-  // Unobserved voxels
-  if (p_frontier_voxel_weight_ > 0.0) {
-    if (isFrontierVoxel(voxel)) {
-      return p_frontier_voxel_weight_;
-    }
-  }
-  return p_new_voxel_weight_;
+    return 0;
 }
 
 void VoxelWeightEvaluator::visualizeTrajectoryValue(
-    VisualizerI &visualizer, const TrajectorySegment &trajectory) {
+        VisualizationMarkers *markers, const TrajectorySegment &trajectory) {
   // Display all voxels that contribute to the gain. max_impact-min_impact as
-  // green-red, unknwon voxels purple
+  // green-red, frontier voxels purple, unknwon voxels teal
   if (!trajectory.info) {
     return;
   }
   VisualizationMarker marker;
   marker.type = VisualizationMarker::CUBE_LIST;
-  marker.scale.x = c_voxel_size_;
-  marker.scale.y = c_voxel_size_;
-  marker.scale.z = c_voxel_size_;
+  marker.scale.x() = c_voxel_size_;
+  marker.scale.y() = c_voxel_size_;
+  marker.scale.z() = c_voxel_size_;
 
   // points
   double value;
@@ -137,10 +124,10 @@ void VoxelWeightEvaluator::visualizeTrajectoryValue(
       marker.colors.push_back(color);
     }
   }
-  visualizer.addMarker(marker);
+  markers->addMarker(marker);
 
   if (p_visualize_sensor_view_) {
-    sensor_model_->visualizeSensorView(visualizer, trajectory);
+    sensor_model_->visualizeSensorView(markers, trajectory);
   }
 }
 

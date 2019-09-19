@@ -81,7 +81,7 @@ void LidarModel::sampleViewpoints(std::vector<int> *result,
   }
 }
 
-void LidarModel::visualizeSensorView(VisualizerI& visualizer,
+void LidarModel::visualizeSensorView(VisualizationMarkers *markers,
                                      const TrajectorySegment &traj_in) {
   std::vector<int> indices;
   sampleViewpoints(&indices, traj_in);
@@ -92,12 +92,12 @@ void LidarModel::visualizeSensorView(VisualizerI& visualizer,
         traj_in.trajectory[indices[i]].orientation_W_B;
     position = position + orientation * mounting_translation_;
     orientation = orientation * mounting_rotation_;
-    visualizeSingleView(bisualizer, position, orientation);
+    visualizeSingleView(markers, position, orientation);
   }
 }
 
 //TODO deduplicate with camera_model.cpp
-void LidarModel::visualizeSingleView(VisualizerI& visualizer,
+void LidarModel::visualizeSingleView(VisualizationMarkers *markers,
                                      const Eigen::Vector3d &position,
                                      const Eigen::Quaterniond &orientation) {
   VisualizationMarker marker;
@@ -115,6 +115,7 @@ void LidarModel::visualizeSingleView(VisualizerI& visualizer,
   Eigen::Vector3d right[res_y + 1];
   Eigen::Vector3d top[res_x + 1];
   Eigen::Vector3d bottom[res_x + 1];
+  Eigen::Vector3d direction;
 
   for (int i = 0; i <= res_y; ++i) {
     getDirectionVector(&direction, 0.0, (double)i / (double)res_y);
@@ -149,7 +150,7 @@ void LidarModel::visualizeSingleView(VisualizerI& visualizer,
     marker.points.push_back(right[i - 1]);
     marker.points.push_back(right[i]);
   }
-  visualizer.addMarker(marker);
+  markers->addMarker(marker);
 }
 
 void LidarModel::getDirectionVector(Eigen::Vector3d *result, double relative_x,

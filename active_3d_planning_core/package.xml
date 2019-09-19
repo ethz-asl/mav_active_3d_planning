@@ -2,9 +2,9 @@
 <package format="2">
   <name>active_3d_planning_core</name>
   <version>0.0.0</version>
-  <description>Core functionality for Active path planning for 3D tasks</description>
+  <description>Core functionality for Active Informative Path Planning for 3D tasks</description>
 
-  <maintainer email="schmluk@student.ethz.ch">Lukas Schmid</maintainer>
+  <maintainer email="schmluk@mavt.ethz.ch">Lukas Schmid</maintainer>
 
   <license>BSD</license>
 
@@ -12,5 +12,5 @@
   <buildtool_depend>catkin_simple</buildtool_depend>
 
   <depend>glog_catkin</depend>
-  <depend>voxblox</depend>
+  <depend>eigen_catkin</depend>
 </package>

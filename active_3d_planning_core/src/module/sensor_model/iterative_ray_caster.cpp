@@ -17,18 +17,18 @@ IterativeRayCaster::IterativeRayCaster(PlannerI &planner)
 
 void IterativeRayCaster::setupFromParamMap(Module::ParamMap *param_map) {
   CameraModel::setupFromParamMap(param_map);
-  setParam<double>(param_map, "ray_step", &p_ray_step_, (double)c_voxel_size_);
+  setParam<double>(param_map, "ray_step", &p_ray_step_, map_->getVoxelSize());
   setParam<double>(param_map, "downsampling_factor", &p_downsampling_factor_,
                    1.0);
 
   // Downsample to voxel size resolution at max range
   c_res_x_ =
       std::min((int)ceil(p_ray_length_ * c_field_of_view_x_ /
-                         ((double)c_voxel_size_ * p_downsampling_factor_)),
+                         (map_->getVoxelSize() * p_downsampling_factor_)),
                p_resolution_x_);
   c_res_y_ =
       std::min((int)ceil(p_ray_length_ * c_field_of_view_y_ /
-                         ((double)c_voxel_size_ * p_downsampling_factor_)),
+                         (map_->getVoxelSize() * p_downsampling_factor_)),
                p_resolution_y_);
 
   // Determine number of splits + split distances
@@ -54,6 +54,7 @@ bool IterativeRayCaster::getVisibleVoxels(
   Eigen::Vector3d camera_direction;
   Eigen::Vector3d direction;
   Eigen::Vector3d current_position;
+  Eigen::Vector3d voxel_center;
   double distance;
   bool cast_ray;
   double map_distance;
@@ -76,21 +77,17 @@ bool IterativeRayCaster::getVisibleVoxels(
           distance += p_ray_step_;
 
           // Check voxel occupied
-          map_distance = 0.0;
-          if (voxblox_.getDistanceAtPosition(
-                  current_position, &map_distance)) {
-            if (map_distance < 0.0) {
+          if (map_->getVoxelState(current_position)==OccupancyMap::OCCUPIED) {
               // Occlusion, mark neighboring rays as occluded
               markNeighboringRays(i, j, current_segment, -1);
               cast_ray = false;
               break;
-            }
           }
 
           // Add point (duplicates are handled in
           // CameraModel::getVisibleVoxelsFromTrajectory)
-          getVoxelCenter(&current_position);
-          result->push_back(current_position);
+            map_->getVoxelCenter(&voxel_center, current_position);
+            result->push_back(voxel_center);
         }
         if (cast_ray) {
           current_segment++;
