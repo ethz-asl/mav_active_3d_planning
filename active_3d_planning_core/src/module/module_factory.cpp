@@ -3,16 +3,17 @@
 // Default types
 #include "active_3d_planning/module/trajectory_evaluator.h"
 #include "active_3d_planning/module/trajectory_generator.h"
-#include "active_3d_planning/tools/defaults.h"
+#include "active_3d_planning/data/system_constraints.h"
+#include "active_3d_planning/data/bounding_volume.h"
 
 namespace active_3d_planning {
 
 void ModuleFactory::getDefaultType(const std::type_index &module_index,
                                    std::string *type) {
-  if (module_index == std::type_index(typeid(defaults::BoundingVolume))) {
+  if (module_index == std::type_index(typeid(BoundingVolume))) {
     *type = "BoundingVolume";
   } else if (module_index ==
-             std::type_index(typeid(defaults::SystemConstraints))) {
+             std::type_index(typeid(SystemConstraints))) {
     *type = "SystemConstraints";
   } else if (module_index == std::type_index(typeid(EvaluatorUpdater))) {
     *type = "UpdateNothing";

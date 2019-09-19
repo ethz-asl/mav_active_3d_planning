@@ -48,7 +48,7 @@ bool SimpleRayCaster::getVisibleVoxels(std::vector<Eigen::Vector3d> *result,
         distance += p_ray_step_;
 
         // Check voxel occupied
-        if (map_->getVoxelState(current_position)==OccupancyMap::OCCUPIED) {
+        if (map_->getVoxelState(current_position)==map::OccupancyMap::OCCUPIED) {
             break;
         }
 

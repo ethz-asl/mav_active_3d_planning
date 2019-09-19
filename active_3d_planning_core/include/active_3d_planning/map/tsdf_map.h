@@ -5,10 +5,12 @@
 #include "active_3d_planning/data/trajectory.h"
 
 namespace active_3d_planning{
+    namespace map {
 
     // base interface for Truncated Signed Distance Field voxelgrid maps
     class TSDFMap : public OccupancyMap {
     public:
+        TSDFMap(PlannerI &planner) : OccupancyMap(planner) {}
         virtual ~TSDFMap() = default;
 
         // get the stored distance
@@ -21,6 +23,7 @@ namespace active_3d_planning{
         virtual double getMaximumWeight() = 0;
     };
 
+    } // namespace map
 } // namespace active_3d_planning
 
 #endif // ACTIVE_3D_PLANNING_CORE_MAP_TSDF_MAP_H

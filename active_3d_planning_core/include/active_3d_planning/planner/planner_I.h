@@ -12,6 +12,7 @@ class TrajectoryEvaluator;
 class ModuleFactory;
 class Map;
 struct VisualizationMarkers;
+struct SystemConstraints;
 
 
 // basic interface of planners for module-access
@@ -29,6 +30,7 @@ public:
   virtual TrajectoryEvaluator &getTrajectoryEvaluator() = 0;
   virtual ModuleFactory &getFactory() = 0;
   virtual Map &getMap() = 0;
+  virtual SystemConstraints &getSystemConstraints() = 0;
 
   // methods
   virtual void publishVisualization(const VisualizationMarkers& markers) = 0;

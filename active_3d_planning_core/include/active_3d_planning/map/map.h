@@ -7,10 +7,11 @@
 
 namespace active_3d_planning{
 
-    // base interface for the bare minimum any map must provide
+        // base interface for the bare minimum any map must provide
     class Map : public Module{
     public:
         virtual ~Map() = default;
+        Map(PlannerI &planner);
 
         // check collision for a single pose
         virtual bool isTraversable(const Eigen::Vector3d &position,

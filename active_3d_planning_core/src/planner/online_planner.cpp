@@ -43,6 +43,9 @@ namespace active_3d_planning {
         // Setup members
         std::string args; // default args extends the parent namespace
         std::string param_ns = param_map["param_namespace"];
+        setParam<std::string>(&param_map, "system_constraint_args", &args,
+                              param_ns + "/system_constraints");
+        system_constraints_ = getFactory().createModule<SystemConstraints>(args, *this, verbose_modules);
         setParam<std::string>(&param_map, "map_args", &args,
                               param_ns + "/map");
         map_ = getFactory().createModule<Map>(args, *this, verbose_modules);
@@ -58,6 +61,7 @@ namespace active_3d_planning {
                               param_ns + "/back_tracker");
         back_tracker_ = getFactory().createModule<BackTracker>(
                 args, *this, verbose_modules);
+
 
         // Setup performance log
         if (p_log_performance_) {

@@ -4,6 +4,7 @@
 
 #include "active_3d_planning/data/trajectory.h"
 #include "active_3d_planning/tools/defaults.h"
+#include "active_3d_planning/data/system_constraints.h"
 
 #include <cmath>
 #include <random>
@@ -87,8 +88,8 @@ void RandomLinear::sampleTarget(Eigen::Vector3d *direction, double *yaw,
   double distance = p_min_distance_ + (double)rand() / RAND_MAX *
                                           (p_max_distance_ - p_min_distance_);
   *decelleration_distance =
-      distance - std::min(std::pow(system_constraints_->v_max, 2.0) /
-                              system_constraints_->a_max,
+      distance - std::min(std::pow(planner_.getSystemConstraints().v_max, 2.0) /
+                                  planner_.getSystemConstraints().a_max,
                           distance) /
                      2;
   if (p_planar_) {
@@ -111,10 +112,10 @@ bool RandomLinear::buildTrajectory(const Eigen::Vector3d &start_pos,
 
   while (v_curr >= 0.0) {
     if (x_curr < decelleration_distance) {
-      v_curr = std::min(v_curr + system_constraints_->a_max / p_sampling_rate_,
-                        system_constraints_->v_max);
+      v_curr = std::min(v_curr + planner_.getSystemConstraints().a_max / p_sampling_rate_,
+                        planner_.getSystemConstraints().v_max);
     } else {
-      v_curr -= system_constraints_->a_max / p_sampling_rate_;
+      v_curr -= planner_.getSystemConstraints().a_max / p_sampling_rate_;
     }
     t_curr += 1.0 / p_sampling_rate_;
     x_curr += v_curr / p_sampling_rate_;

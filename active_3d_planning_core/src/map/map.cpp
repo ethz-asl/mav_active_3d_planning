@@ -2,6 +2,8 @@
 
 namespace active_3d_planning{
 
+    Map::Map(PlannerI &planner) : Module(planner) {}
+
     bool Map::isTraversablePath(const EigenTrajectoryPointVector &trajectory) {
         // default just checks every point
         for (const EigenTrajectoryPoint &point : trajectory) {

@@ -19,7 +19,7 @@ void VoxelWeightEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
   setParam<double>(param_map, "ray_angle_y", &p_ray_angle_y_, 0.0025);
 
     // setup map
-    map_ = dynamic_cast<TSDFMap*>(&(planner_.getMap()));
+    map_ = dynamic_cast<map::TSDFMap*>(&(planner_.getMap()));
     if (!map_) {
         planner_.printError("'VoxelWeightEvaluator' requires a map of type 'TSDFMap'!");
     }
@@ -56,7 +56,7 @@ bool VoxelWeightEvaluator::computeGainFromVisibleVoxels(
 double VoxelWeightEvaluator::getVoxelValue(const Eigen::Vector3d &voxel,
                                            const Eigen::Vector3d &origin) {
     unsigned char voxel_state = map_->getVoxelState(voxel);
-    if (voxel_state==TSDFMap::OCCUPIED) {
+    if (voxel_state==map::TSDFMap::OCCUPIED) {
         // Surface voxel
       double z = (voxel - origin).norm();
       double spanned_angle = 2.0 * atan2(c_voxel_size_, z * 2.0);
@@ -68,7 +68,7 @@ double VoxelWeightEvaluator::getVoxelValue(const Eigen::Vector3d &voxel,
       if (gain > p_min_impact_factor_) {
         return gain;
       }
-    } else if (voxel_state == TSDFMap::UNKNOWN) {
+    } else if (voxel_state == map::TSDFMap::UNKNOWN) {
         // Unobserved voxels
         if (p_frontier_voxel_weight_ > 0.0) {
             if (isFrontierVoxel(voxel)) {

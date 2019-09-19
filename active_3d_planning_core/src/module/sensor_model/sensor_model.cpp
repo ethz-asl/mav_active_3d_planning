@@ -8,7 +8,7 @@ SensorModel::SensorModel(PlannerI &planner)
 
 void SensorModel::setupFromParamMap(Module::ParamMap *param_map) {
     // setup map
-    map_ = dynamic_cast<OccupancyMap*>(&(planner_.getMap()));
+    map_ = dynamic_cast<map::OccupancyMap*>(&(planner_.getMap()));
     if (!map_) {
         planner_.printError("'SensorModel' requires a map of type 'OccupancyMap'!");
     }

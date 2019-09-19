@@ -15,6 +15,8 @@ cs_add_library(${PROJECT_NAME}
         # Modules
         src/data/trajectory_segment.cpp
         src/data/visualization_markers.cpp
+        src/data/system_constraints.cpp
+        src/data/bounding_volume.cpp
         src/planner/online_planner.cpp
         src/map/map.cpp
         src/module/back_tracker.cpp

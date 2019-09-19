@@ -20,7 +20,7 @@ void FrontierEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
   setParam<double>(param_map, "checking_distance", &p_checking_distance_, 1.0);
 
     // setup map
-    map_ = dynamic_cast<OccupancyMap*>(&(planner_.getMap()));
+    map_ = dynamic_cast<map::OccupancyMap*>(&(planner_.getMap()));
     if (!map_) {
         planner_.printError("'FrontierEvaluator' requires a map of type 'OccupancyMap'!");
     }
@@ -71,11 +71,11 @@ bool FrontierEvaluator::isFrontierVoxel(const Eigen::Vector3d &voxel) {
     if (!p_accurate_frontiers_) {
     for (int i = 0; i < 6; ++i) {
         voxel_state = map_->getVoxelState(voxel + c_neighbor_voxels_[i]);
-        if (voxel_state==OccupancyMap::UNKNOWN){
+        if (voxel_state==map::OccupancyMap::UNKNOWN){
             continue;
         }
         if (p_surface_frontiers_) {
-          return voxel_state==OccupancyMap::OCCUPIED;
+          return voxel_state==map::OccupancyMap::OCCUPIED;
         } else {
           return true;
         }
@@ -83,11 +83,11 @@ bool FrontierEvaluator::isFrontierVoxel(const Eigen::Vector3d &voxel) {
   } else {
     for (int i = 0; i < 26; ++i) {
         voxel_state = map_->getVoxelState(voxel + c_neighbor_voxels_[i]);
-        if (voxel_state==OccupancyMap::UNKNOWN){
+        if (voxel_state==map::OccupancyMap::UNKNOWN){
             continue;
         }
         if (p_surface_frontiers_) {
-            return voxel_state==OccupancyMap::OCCUPIED;
+            return voxel_state==map::OccupancyMap::OCCUPIED;
         } else {
             return true;
         }

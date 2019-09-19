@@ -18,7 +18,7 @@ void SimulatedSensorEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
                  false);
 
     // setup map
-    map_ = dynamic_cast<OccupancyMap*>(&(planner_.getMap()));
+    map_ = dynamic_cast<map::OccupancyMap*>(&(planner_.getMap()));
     if (!map_) {
         planner_.printError("'SimulatedSensorEvaluator' requires a map of type 'OccupancyMap'!");
     }

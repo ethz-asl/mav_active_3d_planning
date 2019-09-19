@@ -34,7 +34,7 @@ protected:
   friend evaluator_updater::SimulatedSensorUpdater;
   // members
   std::unique_ptr<SensorModel> sensor_model_;
-  OccupancyMap *map_;
+    map::OccupancyMap *map_;
 
   // parameters
   bool p_clear_from_parents_;

@@ -34,7 +34,7 @@ protected:
   bool computeGainFromVisibleVoxels(TrajectorySegment *traj_in) override;
 
   // map
-  TSDFMap *map_;
+  map::TSDFMap *map_;
 
   // params
   double p_min_impact_factor_; // Minimum expected change, the gain is set at 0

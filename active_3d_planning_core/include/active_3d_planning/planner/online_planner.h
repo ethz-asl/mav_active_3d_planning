@@ -3,6 +3,7 @@
 
 #include "active_3d_planning/data/trajectory_segment.h"
 #include "active_3d_planning/data/visualization_markers.h"
+#include "active_3d_planning/data/system_constraints.h"
 #include "active_3d_planning/module/module.h"
 #include "active_3d_planning/module/back_tracker.h"
 #include "active_3d_planning/module/module_factory.h"
@@ -58,6 +59,10 @@ namespace active_3d_planning {
             return *map_;
         }
 
+        virtual SystemConstraints &getSystemConstraints() override {
+            return *system_constraints_;
+        }
+
         // display planner visualization
         virtual void publishVisualization(const VisualizationMarkers& markers) = 0;
 
@@ -76,6 +81,7 @@ namespace active_3d_planning {
         std::unique_ptr<TrajectoryEvaluator> trajectory_evaluator_;
         std::unique_ptr<BackTracker> back_tracker_;
         std::unique_ptr<TrajectorySegment> current_segment_;    // root node of full trajectory tree
+        std::unique_ptr<SystemConstraints> system_constraints_;
 
         // variables
         bool planning_;                     // whether to run the main loop

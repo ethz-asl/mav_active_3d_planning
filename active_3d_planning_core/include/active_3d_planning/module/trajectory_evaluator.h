@@ -3,6 +3,7 @@
 
 #include <active_3d_planning/data/trajectory_segment.h>
 #include <active_3d_planning/data/visualization_markers.h>
+#include <active_3d_planning/data/bounding_volume.h>
 #include <active_3d_planning/module/module_factory_registry.h>
 #include <active_3d_planning/tools/defaults.h>
 
@@ -52,7 +53,7 @@ public:
 protected:
 
   // bounding volume of interesting target
-  std::unique_ptr<defaults::BoundingVolume> bounding_volume_;
+  std::unique_ptr<BoundingVolume> bounding_volume_;
 
   // params
   std::string p_cost_args_;

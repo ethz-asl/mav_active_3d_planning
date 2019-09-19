@@ -32,7 +32,7 @@ public:
 
 protected:
     // sensor model is configured to use voxel maps
-    OccupancyMap *map_;
+    map::OccupancyMap *map_;
 
   // mounting transform from body (pose) to sensor , in body frame
   Eigen::Vector3d mounting_translation_; // x,y,z [m]

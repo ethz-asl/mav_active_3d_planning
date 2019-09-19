@@ -5,10 +5,12 @@
 #include "active_3d_planning/data/trajectory.h"
 
 namespace active_3d_planning{
+    namespace map {
 
     // base for occupancy grid maps
     class OccupancyMap : public Map {
     public:
+        OccupancyMap(PlannerI &planner) : Map(planner) {}
         virtual ~OccupancyMap() = default;
 
         // states
@@ -26,6 +28,7 @@ namespace active_3d_planning{
         virtual bool getVoxelCenter(Eigen::Vector3d *center, const Eigen::Vector3d &point) = 0;
     };
 
+    } // namespace map
 } // namespace active_3d_planning
 
 #endif // ACTIVE_3D_PLANNING_CORE_MAP_OCCUPANCY_MAP_H

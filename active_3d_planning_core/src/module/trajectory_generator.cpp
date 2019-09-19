@@ -10,7 +10,6 @@ TrajectoryGenerator::TrajectoryGenerator(PlannerI &planner) : Module(planner) {}
 void TrajectoryGenerator::setupFromParamMap(Module::ParamMap *param_map) {
   setParam<bool>(param_map, "collision_optimistic", &p_collision_optimistic_,
                  false);
-  setParam<double>(param_map, "collision_radius", &p_collision_radius_, 0.35);
   setParam<double>(param_map, "clearing_radius", &p_clearing_radius_, 0.0);
   std::string ns = (*param_map)["param_namespace"];
   setParam<std::string>(param_map, "segment_selector_args", &p_selector_args_,
@@ -21,13 +20,10 @@ void TrajectoryGenerator::setupFromParamMap(Module::ParamMap *param_map) {
   setParam<std::string>(param_map, "bounding_volume_args", &temp_args,
                         ns + "/bounding_volume");
   bounding_volume_ =
-      planner_.getFactory().createModule<defaults::BoundingVolume>(
+      planner_.getFactory().createModule<BoundingVolume>(
           temp_args, planner_, verbose_modules_);
   setParam<std::string>(param_map, "system_constraints_args", &temp_args,
                         ns + "/system_constraints");
-  system_constraints_ =
-      planner_.getFactory().createModule<defaults::SystemConstraints>(
-          temp_args, planner_, verbose_modules_);
 }
 
 bool TrajectoryGenerator::checkTraversable(const Eigen::Vector3d &position) {

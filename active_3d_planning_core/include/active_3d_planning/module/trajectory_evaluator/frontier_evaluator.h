@@ -26,7 +26,7 @@ protected:
   computeGainFromVisibleVoxels(TrajectorySegment *traj_in) override;
 
   // map
-  OccupancyMap *map_;
+  map::OccupancyMap *map_;
 
   // params
   bool p_accurate_frontiers_; // True: explicitely compute all frontier voxels

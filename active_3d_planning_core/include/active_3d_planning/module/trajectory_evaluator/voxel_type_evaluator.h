@@ -19,8 +19,8 @@ protected:
   static ModuleFactoryRegistry::Registration<VoxelTypeEvaluator> registration;
 
   // members
-  std::unique_ptr<defaults::BoundingVolume> outer_volume_;
-  OccupancyMap *map_;
+  std::unique_ptr<BoundingVolume> outer_volume_;
+    map::OccupancyMap *map_;
 
   // parameters
   double p_gain_unknown_;

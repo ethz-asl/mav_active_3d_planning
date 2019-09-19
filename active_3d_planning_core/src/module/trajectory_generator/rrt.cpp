@@ -1,6 +1,7 @@
 #define _USE_MATH_DEFINES
 
 #include "active_3d_planning/module/trajectory_generator/rrt.h"
+#include "active_3d_planning/data/system_constraints.h"
 
 #include "active_3d_planning/data/trajectory.h"
 #include "active_3d_planning/tools/defaults.h"
@@ -233,7 +234,7 @@ bool RRT::connectPoses(const EigenTrajectoryPoint &start,
   // try creating a linear trajectory and check for collision
   Eigen::Vector3d start_pos = start.position_W;
   Eigen::Vector3d direction = goal.position_W - start_pos;
-  int n_points = std::ceil(direction.norm() / p_sampling_rate_ * system_constraints_->v_max);
+  int n_points = std::ceil(direction.norm() / p_sampling_rate_ * planner_.getSystemConstraints().v_max);
   if (check_collision) {
     for (int i = 0; i < n_points; ++i) {
       if (!checkTraversable(start_pos +
@@ -243,7 +244,7 @@ bool RRT::connectPoses(const EigenTrajectoryPoint &start,
     }
   }
   // Build trajectory
-  n_points = std::ceil(direction.norm() / system_constraints_->v_max *
+  n_points = std::ceil(direction.norm() / planner_.getSystemConstraints().v_max *
                        p_sampling_rate_);
   for (int i = 0; i < n_points; ++i) {
     EigenTrajectoryPoint trajectory_point;
@@ -267,7 +268,7 @@ bool RRT::adjustGoalPosition(const Eigen::Vector3d &start_pos,
   }
   if (p_crop_segments_) {
     // if the full length cannot be reached, crop it
-      int n_points = std::ceil(direction.norm() / p_sampling_rate_ * system_constraints_->v_max);
+      int n_points = std::ceil(direction.norm() / p_sampling_rate_ * planner_.getSystemConstraints().v_max);
       for (int i = 0; i < n_points; ++i) {
           if (!checkTraversable(start_pos +
                                 (double)i / (double)n_points * direction)) {

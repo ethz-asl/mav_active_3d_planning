@@ -77,7 +77,7 @@ bool IterativeRayCasterLidar::getVisibleVoxels(
           distance += p_ray_step_;
 
           // Check voxel occupied
-            if (map_->getVoxelState(current_position)==OccupancyMap::OCCUPIED) {
+            if (map_->getVoxelState(current_position)==map::OccupancyMap::OCCUPIED) {
                 // Occlusion, mark neighboring rays as occluded
                 markNeighboringRays(i, j, current_segment, -1);
                 cast_ray = false;

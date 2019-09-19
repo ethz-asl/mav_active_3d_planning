@@ -28,7 +28,7 @@ void VoxelTypeEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
   setParam<double>(param_map, "gain_free_outer", &p_gain_free_outer_, 0.0);
 
     // setup map
-    map_ = dynamic_cast<OccupancyMap*>(&(planner_.getMap()));
+    map_ = dynamic_cast<map::OccupancyMap*>(&(planner_.getMap()));
     if (!map_) {
         planner_.printError("'FrontierEvaluator' requires a map of type 'OccupancyMap'!");
     }
@@ -38,7 +38,7 @@ void VoxelTypeEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
   std::string outer_volume_args;
   setParam<std::string>(param_map, "outer_volume_args", &outer_volume_args,
                         ns + "/outer_volume");
-  outer_volume_ = planner_.getFactory().createModule<defaults::BoundingVolume>(
+  outer_volume_ = planner_.getFactory().createModule<BoundingVolume>(
       outer_volume_args, planner_, verbose_modules_);
 
   // constants
@@ -63,17 +63,17 @@ bool VoxelTypeEvaluator::computeGainFromVisibleVoxels(
       voxel_state = map_->getVoxelState(info->visible_voxels[i]);
     if (bounding_volume_->contains(info->visible_voxels[i])) {
         switch (voxel_state) {
-            case OccupancyMap::UNKNOWN : traj_in->gain += p_gain_unknown_;
-            case OccupancyMap::FREE : traj_in->gain += p_gain_free_;
-            case OccupancyMap::OCCUPIED : traj_in->gain += p_gain_occupied_;
+            case map::OccupancyMap::UNKNOWN : traj_in->gain += p_gain_unknown_;
+            case map::OccupancyMap::FREE : traj_in->gain += p_gain_free_;
+            case map::OccupancyMap::OCCUPIED : traj_in->gain += p_gain_occupied_;
         }
     } else {
         switch (voxel_state) {
-            case OccupancyMap::UNKNOWN :
+            case map::OccupancyMap::UNKNOWN :
                 traj_in->gain += p_gain_unknown_outer_;
-            case OccupancyMap::FREE :
+            case map::OccupancyMap::FREE :
                 traj_in->gain += p_gain_free_outer_;
-            case OccupancyMap::OCCUPIED :
+            case map::OccupancyMap::OCCUPIED :
                 traj_in->gain += p_gain_occupied_outer_;
         }
     }

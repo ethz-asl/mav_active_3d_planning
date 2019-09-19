@@ -2,6 +2,7 @@
 #define ACTIVE_3D_PLANNING_CORE_TRAJECTORY_GENERATOR_H_
 
 #include "active_3d_planning/data/trajectory_segment.h"
+#include "active_3d_planning/data/bounding_volume.h"
 #include "active_3d_planning/module/module_factory_registry.h"
 #include "active_3d_planning/tools/defaults.h"
 #include <active_3d_planning/planner/planner_I.h>
@@ -54,8 +55,7 @@ public:
 protected:
 
   // bounding box
-  std::unique_ptr<defaults::BoundingVolume> bounding_volume_;
-  std::unique_ptr<defaults::SystemConstraints> system_constraints_;
+  std::unique_ptr<BoundingVolume> bounding_volume_;
 
   // default modules
   std::unique_ptr<SegmentSelector> segment_selector_;
@@ -63,7 +63,6 @@ protected:
 
   // Parameters
   bool p_collision_optimistic_;
-  double p_collision_radius_;
   double p_clearing_radius_; // Unknown space within clearing radius is
                              // considered traversable
   std::string p_selector_args_;

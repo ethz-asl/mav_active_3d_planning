@@ -22,7 +22,7 @@ void TrajectoryEvaluator::setupFromParamMap(Module::ParamMap *param_map) {
   setParam<std::string>(param_map, "bounding_volume_args",
                         &bounding_volume_args, ns + "/bounding_volume");
   bounding_volume_ =
-      planner_.getFactory().createModule<defaults::BoundingVolume>(
+      planner_.getFactory().createModule<BoundingVolume>(
           bounding_volume_args, planner_, verbose_modules_);
 }
 
