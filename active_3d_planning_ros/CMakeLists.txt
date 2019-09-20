@@ -26,9 +26,5 @@ cs_add_executable(ros_planner_node
         )
 target_link_libraries(ros_planner_node ${PROJECT_NAME})
 
-cs_add_executable(eval_voxblox_node
-        src/experiments/eval_voxblox_node.cpp
-        )
-
 cs_install()
 cs_export()

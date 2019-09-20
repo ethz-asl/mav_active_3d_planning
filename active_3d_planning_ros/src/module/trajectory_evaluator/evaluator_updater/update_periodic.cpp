@@ -7,8 +7,7 @@ namespace active_3d_planning {
 namespace evaluator_updater {
 
 // UpdatePeriodic
-ModuleFactoryRegistry::Registration<UpdatePeriodic>
-    UpdatePeriodic::registration("UpdatePeriodic");
+ModuleFactoryRegistry::Registration<UpdatePeriodic> UpdatePeriodic::registration("UpdatePeriodic");
 
 UpdatePeriodic::UpdatePeriodic(PlannerI &planner) : EvaluatorUpdater(planner) {}
 
@@ -38,5 +37,6 @@ void UpdatePeriodic::setupFromParamMap(Module::ParamMap *param_map) {
   following_updater_ = planner_.getFactory().createModule<EvaluatorUpdater>(
       args, planner_, verbose_modules_);
 }
+
 } // namespace evaluator_updater
 } // namespace active_3d_planning

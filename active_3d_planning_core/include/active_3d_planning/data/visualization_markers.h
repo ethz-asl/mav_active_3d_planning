@@ -32,6 +32,7 @@ struct VisualizationMarker {
     const static unsigned char MODIFY = 0;
     const static unsigned char DELETE = 2;
     const static unsigned char DELETEALL = 3;
+    const static unsigned char OVERWRITE = 4;   // added this option as RVIZ needs to remove the remaining markers
     int type = 0;
   int action = 0;
   int id = 0;
@@ -48,12 +49,9 @@ struct VisualizationMarker {
 struct VisualizationMarkers {
     // access
     void addMarker(const VisualizationMarker &marker);
-    std::vector<VisualizationMarker>&getMarkers();
     int getNextVisualizationId();
 
-protected:
     std::vector<VisualizationMarker>markers;
-
 };
 
 } // namespace active_3d_planning

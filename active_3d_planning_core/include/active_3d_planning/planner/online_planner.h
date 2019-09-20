@@ -24,9 +24,9 @@ namespace active_3d_planning {
 
     class OnlinePlanner : public PlannerI, public ModuleBase {
     public:
-        OnlinePlanner(ModuleFactory* factory, const std::string &module_args);
+        OnlinePlanner(ModuleFactory* factory, Module::ParamMap *param_map);
 
-        virtual ~OnlinePlanner() = default;
+        virtual ~OnlinePlanner();
 
         // Start/Run the planning loop
         virtual void planningLoop();
@@ -63,13 +63,10 @@ namespace active_3d_planning {
             return *system_constraints_;
         }
 
-        // display planner visualization
-        virtual void publishVisualization(const VisualizationMarkers& markers) = 0;
-
         // logging and printing
-        virtual void printInfo(const std::string &text);
-        virtual void printWarning(const std::string &text);
-        virtual void printError(const std::string &text);
+        virtual void printInfo(const std::string &text) override;
+        virtual void printWarning(const std::string &text) override;
+        virtual void printError(const std::string &text) override;
 
     protected:
         // factory access
@@ -102,7 +99,7 @@ namespace active_3d_planning {
         int info_count_;              // num trajectories counter for verbose
         int info_killed_next_;        // number of segments killed during root change
         int info_killed_update_;      // number of segments killed during updating
-        std::ofstream perf_log_file_; // performance file
+        std::ofstream perf_log_file_;  // performance file
         std::vector<double>  perf_log_data_; // select, expand, gain, cost, value [cpu seconds]
         std::clock_t perf_cpu_timer_; // total time counter
 
@@ -132,11 +129,13 @@ namespace active_3d_planning {
 
         virtual void loopIteration();
 
-        virtual void requestNextTrajectory();
+        virtual bool requestNextTrajectory();
 
         virtual void expandTrajectories();
 
         virtual void requestMovement(const EigenTrajectoryPointVector &trajectory) = 0;
+
+        virtual void setupFromParamMap(Module::ParamMap *param_map) override;
 
         // visualization
         virtual void publishTrajectoryVisualization(const std::vector<TrajectorySegment *> &trajectories);

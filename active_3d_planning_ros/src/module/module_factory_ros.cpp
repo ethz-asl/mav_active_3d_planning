@@ -46,7 +46,7 @@ bool ModuleFactoryROS::getParamMapAndType(Module::ParamMap *map,
                            *type + "'" + type_default + " from namespace '" +
                            args + "' with parameters:";
   (*map)["param_namespace"] =
-      args; // also log the namespace for other modules as default
+      args; // also log the args for other modules, this is key required for all factories due to default args!
   return true;
 }
 

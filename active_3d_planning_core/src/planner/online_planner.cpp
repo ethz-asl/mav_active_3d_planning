@@ -12,52 +12,61 @@
 
 namespace active_3d_planning {
 
-    OnlinePlanner::OnlinePlanner(ModuleFactory* factory, const std::string &module_args)
-            : factory_(factory), running_(true), planning_(false) {
+    OnlinePlanner::OnlinePlanner(ModuleFactory* factory, Module::ParamMap *param_map)
+            : factory_(factory), running_(false), planning_(false) {
+        // Setup params
+        OnlinePlanner::setupFromParamMap(param_map);
+    }
 
+    OnlinePlanner::~OnlinePlanner(){
+        // shutdown filestream
+        if(perf_log_file_.is_open()){
+            perf_log_file_.close();
+        }
+    }
+
+    void OnlinePlanner::setupFromParamMap(Module::ParamMap *param_map){
         // Setup Params
         bool verbose_modules;
         bool build_modules_on_init;
-        Module::ParamMap param_map;
-        std::string type;
-        factory_->getParamMapAndType(&param_map, &type, module_args);
 
         // Logging, printing and visualization
-        setParam<bool>(&param_map, "verbose", &p_verbose_, true);
-        setParam<bool>(&param_map, "verbose_modules", &verbose_modules, true);
-        setParam<bool>(&param_map, "build_modules_on_init", &build_modules_on_init, false);
-        setParam<bool>(&param_map, "visualize", &p_visualize_, true);
-        setParam<bool>(&param_map, "log_performance", &p_log_performance_, false);
-        setParam<bool>(&param_map, "visualize_gain", &p_visualize_gain_, false);
-        setParam<bool>(&param_map, "highlight_executed_trajectory", &p_highlight_executed_trajectory_, false);
+        setParam<bool>(param_map, "verbose", &p_verbose_, true);
+        setParam<bool>(param_map, "verbose_modules", &verbose_modules, true);
+        setVerbose(verbose_modules);
+        setParam<bool>(param_map, "build_modules_on_init", &build_modules_on_init, false);
+        setParam<bool>(param_map, "visualize", &p_visualize_, true);
+        setParam<bool>(param_map, "log_performance", &p_log_performance_, false);
+        setParam<bool>(param_map, "visualize_gain", &p_visualize_gain_, false);
+        setParam<bool>(param_map, "highlight_executed_trajectory", &p_highlight_executed_trajectory_, false);
 
         // Sampling constraints
-        setParam<int>(&param_map, "max_new_segments", &p_max_new_segments_, 0);  // set 0 for infinite
-        setParam<int>(&param_map, "min_new_segments", &p_min_new_segments_, 0);
-        setParam<int>(&param_map, "max_new_tries", &p_max_new_tries_, 0);        // set 0 for infinite
-        setParam<int>(&param_map, "min_new_tries", &p_min_new_tries_, 0);
-        setParam<double>(&param_map, "min_new_value", &p_min_new_value_, 0.0);
-        setParam<int>(&param_map, "expand_batch", &p_expand_batch_, 1);
+        setParam<int>(param_map, "max_new_segments", &p_max_new_segments_, 0);  // set 0 for infinite
+        setParam<int>(param_map, "min_new_segments", &p_min_new_segments_, 0);
+        setParam<int>(param_map, "max_new_tries", &p_max_new_tries_, 0);        // set 0 for infinite
+        setParam<int>(param_map, "min_new_tries", &p_min_new_tries_, 0);
+        setParam<double>(param_map, "min_new_value", &p_min_new_value_, 0.0);
+        setParam<int>(param_map, "expand_batch", &p_expand_batch_, 1);
         p_expand_batch_ = std::max(p_expand_batch_, 1);
 
         // Setup members
         std::string args; // default args extends the parent namespace
-        std::string param_ns = param_map["param_namespace"];
-        setParam<std::string>(&param_map, "system_constraint_args", &args,
+        std::string param_ns = (*param_map)["param_namespace"];
+        setParam<std::string>(param_map, "system_constraint_args", &args,
                               param_ns + "/system_constraints");
         system_constraints_ = getFactory().createModule<SystemConstraints>(args, *this, verbose_modules);
-        setParam<std::string>(&param_map, "map_args", &args,
+        setParam<std::string>(param_map, "map_args", &args,
                               param_ns + "/map");
         map_ = getFactory().createModule<Map>(args, *this, verbose_modules);
-        setParam<std::string>(&param_map, "trajectory_generator_args", &args,
+        setParam<std::string>(param_map, "trajectory_generator_args", &args,
                               param_ns + "/trajectory_generator");
         trajectory_generator_ = getFactory().createModule<TrajectoryGenerator>(
                 args, *this, verbose_modules);
-        setParam<std::string>(&param_map, "trajectory_evaluator_args", &args,
+        setParam<std::string>(param_map, "trajectory_evaluator_args", &args,
                               param_ns + "/trajectory_evaluator");
         trajectory_evaluator_ = getFactory().createModule<TrajectoryEvaluator>(
                 args, *this, verbose_modules);
-        setParam<std::string>(&param_map, "back_tracker_args", &args,
+        setParam<std::string>(param_map, "back_tracker_args", &args,
                               param_ns + "/back_tracker");
         back_tracker_ = getFactory().createModule<BackTracker>(
                 args, *this, verbose_modules);
@@ -66,7 +75,7 @@ namespace active_3d_planning {
         // Setup performance log
         if (p_log_performance_) {
             std::string log_dir("");
-            setParam<std::string>(&param_map, "performance_log_dir", &log_dir, "");
+            setParam<std::string>(param_map, "performance_log_dir", &log_dir, "");
             if (log_dir == "") {
                 // Wait for this param until planning start so it can be set after
                 // constructor (e.g. from other nodes)
@@ -78,8 +87,7 @@ namespace active_3d_planning {
                 perf_log_data_ = std::vector<double>(5, 0.0); // select, expand, gain, cost, value
                 perf_cpu_timer_ = std::clock();
                 perf_log_file_ << "RunTime,NTrajectories,NTrajAfterUpdate,Select,Expand,Gain,"
-                                  "Cost,Value,NextBest,UpdateTG,UpdateTE,Visualization,Total"
-                               << std::endl;
+                                  "Cost,Value,NextBest,UpdateTG,UpdateTE,Visualization,Total";
             }
         }
 
@@ -110,7 +118,7 @@ namespace active_3d_planning {
         }
     }
 
-    // logging and printing: default to std::cout
+    // logging and printing: default to std::cout in worst case
     void OnlinePlanner::printInfo(const std::string &text){
         std::cout << "Info: " << text << std::endl;
     }
@@ -146,7 +154,8 @@ namespace active_3d_planning {
     }
 
     void OnlinePlanner::planningLoop() {
-        // This is the main loop, adjust updating as necessary
+        // This is the main loop, adjust updating and implement exit conditions
+        running_ = true;
         while (running_) {
             if (planning_) {
                 loopIteration();
@@ -186,11 +195,11 @@ namespace active_3d_planning {
         }
     }
 
-    void OnlinePlanner::requestNextTrajectory() {
+    bool OnlinePlanner::requestNextTrajectory() {
         if (current_segment_->children.empty()) {
             // No trajectories available: call the backtracker
             back_tracker_->trackBack(current_segment_.get());
-            return;
+            return false;
         }
 
         // Performance tracking
@@ -286,13 +295,13 @@ namespace active_3d_planning {
             info_count_ = trajectories_to_vis.size();
 
             if (p_log_performance_) {
-                perf_log_file_ << perf_runtime << "," << num_trajectories << ","
+                perf_log_file_ << "\n" << perf_runtime << "," << num_trajectories << ","
                                << info_count_ << "," << perf_log_data_[0] << ","
                                << perf_log_data_[1] << "," << perf_log_data_[2] << ","
                                << perf_log_data_[3] << "," << perf_log_data_[4] << ","
                                << perf_next << "," << perf_uptg << "," << perf_upte << ","
                                << perf_vis << ","  << (double)(std::clock() - perf_cpu_timer_) /
-                                  CLOCKS_PER_SEC << "\n";
+                                  CLOCKS_PER_SEC ;
                 perf_log_data_ = std::vector<double>(perf_log_data_.size(), 0.0);   // reset count
                 perf_cpu_timer_ = std::clock();
             }
@@ -303,6 +312,7 @@ namespace active_3d_planning {
         new_segments_ = 0;
         min_new_value_reached_ = p_min_new_value_ == 0.0;
         target_reached_ = false;
+        return true;
     }
 
     void OnlinePlanner::expandTrajectories() {
@@ -399,7 +409,7 @@ namespace active_3d_planning {
             msg.scale.x() = 0.04;
             msg.scale.y() = 0.04;
             msg.color.a = 0.4;
-            msg.action = VisualizationMarker::ADD;
+            msg.action = VisualizationMarker::OVERWRITE;
 
             // Color according to relative value (blue when indifferent)
             if (max_value != min_value) {
@@ -428,9 +438,9 @@ namespace active_3d_planning {
                 msg = VisualizationMarker();
                 msg.orientation.w() = 1.0;
                 msg.type = VisualizationMarker::SPHERE;
-                msg.action = VisualizationMarker::ADD;
+                msg.action = VisualizationMarker::OVERWRITE;
                 msg.id = i;
-                msg.ns = "gains";
+                msg.ns = "canidate_gains";
                 msg.scale.x() = 0.15;
                 msg.scale.y() = 0.15;
                 msg.scale.z() = 0.15;
@@ -469,7 +479,7 @@ namespace active_3d_planning {
                    << std::fixed << std::setprecision(2) << trajectories[i]->cost << "/"
                    << std::fixed << std::setprecision(2) << trajectories[i]->value;
             msg.text = stream.str();
-            msg.action = VisualizationMarker::ADD;
+            msg.action = VisualizationMarker::OVERWRITE;
             text_markers.addMarker(msg);
         }
         // visualize goal
@@ -484,7 +494,7 @@ namespace active_3d_planning {
         msg.color.g = 0.9;
         msg.color.b = 0.0;
         msg.color.a = 1.0;
-        msg.action = VisualizationMarker::ADD;
+        msg.action = VisualizationMarker::OVERWRITE;
         while (goal->parent) {
             // points
             if (goal->parent->parent) {
@@ -542,6 +552,13 @@ namespace active_3d_planning {
         // Visualize the gain of the current segment
         VisualizationMarkers msg;
         trajectory_evaluator_->visualizeTrajectoryValue(&msg, trajectory);
+        int i = 0;
+        for (VisualizationMarker& marker : msg.markers) {
+            marker.id = i;
+            i++;
+            marker.ns = "trajectory_evaluation";
+            marker.action = VisualizationMarker::OVERWRITE;
+        }
         publishVisualization(msg);
     }
 
