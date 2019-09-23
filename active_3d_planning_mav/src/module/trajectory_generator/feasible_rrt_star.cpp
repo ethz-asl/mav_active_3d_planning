@@ -1,6 +1,5 @@
-#define _USE_MATH_DEFINES
-
 #include "active_3d_planning/module/trajectory_generator/feasible_rrt_star.h"
+#include "active_3d_planning/data/system_constraints.h"
 
 #include <cmath>
 #include <memory>
@@ -22,8 +21,8 @@ void FeasibleRRTStar::setupFromParamMap(Module::ParamMap *param_map) {
   setParam<bool>(param_map, "all_semgents_feasible", &p_all_semgents_feasible_,
                  false);
   segment_generator_.setConstraints(
-      system_constraints_->v_max, system_constraints_->a_max,
-      system_constraints_->yaw_rate_max, p_sampling_rate_);
+      planner_.getSystemConstraints().v_max, planner_.getSystemConstraints().a_max,
+      planner_.getSystemConstraints().yaw_rate_max, planner_.getSystemConstraints().yaw_accel_max, p_sampling_rate_);
 }
 
 bool FeasibleRRTStar::connectPoses(const EigenTrajectoryPoint &start,
@@ -33,8 +32,7 @@ bool FeasibleRRTStar::connectPoses(const EigenTrajectoryPoint &start,
   if (check_collision) {
     // try creating a linear trajectory and check for collision
     Eigen::Vector3d direction = goal.position_W - start.position_W;
-    int n_points = std::ceil(direction.norm() /
-                             (double)voxblox_.getEsdfMapPtr()->voxel_size());
+    int n_points = std::ceil(direction.norm() / p_sampling_rate_ * planner_.getSystemConstraints().v_max);
     for (int i = 0; i < n_points; ++i) {
       if (!checkTraversable(start.position_W +
                             (double)i / (double)n_points * direction)) {

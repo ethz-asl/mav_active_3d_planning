@@ -1,6 +1,7 @@
 #include "active_3d_planning/module/trajectory_generator/random_mav_trajectory.h"
 
 #include "active_3d_planning/tools/tools.h"
+#include "active_3d_planning/data/system_constraints.h"
 
 #include <mav_trajectory_generation/trajectory_sampling.h>
 
@@ -9,13 +10,13 @@
 namespace active_3d_planning {
 namespace trajectory_generator {
 
-ModuleFactoryRegistry::Registration<RandomMavTrajectory>
-    RandomMavTrajectory::registration("RandomMavTrajectory");
+ModuleFactoryRegistry::Registration<TrueRandomMavTrajectory>
+    TrueRandomMavTrajectory::registration("TrueRandomMavTrajectory");
 
-RandomMavTrajectory::RandomMavTrajectory(PlannerI &planner)
+TrueRandomMavTrajectory::TrueRandomMavTrajectory(PlannerI &planner)
     : TrajectoryGenerator(planner) {}
 
-void RandomMavTrajectory::setupFromParamMap(Module::ParamMap *param_map) {
+void TrueRandomMavTrajectory::setupFromParamMap(Module::ParamMap *param_map) {
   TrajectoryGenerator::setupFromParamMap(param_map);
   setParam<double>(param_map, "distance_max", &p_distance_max_, 3.0);
   setParam<double>(param_map, "distance_min", &p_distance_min_, 0.5);
@@ -25,7 +26,7 @@ void RandomMavTrajectory::setupFromParamMap(Module::ParamMap *param_map) {
   initializeConstraints();
 }
 
-bool RandomMavTrajectory::checkParamsValid(std::string *error_message) {
+bool TrueRandomMavTrajectory::checkParamsValid(std::string *error_message) {
   if (p_distance_max_ <= 0.0) {
     *error_message = "distance_max expected > 0.0";
     return false;
@@ -42,9 +43,9 @@ bool RandomMavTrajectory::checkParamsValid(std::string *error_message) {
   return true;
 }
 
-void RandomMavTrajectory::initializeConstraints() {
+void TrueRandomMavTrajectory::initializeConstraints() {
   // Create input constraints.for feasibility check
-  // todo: set this from params or config?
+  // todo: ev set these from params / system_constraints_mav
   typedef mav_trajectory_generation::InputConstraintType ICT;
   mav_trajectory_generation::InputConstraints input_constraints;
   input_constraints.addConstraint(
@@ -52,14 +53,14 @@ void RandomMavTrajectory::initializeConstraints() {
   input_constraints.addConstraint(
       ICT::kFMax, 1.5 * 9.81); // maximum acceleration in [m/s/s].
   input_constraints.addConstraint(
-      ICT::kVMax, system_constraints_->v_max); // maximum velocity in [m/s].
+      ICT::kVMax, planner_.getSystemConstraints().v_max); // maximum velocity in [m/s].
   input_constraints.addConstraint(
       ICT::kOmegaXYMax, M_PI / 2.0); // maximum roll/pitch rates in [rad/s].
   input_constraints.addConstraint(
       ICT::kOmegaZMax,
-      system_constraints_->yaw_rate_max); // max yaw rate [rad/s].
+      planner_.getSystemConstraints().yaw_rate_max); // max yaw rate [rad/s].
   input_constraints.addConstraint(
-      ICT::kOmegaZDotMax, M_PI); // maximum yaw acceleration in [rad/s/s]..
+      ICT::kOmegaZDotMax, planner_.getSystemConstraints().yaw_accel_max); // maximum yaw acceleration in [rad/s/s]..
   feasibility_check_ =
       mav_trajectory_generation::FeasibilityAnalytic(input_constraints);
   feasibility_check_.settings_.setMinSectionTimeS(0.01);
@@ -75,7 +76,7 @@ void RandomMavTrajectory::initializeConstraints() {
   parameters_ = mav_trajectory_generation::NonlinearOptimizationParameters();
 }
 
-bool RandomMavTrajectory::expandSegment(
+bool TrueRandomMavTrajectory::expandSegment(
     TrajectorySegment *target, std::vector<TrajectorySegment *> *new_segments) {
   // Create and add new adjacent trajectories to target segment
   target->tg_visited = true;
@@ -152,24 +153,25 @@ bool RandomMavTrajectory::expandSegment(
   return (valid_segments > 0);
 }
 
-void RandomMavTrajectory::sampleGoalPose(double *yaw, Eigen::Vector3d *goal_pos,
+void TrueRandomMavTrajectory::sampleGoalPose(double *yaw, Eigen::Vector3d *goal_pos,
                                          const Eigen::Vector3d &start_pos) {
-  *yaw = (double)rand() * 2.0 * M_PI / RAND_MAX;
+  *yaw = (double)rand() * 2.0 * M_PI / RAND_MAX - M_PI;
+  double phi = (double)rand() * 2.0 * M_PI / RAND_MAX;
   double theta = (double)rand() * M_PI / RAND_MAX;
   double range = p_distance_min_ + (double)rand() / RAND_MAX *
                                        (p_distance_max_ - p_distance_min_);
   *goal_pos =
-      start_pos + range * Eigen::Vector3d(sin(theta) * cos(*yaw),
-                                          sin(theta) * sin(*yaw), cos(theta));
+      start_pos + range * Eigen::Vector3d(sin(theta) * cos(phi),
+                                          sin(theta) * sin(phi), cos(theta));
 }
 
-void RandomMavTrajectory::optimizeVertices(
+void TrueRandomMavTrajectory::optimizeVertices(
     mav_trajectory_generation::Vertex::Vector *vertices,
     mav_trajectory_generation::Segment::Vector *segments,
     mav_trajectory_generation::Trajectory *trajectory) {
   std::vector<double> segment_times =
       mav_trajectory_generation::estimateSegmentTimes(
-          *vertices, system_constraints_->v_max, system_constraints_->a_max);
+          *vertices, planner_.getSystemConstraints().v_max, planner_.getSystemConstraints().a_max);
   mav_trajectory_generation::PolynomialOptimizationNonLinear<10> opt(
       4, parameters_);
   opt.setupFromVertices(
@@ -177,16 +179,16 @@ void RandomMavTrajectory::optimizeVertices(
       mav_trajectory_generation::derivative_order::ACCELERATION);
   opt.addMaximumMagnitudeConstraint(
       mav_trajectory_generation::derivative_order::VELOCITY,
-      system_constraints_->v_max);
+      planner_.getSystemConstraints().v_max);
   opt.addMaximumMagnitudeConstraint(
       mav_trajectory_generation::derivative_order::ACCELERATION,
-      system_constraints_->a_max);
+      planner_.getSystemConstraints().a_max);
   opt.optimize();
   opt.getPolynomialOptimizationRef().getSegments(segments);
   opt.getTrajectory(trajectory);
 }
 
-bool RandomMavTrajectory::checkInputFeasible(
+bool TrueRandomMavTrajectory::checkInputFeasible(
     const mav_trajectory_generation::Segment::Vector &segments) {
   for (int i = 0; i < segments.size(); ++i) {
     if (feasibility_check_.checkInputFeasibility(segments[i]) !=
@@ -197,7 +199,7 @@ bool RandomMavTrajectory::checkInputFeasible(
   return true;
 }
 
-bool RandomMavTrajectory::checkTrajectoryCollision(
+bool TrueRandomMavTrajectory::checkTrajectoryCollision(
     const EigenTrajectoryPoint::Vector &states) {
   for (int i = 0; i < states.size(); ++i) {
     if (!checkTraversable(states[i].position_W)) {

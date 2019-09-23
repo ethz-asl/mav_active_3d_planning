@@ -10,7 +10,7 @@
 namespace active_3d_planning {
 
 void LinearMavTrajectoryGenerator::setConstraints(double v_max, double a_max,
-                                                  double yaw_rate_max,
+                                                  double yaw_rate_max, double yaw_accel_max,
                                                   double sampling_rate) {
   // Other constraints are currently not exposed (could also be)
   typedef mav_trajectory_generation::InputConstraintType ICT;
@@ -26,7 +26,7 @@ void LinearMavTrajectoryGenerator::setConstraints(double v_max, double a_max,
   input_constraints.addConstraint(ICT::kOmegaZMax,
                                   yaw_rate_max); // max yaw rate [rad/s].
   input_constraints.addConstraint(
-      ICT::kOmegaZDotMax, M_PI); // maximum yaw acceleration in [rad/s/s]..
+      ICT::kOmegaZDotMax, yaw_accel_max); // maximum yaw acceleration in [rad/s/s]..
   feasibility_check_ =
       mav_trajectory_generation::FeasibilityAnalytic(input_constraints);
   feasibility_check_.settings_.setMinSectionTimeS(0.01);
@@ -45,6 +45,7 @@ void LinearMavTrajectoryGenerator::setConstraints(double v_max, double a_max,
   v_max_ = v_max;
   a_max_ = a_max;
   yaw_rate_max_ = yaw_rate_max;
+  yaw_accel_max_ = yaw_accel_max;
   sampling_rate_ = sampling_rate;
 }
 
@@ -143,6 +144,7 @@ bool LinearMavTrajectoryGenerator::simulateTrajectory(
   double current_yaw = defaults::angleScaled(start.getYaw());
   double goal_yaw = defaults::angleScaled(goal.getYaw());
   double v_curr = 0.0;
+  double yaw_rate_curr = 0.0;
   double yaw_direction = defaults::angleDirection(current_yaw, goal_yaw);
   int64_t current_time = 0;
   Eigen::Vector3d current_pos = start.position_W;
@@ -160,15 +162,21 @@ bool LinearMavTrajectoryGenerator::simulateTrajectory(
   while (current_yaw != goal_yaw || current_pos != goal.position_W) {
     EigenTrajectoryPoint trajectory_point;
     // Rotate until goal yaw reached
-    if (current_yaw != goal_yaw) {
-      double delta_yaw = yaw_rate_max_ / sampling_rate_;
-      if (defaults::angleDifference(current_yaw, goal_yaw) <= delta_yaw) {
-        current_yaw = goal_yaw;
-      } else {
-        current_yaw =
-            defaults::angleScaled(current_yaw + yaw_direction * delta_yaw);
+      if (current_yaw != goal_yaw) {
+          if (defaults::angleDifference(current_yaw, goal_yaw) <= yaw_rate_curr / sampling_rate_) {
+              // goal reached
+              current_yaw = goal_yaw;
+          } else if (defaults::angleDifference(current_yaw, goal_yaw) >
+                  yaw_rate_curr * yaw_rate_curr / 2.0 / yaw_accel_max_) {
+              // Accelerate
+              yaw_rate_curr = std::min(yaw_rate_max_, yaw_rate_curr + yaw_accel_max_ / sampling_rate_);
+              current_yaw = defaults::angleScaled(current_yaw + yaw_direction * yaw_rate_curr / sampling_rate_);
+          } else {
+              // Brake (minimum veloctiy to not get stuck in while loop)
+              yaw_rate_curr = std::max(yaw_rate_max_ * 0.05, yaw_rate_curr - yaw_accel_max_ / sampling_rate_);
+              current_yaw = defaults::angleScaled(current_yaw + yaw_direction * yaw_rate_curr / sampling_rate_);
+          }
       }
-    }
     trajectory_point.setFromYaw(current_yaw);
 
     // Move until goal pos reached

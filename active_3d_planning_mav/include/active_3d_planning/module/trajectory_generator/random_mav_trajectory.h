@@ -1,5 +1,5 @@
-#ifndef ACTIVE_3D_PLANNING_MAV_TRAJECTORY_GENERATOR_RANDOM_MAV_TRAJECTORY_H
-#define ACTIVE_3D_PLANNING_MAV_TRAJECTORY_GENERATOR_RANDOM_MAV_TRAJECTORY_H
+#ifndef ACTIVE_3D_PLANNING_MAV_TRAJECTORY_GENERATOR_TRUE_RANDOM_MAV_TRAJECTORY_H
+#define ACTIVE_3D_PLANNING_MAV_TRAJECTORY_GENERATOR_TRUE_RANDOM_MAV_TRAJECTORY_H
 
 #include "active_3d_planning/module/trajectory_generator.h"
 
@@ -12,9 +12,9 @@ namespace trajectory_generator {
 
 // Create random trajectories using the mav_trajectory_generation tools and
 // check for MAV constraints (such as max yaw rate, thrusts, ...)
-class RandomMavTrajectory : public TrajectoryGenerator {
+class TrueRandomMavTrajectory : public TrajectoryGenerator {
 public:
-  RandomMavTrajectory(PlannerI &planner);
+  TrueRandomMavTrajectory(PlannerI &planner);
   // override virtual functions
   bool expandSegment(TrajectorySegment *target,
                      std::vector<TrajectorySegment *> *new_segments) override;
@@ -24,7 +24,7 @@ public:
   bool checkParamsValid(std::string *error_message) override;
 
 protected:
-  static ModuleFactoryRegistry::Registration<RandomMavTrajectory> registration;
+  static ModuleFactoryRegistry::Registration<TrueRandomMavTrajectory> registration;
 
   // methods
   void initializeConstraints();
@@ -56,4 +56,4 @@ protected:
 
 } // namespace trajectory_generator
 } // namespace active_3d_planning
-#endif // ACTIVE_3D_PLANNING_MAV_TRAJECTORY_GENERATOR_RANDOM_MAV_TRAJECTORY_H
+#endif // ACTIVE_3D_PLANNING_MAV_TRAJECTORY_GENERATOR_TRUE_RANDOM_MAV_TRAJECTORY_H

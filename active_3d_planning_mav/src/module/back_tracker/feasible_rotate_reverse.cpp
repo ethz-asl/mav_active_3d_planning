@@ -1,6 +1,7 @@
 #include "active_3d_planning/module/back_tracker/feasible_rotate_reverse.h"
 
 #include "active_3d_planning/tools/defaults.h"
+#include "active_3d_planning/data/system_constraints.h"
 
 namespace active_3d_planning {
 namespace back_tracker {
@@ -14,8 +15,8 @@ FeasibleRotateReverse::FeasibleRotateReverse(PlannerI &planner)
 void FeasibleRotateReverse::setupFromParamMap(Module::ParamMap *param_map) {
   // Setup parent and segment creator
   RotateReverse::setupFromParamMap(param_map);
-  segment_generator_.setConstraints(1.0, 1.0, turn_rate_,
-                                    sampling_rate_); // velocities don't matter
+  segment_generator_.setConstraints(1.0, 1.0, planner_.getSystemConstraints().yaw_rate_max,
+          planner_.getSystemConstraints().yaw_accel_max,  sampling_rate_); // velocities don't matter
 }
 
 bool FeasibleRotateReverse::rotate(TrajectorySegment *target) {

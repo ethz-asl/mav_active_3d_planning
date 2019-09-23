@@ -14,7 +14,7 @@ class LinearMavTrajectoryGenerator {
 public:
   LinearMavTrajectoryGenerator() = default;
 
-  void setConstraints(double v_max, double a_max, double yaw_rate_max,
+  void setConstraints(double v_max, double a_max, double yaw_rate_max, double yaw_accel_max,
                       double sampling_rate);
 
   // Create feasible trajectory with feasibility checks and smooth derivatives
@@ -45,6 +45,7 @@ protected:
   double v_max_;
   double a_max_;
   double yaw_rate_max_;
+  double yaw_accel_max_;
   double sampling_rate_;
 };
 
