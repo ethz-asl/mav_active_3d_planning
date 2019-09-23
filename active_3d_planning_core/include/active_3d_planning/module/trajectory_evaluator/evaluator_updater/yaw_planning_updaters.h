@@ -13,10 +13,10 @@ using YawPlanningEvaluator =
 // following updaters without further manipulation. Updates only the best view.
 class YawPlanningUpdateAdapter : public EvaluatorUpdater {
 public:
-  YawPlanningUpdateAdapter(PlannerI &planner);
+  explicit YawPlanningUpdateAdapter(PlannerI &planner);
 
   // override virtual functions
-  bool updateSegments(TrajectorySegment *root) override;
+  bool updateSegment(TrajectorySegment *segment) override;
 
   void setupFromParamMap(Module::ParamMap *param_map) override;
 
@@ -27,23 +27,19 @@ protected:
 
   // members
   std::unique_ptr<EvaluatorUpdater> following_updater_;
-  YawPlanningEvaluator * evaluator_;
 
   // params
   bool p_dynamic_trajectories_; // true: adapt the trajectory of the best view
                                 // during update, can set false in evaluator
-
-  // methods
-  void updateSingle(TrajectorySegment *segment);
 };
 
 // Updater specific for yaw planning evaluators. Updates all orientations stored
 // in the info, then selects the best one and applies it to the segment.
 class YawPlanningUpdater : public EvaluatorUpdater {
 public:
-  YawPlanningUpdater(PlannerI &planner);
+  explicit YawPlanningUpdater(PlannerI &planner);
   // override virtual functions
-  bool updateSegments(TrajectorySegment *root) override;
+  bool updateSegment(TrajectorySegment *segment) override;
 
   void setupFromParamMap(Module::ParamMap *param_map) override;
 
@@ -60,12 +56,8 @@ protected:
   bool p_select_by_value_;
   bool p_dynamic_trajectories_; // If true recompute the trajectories for
                                 // segments that have changed
-  double p_update_range_; // maximum distance to the robot a view needs to have
-                          // to be updated
-  double p_update_gain_;  // minimum gain a view needs to be updated
-
-  // methods
-  void updateSingle(TrajectorySegment *segment);
+  double p_update_range_;       // only update views within this distance of the robot
+  double p_update_gain_;        // only update views with a gain above this value
 };
 
 } // namespace evaluator_updater

@@ -145,7 +145,13 @@ namespace active_3d_planning {
         virtual void publishEvalVisualization(const TrajectorySegment &trajectory);
 
         // helper functions
-        bool checkMinNewValue(const std::unique_ptr<TrajectorySegment> &segment); // check whether min value is found
+        // check whether min value is found
+        bool checkMinNewValue(const std::unique_ptr<TrajectorySegment> &segment);
+
+        // Recursively update the tree
+        void updateGeneratorStep(TrajectorySegment* target);
+        void updateEvaluatorStep(TrajectorySegment* target);
+
     };
 } // namespace active_3d_planning
 

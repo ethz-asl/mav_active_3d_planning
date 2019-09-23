@@ -11,10 +11,17 @@ ModuleFactoryRegistry::Registration<UpdateAll>
 
 UpdateAll::UpdateAll(PlannerI &planner) : EvaluatorUpdater(planner){};
 
-bool UpdateAll::updateSegments(TrajectorySegment *root) {
-  // recursively update all segments from root to leaves (as in the planner)
-  updateSingle(root);
-  return following_updater_->updateSegments(root);
+bool UpdateAll::updateSegment(TrajectorySegment *segment) {
+    if (update_gain_) {
+        planner_.getTrajectoryEvaluator().computeGain(segment);
+    }
+    if (update_cost_) {
+        planner_.getTrajectoryEvaluator().computeCost(segment);
+    }
+    if (update_value_) {
+        planner_.getTrajectoryEvaluator().computeValue(segment);
+    }
+  return following_updater_->updateSegment(segment);
 }
 
 void UpdateAll::setupFromParamMap(Module::ParamMap *param_map) {
@@ -31,22 +38,5 @@ void UpdateAll::setupFromParamMap(Module::ParamMap *param_map) {
       args, planner_, verbose_modules_);
 }
 
-void UpdateAll::updateSingle(TrajectorySegment *segment) {
-  if (segment->parent != nullptr) {
-    // Cannot update the root segment
-    if (update_gain_) {
-      planner_.getTrajectoryEvaluator().computeGain(segment);
-    }
-    if (update_cost_) {
-      planner_.getTrajectoryEvaluator().computeCost(segment);
-    }
-    if (update_value_) {
-      planner_.getTrajectoryEvaluator().computeValue(segment);
-    }
-  }
-  for (int i = 0; i < segment->children.size(); ++i) {
-    updateSingle(segment->children[i].get());
-  }
-}
 } // namespace evaluator_updater
 } // namespace active_3d_planning

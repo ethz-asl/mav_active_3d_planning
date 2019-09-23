@@ -25,7 +25,7 @@ class EvaluatorUpdater;
 // classes
 class TrajectoryEvaluator : public Module {
 public:
-  TrajectoryEvaluator(PlannerI &planner);
+  explicit TrajectoryEvaluator(PlannerI &planner);
   virtual ~TrajectoryEvaluator() = default;
 
   // compute the gain of a TrajectorySegment
@@ -40,9 +40,8 @@ public:
   // return the index of the most promising child segment
   virtual int selectNextBest(TrajectorySegment *traj_in);
 
-  // Whether and how to update existing segments when a new trajectory is
-  // executed
-  virtual bool updateSegments(TrajectorySegment *root);
+  // Update an existing segment when a new trajectory is executed, return true to keep segment alive, false to kill it
+  virtual bool updateSegment(TrajectorySegment *segment);
 
   // Implement this method to allow visualization of the information gain during
   // simulation
@@ -72,7 +71,7 @@ protected:
 // method
 class CostComputer : public Module {
 public:
-  CostComputer(PlannerI &planner) : Module(planner) {}
+  explicit CostComputer(PlannerI &planner) : Module(planner) {}
   virtual bool computeCost(TrajectorySegment *traj_in) = 0;
 };
 
@@ -80,7 +79,7 @@ public:
 // computeValue method
 class ValueComputer : public Module {
 public:
-  ValueComputer(PlannerI &planner) : Module(planner) {}
+  explicit ValueComputer(PlannerI &planner) : Module(planner) {}
   virtual bool computeValue(TrajectorySegment *traj_in) = 0;
 };
 
@@ -88,7 +87,7 @@ public:
 // selectNextBest method
 class NextSelector : public Module {
 public:
-  NextSelector(PlannerI &planner) : Module(planner) {}
+  explicit NextSelector(PlannerI &planner) : Module(planner) {}
   virtual int selectNextBest(TrajectorySegment *traj_in) = 0;
 };
 
@@ -96,8 +95,8 @@ public:
 // updateSegments method
 class EvaluatorUpdater : public Module {
 public:
-  EvaluatorUpdater(PlannerI &planner) : Module(planner) {}
-  virtual bool updateSegments(TrajectorySegment *root) = 0;
+  explicit EvaluatorUpdater(PlannerI &planner) : Module(planner) {}
+  virtual bool updateSegment(TrajectorySegment *segment) = 0;
 };
 
 } // namespace active_3d_planning

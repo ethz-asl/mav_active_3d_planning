@@ -13,10 +13,10 @@ ModuleFactoryRegistry::Registration<SimulatedSensorUpdater>
 SimulatedSensorUpdater::SimulatedSensorUpdater(PlannerI &planner)
     : EvaluatorUpdater(planner) {}
 
-bool SimulatedSensorUpdater::updateSegments(TrajectorySegment *root) {
-  // recursively update all segments from root to leaves (as in the planner)
-  updateSingle(root);
-  return following_updater_->updateSegments(root);
+bool SimulatedSensorUpdater::updateSegment(TrajectorySegment *segment) {
+    // call evaluator to recompute gain without recasting rays
+    evaluator_->computeGainFromVisibleVoxels(segment);
+  return following_updater_->updateSegment(segment);
 }
 
 void SimulatedSensorUpdater::setupFromParamMap(Module::ParamMap *param_map) {
@@ -29,15 +29,6 @@ void SimulatedSensorUpdater::setupFromParamMap(Module::ParamMap *param_map) {
       args, planner_, verbose_modules_);
   evaluator_ = static_cast<SimulatedSensorEvaluator *>(
       planner_.getFactory().readLinkableModule("SimulatedSensorEvaluator"));
-}
-
-void SimulatedSensorUpdater::updateSingle(TrajectorySegment *segment) {
-  // call the parent to reevaluate the voxels
-  // somehow should sanity check correct type
-  evaluator_->computeGainFromVisibleVoxels(segment);
-  for (int i = 0; i < segment->children.size(); ++i) {
-    updateSingle(segment->children[i].get());
-  }
 }
 
 } // namespace evaluator_updater

@@ -9,9 +9,9 @@ namespace generator_updater {
 // Discard all segments and start from scratch
 class ResetTree : public GeneratorUpdater {
 public:
-  ResetTree(PlannerI &planner);
+  explicit ResetTree(PlannerI &planner);
   // override virtual functions
-  bool updateSegments(TrajectorySegment *root) override;
+  bool updateSegment(TrajectorySegment *segment) override;
 
   void setupFromParamMap(Module::ParamMap *param_map) override;
 

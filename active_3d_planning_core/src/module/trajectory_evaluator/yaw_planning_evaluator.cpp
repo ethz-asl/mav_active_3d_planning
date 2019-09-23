@@ -108,8 +108,8 @@ int YawPlanningEvaluator::selectNextBest(TrajectorySegment *traj_in) {
   return following_evaluator_->selectNextBest(traj_in);
 }
 
-bool YawPlanningEvaluator::updateSegments(TrajectorySegment *root) {
-  return following_evaluator_->updateSegments(root);
+bool YawPlanningEvaluator::updateSegment(TrajectorySegment *segment) {
+  return following_evaluator_->updateSegment(segment);
 }
 
 void YawPlanningEvaluator::visualizeTrajectoryValue(

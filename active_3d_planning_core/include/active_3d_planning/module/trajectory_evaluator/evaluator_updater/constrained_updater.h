@@ -11,16 +11,13 @@ namespace evaluator_updater {
 // Update gain, only if conditions are met (min gain, nearby)
 class ConstrainedUpdater : public EvaluatorUpdater {
 public:
-  ConstrainedUpdater(PlannerI &planner);
-  bool updateSegments(TrajectorySegment *root) override;
+  explicit ConstrainedUpdater(PlannerI &planner);
+  bool updateSegment(TrajectorySegment *segment) override;
 
   void setupFromParamMap(Module::ParamMap *param_map) override;
 
 protected:
   static ModuleFactoryRegistry::Registration<ConstrainedUpdater> registration;
-
-  // methods
-  void updateSingle(TrajectorySegment *segment);
 
   // params
   double p_minimum_gain_;

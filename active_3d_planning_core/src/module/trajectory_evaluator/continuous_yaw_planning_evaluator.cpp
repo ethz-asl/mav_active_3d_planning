@@ -44,38 +44,29 @@ bool ContinuousYawPlanningEvaluator::computeGain(TrajectorySegment *traj_in) {
   setBestYaw(traj_in);
 }
 
-bool ContinuousYawPlanningEvaluator::updateSegments(TrajectorySegment *root) {
-  return updateSingle(root);
-}
-
-bool ContinuousYawPlanningEvaluator::updateSingle(TrajectorySegment *segment) {
-  // recursively update the tree
-  if (segment->parent && segment->info) {
-    double dist =
-        (planner_.getCurrentPosition() - segment->trajectory.back().position_W)
-            .norm();
-    if (p_update_range_ == 0.0 || p_update_range_ > dist) {
-      bool update_all =
-          (~p_update_sections_separate_) & (segment->gain > p_update_gain_);
-      YawPlanningInfo *info =
-          reinterpret_cast<YawPlanningInfo *>(segment->info.get());
-      for (int i = 0; i < info->orientations.size(); ++i) {
-        if (update_all || info->orientations[i].gain > p_update_gain_) {
-          // all conditions met: update gain of segment
-          following_evaluator_->computeGain(&(info->orientations[i]));
+bool ContinuousYawPlanningEvaluator::updateSegment(TrajectorySegment *segment) {
+    if (segment->parent && segment->info) {
+        double dist =
+                (planner_.getCurrentPosition() - segment->trajectory.back().position_W)
+                        .norm();
+        if (p_update_range_ == 0.0 || p_update_range_ > dist) {
+            bool update_all =
+                    (~p_update_sections_separate_) && (segment->gain > p_update_gain_);
+            YawPlanningInfo *info =
+                    reinterpret_cast<YawPlanningInfo *>(segment->info.get());
+            for (int i = 0; i < info->orientations.size(); ++i) {
+                if (update_all || info->orientations[i].gain > p_update_gain_) {
+                    // all conditions met: update gain of segment
+                    following_evaluator_->computeGain(&(info->orientations[i]));
+                }
+            }
         }
-      }
+        // Update trajectory
+        setBestYaw(segment);
     }
-    // Update trajectory
-    setBestYaw(segment);
-  }
-
-  // propagate through tree
-  for (int i = 0; i < segment->children.size(); ++i) {
-    updateSingle(segment->children[i].get());
-  }
-  return true;
+    return following_evaluator_->updateSegment(segment);
 }
+
 
 void ContinuousYawPlanningEvaluator::setBestYaw(TrajectorySegment *segment) {
   // compute gain from section overlap

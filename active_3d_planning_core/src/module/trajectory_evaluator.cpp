@@ -53,13 +53,13 @@ int TrajectoryEvaluator::selectNextBest(TrajectorySegment *traj_in) {
   return next_selector_->selectNextBest(traj_in);
 }
 
-bool TrajectoryEvaluator::updateSegments(TrajectorySegment *root) {
+bool TrajectoryEvaluator::updateSegment(TrajectorySegment *segment) {
   // If not implemented use a (default) module
   if (!evaluator_updater_) {
     evaluator_updater_ = planner_.getFactory().createModule<EvaluatorUpdater>(
         p_updater_args_, planner_, verbose_modules_);
   }
-  return evaluator_updater_->updateSegments(root);
+  return evaluator_updater_->updateSegment(segment);
 }
 
 } // namespace active_3d_planning

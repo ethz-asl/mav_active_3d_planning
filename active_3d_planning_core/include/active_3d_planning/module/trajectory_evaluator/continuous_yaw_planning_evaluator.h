@@ -16,10 +16,10 @@ namespace trajectory_evaluator {
 // evaluator
 class ContinuousYawPlanningEvaluator : public YawPlanningEvaluator {
 public:
-  ContinuousYawPlanningEvaluator(PlannerI &planner);
+  explicit ContinuousYawPlanningEvaluator(PlannerI &planner);
   // Override virtual functions
   bool computeGain(TrajectorySegment *traj_in) override;
-  bool updateSegments(TrajectorySegment *root) override;
+  bool updateSegment(TrajectorySegment *segment) override;
   void visualizeTrajectoryValue(VisualizationMarkers *markers,
                                 const TrajectorySegment &trajectory) override;
 
@@ -48,7 +48,6 @@ protected:
   void setTrajectoryYaw(TrajectorySegment *segment, double start_yaw,
                         double target_yaw) override;
   void setBestYaw(TrajectorySegment *segment);
-  bool updateSingle(TrajectorySegment *segment);
 };
 
 } // namespace trajectory_evaluator

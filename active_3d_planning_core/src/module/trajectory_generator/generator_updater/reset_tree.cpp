@@ -15,9 +15,8 @@ ResetTree::ResetTree(PlannerI &planner) : GeneratorUpdater(planner) {}
 
 void ResetTree::setupFromParamMap(Module::ParamMap *param_map) {}
 
-bool ResetTree::updateSegments(TrajectorySegment *root) {
-  root->children.clear();
-  return true;
+bool ResetTree::updateSegment(TrajectorySegment *segment) {
+  return false;
 }
 
 } // namespace generator_updater

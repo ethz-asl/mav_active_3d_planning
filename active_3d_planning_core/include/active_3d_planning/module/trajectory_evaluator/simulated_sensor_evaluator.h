@@ -20,7 +20,7 @@ namespace trajectory_evaluator {
 // raycasting.
 class SimulatedSensorEvaluator : public TrajectoryEvaluator {
 public:
-  SimulatedSensorEvaluator(PlannerI &planner);
+  explicit SimulatedSensorEvaluator(PlannerI &planner);
   // Override virtual functions
   bool computeGain(TrajectorySegment *traj_in) override;
 

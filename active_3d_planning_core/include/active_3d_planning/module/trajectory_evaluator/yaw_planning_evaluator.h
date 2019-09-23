@@ -14,13 +14,13 @@ namespace trajectory_evaluator {
 // functionalities are delegated to the folowing evaluator.
 class YawPlanningEvaluator : public TrajectoryEvaluator {
 public:
-  YawPlanningEvaluator(PlannerI &planner);
+  explicit YawPlanningEvaluator(PlannerI &planner);
   // Override virtual functions
   bool computeGain(TrajectorySegment *traj_in) override;
   bool computeCost(TrajectorySegment *traj_in) override;
   bool computeValue(TrajectorySegment *traj_in) override;
   int selectNextBest(TrajectorySegment *traj_in) override;
-  bool updateSegments(TrajectorySegment *root) override;
+  bool updateSegment(TrajectorySegment *segment) override;
   void visualizeTrajectoryValue(VisualizationMarkers *markers,
                                 const TrajectorySegment &trajectory) override;
 

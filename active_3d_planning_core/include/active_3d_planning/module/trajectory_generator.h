@@ -25,7 +25,7 @@ class GeneratorUpdater;
 // classes
 class TrajectoryGenerator : public Module {
 public:
-  TrajectoryGenerator(PlannerI &planner);
+  explicit TrajectoryGenerator(PlannerI &planner);
   virtual ~TrajectoryGenerator() = default;
 
   // Expansion policy where to expand (from full tree)
@@ -37,9 +37,8 @@ public:
   expandSegment(TrajectorySegment *target,
                 std::vector<TrajectorySegment *> *new_segments) = 0;
 
-  // Whether and how to update existing segments when a new trajectory is
-  // executed
-  virtual bool updateSegments(TrajectorySegment *root);
+  // Update an existing segment when a new trajectory is executed, return true if the segment is to be kept alive, false if it should be removed from the tree
+  virtual bool updateSegment(TrajectorySegment *segment);
 
   // Utility function for collision checking. Returns true if the position is
   // reachable.
@@ -73,7 +72,7 @@ protected:
 // selectSegment method
 class SegmentSelector : public Module {
 public:
-  SegmentSelector(PlannerI &planner);
+  explicit SegmentSelector(PlannerI &planner);
   virtual bool selectSegment(TrajectorySegment **result,
                              TrajectorySegment *root) = 0;
 };
@@ -82,8 +81,8 @@ public:
 // updateSegments method
 class GeneratorUpdater : public Module {
 public:
-  GeneratorUpdater(PlannerI &planner);
-  virtual bool updateSegments(TrajectorySegment *root) = 0;
+  explicit GeneratorUpdater(PlannerI &planner);
+  virtual bool updateSegment(TrajectorySegment *segment) = 0;
 };
 
 } // namespace active_3d_planning

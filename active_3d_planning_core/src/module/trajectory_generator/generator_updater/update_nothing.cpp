@@ -12,7 +12,7 @@ ModuleFactoryRegistry::Registration<UpdateNothing>
 
 UpdateNothing::UpdateNothing(PlannerI &planner) : GeneratorUpdater(planner) {}
 
-bool UpdateNothing::updateSegments(TrajectorySegment *root) { return true; }
+bool UpdateNothing::updateSegment(TrajectorySegment *segment) { return true; }
 
 void UpdateNothing::setupFromParamMap(Module::ParamMap *param_map) {}
 

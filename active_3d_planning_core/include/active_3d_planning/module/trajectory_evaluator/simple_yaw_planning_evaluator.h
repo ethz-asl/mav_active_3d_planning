@@ -13,7 +13,7 @@ namespace trajectory_evaluator {
 // trajectory points.
 class SimpleYawPlanningEvaluator : public YawPlanningEvaluator {
 public:
-  SimpleYawPlanningEvaluator(PlannerI &planner);
+  explicit SimpleYawPlanningEvaluator(PlannerI &planner);
   // Override virtual functions
   void visualizeTrajectoryValue(VisualizationMarkers *markers,
                                 const TrajectorySegment &trajectory) override;

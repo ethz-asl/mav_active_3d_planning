@@ -31,66 +31,74 @@ void SimpleRRTStarCollisionUpdater::setupFromParamMap(
       args, planner_, verbose_modules_);
 }
 
-bool SimpleRRTStarCollisionUpdater::updateSegments(TrajectorySegment *root) {
-  // find all colliding segments
-  std::vector<TrajectorySegment *> to_rewire;
-  std::vector<TrajectorySegment *> safe_segments;
-  safe_segments.push_back(root);
-  checkSingle(root, &to_rewire, &safe_segments);
-  if (to_rewire.size() > 0) {
-    generator_->resetTree(root);
-    std::vector<TrajectorySegment *> candidate_parents;
-    std::vector<TrajectorySegment *> safe_parents;
+bool SimpleRRTStarCollisionUpdater::updateSegment(TrajectorySegment *segment) {
+    TrajectorySegment *root;
+    if (!(segment->parent->parent)) {
+        root = segment->parent;
+        if (root != previous_root_){
+            previous_root_ = root;
+            // only execute the full update step once
+            // find all colliding segments
+            std::vector<TrajectorySegment *> to_rewire;
+            std::vector<TrajectorySegment *> safe_segments;
+            safe_segments.push_back(root);
+            checkSingle(root, &to_rewire, &safe_segments);
+            if (to_rewire.size() > 0) {
+                generator_->resetTree(root);
+                std::vector<TrajectorySegment *> candidate_parents;
+                std::vector<TrajectorySegment *> safe_parents;
 
-    // try to rewire all segments once
-    int index = 0;
-    while (index < to_rewire.size()) {
-      candidate_parents.clear();
-      if (!generator_->findNearbyCandidates(
-              to_rewire[index]->trajectory.back().position_W,
-              &candidate_parents)) {
-        to_rewire[index]->getChildren(&to_rewire);
-        ++index;
-        continue;
-      }
-      safe_parents.clear();
-      for (int j = 0; j < candidate_parents.size(); ++j) {
-        if (std::find(safe_segments.begin(), safe_segments.end(),
-                      candidate_parents[j]) != safe_segments.end()) {
-          safe_parents.push_back(candidate_parents[j]);
-        }
-      }
-      if (safe_parents.empty()) {
-        to_rewire[index]->getChildren(&to_rewire);
-        ++index;
-        continue;
-      }
-      generator_->rewireToBestParent(to_rewire[index], safe_parents, true);
-      safe_segments.push_back(to_rewire[index]);
-      to_rewire.erase(to_rewire.begin() + index);
-    }
+                // try to rewire all segments once
+                int index = 0;
+                while (index < to_rewire.size()) {
+                    candidate_parents.clear();
+                    if (!generator_->findNearbyCandidates(
+                            to_rewire[index]->trajectory.back().position_W,
+                            &candidate_parents)) {
+                        to_rewire[index]->getChildren(&to_rewire);
+                        ++index;
+                        continue;
+                    }
+                    safe_parents.clear();
+                    for (int j = 0; j < candidate_parents.size(); ++j) {
+                        if (std::find(safe_segments.begin(), safe_segments.end(),
+                                      candidate_parents[j]) != safe_segments.end()) {
+                            safe_parents.push_back(candidate_parents[j]);
+                        }
+                    }
+                    if (safe_parents.empty()) {
+                        to_rewire[index]->getChildren(&to_rewire);
+                        ++index;
+                        continue;
+                    }
+                    generator_->rewireToBestParent(to_rewire[index], safe_parents, true);
+                    safe_segments.push_back(to_rewire[index]);
+                    to_rewire.erase(to_rewire.begin() + index);
+                }
 
-    // kill all segments that could not be rewired
-    while (to_rewire.size() > 0) {
-      TrajectorySegment *current = to_rewire[0];
-      std::vector<TrajectorySegment *> killed;
-      current->getTree(&killed);
-      to_rewire.erase(remove_if(to_rewire.begin(), to_rewire.end(),
-                                [&](TrajectorySegment *x) {
-                                  return find(killed.begin(), killed.end(),
-                                              x) != killed.end();
-                                }),
-                      to_rewire.end());
-      for (int j = 0; j < current->parent->children.size(); ++j) {
-        if (current->parent->children[j].get() == current) {
-          current->parent->children.erase(current->parent->children.begin() +
-                                          j);
-          break;
+                // kill all segments that could not be rewired
+                while (to_rewire.size() > 0) {
+                    TrajectorySegment *current = to_rewire[0];
+                    std::vector<TrajectorySegment *> killed;
+                    current->getTree(&killed);
+                    to_rewire.erase(remove_if(to_rewire.begin(), to_rewire.end(),
+                                              [&](TrajectorySegment *x) {
+                                                  return find(killed.begin(), killed.end(),
+                                                              x) != killed.end();
+                                              }),
+                                    to_rewire.end());
+                    for (int j = 0; j < current->parent->children.size(); ++j) {
+                        if (current->parent->children[j].get() == current) {
+                            current->parent->children.erase(current->parent->children.begin() +
+                                                            j);
+                            break;
+                        }
+                    }
+                }
+            }
         }
-      }
     }
-  }
-  return following_updater_->updateSegments(root);
+  return following_updater_->updateSegment(segment);
 }
 
 bool SimpleRRTStarCollisionUpdater::isCollided(

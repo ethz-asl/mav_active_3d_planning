@@ -6,13 +6,13 @@
 namespace active_3d_planning {
 namespace generator_updater {
 
-// Recursively check wether the trajectories are still collision free, if not
+// Recursively check whether the trajectories are still collision free, if not
 // try to rewire them
 class SimpleRRTStarCollisionUpdater : public GeneratorUpdater {
 public:
-  SimpleRRTStarCollisionUpdater(PlannerI &planner);
+  explicit SimpleRRTStarCollisionUpdater(PlannerI &planner);
   // override virtual functions
-  bool updateSegments(TrajectorySegment *root) override;
+  bool updateSegment(TrajectorySegment *segment) override;
 
   void setupFromParamMap(Module::ParamMap *param_map) override;
 
@@ -31,6 +31,8 @@ protected:
   void checkSingle(TrajectorySegment *segment,
                    std::vector<TrajectorySegment *> *to_rewire,
                    std::vector<TrajectorySegment *> *safe_segments);
+  // variables
+  TrajectorySegment *previous_root_;
 };
 
 } // namespace generator_updater

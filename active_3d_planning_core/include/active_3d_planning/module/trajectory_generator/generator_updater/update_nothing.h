@@ -9,8 +9,8 @@ namespace generator_updater {
 // Don't perform specific update operations
 class UpdateNothing : public GeneratorUpdater {
 public:
-  UpdateNothing(PlannerI &planner);
-  bool updateSegments(TrajectorySegment *root) override;
+  explicit UpdateNothing(PlannerI &planner);
+  bool updateSegment(TrajectorySegment *segment) override;
 
   void setupFromParamMap(Module::ParamMap *param_map) override;
 

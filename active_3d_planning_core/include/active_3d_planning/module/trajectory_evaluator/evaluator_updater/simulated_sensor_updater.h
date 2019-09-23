@@ -13,18 +13,15 @@ using SimulatedSensorEvaluator =
 // -> no need for raycasting again.
 class SimulatedSensorUpdater : public EvaluatorUpdater {
 public:
-  SimulatedSensorUpdater(PlannerI &planner);
+  explicit SimulatedSensorUpdater(PlannerI &planner);
   // override virtual functions
-  bool updateSegments(TrajectorySegment *root) override;
+  bool updateSegment(TrajectorySegment *segment) override;
 
   void setupFromParamMap(Module::ParamMap *param_map) override;
 
 protected:
   static ModuleFactoryRegistry::Registration<SimulatedSensorUpdater>
       registration;
-
-  // methods
-  void updateSingle(TrajectorySegment *segment);
 
   // members
   std::unique_ptr<EvaluatorUpdater> following_updater_;

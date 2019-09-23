@@ -54,13 +54,13 @@ bool TrajectoryGenerator::selectSegment(TrajectorySegment **result,
   return segment_selector_->selectSegment(result, root);
 }
 
-bool TrajectoryGenerator::updateSegments(TrajectorySegment *root) {
+bool TrajectoryGenerator::updateSegment(TrajectorySegment *segment) {
   // If not implemented use a (default) module
   if (!generator_updater_) {
     generator_updater_ = planner_.getFactory().createModule<GeneratorUpdater>(
         p_updater_args_, planner_, verbose_modules_);
   }
-  return generator_updater_->updateSegments(root);
+  return generator_updater_->updateSegment(segment);
 }
 
 bool TrajectoryGenerator::extractTrajectoryToPublish(

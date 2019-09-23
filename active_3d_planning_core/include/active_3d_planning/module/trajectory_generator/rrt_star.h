@@ -21,6 +21,8 @@ class RRTStar : public RRT {
 public:
   RRTStar(PlannerI &planner);
   // override virtual functions
+  virtual bool selectSegment(TrajectorySegment **result,
+                             TrajectorySegment *root) override;
   virtual bool
   expandSegment(TrajectorySegment *target,
                 std::vector<TrajectorySegment *> *new_segments) override;
@@ -77,7 +79,7 @@ namespace trajectory_evaluator {
 // evaluation duties.
 class RRTStarEvaluatorAdapter : public TrajectoryEvaluator {
 public:
-  RRTStarEvaluatorAdapter(PlannerI &planner);
+  explicit RRTStarEvaluatorAdapter(PlannerI &planner);
   // Override virtual functions
   bool computeGain(TrajectorySegment *traj_in) override;
 
@@ -87,10 +89,10 @@ public:
 
   int selectNextBest(TrajectorySegment *traj_in) override;
 
-  bool updateSegments(TrajectorySegment *root) override;
+  bool updateSegment(TrajectorySegment *segment) override;
 
   void visualizeTrajectoryValue(VisualizationMarkers *markers,
-                                const TrajectorySegment &trajectory);
+                                const TrajectorySegment &trajectory) override;
 
   void setupFromParamMap(Module::ParamMap *param_map) override;
 

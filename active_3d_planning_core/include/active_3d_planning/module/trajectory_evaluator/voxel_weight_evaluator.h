@@ -16,7 +16,7 @@ namespace trajectory_evaluator {
 // new_voxel_weight per voxel.
 class VoxelWeightEvaluator : public FrontierEvaluator {
 public:
-  VoxelWeightEvaluator(PlannerI &planner);
+  explicit VoxelWeightEvaluator(PlannerI &planner);
   // Override virtual methods
   void visualizeTrajectoryValue(VisualizationMarkers *markers,
                                 const TrajectorySegment &trajectory) override;

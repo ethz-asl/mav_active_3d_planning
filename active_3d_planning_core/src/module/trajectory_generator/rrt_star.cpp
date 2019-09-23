@@ -43,6 +43,15 @@ bool RRTStar::checkParamsValid(std::string *error_message) {
   return RRT::checkParamsValid(error_message);
 }
 
+bool RRTStar::selectSegment(TrajectorySegment **result,
+                           TrajectorySegment *root) {
+    bool success = RRT::selectSegment(result, root);
+    if (p_rewire_update_) {
+        rewireIntermediate(root);
+    }
+    return success;
+}
+
 bool RRTStar::expandSegment(TrajectorySegment *target,
                             std::vector<TrajectorySegment *> *new_segments) {
   tree_is_reset_ =
@@ -123,10 +132,6 @@ bool RRTStar::expandSegment(TrajectorySegment *target,
 
 bool RRTStar::rewireIntermediate(TrajectorySegment *root) {
   // After updating, try rewire all from inside out
-  if (!p_rewire_update_) {
-    return true;
-  }
-  resetTree(root);
   std::vector<TrajectorySegment *> segments;
 
   // order w.r.t distance
@@ -390,10 +395,8 @@ int RRTStarEvaluatorAdapter::selectNextBest(TrajectorySegment *traj_in) {
   return next;
 }
 
-bool RRTStarEvaluatorAdapter::updateSegments(TrajectorySegment *root) {
-  bool success = following_evaluator_->updateSegments(root);
-  // After updating call the generator to rewire
-  return generator_->rewireIntermediate(root) & success;
+bool RRTStarEvaluatorAdapter::updateSegment(TrajectorySegment *segment) {
+  return following_evaluator_->updateSegment(segment);
 }
 
 void RRTStarEvaluatorAdapter::visualizeTrajectoryValue(

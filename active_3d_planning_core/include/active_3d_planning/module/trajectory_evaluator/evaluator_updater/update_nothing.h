@@ -10,9 +10,9 @@ namespace evaluator_updater {
 // Don't perform any specific update operations
 class UpdateNothing : public EvaluatorUpdater {
 public:
-  UpdateNothing(PlannerI &planner);
+  explicit UpdateNothing(PlannerI &planner);
 
-  bool updateSegments(TrajectorySegment *root) override { return true; }
+  bool updateSegment(TrajectorySegment *segment) override;
 
   void setupFromParamMap(Module::ParamMap *param_map) override;
 

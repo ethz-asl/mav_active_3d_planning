@@ -11,7 +11,7 @@ namespace trajectory_evaluator {
 // (unobserved/free/occupied, inside/outside target bounding volume)
 class VoxelTypeEvaluator : public SimulatedSensorEvaluator {
 public:
-  VoxelTypeEvaluator(PlannerI &planner);
+  explicit VoxelTypeEvaluator(PlannerI &planner);
 
   void setupFromParamMap(Module::ParamMap *param_map) override;
 

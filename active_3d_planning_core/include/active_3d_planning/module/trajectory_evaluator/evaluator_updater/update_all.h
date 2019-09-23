@@ -10,17 +10,14 @@ namespace evaluator_updater {
 // Update gain/cost/value for the complete trajectory tree
 class UpdateAll : public EvaluatorUpdater {
 public:
-  UpdateAll(PlannerI &planner);
+  explicit UpdateAll(PlannerI &planner);
 
-  bool updateSegments(TrajectorySegment *root) override;
+  bool updateSegment(TrajectorySegment *segment) override;
 
   void setupFromParamMap(Module::ParamMap *param_map) override;
 
 protected:
   static ModuleFactoryRegistry::Registration<UpdateAll> registration;
-
-  // methods
-  void updateSingle(TrajectorySegment *segment);
 
   // params
   bool update_gain_;

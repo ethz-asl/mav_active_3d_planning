@@ -104,14 +104,14 @@ namespace active_3d_planning {
             temp_segment.spawnChild()->trajectory.push_back(trajectory_point);
             trajectory_generator_->selectSegment(&temp_pointer, &temp_segment);
             trajectory_generator_->expandSegment(temp_pointer, &temp_vector);
-            trajectory_generator_->updateSegments(&temp_segment);
+            trajectory_generator_->updateSegment(&temp_segment);
 
             temp_segment = TrajectorySegment();
             temp_segment.trajectory.push_back(trajectory_point);
             trajectory_evaluator_->computeGain(&temp_segment);
             trajectory_evaluator_->computeCost(&temp_segment);
             trajectory_evaluator_->computeValue(&temp_segment);
-            trajectory_evaluator_->updateSegments(&temp_segment);
+            trajectory_evaluator_->updateSegment(&temp_segment);
 
             temp_segment.spawnChild()->trajectory.push_back(trajectory_point);
             trajectory_evaluator_->selectNextBest(&temp_segment);
@@ -275,12 +275,13 @@ namespace active_3d_planning {
         }
 
         // Update tree
-        trajectory_generator_->updateSegments(current_segment_.get());
+        // recursive tree pass from root to leaves
+        updateGeneratorStep(current_segment_.get());
         if (p_log_performance_) {
             perf_uptg = (double)(std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
-        trajectory_evaluator_->updateSegments(current_segment_.get());
+        updateEvaluatorStep(current_segment_.get());
         if (p_log_performance_) {
             perf_upte = (double)(std::clock() - timer) / CLOCKS_PER_SEC;
         }
@@ -564,7 +565,7 @@ namespace active_3d_planning {
 
     bool OnlinePlanner::checkMinNewValue(
             const std::unique_ptr<TrajectorySegment> &segment) {
-        // Recursively check wehter the minimum value is reached
+        // Recursively check whether the minimum value is reached
         if (segment->value >= p_min_new_value_) {
             return true;
         } else {
@@ -575,6 +576,38 @@ namespace active_3d_planning {
             }
         }
         return false;
+    }
+
+    void OnlinePlanner::updateGeneratorStep(TrajectorySegment* target){
+        // Recursive removal
+        int j = 0;
+        for (int i = 0; i < target->children.size(); ++i) {
+            if (trajectory_generator_->updateSegment(target->children[j].get())) {
+                j++;
+            } else {
+                target->children.erase(target->children.begin() + j);
+            }
+        }
+        // remaining children
+        for (int i = 0; i < target->children.size(); ++i) {
+            updateGeneratorStep(target->children[i].get());
+        }
+    }
+
+    void OnlinePlanner::updateEvaluatorStep(TrajectorySegment* target){
+        // Recursive removal
+        int j = 0;
+        for (int i = 0; i < target->children.size(); ++i) {
+            if (trajectory_evaluator_->updateSegment(target->children[j].get())) {
+                j++;
+            } else {
+                target->children.erase(target->children.begin() + j);
+            }
+        }
+        // remaining children
+        for (int i = 0; i < target->children.size(); ++i) {
+            updateEvaluatorStep(target->children[i].get());
+        }
     }
 
 } // namespace active_3d_planning

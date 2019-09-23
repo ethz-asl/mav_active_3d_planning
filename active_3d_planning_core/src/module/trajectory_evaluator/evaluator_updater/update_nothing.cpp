@@ -8,6 +8,10 @@ ModuleFactoryRegistry::Registration<UpdateNothing>
 
 UpdateNothing::UpdateNothing(PlannerI &planner) : EvaluatorUpdater(planner){};
 
+bool UpdateNothing::updateSegment(TrajectorySegment *segment){
+    return true;
+}
+
 void UpdateNothing::setupFromParamMap(Module::ParamMap * /*param_map*/) {}
 } // namespace evaluator_updater
 } // namespace active_3d_planning

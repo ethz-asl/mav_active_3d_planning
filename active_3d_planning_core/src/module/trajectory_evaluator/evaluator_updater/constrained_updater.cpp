@@ -14,10 +14,17 @@ ModuleFactoryRegistry::Registration<ConstrainedUpdater>
 ConstrainedUpdater::ConstrainedUpdater(PlannerI &planner)
     : EvaluatorUpdater(planner){};
 
-bool ConstrainedUpdater::updateSegments(TrajectorySegment *root) {
-  // recursively update all segments from root to leaves (as in the planner)
-  updateSingle(root);
-  return following_updater_->updateSegments(root);
+bool ConstrainedUpdater::updateSegment(TrajectorySegment *segment) {
+    // recursively update all segments from root to leaves (as in the planner)
+    if (segment->parent) {
+        // Cannot update the root segment
+        if (segment->gain > p_minimum_gain_) {
+            if ((planner_.getCurrentPosition() - segment->trajectory.back().position_W).norm() <= p_update_range_) {
+                return following_updater_->updateSegment(segment);
+            }
+        }
+    }
+    return true;
 }
 
 void ConstrainedUpdater::setupFromParamMap(Module::ParamMap *param_map) {
@@ -33,21 +40,6 @@ void ConstrainedUpdater::setupFromParamMap(Module::ParamMap *param_map) {
       args, planner_, verbose_modules_);
 }
 
-void ConstrainedUpdater::updateSingle(TrajectorySegment *segment) {
-  if (segment->parent != nullptr) {
-    // Cannot update the root segment
-    if (segment->gain > p_minimum_gain_) {
-      if ((planner_.getCurrentPosition() -
-           segment->trajectory.back().position_W)
-              .norm() <= p_update_range_) {
-        planner_.getTrajectoryEvaluator().computeGain(segment);
-      }
-    }
-  }
-  for (int i = 0; i < segment->children.size(); ++i) {
-    updateSingle(segment->children[i].get());
-  }
-}
 
 } // namespace evaluator_updater
 } // namespace active_3d_planning

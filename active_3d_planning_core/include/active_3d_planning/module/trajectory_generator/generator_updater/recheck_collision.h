@@ -11,16 +11,12 @@ class RecheckCollision : public GeneratorUpdater {
 public:
   RecheckCollision(PlannerI &planner);
   // override virtual functions
-  bool updateSegments(TrajectorySegment *root) override;
+  bool updateSegment(TrajectorySegment *segment) override;
 
   void setupFromParamMap(Module::ParamMap *param_map) override;
 
 protected:
   static ModuleFactoryRegistry::Registration<RecheckCollision> registration;
-
-  // methods
-  bool isCollided(const EigenTrajectoryPointVector &trajectory);
-  void checkSingle(TrajectorySegment *segment);
 };
 
 } // namespace generator_updater
