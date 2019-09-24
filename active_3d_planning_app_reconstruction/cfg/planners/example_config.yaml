@@ -1,5 +1,5 @@
-# General parameters for planner node
-replan_pos_threshold: 0.15
+# General parameters for the planner node
+replan_pos_threshold: 0.25
 replan_yaw_threshold: 0.15
 
 max_new_segments: 0
@@ -8,14 +8,29 @@ max_new_tries: 0
 min_new_tries: 0
 min_new_value: 0
 
+# Verbosity and visualization
+verbose: true
 verbose_modules: true
 build_modules_on_init: true
+visualize: true
 highlight_executed_trajectory: true
+
+# Specify a map representation
+map:
+  type: "VoxbloxMap"
+  
+# System constraints
+system_constraints:
+  v_max: 1.0
+  a_max: 1.0
+  yaw_rate_max: 1.6
+  yaw_accel_max: 1.6 
+  collision_radius: 0.7
 
 # Specifying a trajectory generator
 trajectory_generator:
   collision_optimistic: false 
-  collision_radius: 0.1 #0.7
+  bounding_volume_args: "/map_bounding_volume"
   type: "Uniform"
   
   # Generator Params
@@ -24,12 +39,6 @@ trajectory_generator:
   yaw_angle: 1.2
   ascent_angle: 0.523
   sampling_rate: 20
-  
-  # System constraints
-  system_constraints:
-    v_max: 0.5
-    a_max: 0.5
-    yaw_rate_max: 1.6
   
   # Expansion site selection policy
   segment_selector:
@@ -59,7 +68,7 @@ trajectory_evaluator:
     focal_length: 320.0
     resolution_x: 640
     resolution_y: 480
-    downsampling_factor: 2.0
+    downsampling_factor: 3.0
   
   # Choose a cost
   cost_computer:
@@ -83,7 +92,7 @@ trajectory_evaluator:
     update_gain: false
     update_cost: false
     update_value: true
-   
+  
 # Specify a backtracker if the planner gets stuck
 back_tracker:
   type: "RotateReverse"

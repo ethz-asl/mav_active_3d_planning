@@ -38,11 +38,11 @@ struct VisualizationMarker {
   int id = 0;
   std::string ns = "";
   std::string text = "";
-  Eigen::Vector3d position;
-  Eigen::Quaterniond orientation;
-  Eigen::Vector3d scale;
-  Color color;
-  std::vector<Eigen::Vector3d> points;
+  Eigen::Vector3d position = Eigen::Vector3d(0, 0, 0);
+  Eigen::Quaterniond orientation = Eigen::Quaterniond(1, 0, 0, 0);
+  Eigen::Vector3d scale = Eigen::Vector3d(0, 0, 0);
+  Color color = Color();
+  std::vector<Eigen::Vector3d> points;  // empty initialization
   std::vector<Color> colors;
 };
 
@@ -50,7 +50,10 @@ struct VisualizationMarkers {
     // access
     void addMarker(const VisualizationMarker &marker);
     int getNextVisualizationId();
+    const std::vector<VisualizationMarker> &getMarkers() const;
+    std::vector<VisualizationMarker> &getMarkers();
 
+protected:
     std::vector<VisualizationMarker>markers;
 };
 

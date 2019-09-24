@@ -14,4 +14,12 @@ namespace active_3d_planning {
         }
     }
 
+    const std::vector<VisualizationMarker> &VisualizationMarkers::getMarkers() const {
+        return markers;
+    }
+
+    std::vector<VisualizationMarker> &VisualizationMarkers::getMarkers() {
+        return markers;
+    }
+
 } // namespace active_3d_planning

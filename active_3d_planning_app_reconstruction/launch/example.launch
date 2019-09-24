@@ -27,23 +27,16 @@
   
   <!--  Planner arguments-->
   <arg name="planner_config" default="planners/example_config.yaml"/>
-  <arg name="verbose_planner" default="true"/>
-  <arg name="visualize" default="true"/>
   
   <!--  Experiment arguments -->  
-  <arg name="experiment_config" default="experiment1.yaml"/>
-  <arg name="record_data" default="false"/>
-  <arg name="record_visualization" default="false"/>
-  <arg name="data_directory" default="/mnt/sevensense_external/doc_ma_huberya/data"/> 
-  <arg name="data_frequency" default="30.0" />
-  <arg name="time_limit" default="30" />
-  
+  <arg name="experiment_config" default="CityBuilding.yaml"/>
   
   
   
 
-  <!-- *** Setup experiment params, data, nodes *** -->
-  <rosparam command="load" file="$(find mav_active_3d_exploration)/cfg/experiments/$(arg experiment_config)"/>
+  <!-- *** Run the Simulation *** -->
+  <!-- Load experiment config -->
+  <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/experiments/$(arg experiment_config)"/>
 
   <!-- Setup empty gazebo world for physics-->
   <env name="GAZEBO_MODEL_PATH" value="${GAZEBO_MODEL_PATH}:$(find rotors_gazebo)/models"/>
@@ -85,12 +78,12 @@
     
     <!-- Odometry: noise model / rovio -->
     <node pkg="rovio" type="rovio_node" name="rovio" output="screen" if="$(arg use_rovio)">
-      <param name="filter_config" value="$(find mav_active_3d_exploration)/cfg/rovio/rovio.info"/>
-      <param name="camera0_config" value="$(find mav_active_3d_exploration)/cfg/rovio/unreal_cam0.yaml"/>
+      <param name="filter_config" value="$(find active_3d_planning_app_reconstruction)/cfg/rovio/rovio.info"/>
+      <param name="camera0_config" value="$(find active_3d_planning_app_reconstruction)/cfg/rovio/unreal_cam0.yaml"/>
       <remap from="cam0/image_raw" to="/unreal/unreal_sensor_model/ue_gray_image_out" />
       <remap from="imu0" to="ground_truth/imu" />
     </node>
-    <node name="odometry_noise_model" pkg="active_3d_planning_ros" type="gps_odometry_simulator.py" output="screen" unless="$(arg use_rovio)">
+    <node name="odometry_noise_model" pkg="active_3d_planning_app_reconstruction" type="gps_odometry_simulator.py" output="screen" unless="$(arg use_rovio)">
       <param name="position_uncertainty" value="0.05"/>
       <param name="roll_pitch_uncertainty" value="1.5" />
       <param name="yaw_uncertainty" value="5.0" />
@@ -135,32 +128,25 @@
       <remap from="ue_out_in" to="unreal_sensor_model/ue_sensor_out" />
     </node>
     
-    <!-- Experiment launcher, data generation-->
-    <node name="eval_data_node" pkg="active_3d_planning_ros" type="eval_data_node.py" output="screen" required="true">
+    <!-- Experiment launcher -->
+    <node name="eval_data_node" pkg="active_3d_planning_app_reconstruction" type="eval_data_node.py" output="screen" required="true">
       <remap from="ue_out_in" to="unreal_sensor_model/ue_sensor_out" />
       <remap from="unreal_simulation_ready" to="simulation_manager/simulation_ready" />
       <remap from="collision" to="unreal_ros_client/collision" />
-      <param name="ns_planner" value="/planner/planner_node" />
+      <param name="ns_planner" value="/planner" />
       <param name="ns_voxblox" value="/planner/voxblox_node" />
       <param name="delay" value="$(arg delay)" />
       <param name="startup_timeout" value="30.0" />
-      <param name="evaluate" value="$(arg record_data)" />
-      <param name="eval_directory" value="$(arg data_directory)" />
-      <param name="eval_frequency" value="$(arg data_frequency)" />
-      <param name="time_limit" value="$(arg time_limit)" />
+      <param name="evaluate" value="false" />
     </node>
-    
-    <!-- Record a rosbag of the visualization-->
-    <node pkg="rosbag" type="record" name="rosbag_vis_recorder"
-       args="record -o $(arg data_directory)/tmp_bags/tmp_bag /rosout /clock /tf /planner/voxblox_node/mesh /firefly/reference_trajectory /firefly/base_link /planner/trajectory_visualization" if="$(eval arg('record_data') and arg('record_visualization'))"/>
   </group>
-
+  
   <group ns="planner">
     <!-- Voxblox -->
     <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
       <remap from="pointcloud" to="/unreal/unreal_sensor_model/ue_sensor_out"/>
       <remap from="transform" to="/$(arg mav_name)/rovio/transform" if="$(arg use_rovio)"/>
-      <rosparam command="load" file="$(find mav_active_3d_exploration)/cfg/voxblox/transforms.yaml" if="$(arg use_rovio)"/> 
+      <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/voxblox/transforms.yaml" if="$(arg use_rovio)"/> 
       <param name="use_tf_transforms" value="$(eval arg('use_rovio') == false)"/>
       <param name="publish_tsdf_map" value="true" />
       <param name="publish_esdf_map" value="true" />
@@ -176,7 +162,7 @@
     </node>
     
     <!-- Planner -->
-    <node name="planner_node" pkg="mav_active_3d_exploration" type="exploration_planner_node" output="screen">
+    <node name="planner_node" pkg="active_3d_planning_app_reconstruction" type="reconstruction_planner_node" output="screen">
 		  <!-- Voxblox Server -->
       <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
       <remap from="planner_node/tsdf_map_in" to="voxblox_node/tsdf_map_out" />
@@ -189,20 +175,12 @@
     	<!-- General Settings -->
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
       <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
-      <param name="verbose" value="$(arg verbose_planner)" />
-      <param name="visualize" value="$(arg visualize)" />
-      <param name="log_performance" value="$(arg record_data)" />
-    
-      <!-- Experiment dependent -->
-      <param name="trajectory_evaluator/sensor_model/ray_length" value="$(arg ray_length)" />
-      <param name="trajectory_evaluator/bounding_volume_args" value="/target_bounding_volume" />
-      <param name="trajectory_generator/bounding_volume_args" value="/map_bounding_volume" />
-      
+
       <!-- Build the Planner by Configuration -->    
-      <rosparam command="load" file="$(find mav_active_3d_exploration)/cfg/$(arg planner_config)"/>
+      <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/$(arg planner_config)"/>
     </node>    
- </group>
+  </group>
 
   <!-- RVIZ Visualization -->
-  <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_exploration)/cfg/experiments/experiment_visualization.rviz" if="$(arg visualize)"/>
+  <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find active_3d_planning_app_reconstruction)/cfg/experiments/experiment_visualization.rviz"/>
 </launch>

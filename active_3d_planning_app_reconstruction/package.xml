@@ -1,8 +1,10 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>active_3d_planning_app_example</name>
+  <name>active_3d_planning_app_reconstruction</name>
   <version>0.0.0</version>
   <description>Sampling-based Online Informative Path Planning.</description>
+
+  <author email="schmluk@mavt.ethz.ch">Lukas Schmid</author>
 
   <maintainer email="schmluk@mavt.ethz.ch">Lukas Schmid</maintainer>
 
@@ -14,6 +16,7 @@
   <depend>active_3d_planning_core</depend>
   <depend>active_3d_planning_ros</depend>
   <depend>active_3d_planning_mav</depend>
+  <depend>active_3d_planning_voxblox</depend>
   <depend>roscpp</depend>
   <depend>rospy</depend>
   <depend>voxblox_ros</depend>

@@ -10,7 +10,7 @@ namespace sensor_model {
 // redundancies (timed at 42 +/- 20 ms)
 class IterativeRayCaster : public CameraModel {
 public:
-  IterativeRayCaster(PlannerI &planner);
+  explicit IterativeRayCaster(PlannerI &planner);
   virtual ~IterativeRayCaster() = default;
 
   // Override virtual functions

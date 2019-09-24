@@ -92,11 +92,10 @@ class EvalData:
                 return
         else:
             rospy.wait_for_message("unreal_simulation_ready", String)
-        rospy.loginfo("Waiting for unreal MAV simulationto setup... done.")
+        rospy.loginfo("Waiting for unreal MAV simulation to setup... done.")
 
         # Launch planner (by service, every planner needs to advertise this service when ready)
         rospy.loginfo("Waiting for planner to be ready...")
-        #use same timeout as for unreal
         if self.startup_timeout > 0.0:
             try:
                 rospy.wait_for_service(self.ns_planner + "/toggle_running", self.startup_timeout)

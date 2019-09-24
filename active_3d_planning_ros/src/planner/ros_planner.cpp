@@ -40,7 +40,7 @@ RosPlanner::RosPlanner(const ::ros::NodeHandle &nh,
     // Finish
     ROS_INFO_STREAM("\n******************** Initialized Planner ********************\n"
                     "Initialized 'RosPlanner' from namespace '" << param_map->at("param_namespace") <<
-                    "' with parameters:\n" <<  param_map->at("verbose_text"));
+                    "' with parameters:" <<  param_map->at("verbose_text"));
 
 }
 
@@ -155,7 +155,7 @@ void RosPlanner::requestMovement(const EigenTrajectoryPointVector &trajectory){
 }
 
 void RosPlanner::publishVisualization(const VisualizationMarkers& markers){
-    if (markers.markers.empty()){
+    if (markers.getMarkers().empty()){
         return;
     }
   visualization_msgs::MarkerArray msg;
@@ -165,27 +165,30 @@ void RosPlanner::publishVisualization(const VisualizationMarkers& markers){
       m.header.stamp = ::ros::Time::now();
   }
   // check overwrite flag (for full array)
-  if (markers.markers[0].action == VisualizationMarker::OVERWRITE) {
-      std::map<std::string,int>::iterator it = visualization_overwrite_counter_.find(markers.markers[0].ns);
+  if (markers.getMarkers()[0].action == VisualizationMarker::OVERWRITE) {
+      for (visualization_msgs::Marker &m : msg.markers) {
+          m.action = visualization_msgs::Marker::ADD;
+      }
+      std::map<std::string,int>::iterator it = visualization_overwrite_counter_.find(markers.getMarkers()[0].ns);
       int count = 0;
       if (it != visualization_overwrite_counter_.end()) {
           count = it->second;
       }
-      if (count > markers.markers.size()){
+      if (count > markers.getMarkers().size()){
           visualization_msgs::Marker marker;
-          for (int i = count; i < markers.markers.size(); ++i){
+          for (int i = markers.getMarkers().size(); i < count; ++i){
               // publish empty marker to remove previous ids
               auto empty_marker = visualization_msgs::Marker();
               empty_marker.header.frame_id = "/world";
               empty_marker.header.stamp = ::ros::Time::now();
               empty_marker.type = visualization_msgs::Marker::POINTS;
               empty_marker.id = i;
-              empty_marker.ns = markers.markers[0].ns;
+              empty_marker.ns = markers.getMarkers()[0].ns;
               empty_marker.action = visualization_msgs::Marker::DELETE;
               msg.markers.push_back(empty_marker);
           }
       }
-      visualization_overwrite_counter_[markers.markers[0].ns] = markers.markers.size();
+      visualization_overwrite_counter_[markers.getMarkers()[0].ns] = markers.getMarkers().size();
   }
     trajectory_vis_pub_.publish(msg);
 }

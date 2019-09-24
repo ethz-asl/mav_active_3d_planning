@@ -96,7 +96,7 @@ inline void visualizationMarkersToMsg(const VisualizationMarkers &markers, visua
     assert(msg != NULL);
     visualization_msgs::Marker marker;
     msg->markers.clear();
-    for ( const VisualizationMarker &m : markers.markers) {
+    for ( const VisualizationMarker &m : markers.getMarkers()) {
         visualizationMarkerToMsg(m, &marker);
         msg->markers.push_back(marker);
     }

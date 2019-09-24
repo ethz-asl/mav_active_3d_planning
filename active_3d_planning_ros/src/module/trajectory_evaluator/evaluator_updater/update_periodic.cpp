@@ -11,15 +11,26 @@ ModuleFactoryRegistry::Registration<UpdatePeriodic> UpdatePeriodic::registration
 
 UpdatePeriodic::UpdatePeriodic(PlannerI &planner) : EvaluatorUpdater(planner) {}
 
-bool UpdatePeriodic::updateSegments(TrajectorySegment *root) {
-  // Both conditions need to be met
-  if ((ros::Time::now() - previous_time_).toSec() >= p_minimum_wait_time_ &&
-      waited_calls_ >= p_minimum_wait_calls_) {
-    previous_time_ = ros::Time::now();
-    waited_calls_ = 0;
-    return following_updater_->updateSegments(root);
-  }
-  waited_calls_++;
+bool UpdatePeriodic::updateSegment(TrajectorySegment *segment) {
+    if (!(segment->parent->parent)){
+        // at root
+        if (segment->parent != previous_root_){
+            previous_root_ = segment->parent;
+            // Both conditions need to be met
+            if ((ros::Time::now() - previous_time_).toSec() >= p_minimum_wait_time_ &&
+                waited_calls_ >= p_minimum_wait_calls_) {
+                previous_time_ = ros::Time::now();
+                waited_calls_ = 0;
+                update_ = true;
+            } else {
+                waited_calls_++;
+                update_ = false;
+            }
+        }
+    }
+    if (update_) {
+        return following_updater_->updateSegment(segment);
+    }
   return true;
 }
 

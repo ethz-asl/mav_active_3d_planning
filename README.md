@@ -31,14 +31,24 @@ For additional information please see the wiki.
 ## Dependencies
 **ROS Packages:**
 
-The mav_active_3d_planning package depends on the following ROS packages:
-* `voxblox` ([https://github.com/ethz-asl/voxblox](https://github.com/ethz-asl/voxblox))
-* `mav_trajectory_generation` ([https://github.com/ethz-asl/mav_trajectory_generation](https://github.com/ethz-asl/mav_trajectory_generation))
+The mav_active_3d_planning package is divded into separate packages, such that only the dependencies necessary for your application package need to be built.
+Packages depend on:
+* **core:**
+    * `catkin_simple` ([https://github.com/catkin/catkin_simple](https://github.com/catkin/catkin_simple))
+    * `glog_catkin` ([https://github.com/ethz-asl/glog_catkin](https://github.com/ethz-asl/glog_catkin))
+    * `eigen_catkin` ([https://github.com/ethz-asl/eigen_catkin](https://github.com/ethz-asl/eigen_catkin))
+    
+* **mav:**
+    * `mav_trajectory_generation` ([https://github.com/ethz-asl/mav_trajectory_generation](https://github.com/ethz-asl/mav_trajectory_generation))
 
-To run the full simulation, these additional packages are needed: 
-* `unreal_cv_ros` ([https://github.com/ethz-asl/unreal_cv_ros](https://github.com/ethz-asl/unreal_cv_ros))
-* `rotors_simulator` ([https://github.com/ethz-asl/rotors_simulator](https://github.com/ethz-asl/rotors_simulator))
-* `mav_control_rw` ([https://github.com/ethz-asl/mav_control_rw](https://github.com/ethz-asl/mav_control_rw))
+
+* **voxblox:**
+    * `voxblox` ([https://github.com/ethz-asl/voxblox](https://github.com/ethz-asl/voxblox))
+
+* **app_reconstruction:**
+    * `unreal_cv_ros` ([https://github.com/ethz-asl/unreal_cv_ros](https://github.com/ethz-asl/unreal_cv_ros))
+    * `rotors_simulator` ([https://github.com/ethz-asl/rotors_simulator](https://github.com/ethz-asl/rotors_simulator))
+    * `mav_control_rw` ([https://github.com/ethz-asl/mav_control_rw](https://github.com/ethz-asl/mav_control_rw))
 
 ## Installation
 Installation instructions on Linux:
@@ -51,9 +61,9 @@ Install using a SSH key:
 ```
 git clone git@github.com:ethz-asl/mav_active_3d_planning.git
 ```
-Compile: 
+Compile everything: 
 ```
-catkin build mav_active_3d_exploration
+catkin build mav_active_3d_planning
 ```
 
 ## Data Repository
@@ -61,9 +71,10 @@ Related ressources, such as experiment scenarios and ground truth point clouds, 
 
 # Examples
 ## Configuring a Planner
-A verbose example of how to build a planner is given in `cfg/example_config.yaml`. The presented planner uses local motion primitives to expand new segments and the number of unknown voxels as gain formulation. To see the planner in action, start an unreal\_cv\_ros game, e.g. Experiment1, make sure to tab out of game control with Ctrl+Shift+F1 and then run 
+The `active_3d_planning_app_reconstruction` is an application package, that builds and launches an active\_3d\_planner.
+A verbose example of how planners are created through a config is given in `cfg/example_config.yaml`. The presented planner uses local motion primitives to expand new segments and the number of unknown voxels as gain formulation. To see the planner in action, start an unreal\_cv\_ros game, e.g. CityBuilding, make sure to tab out of game control with Ctrl+Shift+F1 and then run 
 ```
-roslaunch mav_active_3d_exploration example.launch
+roslaunch active_3d_planning_app_reconstruction example.launch
 ```
 The planner will be built from the config file and visualized in RVIZ. A useful parameter to set is `verbose_modules: true`, as all available params of all built modules will be printed to console. 
 
@@ -74,7 +85,7 @@ A local motion primitve based planner starting exploration.
 ## Run an Experiment
 In order to record data of the example planner, run 
 ```
-roslaunch mav_active_3d_exploration example.launch record_data:=true data_directory:=/path/to/my/data_dir
+roslaunch active_3d_planning_app_reconstruction example.launch data_directory:=/path/to/my/data_dir
 ```
 When the experiment is finished by the time limit of 30 minutes or by pressing Ctrl+C, run 
 ```

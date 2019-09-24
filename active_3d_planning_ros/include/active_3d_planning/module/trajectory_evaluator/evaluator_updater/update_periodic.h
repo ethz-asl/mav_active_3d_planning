@@ -13,9 +13,9 @@ namespace evaluator_updater {
 // Only periodically call another updater
 class UpdatePeriodic : public EvaluatorUpdater {
 public:
-  UpdatePeriodic(PlannerI &planner);
+  explicit UpdatePeriodic(PlannerI &planner);
   // override virtual functions
-  bool updateSegments(TrajectorySegment *root) override;
+  bool updateSegment(TrajectorySegment *segment) override;
 
   void setupFromParamMap(Module::ParamMap *param_map) override;
 
@@ -29,6 +29,8 @@ protected:
   // variables
   ros::Time previous_time_; // Need to use simulated time here
   int waited_calls_;
+  bool update_;         // whether or not to update the tree
+  TrajectorySegment *previous_root_;    // keep track of teh root
 
   // members
   std::unique_ptr<EvaluatorUpdater> following_updater_;

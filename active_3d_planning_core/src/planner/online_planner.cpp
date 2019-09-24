@@ -223,13 +223,14 @@ namespace active_3d_planning {
         }
         int num_trajectories = trajectories_to_vis.size();
         if (p_verbose_ || p_log_performance_) {
-            perf_runtime = std::chrono::duration<double>(std::clock() - info_timing_).count();
+            perf_runtime = std::chrono::duration<double>(std::clock() - info_timing_).count() / 1e6;
             info_timing_ = std::clock();
             if (p_verbose_) {
                 std::stringstream ss;
-                ss << "Replanning!\n(" << std::setprecision(3) <<"s elapsed, " << num_trajectories - info_count_ + 1 <<
-                    " new, " << num_trajectories <<" total, " << info_killed_next_ + 1 <<" killed by root change, " <<
-                    info_killed_update_ <<  "killed while updating)";
+                ss << "Replanning!\n(" << std::setprecision(3) << perf_runtime << "s elapsed, "
+                    << num_trajectories - info_count_ + 1 << " new, " << num_trajectories << " total, "
+                    << info_killed_next_ + 1 <<" killed by root change, " << info_killed_update_
+                    << " killed while updating)";
                 printInfo(ss.str());
             }
         }
@@ -554,7 +555,7 @@ namespace active_3d_planning {
         VisualizationMarkers msg;
         trajectory_evaluator_->visualizeTrajectoryValue(&msg, trajectory);
         int i = 0;
-        for (VisualizationMarker& marker : msg.markers) {
+        for (VisualizationMarker& marker : msg.getMarkers()) {
             marker.id = i;
             i++;
             marker.ns = "trajectory_evaluation";
