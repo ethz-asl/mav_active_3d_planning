@@ -85,12 +85,16 @@ A local motion primitve based planner starting exploration.
 ## Run an Experiment
 In order to record data of the example planner, run 
 ```
-roslaunch active_3d_planning_app_reconstruction example.launch data_directory:=/path/to/my/data_dir
+roslaunch active_3d_planning_app_reconstruction run_experiment.launch planner_general_config:=
+planners/example_config.yaml data_directory:=/path/to/my_data_dir
 ```
-When the experiment is finished by the time limit of 30 minutes or by pressing Ctrl+C, run 
+This will collect and store raw data in a new folder in `my_data_dir`.
+When the experiment has finished by time limit (30 minutes) or by pressing Ctrl+C, run 
 ```
-roslaunch mav_active_3d_exploration evaluate_experiment.launch target_directory:=/path/to/my/data_dir gt_file_path:=/path/to/experiment1/gt_surface_pcl.ply
+roslaunch active_3d_planning_app_reconstruction evaluate_experiment.launch target_directory:=
+/path/to/my_data_dir gt_file_path:=/path/to/CityBuilding/gt_surface_pcl.ply
 ```
+to evaluate the raw data.
 When the process is finished, the created data directory contains a folder 'Graphs', containing the evaluation results as well as a folder 'Meshes', which can be visualized using e.g. [CloudCompare](https://www.danielgm.net/cc/). 
 
 ![SimulationOverview](https://user-images.githubusercontent.com/36043993/59348747-33d77300-8d18-11e9-935e-d89a3fc64f64.png)

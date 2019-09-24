@@ -57,6 +57,7 @@ class EvalData:
                 os.mkdir(os.path.join(self.eval_directory, "tmp_bags"))
             self.eval_directory = os.path.join(self.eval_directory, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
             os.mkdir(self.eval_directory)
+            rospy.set_param(self.ns_planner + "/performance_log_dir", self.eval_directory)
             os.mkdir(os.path.join(self.eval_directory, "voxblox_maps"))
             self.eval_data_file = open(os.path.join(self.eval_directory, "voxblox_data.csv"), 'wb')
             self.eval_writer = csv.writer(self.eval_data_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL,
@@ -64,8 +65,6 @@ class EvalData:
             self.eval_writer.writerow(['MapName', 'RosTime', 'WallTime', 'NPointclouds', 'CPUTime'])
             self.eval_writer.writerow(['Unit', 'seconds', 'seconds', '-', 'seconds'])
             self.eval_log_file = open(os.path.join(self.eval_directory, "data_log.txt"), 'a')
-
-            rospy.set_param("/planner/planner_node/performance_log_dir", self.eval_directory)
 
             # Subscribers, Services
             self.ue_out_sub = rospy.Subscriber("ue_out_in", PointCloud2, self.ue_out_callback, queue_size=10)

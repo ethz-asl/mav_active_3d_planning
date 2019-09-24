@@ -46,7 +46,7 @@ trajectory_generator:
     revisit: false
     factor: 2.0
     leaf_probability: 1.0
-    uniform_probability: 0.1
+    uniform_probability: 0.2
     
   # Generator Update step
   generator_updater:

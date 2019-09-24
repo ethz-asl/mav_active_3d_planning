@@ -24,10 +24,11 @@ RosPlanner::RosPlanner(const ::ros::NodeHandle &nh,
                        const ::ros::NodeHandle &nh_private,
                        ModuleFactory* factory,
                        Module::ParamMap *param_map)
-    : OnlinePlanner(factory, param_map){
+    : OnlinePlanner(factory, param_map), nh_(nh), nh_private_(nh_private){
 
     // params
     RosPlanner::setupFromParamMap(param_map);
+    perf_log_data_ = std::vector<double>(6, 0.0); // select, expand, gain, cost, value, mainLoop, rosCallbacks
 
     // Subscribers and publishers
     target_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
@@ -61,7 +62,6 @@ void RosPlanner::setupFactoryAndParams(ModuleFactory *factory, Module::ParamMap 
     *param_map = Module::ParamMap();
     std::string type;
     const std::string &args = nh_private.getNamespace();
-    ROS_DEBUG_STREAM(args);
     factory->getParamMapAndType(param_map, &type, args);
     param_map->at("verbose_text") = "";
 }
@@ -72,7 +72,6 @@ void RosPlanner::initializePlanning() {
 
   // Update performance log for simulated time and ros cpu consumption
   if (p_log_performance_) {
-      perf_log_data_ = std::vector<double>(6, 0.0); // select, expand, gain, cost, value, mainLoop, rosCallbacks
       perf_cpu_timer_ = std::clock();
       perf_log_file_ << ",RosTime,RosCallbacks";
     }
@@ -80,6 +79,8 @@ void RosPlanner::initializePlanning() {
   // Setup counters
   cpu_srv_timer_ = std::clock();
   ros_timing_ = ::ros::Time::now();
+  perf_log_data_[5] = 0;        // reset count
+
 }
 
 void RosPlanner::planningLoop() {
@@ -113,6 +114,7 @@ bool RosPlanner::requestNextTrajectory() {
       perf_log_file_ << "," << (::ros::Time::now() - ros_timing_).toSec() << "," << perf_log_data_[5];
       perf_cpu_timer_ = std::clock();
       ros_timing_ = ::ros::Time::now();
+      perf_log_data_[5] = 0;        // reset count
   }
   return true;
 }

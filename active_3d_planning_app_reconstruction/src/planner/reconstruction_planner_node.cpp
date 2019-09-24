@@ -5,9 +5,15 @@
 #include "active_3d_planning/initialization/mav_package.h"
 
 #include <glog/logging.h>
+#include <chrono>
+#include <thread>
 
 
 int main(int argc, char **argv) {
+    // leave some time for the rest to settle
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+
+    // init ros
     ros::init(argc, argv, "reconstruction_planner_node");
 
     // prevent the linker from optimizing these packages away...

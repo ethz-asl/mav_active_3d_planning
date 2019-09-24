@@ -148,6 +148,7 @@ namespace active_3d_planning {
         new_segment_tries_ = 0;
         min_new_value_reached_ = p_min_new_value_ == 0.0;
         vis_completed_count_ = 0;
+        std::fill(perf_log_data_.begin(), perf_log_data_.begin()+5, 0.0);
 
         // Launch expansion as current goal is considered reached
         target_reached_ = true;
@@ -304,7 +305,7 @@ namespace active_3d_planning {
                                << perf_next << "," << perf_uptg << "," << perf_upte << ","
                                << perf_vis << ","  << (double)(std::clock() - perf_cpu_timer_) /
                                   CLOCKS_PER_SEC ;
-                perf_log_data_ = std::vector<double>(perf_log_data_.size(), 0.0);   // reset count
+                std::fill(perf_log_data_.begin(), perf_log_data_.begin()+5, 0.0); // reset count
                 perf_cpu_timer_ = std::clock();
             }
         }

@@ -92,10 +92,14 @@ class EvalPlotting:
         if not "[FLAG] Rosbag renamed" in lines:
             for line in lines:
                 if line[:14] == "[FLAG] Rosbag:":
-                    os.rename(os.path.join(os.path.dirname(target_dir), "tmp_bags", line[15:] + ".bag"),
-                              os.path.join(target_dir, "visualization.bag"))
-                    self.writelog("Moved the tmp rosbag into 'visualization.bag'")
-                    self.eval_log_file.write("[FLAG] Rosbag renamed\n")
+                    file_name = os.path.join(os.path.dirname(target_dir), "tmp_bags", line[15:] + ".bag")
+                    if os.path.isfile(file_name):
+                        os.rename(file_name,  os.path.join(target_dir, "visualization.bag"))
+                        self.writelog("Moved the tmp rosbag into 'visualization.bag'")
+                        self.eval_log_file.write("[FLAG] Rosbag renamed\n")
+                    else:
+                        self.writelog("Error: unable to locate '"+ file_name+"'.")
+                        rospy.logwarn("Error: unable to locate '"+ file_name+"'.")
 
         self.eval_log_file.close()  # Make it available for voxblox node
 
@@ -142,7 +146,7 @@ class EvalPlotting:
                 with open(os.path.join(target_dir, "performance_log.csv")) as infile:
                     reader = csv.reader(infile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                     for row in reader:
-                        if row[0] == 'RosTime':
+                        if row[0] == 'RunTime':
                             headers = row
                             for header in headers:
                                 data_perf[header] = []
@@ -218,7 +222,7 @@ class EvalPlotting:
         std_devs = {}
         keys = voxblox_data[0].keys()
         keys.remove('RosTime')
-        keys = ['RosTime'] + keys
+        keys = ['RosTime'] + keys       # RosTime is expected as the first argument
         prev_pcls = [0.0] * len(voxblox_data)
         for key in keys:
             means[key] = np.array([])

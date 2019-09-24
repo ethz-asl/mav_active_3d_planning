@@ -133,7 +133,7 @@
       <remap from="ue_out_in" to="unreal_sensor_model/ue_sensor_out" />
       <remap from="unreal_simulation_ready" to="simulation_manager/simulation_ready" />
       <remap from="collision" to="unreal_ros_client/collision" />
-      <param name="ns_planner" value="/planner" />
+      <param name="ns_planner" value="/planner/planner_node" />
       <param name="ns_voxblox" value="/planner/voxblox_node" />
       <param name="delay" value="$(arg delay)" />
       <param name="startup_timeout" value="30.0" />
