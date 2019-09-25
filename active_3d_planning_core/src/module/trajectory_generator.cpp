@@ -36,8 +36,7 @@ bool TrajectoryGenerator::checkTraversable(const Eigen::Vector3d &position) {
       return planner_.getMap().isTraversable(position);
   }
   if (p_clearing_radius_ > 0.0) {
-    if ((planner_.getCurrentPosition() - position).norm() <
-        p_clearing_radius_) {
+    if ((planner_.getCurrentPosition() - position).norm() < p_clearing_radius_) {
       return true;
     }
   }

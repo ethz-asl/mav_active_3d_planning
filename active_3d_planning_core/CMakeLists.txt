@@ -57,6 +57,7 @@ cs_add_library(${PROJECT_NAME}
         src/module/trajectory_evaluator/value_computers/linear_value.cpp
         src/module/trajectory_evaluator/value_computers/relative_gain.cpp
         src/module/trajectory_evaluator/value_computers/trivial_gain.cpp
+        src/module/trajectory_evaluator/value_computers/global_normalized_gain.cpp
         src/module/trajectory_evaluator/voxel_type_evaluator.cpp
         src/module/trajectory_evaluator/voxel_weight_evaluator.cpp
         src/module/trajectory_evaluator/yaw_planning_evaluator.cpp

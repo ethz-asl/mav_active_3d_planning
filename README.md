@@ -1,13 +1,19 @@
-The mav_active_3d_planning package is dedicated to the design, evaluation and application of active path planning algorithms for MAVs. We provide a framework for creating, evaluating and employing primarily sampling based, receding horizon algorithms that optimize a gain while minimizing a cost, for example exploration and quality against execution time in the case of autonomous 3D reconstruction. 
+The mav_active_3d_planning package is dedicated to the design, evaluation and application of active informative path planning algorithms. 
+We provide a modular framework for creating, evaluating and employing primarily sampling based, receding horizon algorithms that optimize a gain while minimizing a cost.
+For example, maximizing exploration and quality against execution time in the case of autonomous 3D reconstruction. 
+
 
 # Paper
-If you find this package useful for your research, please consider citing:
+If you find this package useful for your research, please consider citing our paper:
 ```
 @beingWritten{
   A paper is currently being written.
   The repo is for confidential use only at the moment.
 }
 ```
+
+The presented planner is given in `cfg/planners/reconstruction_planner.yaml`.
+A video of the approach is available on [YouTube](#https://www.youtube.com/watch?v=lEadqJ1_8Do&t=9s).
 
 # Table of Contents
 **Installation**
@@ -71,12 +77,15 @@ Related ressources, such as experiment scenarios and ground truth point clouds, 
 
 # Examples
 ## Configuring a Planner
-The `active_3d_planning_app_reconstruction` is an application package, that builds and launches an active\_3d\_planner.
-A verbose example of how planners are created through a config is given in `cfg/example_config.yaml`. The presented planner uses local motion primitives to expand new segments and the number of unknown voxels as gain formulation. To see the planner in action, start an unreal\_cv\_ros game, e.g. CityBuilding, make sure to tab out of game control with Ctrl+Shift+F1 and then run 
+The `active_3d_planning_app_reconstruction` is an application package, that launches an active\_3d\_planner.
+A verbose example of how planner configurations are specified is given in `cfg/planners/example_config.yaml`.
+The example planner uses local motion primitives to expand new segments and the number of unknown voxels as gain formulation. 
+To see the planner in action, start an unreal\_cv\_ros game, e.g. CityBuilding, make sure to tab out of game control with Ctrl+Shift+F1 and then run 
 ```
 roslaunch active_3d_planning_app_reconstruction example.launch
 ```
-The planner will be built from the config file and visualized in RVIZ. A useful parameter to set is `verbose_modules: true`, as all available params of all built modules will be printed to console. 
+The planner will be built from the config file and visualized in RVIZ. 
+A useful parameter to set is `verbose_modules: true`, as all available params of all built modules will be printed to console. 
 
 ![mav_3d_ex_config](https://user-images.githubusercontent.com/36043993/58561558-aaa84280-8227-11e9-9b89-def052db17a8.png)
 

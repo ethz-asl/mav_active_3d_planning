@@ -161,6 +161,7 @@ namespace active_3d_planning {
             if (planning_) {
                 loopIteration();
             }
+            // [check update /exit conditions here]
         }
     }
 

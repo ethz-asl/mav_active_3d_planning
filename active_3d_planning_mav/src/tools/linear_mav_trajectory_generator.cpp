@@ -19,12 +19,10 @@ void LinearMavTrajectoryGenerator::setConstraints(double v_max, double a_max,
       ICT::kFMin, 0.5 * 9.81); // minimum acceleration in [m/s/s].
   input_constraints.addConstraint(
       ICT::kFMax, 1.5 * 9.81); // maximum acceleration in [m/s/s].
-  input_constraints.addConstraint(ICT::kVMax,
-                                  v_max); // maximum velocity in [m/s].
+  input_constraints.addConstraint(ICT::kVMax, v_max); // maximum velocity in [m/s].
   input_constraints.addConstraint(
       ICT::kOmegaXYMax, M_PI / 2.0); // maximum roll/pitch rates in [rad/s].
-  input_constraints.addConstraint(ICT::kOmegaZMax,
-                                  yaw_rate_max); // max yaw rate [rad/s].
+  input_constraints.addConstraint(ICT::kOmegaZMax, yaw_rate_max); // max yaw rate [rad/s].
   input_constraints.addConstraint(
       ICT::kOmegaZDotMax, yaw_accel_max); // maximum yaw acceleration in [rad/s/s]..
   feasibility_check_ =
@@ -60,9 +58,7 @@ bool LinearMavTrajectoryGenerator::createTrajectory(
   acc4 << start.acceleration_W, start.getYawAcc();
   for (int i = 0; i < 4; ++i) {
     if (start4[i] == goal4[i]) {
-      goal4[i] =
-          goal4[i] +
-          0.001; // If a dimension has same start and stop value nlopt dies ?!
+      goal4[i] = goal4[i] + 1e-3; // If a dimension has same start and stop value nlopt dies ?!
     }
   }
 

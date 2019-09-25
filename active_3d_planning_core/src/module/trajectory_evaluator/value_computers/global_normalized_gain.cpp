@@ -7,10 +7,12 @@ namespace value_computer {
 
 // GlobalNormalizedGain
 ModuleFactoryRegistry::Registration<GlobalNormalizedGain>
-    LinearValue::registration("GlobalNormalizedGain");
+            GlobalNormalizedGain::registration("GlobalNormalizedGain");
 
 GlobalNormalizedGain::GlobalNormalizedGain(PlannerI &planner)
     : ValueComputer(planner) {}
+
+void GlobalNormalizedGain::setupFromParamMap(Module::ParamMap *param_map){}
 
 bool GlobalNormalizedGain::computeValue(TrajectorySegment *traj_in) {
   double gain = 0.0;

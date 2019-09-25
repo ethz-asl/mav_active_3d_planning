@@ -10,7 +10,7 @@ namespace trajectory_generator {
 
 class FeasibleRRTStar : public RRTStar {
 public:
-  FeasibleRRTStar(PlannerI &planner);
+  explicit FeasibleRRTStar(PlannerI &planner);
 
   virtual void setupFromParamMap(Module::ParamMap *param_map) override;
 
@@ -27,7 +27,7 @@ protected:
   bool connectPoses(const EigenTrajectoryPoint &start,
                     const EigenTrajectoryPoint &goal,
                     EigenTrajectoryPointVector *result,
-                    bool check_collision = true) override;
+                    bool check_collision) override;
 
   bool extractTrajectoryToPublish(EigenTrajectoryPointVector *trajectory,
                                   const TrajectorySegment &segment) override;

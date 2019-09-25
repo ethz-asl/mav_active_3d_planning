@@ -23,13 +23,12 @@ RRTStar::RRTStar(PlannerI &planner) : RRT(planner) {}
 void RRTStar::setupFromParamMap(Module::ParamMap *param_map) {
   RRT::setupFromParamMap(param_map);
   setParam<bool>(param_map, "rewire_root", &p_rewire_root_, true);
-  setParam<bool>(param_map, "rewire_intermediate", &p_rewire_intermediate_,
-                 true);
+  setParam<bool>(param_map, "rewire_intermediate", &p_rewire_intermediate_, true);
   setParam<bool>(param_map, "rewire_update", &p_rewire_update_, true);
   setParam<bool>(param_map, "update_subsequent", &p_update_subsequent_, true);
   setParam<bool>(param_map, "reinsert_root", &p_reinsert_root_, true);
   setParam<double>(param_map, "max_rewire_range", &p_max_rewire_range_,
-                   p_max_extension_range_ + 0.2);
+                   p_max_extension_range_ + 0.1);
   setParam<double>(param_map, "max_density_range", &p_max_density_range_, 0.0);
   setParam<int>(param_map, "n_neighbors", &p_n_neighbors_, 10);
   planner_.getFactory().registerLinkableModule("RRTStarGenerator", this);
@@ -45,25 +44,48 @@ bool RRTStar::checkParamsValid(std::string *error_message) {
 
 bool RRTStar::selectSegment(TrajectorySegment **result,
                            TrajectorySegment *root) {
-    bool success = RRT::selectSegment(result, root);
-    if (p_rewire_update_) {
-        rewireIntermediate(root);
+    // If the root has changed, reset the kdtree and populate with the current
+    // trajectory tree
+    if (previous_root_ != root) {
+        resetTree(root);
+        previous_root_ = root;
+        if (p_rewire_update_) {
+            rewireIntermediate(root);
+        }
+        if (p_sampling_mode_ == "semilocal") {
+            // Check whether the minimum number of local points is achieved and store
+            // how many to go
+            double query_pt[3] = {root->trajectory.back().position_W.x(),
+                                  root->trajectory.back().position_W.y(),
+                                  root->trajectory.back().position_W.z()};
+            std::size_t ret_index[p_semilocal_count_];
+            double out_dist[p_semilocal_count_];
+            nanoflann::KNNResultSet<double> resultSet(p_semilocal_count_);
+            resultSet.init(ret_index, out_dist);
+            kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10));
+            semilocal_count_ = p_semilocal_count_;
+            for (int i = 0; i < resultSet.size(); ++i) {
+                if (out_dist[p_semilocal_count_ - 1] <=
+                    p_semilocal_radius_max_ * p_semilocal_radius_max_) {
+                    semilocal_count_ -= 1;
+                }
+            }
+        }
     }
-    return success;
+    return RRT::selectSegment(result, root);
 }
 
 bool RRTStar::expandSegment(TrajectorySegment *target,
                             std::vector<TrajectorySegment *> *new_segments) {
-  tree_is_reset_ =
-      true; // select was called earlier, resetting the tree on new root segment
+  tree_is_reset_ = true; // select was called earlier, resetting the tree on new root segment
   if (!target) {
     // Segment selection failed
     return false;
   }
 
-  // Check max segment range and cropping
+    // Check max segment range and cropping
   if (!adjustGoalPosition(target->trajectory.back().position_W, &goal_pos_)) {
-    return false;
+      return false;
   }
 
   // Check maximum sampling density
@@ -76,33 +98,30 @@ bool RRTStar::expandSegment(TrajectorySegment *target,
     kdtree_->findNeighbors(resultSet, query_pt, nanoflann::SearchParams(10));
     if (resultSet.size() > 0) {
       if (out_dist[0] <= p_max_density_range_ * p_max_density_range_) {
-        return false;
+          return false;
       }
     }
   }
 
-  // Find nearby parent candidates
+    // Compute the gain of the new point (evaluation must be single point!)
+    TrajectorySegment *new_segment;
+    EigenTrajectoryPoint goal_point;
+    goal_point.position_W = goal_pos_;
+    goal_point.setFromYaw((double) rand() / (double) RAND_MAX * 2.0 * M_PI); // random orientation
+    if (p_crop_segments_) {
+        new_segment = target->spawnChild();
+        connectPoses(target->trajectory.back(), goal_point, &(new_segment->trajectory), false);  // collision already checked
+    } else {
+        new_segment = new TrajectorySegment();
+        new_segment->trajectory.push_back(goal_point);
+        new_segment->parent = nullptr;
+    }
+    planner_.getTrajectoryEvaluator().computeGain(new_segment);
+
+    // Find nearby parent candidates
   std::vector<TrajectorySegment *> candidate_parents;
-  if (!findNearbyCandidates(goal_pos_, &candidate_parents)) {
-    // No candidates found
-    return false;
-  }
-
-  // Compute the gain of the new point (evaluation must be single point!)
-  TrajectorySegment *new_segment = new TrajectorySegment();
-  EigenTrajectoryPoint goal_point;
-  goal_point.position_W = goal_pos_;
-  goal_point.setFromYaw((double)rand() / (double)RAND_MAX * 2.0 *
-                        M_PI); // random orientation
-  new_segment->trajectory.push_back(goal_point);
-  new_segment->parent = nullptr;
-  planner_.getTrajectoryEvaluator().computeGain(new_segment);
-
-  // Create the trajectory from the best parent and attach the segment to it
-  if (!rewireToBestParent(new_segment, candidate_parents)) {
-    // no possible trajectory found
-    delete new_segment;
-    return false;
+  if (findNearbyCandidates(goal_pos_, &candidate_parents)) {
+      rewireToBestParent(new_segment, candidate_parents);
   }
 
   // Rewire existing segments within range to the new segment, if this increases
@@ -124,10 +143,14 @@ bool RRTStar::expandSegment(TrajectorySegment *target,
   }
 
   // Add to the kdtree
-  tree_data_.addSegment(new_segment);
-  kdtree_->addPoints(tree_data_.points.size() - 1,
-                     tree_data_.points.size() - 1);
-  return true;
+  if (new_segment->parent) {
+      tree_data_.addSegment(new_segment);
+      kdtree_->addPoints(tree_data_.points.size() - 1, tree_data_.points.size() - 1);
+      return true;
+  } else {
+      delete new_segment;
+      return false;
+  }
 }
 
 bool RRTStar::rewireIntermediate(TrajectorySegment *root) {
@@ -193,9 +216,8 @@ bool RRTStar::rewireRoot(TrajectorySegment *root, int *next_segment) {
   // Try rewiring non-next segments (to keept their branches alive)
   std::vector<TrajectorySegment *> to_rewire;
   root->getChildren(&to_rewire);
-  to_rewire.erase(std::remove(to_rewire.begin(), to_rewire.end(), next_root),
-                  to_rewire.end());
-  bool rewired_something = true;
+  to_rewire.erase(std::remove(to_rewire.begin(), to_rewire.end(), next_root), to_rewire.end());
+    bool rewired_something = true;
   while (rewired_something) {
     rewired_something = false;
     for (int i = 0; i < to_rewire.size(); ++i) {
@@ -210,13 +232,10 @@ bool RRTStar::rewireRoot(TrajectorySegment *root, int *next_segment) {
   // If necessary (some segments would die) reinsert old root
   if (p_reinsert_root_ && to_rewire.size() > 0) {
     EigenTrajectoryPointVector new_trajectory;
-    if ((next_root->trajectory.back().position_W -
-         root->trajectory.back().position_W)
-            .norm() > 0.0) {
+    if ((next_root->trajectory.back().position_W - root->trajectory.back().position_W).norm() > 0.0) {
       // don't reinsert zero movement nodes
-      if (connectPoses(next_root->trajectory.back(), root->trajectory.back(),
-                       &new_trajectory)) {
-        TrajectorySegment *reinserted_root = next_root->spawnChild();
+      if (connectPoses(next_root->trajectory.back(), root->trajectory.back(), &new_trajectory, false)) {
+          TrajectorySegment *reinserted_root = next_root->spawnChild();
         reinserted_root->trajectory = new_trajectory;
         // take info from old root (without value since already seen) will be
         // discarded/updated anyways
@@ -224,17 +243,19 @@ bool RRTStar::rewireRoot(TrajectorySegment *root, int *next_segment) {
         planner_.getTrajectoryEvaluator().computeCost(reinserted_root);
         planner_.getTrajectoryEvaluator().computeValue(reinserted_root);
         tree_data_.addSegment(reinserted_root);
-        kdtree_->addPoints(tree_data_.points.size() - 1,
-                           tree_data_.points.size() - 1);
+        kdtree_->addPoints(tree_data_.points.size() - 1, tree_data_.points.size() - 1);
 
         // rewire
-        int j = 0;
-        for (int i = 0; i < to_rewire.size(); ++i) {
-          if (rewireRootSingle(to_rewire[j], next_root)) {
-            to_rewire.erase(to_rewire.begin() + j);
-          } else {
-            ++j;
-          }
+        for (TrajectorySegment* segment : to_rewire) {
+            for (int i = 0; i < segment->parent->children.size(); ++i) {
+                if (segment->parent->children[i].get() == segment) {
+                    // Move from existing parent
+                    reinserted_root->children.push_back(
+                            std::move(segment->parent->children[i]));
+                    segment->parent->children.erase(segment->parent->children.begin() + i);
+                    segment->parent = reinserted_root;
+                }
+            }
         }
       }
     }
@@ -254,8 +275,7 @@ bool RRTStar::rewireRootSingle(TrajectorySegment *segment,
                                TrajectorySegment *new_root) {
   // Try rewiring a single segment
   std::vector<TrajectorySegment *> candidate_parents;
-  if (!findNearbyCandidates(segment->trajectory.back().position_W,
-                            &candidate_parents)) {
+  if (!findNearbyCandidates(segment->trajectory.back().position_W, &candidate_parents)) {
     return false;
   }
 
@@ -298,8 +318,7 @@ bool RRTStar::findNearbyCandidates(const Eigen::Vector3d &target_point,
   return candidate_found;
 }
 
-bool RRTStar::rewireToBestParent(
-    TrajectorySegment *segment,
+bool RRTStar::rewireToBestParent(TrajectorySegment *segment,
     const std::vector<TrajectorySegment *> &candidates, bool force_rewire) {
   // Evaluate all candidate parents and store the best one in the segment
   // Goal is the end point of the segment
@@ -336,7 +355,7 @@ bool RRTStar::rewireToBestParent(
     planner_.getTrajectoryEvaluator().computeValue(segment);
     if (segment->parent == initial_parent) {
       // Back to old parent
-      return true;
+      return ~force_rewire;
     } else if (initial_parent == nullptr) {
       // Found new parent
       segment->parent->children.push_back(

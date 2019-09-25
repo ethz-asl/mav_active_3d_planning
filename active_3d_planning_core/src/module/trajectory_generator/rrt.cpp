@@ -153,8 +153,7 @@ bool RRT::expandSegment(TrajectorySegment *target,
   EigenTrajectoryPoint goal_point;
   goal_point.position_W = goal_pos_;
   if (p_sample_yaw_) {
-    goal_point.setFromYaw((double)rand() / (double)RAND_MAX * 2.0 *
-                          M_PI); // random orientation
+    goal_point.setFromYaw((double)rand() / (double)RAND_MAX * 2.0 * M_PI); // random orientation
   } else {
     goal_point.setFromYaw(
         std::atan2(goal_pos_.x() - start_point.position_W.x(),
@@ -234,11 +233,10 @@ bool RRT::connectPoses(const EigenTrajectoryPoint &start,
   // try creating a linear trajectory and check for collision
   Eigen::Vector3d start_pos = start.position_W;
   Eigen::Vector3d direction = goal.position_W - start_pos;
-  int n_points = std::ceil(direction.norm() / p_sampling_rate_ * planner_.getSystemConstraints().v_max);
+  int n_points = std::ceil(direction.norm() / planner_.getSystemConstraints().v_max * p_sampling_rate_);
   if (check_collision) {
     for (int i = 0; i < n_points; ++i) {
-      if (!checkTraversable(start_pos +
-                            (double)i / (double)n_points * direction)) {
+      if (!checkTraversable(start_pos + (double)i / (double)n_points * direction)) {
         return false;
       }
     }
@@ -261,8 +259,7 @@ bool RRT::connectPoses(const EigenTrajectoryPoint &start,
 bool RRT::adjustGoalPosition(const Eigen::Vector3d &start_pos,
                              Eigen::Vector3d *goal_pos_) {
   Eigen::Vector3d direction = *goal_pos_ - start_pos;
-  if (p_max_extension_range_ > 0.0 &&
-      direction.norm() > p_max_extension_range_) {
+  if (p_max_extension_range_ > 0.0 && direction.norm() > p_max_extension_range_) {
     // check max length
     direction *= p_max_extension_range_ / direction.norm();
   }
@@ -272,8 +269,7 @@ bool RRT::adjustGoalPosition(const Eigen::Vector3d &start_pos,
       for (int i = 0; i < n_points; ++i) {
           if (!checkTraversable(start_pos +
                                 (double)i / (double)n_points * direction)) {
-            double length = direction.norm() * (double)(i - 1) / (double)n_points -
-                            p_crop_margin_;
+            double length = direction.norm() * (double)(i - 1) / (double)n_points - p_crop_margin_;
             if (length <= p_crop_min_length_) {
               return false;
             }
