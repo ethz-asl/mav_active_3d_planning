@@ -5,23 +5,25 @@
 #include "active_3d_planning/module/trajectory_evaluator.h"
 
 namespace active_3d_planning {
-namespace value_computer {
-// Use the best subsequent value for each segment in the subtree
-class GlobalNormalizedGain : public ValueComputer {
-public:
-  GlobalNormalizedGain(PlannerI &planner);
-  // override virtual functions
-  bool computeValue(TrajectorySegment *traj_in) override;
+    namespace value_computer {
 
-  void setupFromParamMap(Module::ParamMap *param_map) override;
+        // Use the best subsequent value for each segment in the subtree
+        class GlobalNormalizedGain : public ValueComputer {
+        public:
+            GlobalNormalizedGain(PlannerI &planner);
 
-protected:
-  static ModuleFactoryRegistry::Registration<GlobalNormalizedGain> registration;
+            // override virtual functions
+            bool computeValue(TrajectorySegment *traj_in) override;
 
-  // methods
-  double findBest(TrajectorySegment *current, double gain, double cost);
-};
+            void setupFromParamMap(Module::ParamMap *param_map) override;
 
-} // namespace value_computer
+        protected:
+            static ModuleFactoryRegistry::Registration<GlobalNormalizedGain> registration;
+
+            // methods
+            double findBest(TrajectorySegment *current, double gain, double cost);
+        };
+
+    } // namespace value_computer
 } // namespace active_3d_planning
 #endif // MAV_ACTIVE_3D_PLANNING_GLOBAL_NORMALIZED_GAIN_VALUE_COMPUTERS_H

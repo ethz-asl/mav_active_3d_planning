@@ -16,7 +16,7 @@ target_bounding_volume:
   y_max: 8
   z_min: -1.5
   z_max: 10
-  
+
 # System Constraints
 planner:
   system_constraints:

@@ -10,7 +10,7 @@ namespace active_3d_planning {
 
         VoxbloxMap::VoxbloxMap(PlannerI &planner) : TSDFMap(planner) {}
 
-        voxblox::EsdfServer &VoxbloxMap::getESDFServer(){
+        voxblox::EsdfServer &VoxbloxMap::getESDFServer() {
             return *esdf_server_;
         }
 
@@ -24,10 +24,11 @@ namespace active_3d_planning {
             // cache constants
             c_voxel_size_ = esdf_server_->getEsdfMapPtr()->voxel_size();
             c_block_size_ = esdf_server_->getEsdfMapPtr()->block_size();
-            c_maximum_weight_ = voxblox::getTsdfIntegratorConfigFromRosParam(nh_private).max_weight;    // direct access is not exposed
+            c_maximum_weight_ = voxblox::getTsdfIntegratorConfigFromRosParam(
+                    nh_private).max_weight;    // direct access is not exposed
         }
 
-        bool VoxbloxMap::isTraversable(const Eigen::Vector3d &position, const Eigen::Quaterniond &orientation){
+        bool VoxbloxMap::isTraversable(const Eigen::Vector3d &position, const Eigen::Quaterniond &orientation) {
             double distance = 0.0;
             if (esdf_server_->getEsdfMapPtr()->getDistanceAtPosition(position, &distance)) {
                 // This means the voxel is observed
@@ -36,16 +37,16 @@ namespace active_3d_planning {
             return false;
         }
 
-        bool VoxbloxMap::isObserved(const Eigen::Vector3d &point){
+        bool VoxbloxMap::isObserved(const Eigen::Vector3d &point) {
             return esdf_server_->getEsdfMapPtr()->isObserved(point);
         }
 
         // get occupancy
-        unsigned char VoxbloxMap::getVoxelState(const Eigen::Vector3d &point){
+        unsigned char VoxbloxMap::getVoxelState(const Eigen::Vector3d &point) {
             double distance = 0.0;
             if (esdf_server_->getEsdfMapPtr()->getDistanceAtPosition(point, &distance)) {
                 // This means the voxel is observed
-                if (distance < c_voxel_size_){
+                if (distance < c_voxel_size_) {
                     return VoxbloxMap::OCCUPIED;
                 } else {
                     return VoxbloxMap::FREE;

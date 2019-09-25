@@ -5,29 +5,30 @@
 #include "active_3d_planning/module/trajectory_evaluator.h"
 
 namespace active_3d_planning {
-namespace evaluator_updater {
+    namespace evaluator_updater {
 
-// Remove all segments that dont have a minimum value, can then call another
-// updater
-class PruneDirect : public EvaluatorUpdater {
-public:
-  explicit PruneDirect(PlannerI &planner);
-  bool updateSegment(TrajectorySegment *segment) override;
-  void setupFromParamMap(Module::ParamMap *param_map) override;
+        // Remove all segments that dont have a minimum value, can then call another
+        // updater
+        class PruneDirect : public EvaluatorUpdater {
+        public:
+            explicit PruneDirect(PlannerI &planner);
 
-protected:
-  static ModuleFactoryRegistry::Registration<PruneDirect> registration;
+            bool updateSegment(TrajectorySegment *segment) override;
 
+            void setupFromParamMap(Module::ParamMap *param_map) override;
 
-  // params
-  double p_minimum_value_;     // value below which segments are cropped
-  double p_minimum_gain_;      // gain below which segments are cropped
-  double p_maximum_cost_;      // gain below which segments are cropped
+        protected:
+            static ModuleFactoryRegistry::Registration<PruneDirect> registration;
 
-    std::unique_ptr<EvaluatorUpdater> following_updater_;
-};
+            // params
+            double p_minimum_value_;     // value below which segments are cropped
+            double p_minimum_gain_;      // gain below which segments are cropped
+            double p_maximum_cost_;      // gain below which segments are cropped
 
-} // namespace evaluator_updater
+            std::unique_ptr<EvaluatorUpdater> following_updater_;
+        };
+
+    } // namespace evaluator_updater
 } // namespace active_3d_planning
 
 #endif // ACTIVE_3D_PLANNING_EVALUATOR_UPDATER_PRUNE_DIRECT_H

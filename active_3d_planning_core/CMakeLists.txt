@@ -69,7 +69,7 @@ cs_add_library(${PROJECT_NAME}
         src/module/trajectory_generator/random_linear.cpp
         src/module/trajectory_generator/rrt_star.cpp
         src/module/trajectory_generator/rrt.cpp
-        src/module/trajectory_generator/segment_selector/greedy.cpp
+        src/module/trajectory_generator/segment_selector/greedy_selector.cpp
         src/module/trajectory_generator/segment_selector/random_weighted.cpp
         src/module/trajectory_generator/segment_selector/random_restricted.cpp
         src/module/trajectory_generator/uniform.cpp

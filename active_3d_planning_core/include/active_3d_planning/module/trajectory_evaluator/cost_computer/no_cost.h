@@ -4,21 +4,22 @@
 #include "active_3d_planning/module/trajectory_evaluator.h"
 
 namespace active_3d_planning {
-namespace cost_computer {
+    namespace cost_computer {
 
-class NoCost : public CostComputer {
-public:
-  NoCost(PlannerI &planner);
-  // override virtual functions
-  bool computeCost(TrajectorySegment *traj_in) override;
+        class NoCost : public CostComputer {
+        public:
+            explicit NoCost(PlannerI &planner);
 
-protected:
-  void setupFromParamMap(Module::ParamMap *param_map);
+            // override virtual functions
+            bool computeCost(TrajectorySegment *traj_in) override;
 
-  static ModuleFactoryRegistry::Registration<NoCost> registration;
-};
+        protected:
+            void setupFromParamMap(Module::ParamMap *param_map) override;
 
-} // namespace cost_computer
+            static ModuleFactoryRegistry::Registration<NoCost> registration;
+        };
+
+    } // namespace cost_computer
 } // namespace active_3d_planning
 
 #endif // ACTIVE_3D_PLANNING_COST_COMPUTERS_NO_COST_H

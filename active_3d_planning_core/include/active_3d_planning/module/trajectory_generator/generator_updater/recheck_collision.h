@@ -4,21 +4,22 @@
 #include "active_3d_planning/module/trajectory_generator.h"
 
 namespace active_3d_planning {
-namespace generator_updater {
+    namespace generator_updater {
 
 // Recursively check wether the trajectories are still collision free
-class RecheckCollision : public GeneratorUpdater {
-public:
-  RecheckCollision(PlannerI &planner);
-  // override virtual functions
-  bool updateSegment(TrajectorySegment *segment) override;
+        class RecheckCollision : public GeneratorUpdater {
+        public:
+            RecheckCollision(PlannerI &planner);
 
-  void setupFromParamMap(Module::ParamMap *param_map) override;
+            // override virtual functions
+            bool updateSegment(TrajectorySegment *segment) override;
 
-protected:
-  static ModuleFactoryRegistry::Registration<RecheckCollision> registration;
-};
+            void setupFromParamMap(Module::ParamMap *param_map) override;
 
-} // namespace generator_updater
+        protected:
+            static ModuleFactoryRegistry::Registration<RecheckCollision> registration;
+        };
+
+    } // namespace generator_updater
 } // namespace active_3d_planning
 #endif // ACTIVE_3D_PLANNING_CORE_GENERATOR_UPDATER_RECHECK_COLLISION_H

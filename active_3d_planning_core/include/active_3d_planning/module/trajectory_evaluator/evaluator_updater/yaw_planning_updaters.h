@@ -4,62 +4,63 @@
 #include "active_3d_planning/module/trajectory_evaluator/yaw_planning_evaluator.h"
 
 namespace active_3d_planning {
-namespace evaluator_updater {
-using YawPlanningEvaluator =
-    active_3d_planning::trajectory_evaluator::YawPlanningEvaluator;
+    namespace evaluator_updater {
+        using YawPlanningEvaluator =
+        active_3d_planning::trajectory_evaluator::YawPlanningEvaluator;
 
-// Updater specific for yaw planning evaluators. This adaptor allows yaw
-// planning segments (which have the yaw planning info struct) to be updated by
-// following updaters without further manipulation. Updates only the best view.
-class YawPlanningUpdateAdapter : public EvaluatorUpdater {
-public:
-  explicit YawPlanningUpdateAdapter(PlannerI &planner);
+        // Updater specific for yaw planning evaluators. This adaptor allows yaw
+        // planning segments (which have the yaw planning info struct) to be updated by
+        // following updaters without further manipulation. Updates only the best view.
+        class YawPlanningUpdateAdapter : public EvaluatorUpdater {
+        public:
+            explicit YawPlanningUpdateAdapter(PlannerI &planner);
 
-  // override virtual functions
-  bool updateSegment(TrajectorySegment *segment) override;
+            // override virtual functions
+            bool updateSegment(TrajectorySegment *segment) override;
 
-  void setupFromParamMap(Module::ParamMap *param_map) override;
+            void setupFromParamMap(Module::ParamMap *param_map) override;
 
-protected:
-  // factory acces
-  static ModuleFactoryRegistry::Registration<YawPlanningUpdateAdapter>
-      registration;
+        protected:
+            // factory acces
+            static ModuleFactoryRegistry::Registration<YawPlanningUpdateAdapter>
+                    registration;
 
-  // members
-  std::unique_ptr<EvaluatorUpdater> following_updater_;
+            // members
+            std::unique_ptr<EvaluatorUpdater> following_updater_;
 
-  // params
-  bool p_dynamic_trajectories_; // true: adapt the trajectory of the best view
-                                // during update, can set false in evaluator
-};
+            // params
+            bool p_dynamic_trajectories_; // true: adapt the trajectory of the best view
+            // during update, can set false in evaluator
+        };
 
-// Updater specific for yaw planning evaluators. Updates all orientations stored
-// in the info, then selects the best one and applies it to the segment.
-class YawPlanningUpdater : public EvaluatorUpdater {
-public:
-  explicit YawPlanningUpdater(PlannerI &planner);
-  // override virtual functions
-  bool updateSegment(TrajectorySegment *segment) override;
+        // Updater specific for yaw planning evaluators. Updates all orientations stored
+        // in the info, then selects the best one and applies it to the segment.
+        class YawPlanningUpdater : public EvaluatorUpdater {
+        public:
+            explicit YawPlanningUpdater(PlannerI &planner);
 
-  void setupFromParamMap(Module::ParamMap *param_map) override;
+            // override virtual functions
+            bool updateSegment(TrajectorySegment *segment) override;
 
-protected:
-  // factory acces
+            void setupFromParamMap(Module::ParamMap *param_map) override;
 
-  static ModuleFactoryRegistry::Registration<YawPlanningUpdater> registration;
+        protected:
+            // factory acces
 
-  // members
-  std::unique_ptr<EvaluatorUpdater> following_updater_;
-  YawPlanningEvaluator * evaluator_;
+            static ModuleFactoryRegistry::Registration<YawPlanningUpdater> registration;
 
-  // params
-  bool p_select_by_value_;
-  bool p_dynamic_trajectories_; // If true recompute the trajectories for
-                                // segments that have changed
-  double p_update_range_;       // only update views within this distance of the robot
-  double p_update_gain_;        // only update views with a gain above this value
-};
+            // members
+            std::unique_ptr<EvaluatorUpdater> following_updater_;
+            YawPlanningEvaluator *evaluator_;
 
-} // namespace evaluator_updater
+            // params
+            bool p_select_by_value_;
+            bool p_dynamic_trajectories_; // If true recompute the trajectories for
+            // segments that have changed
+            double p_update_range_;       // only update views within this distance of the robot
+            double p_update_gain_;        // only update views with a gain above this value
+        };
+
+    } // namespace evaluator_updater
 } // namespace active_3d_planning
 #endif // ACTIVE_3D_PLANNING_CORE_EVALUATOR_UPDATER_YAW_PLANNING_UPDATERS_H

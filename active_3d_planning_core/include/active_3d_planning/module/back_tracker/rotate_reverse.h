@@ -8,44 +8,47 @@
 #include <vector>
 
 namespace active_3d_planning {
-namespace back_tracker {
+    namespace back_tracker {
 
-// Try rotating in place, if nothing found reverse most recent segments
-class RotateReverse : public BackTracker {
-public:
-  RotateReverse(PlannerI &planner);
+        // Try rotating in place, if nothing found reverse most recent segments
+        class RotateReverse : public BackTracker {
+        public:
+            RotateReverse(PlannerI &planner);
 
-  // implement virtual functions
-  bool segmentIsExecuted(const TrajectorySegment &segment) override;
-  bool trackBack(TrajectorySegment *target) override;
+            // implement virtual functions
+            bool segmentIsExecuted(const TrajectorySegment &segment) override;
 
-  void setupFromParamMap(Module::ParamMap *param_map) override;
-  bool checkParamsValid(std::string *error_message) override;
+            bool trackBack(TrajectorySegment *target) override;
 
-protected:
-  static ModuleFactoryRegistry::Registration<RotateReverse> registration;
+            void setupFromParamMap(Module::ParamMap *param_map) override;
 
-  // params
-  double turn_rate_;     // rad/s
-  double update_rate_;   // Hz (how often the turn movement is checked for new
-                         // trajectories)
-  double sampling_rate_; // Hz
-  double n_rotations_;
-  int stack_size_;
+            bool checkParamsValid(std::string *error_message) override;
 
-  // variables
-  std::vector<EigenTrajectoryPointVector>
-      stack_; // We use a vector for fixed stack size
-  Eigen::Vector3d last_position_;
-  double last_yaw_;
-  double current_rotation_;
+        protected:
+            static ModuleFactoryRegistry::Registration<RotateReverse> registration;
 
-  // methods
-  virtual bool rotate(TrajectorySegment *target);
-  virtual bool reverse(TrajectorySegment *target);
-};
+            // params
+            double turn_rate_;     // rad/s
+            double update_rate_;   // Hz (how often the turn movement is checked for new
+            // trajectories)
+            double sampling_rate_; // Hz
+            double n_rotations_;
+            int stack_size_;
 
-} // namespace back_tracker
+            // variables
+            std::vector<EigenTrajectoryPointVector>
+                    stack_; // We use a vector for fixed stack size
+            Eigen::Vector3d last_position_;
+            double last_yaw_;
+            double current_rotation_;
+
+            // methods
+            virtual bool rotate(TrajectorySegment *target);
+
+            virtual bool reverse(TrajectorySegment *target);
+        };
+
+    } // namespace back_tracker
 } // namespace active_3d_planning
 
 #endif // ACTIVE_3D_PLANNING_BACK_TRACKER_ROTATE_REVERSE_H

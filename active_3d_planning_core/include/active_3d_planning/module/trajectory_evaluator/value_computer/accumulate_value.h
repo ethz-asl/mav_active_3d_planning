@@ -5,25 +5,26 @@
 #include "active_3d_planning/module/trajectory_evaluator.h"
 
 namespace active_3d_planning {
-namespace value_computer {
+    namespace value_computer {
 
-// Accumulates the values up to the root, use another value computer for
-// individual values (Decorator pattern)
-class AccumulateValue : public ValueComputer {
-public:
-  AccumulateValue(PlannerI &planner);
-  // override virtual functions
-  bool computeValue(TrajectorySegment *traj_in) override;
+        // Accumulates the values up to the root, use another value computer for
+        // individual values (Decorator pattern)
+        class AccumulateValue : public ValueComputer {
+        public:
+            AccumulateValue(PlannerI &planner);
 
-  void setupFromParamMap(Module::ParamMap *param_map) override;
+            // override virtual functions
+            bool computeValue(TrajectorySegment *traj_in) override;
 
-protected:
-  static ModuleFactoryRegistry::Registration<AccumulateValue> registration;
+            void setupFromParamMap(Module::ParamMap *param_map) override;
 
-  // members
-  std::unique_ptr<ValueComputer> following_value_computer_;
-};
+        protected:
+            static ModuleFactoryRegistry::Registration<AccumulateValue> registration;
 
-} // namespace value_computer
+            // members
+            std::unique_ptr<ValueComputer> following_value_computer_;
+        };
+
+    } // namespace value_computer
 } // namespace active_3d_planning
 #endif // ACTIVE_3D_PLANNING_CORE_VALUE_COMPUTER_ACCUMULATE_VALUE_H

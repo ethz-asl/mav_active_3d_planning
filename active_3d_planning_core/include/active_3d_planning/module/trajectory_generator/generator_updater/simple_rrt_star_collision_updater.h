@@ -4,37 +4,39 @@
 #include "active_3d_planning/module/trajectory_generator/rrt_star.h"
 
 namespace active_3d_planning {
-namespace generator_updater {
+    namespace generator_updater {
 
 // Recursively check whether the trajectories are still collision free, if not
 // try to rewire them
-class SimpleRRTStarCollisionUpdater : public GeneratorUpdater {
-public:
-  explicit SimpleRRTStarCollisionUpdater(PlannerI &planner);
-  // override virtual functions
-  bool updateSegment(TrajectorySegment *segment) override;
+        class SimpleRRTStarCollisionUpdater : public GeneratorUpdater {
+        public:
+            explicit SimpleRRTStarCollisionUpdater(PlannerI &planner);
 
-  void setupFromParamMap(Module::ParamMap *param_map) override;
+            // override virtual functions
+            bool updateSegment(TrajectorySegment *segment) override;
 
-protected:
-  static ModuleFactoryRegistry::Registration<SimpleRRTStarCollisionUpdater>
-      registration;
+            void setupFromParamMap(Module::ParamMap *param_map) override;
 
-  // members
-  std::unique_ptr<GeneratorUpdater> following_updater_;
-  // reference to Generator for rewiring
-  trajectory_generator::RRTStar * generator_;
+        protected:
+            static ModuleFactoryRegistry::Registration<SimpleRRTStarCollisionUpdater>
+                    registration;
 
-  // methods
-  bool isCollided(const EigenTrajectoryPointVector &trajectory);
+            // members
+            std::unique_ptr<GeneratorUpdater> following_updater_;
+            // reference to Generator for rewiring
+            trajectory_generator::RRTStar *generator_;
 
-  void checkSingle(TrajectorySegment *segment,
-                   std::vector<TrajectorySegment *> *to_rewire,
-                   std::vector<TrajectorySegment *> *safe_segments);
-  // variables
-  TrajectorySegment *previous_root_;
-};
+            // methods
+            bool isCollided(const EigenTrajectoryPointVector &trajectory);
 
-} // namespace generator_updater
+            void checkSingle(TrajectorySegment *segment,
+                             std::vector<TrajectorySegment *> *to_rewire,
+                             std::vector<TrajectorySegment *> *safe_segments);
+
+            // variables
+            TrajectorySegment *previous_root_;
+        };
+
+    } // namespace generator_updater
 } // namespace active_3d_planning
 #endif // ACTIVE_3D_PLANNING_GENERATOR_UPDATER_SIMPLE_RRT_STAR_COLLISION_UPDATER_H

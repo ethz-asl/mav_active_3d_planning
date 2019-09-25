@@ -4,30 +4,31 @@
 #include "active_3d_planning/module/trajectory_evaluator/simulated_sensor_evaluator.h"
 
 namespace active_3d_planning {
-namespace evaluator_updater {
-using SimulatedSensorEvaluator =
-    active_3d_planning::trajectory_evaluator::SimulatedSensorEvaluator;
+    namespace evaluator_updater {
+        using SimulatedSensorEvaluator =
+        active_3d_planning::trajectory_evaluator::SimulatedSensorEvaluator;
 
-// Updater specific for simulated sensor evaluators. Calls the evaluators
-// computeGainFromVisibleVoxels function
-// -> no need for raycasting again.
-class SimulatedSensorUpdater : public EvaluatorUpdater {
-public:
-  explicit SimulatedSensorUpdater(PlannerI &planner);
-  // override virtual functions
-  bool updateSegment(TrajectorySegment *segment) override;
+        // Updater specific for simulated sensor evaluators. Calls the evaluators
+        // computeGainFromVisibleVoxels function
+        // -> no need for raycasting again.
+        class SimulatedSensorUpdater : public EvaluatorUpdater {
+        public:
+            explicit SimulatedSensorUpdater(PlannerI &planner);
 
-  void setupFromParamMap(Module::ParamMap *param_map) override;
+            // override virtual functions
+            bool updateSegment(TrajectorySegment *segment) override;
 
-protected:
-  static ModuleFactoryRegistry::Registration<SimulatedSensorUpdater>
-      registration;
+            void setupFromParamMap(Module::ParamMap *param_map) override;
 
-  // members
-  std::unique_ptr<EvaluatorUpdater> following_updater_;
-  SimulatedSensorEvaluator * evaluator_;
-};
+        protected:
+            static ModuleFactoryRegistry::Registration<SimulatedSensorUpdater>
+                    registration;
 
-} // namespace evaluator_updater
+            // members
+            std::unique_ptr<EvaluatorUpdater> following_updater_;
+            SimulatedSensorEvaluator *evaluator_;
+        };
+
+    } // namespace evaluator_updater
 } // namespace active_3d_planning
 #endif // ACTIVE_3D_PLANNING_CORE_EVALUATOR_UPDATER_SIMULATED_SENSOR_UPDATERS_H

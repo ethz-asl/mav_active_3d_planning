@@ -16,19 +16,19 @@ highlight_executed_trajectory: true
 
 map:
   type: "VoxbloxMap"
-  
+
 system_constraints:
   v_max: 1.0
   a_max: 1.0
   yaw_rate_max: 1.6
-  yaw_accel_max: 1.6 
+  yaw_accel_max: 1.6
   collision_radius: 0.7
-  
+
 trajectory_generator:
-  collision_optimistic: false 
+  collision_optimistic: false
   bounding_volume_args: "/map_bounding_volume"
   clearing_radius: 0.0
-  
+
   type: "FeasibleRRTStar"
   all_semgents_feasible: false
   crop_segments: true
@@ -38,12 +38,12 @@ trajectory_generator:
   maximum_tries: 1000
   sampling_rate: 20.0
   sample_yaw: true
-  
+
   sampling_mode: "semilocal"
   semilocal_sampling_count: 10
   semilocal_sampling_radius_max: 1.5
   semilocal_sampling_radius_min: 1.5
-  
+
   rewire_root: true
   rewire_intermediate: true
   reinsert_root: true
@@ -53,11 +53,10 @@ trajectory_generator:
 
   generator_updater:
     type: "RecheckCollision"
-  
-# TE
+
 trajectory_evaluator:
   type: "RRTStarEvaluatorAdapter"
-  
+
   following_evaluator:
     type: "ContinuousYawPlanningEvaluator"
     n_directions: 12
@@ -65,21 +64,21 @@ trajectory_evaluator:
     update_range: 3.0
     update_gain: 0.0
     update_sections_separate: false
-    
+
     following_evaluator:
       type: "VoxelWeightEvaluator"
       visualize_sensor_view: true
-      accurate_frontiers: true 
+      accurate_frontiers: true
       checking_distance: 2.0
       bounding_volume_args: "/target_bounding_volume"
       camera_params_ns: "/unreal/unreal_ros_client/camera_params"
-          
+
       frontier_voxel_weight: 1.0
       new_voxel_weight: 0.0
       min_impact_factor: 0.01
       ray_angle_x: 0.002454
       ray_angle_y: 0.002681
-       
+
       sensor_model:
         type: "IterativeRayCaster"
         sampling_time: 0.0
@@ -88,13 +87,13 @@ trajectory_evaluator:
         resolution_x: 172 # 640-90/172-30/127-22.5 deg fov
         resolution_y: 480
         downsampling_factor: 5.0
-        
+
       cost_computer:
         type: "SegmentTime"
-          
+
       value_computer:
         type: "GlobalNormalizedGain"
-        
+
       next_selector:
         type: "SubsequentBest"
 

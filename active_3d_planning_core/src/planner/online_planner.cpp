@@ -12,20 +12,20 @@
 
 namespace active_3d_planning {
 
-    OnlinePlanner::OnlinePlanner(ModuleFactory* factory, Module::ParamMap *param_map)
+    OnlinePlanner::OnlinePlanner(ModuleFactory *factory, Module::ParamMap *param_map)
             : factory_(factory), running_(false), planning_(false) {
         // Setup params
         OnlinePlanner::setupFromParamMap(param_map);
     }
 
-    OnlinePlanner::~OnlinePlanner(){
+    OnlinePlanner::~OnlinePlanner() {
         // shutdown filestream
-        if(perf_log_file_.is_open()){
+        if (perf_log_file_.is_open()) {
             perf_log_file_.close();
         }
     }
 
-    void OnlinePlanner::setupFromParamMap(Module::ParamMap *param_map){
+    void OnlinePlanner::setupFromParamMap(Module::ParamMap *param_map) {
         // Setup Params
         bool verbose_modules;
         bool build_modules_on_init;
@@ -119,13 +119,15 @@ namespace active_3d_planning {
     }
 
     // logging and printing: default to std::cout in worst case
-    void OnlinePlanner::printInfo(const std::string &text){
+    void OnlinePlanner::printInfo(const std::string &text) {
         std::cout << "Info: " << text << std::endl;
     }
-    void OnlinePlanner::printWarning(const std::string &text){
+
+    void OnlinePlanner::printWarning(const std::string &text) {
         std::cout << "Warning: " << text << std::endl;
     }
-    void OnlinePlanner::printError(const std::string &text){
+
+    void OnlinePlanner::printError(const std::string &text) {
         std::cout << "Error: " << text << std::endl;
     }
 
@@ -148,7 +150,7 @@ namespace active_3d_planning {
         new_segment_tries_ = 0;
         min_new_value_reached_ = p_min_new_value_ == 0.0;
         vis_completed_count_ = 0;
-        std::fill(perf_log_data_.begin(), perf_log_data_.begin()+5, 0.0);
+        std::fill(perf_log_data_.begin(), perf_log_data_.begin() + 5, 0.0);
 
         // Launch expansion as current goal is considered reached
         target_reached_ = true;
@@ -230,14 +232,14 @@ namespace active_3d_planning {
             if (p_verbose_) {
                 std::stringstream ss;
                 ss << "Replanning!\n(" << std::setprecision(3) << perf_runtime << "s elapsed, "
-                    << num_trajectories - info_count_ + 1 << " new, " << num_trajectories << " total, "
-                    << info_killed_next_ + 1 <<" killed by root change, " << info_killed_update_
-                    << " killed while updating)";
+                   << num_trajectories - info_count_ + 1 << " new, " << num_trajectories << " total, "
+                   << info_killed_next_ + 1 << " killed by root change, " << info_killed_update_
+                   << " killed while updating)";
                 printInfo(ss.str());
             }
         }
         if (p_log_performance_) {
-            perf_vis += (double)(std::clock() - timer) / CLOCKS_PER_SEC;
+            perf_vis += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
 
@@ -249,7 +251,7 @@ namespace active_3d_planning {
         current_segment_->cost = 0.0;
         current_segment_->value = 0.0;
         if (p_log_performance_) {
-            perf_next = (double)(std::clock() - timer) / CLOCKS_PER_SEC;
+            perf_next = (double) (std::clock() - timer) / CLOCKS_PER_SEC;
         }
         trajectories_to_vis.clear();
         current_segment_->getTree(&trajectories_to_vis);
@@ -273,7 +275,7 @@ namespace active_3d_planning {
             publishCompletedTrajectoryVisualization(*current_segment_);
         }
         if (p_log_performance_) {
-            perf_vis += (double)(std::clock() - timer) / CLOCKS_PER_SEC;
+            perf_vis += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
 
@@ -281,12 +283,12 @@ namespace active_3d_planning {
         // recursive tree pass from root to leaves
         updateGeneratorStep(current_segment_.get());
         if (p_log_performance_) {
-            perf_uptg = (double)(std::clock() - timer) / CLOCKS_PER_SEC;
+            perf_uptg = (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
         updateEvaluatorStep(current_segment_.get());
         if (p_log_performance_) {
-            perf_upte = (double)(std::clock() - timer) / CLOCKS_PER_SEC;
+            perf_upte = (double) (std::clock() - timer) / CLOCKS_PER_SEC;
         }
         trajectories_to_vis.clear();
         current_segment_->getTree(&trajectories_to_vis);
@@ -304,9 +306,9 @@ namespace active_3d_planning {
                                << perf_log_data_[1] << "," << perf_log_data_[2] << ","
                                << perf_log_data_[3] << "," << perf_log_data_[4] << ","
                                << perf_next << "," << perf_uptg << "," << perf_upte << ","
-                               << perf_vis << ","  << (double)(std::clock() - perf_cpu_timer_) /
-                                  CLOCKS_PER_SEC ;
-                std::fill(perf_log_data_.begin(), perf_log_data_.begin()+5, 0.0); // reset count
+                               << perf_vis << "," << (double) (std::clock() - perf_cpu_timer_) /
+                                                     CLOCKS_PER_SEC;
+                std::fill(perf_log_data_.begin(), perf_log_data_.begin() + 5, 0.0); // reset count
                 perf_cpu_timer_ = std::clock();
             }
         }
@@ -334,7 +336,7 @@ namespace active_3d_planning {
         TrajectorySegment *expansion_target;
         trajectory_generator_->selectSegment(&expansion_target, current_segment_.get());
         if (p_log_performance_) {
-            perf_log_data_[0] += (double)(std::clock() - timer) / CLOCKS_PER_SEC;
+            perf_log_data_[0] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
 
@@ -342,7 +344,7 @@ namespace active_3d_planning {
         std::vector<TrajectorySegment *> created_segments;
         bool success = trajectory_generator_->expandSegment(expansion_target, &created_segments);
         if (p_log_performance_) {
-            perf_log_data_[1] += (double)(std::clock() - timer) / CLOCKS_PER_SEC;
+            perf_log_data_[1] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
         new_segment_tries_++;
@@ -355,7 +357,7 @@ namespace active_3d_planning {
             trajectory_evaluator_->computeGain(created_segments[i]);
         }
         if (p_log_performance_) {
-            perf_log_data_[2] += (double)(std::clock() - timer) / CLOCKS_PER_SEC;
+            perf_log_data_[2] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
 
@@ -364,7 +366,7 @@ namespace active_3d_planning {
             trajectory_evaluator_->computeCost(created_segments[i]);
         }
         if (p_log_performance_) {
-            perf_log_data_[3] += (double)(std::clock() - timer) / CLOCKS_PER_SEC;
+            perf_log_data_[3] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
             timer = std::clock();
         }
 
@@ -373,7 +375,7 @@ namespace active_3d_planning {
             trajectory_evaluator_->computeValue(created_segments[i]);
         }
         if (p_log_performance_) {
-            perf_log_data_[4] += (double)(std::clock() - timer) / CLOCKS_PER_SEC;
+            perf_log_data_[4] += (double) (std::clock() - timer) / CLOCKS_PER_SEC;
         }
     }
 
@@ -557,7 +559,7 @@ namespace active_3d_planning {
         VisualizationMarkers msg;
         trajectory_evaluator_->visualizeTrajectoryValue(&msg, trajectory);
         int i = 0;
-        for (VisualizationMarker& marker : msg.getMarkers()) {
+        for (VisualizationMarker &marker : msg.getMarkers()) {
             marker.id = i;
             i++;
             marker.ns = "trajectory_evaluation";
@@ -581,7 +583,7 @@ namespace active_3d_planning {
         return false;
     }
 
-    void OnlinePlanner::updateGeneratorStep(TrajectorySegment* target){
+    void OnlinePlanner::updateGeneratorStep(TrajectorySegment *target) {
         // Recursive removal
         int j = 0;
         for (int i = 0; i < target->children.size(); ++i) {
@@ -597,7 +599,7 @@ namespace active_3d_planning {
         }
     }
 
-    void OnlinePlanner::updateEvaluatorStep(TrajectorySegment* target){
+    void OnlinePlanner::updateEvaluatorStep(TrajectorySegment *target) {
         // Recursive removal
         int j = 0;
         for (int i = 0; i < target->children.size(); ++i) {

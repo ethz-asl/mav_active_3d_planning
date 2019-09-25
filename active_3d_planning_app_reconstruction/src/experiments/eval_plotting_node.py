@@ -1,21 +1,18 @@
 #!/usr/bin/env python
 
+import csv
+import datetime
+import numpy as np
+import os
+import re
 # ros
 import rospy
-from std_srvs.srv import Empty
-
+import shutil
 # Python
 import sys
-import numpy as np
-import datetime
-import os
-import shutil
-import csv
-import re
-
 # Plotting
 from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+from std_srvs.srv import Empty
 
 
 class EvalPlotting:
@@ -33,12 +30,12 @@ class EvalPlotting:
         self.evaluate = rospy.get_param('~evaluate', True)
         self.evaluate_volume = rospy.get_param('~evaluate_volume', False)
         self.create_plots = rospy.get_param('~create_plots', True)
-        self.show_plots = rospy.get_param('~show_plots', False)     # Auxiliary param, prob removed later
+        self.show_plots = rospy.get_param('~show_plots', False)  # Auxiliary param, prob removed later
         self.create_meshes = rospy.get_param('~create_meshes', True)
-        self.series = rospy.get_param('~series', False)   # True: skip single evaluation and create
+        self.series = rospy.get_param('~series', False)  # True: skip single evaluation and create
         # series evaluation data and plots for all runs in the target directory
         self.clear_voxblox_maps = rospy.get_param('~clear_voxblox_maps', False)  # rm all maps after eval (disk space!)
-        self.unobservable_points_pct = rospy.get_param('~unobservable_points_pct', 0.0)     # Exluce unobservable points
+        self.unobservable_points_pct = rospy.get_param('~unobservable_points_pct', 0.0)  # Exlude unobservable points
         # from the plots (in percent of total)
 
         # Check for valid params
@@ -63,7 +60,7 @@ class EvalPlotting:
         elif self.method == 'single':
             self.run_single_evaluation(target_dir)
         elif self.method == 'recent':
-            dir_expression = re.compile('\d{8}_\d{6}') # Only check the default names
+            dir_expression = re.compile('\d{8}_\d{6}')  # Only check the default names
             subdirs = [o for o in os.listdir(target_dir) if os.path.isdir(os.path.join(target_dir, o)) and
                        dir_expression.match(o)]
             subdirs.sort(reverse=True)
@@ -77,7 +74,7 @@ class EvalPlotting:
             for subdir in subdirs:
                 self.run_single_evaluation(os.path.join(target_dir, subdir))
 
-        rospy.loginfo("\n" + "*"*53 + "\n* Evaluation completed successfully, shutting down. *\n" + "*"*53)
+        rospy.loginfo("\n" + "*" * 53 + "\n* Evaluation completed successfully, shutting down. *\n" + "*" * 53)
 
     def run_single_evaluation(self, target_dir):
         rospy.loginfo("Starting evaluation on target '%s'.", target_dir)
@@ -94,12 +91,12 @@ class EvalPlotting:
                 if line[:14] == "[FLAG] Rosbag:":
                     file_name = os.path.join(os.path.dirname(target_dir), "tmp_bags", line[15:] + ".bag")
                     if os.path.isfile(file_name):
-                        os.rename(file_name,  os.path.join(target_dir, "visualization.bag"))
+                        os.rename(file_name, os.path.join(target_dir, "visualization.bag"))
                         self.writelog("Moved the tmp rosbag into 'visualization.bag'")
                         self.eval_log_file.write("[FLAG] Rosbag renamed\n")
                     else:
-                        self.writelog("Error: unable to locate '"+ file_name+"'.")
-                        rospy.logwarn("Error: unable to locate '"+ file_name+"'.")
+                        self.writelog("Error: unable to locate '" + file_name + "'.")
+                        rospy.logwarn("Error: unable to locate '" + file_name + "'.")
 
         self.eval_log_file.close()  # Make it available for voxblox node
 
@@ -222,7 +219,7 @@ class EvalPlotting:
         std_devs = {}
         keys = voxblox_data[0].keys()
         keys.remove('RosTime')
-        keys = ['RosTime'] + keys       # RosTime is expected as the first argument
+        keys = ['RosTime'] + keys  # RosTime is expected as the first argument
         prev_pcls = [0.0] * len(voxblox_data)
         for key in keys:
             means[key] = np.array([])
@@ -287,15 +284,16 @@ class EvalPlotting:
         x_early = []
         for i in range(len(voxblox_data)):
             dataset = voxblox_data[i]
-            length = len(dataset['RosTime'])-1
-            if length < max_data_length-1:
+            length = len(dataset['RosTime']) - 1
+            if length < max_data_length - 1:
                 early_stops.append(length)
                 x_early.append(float(dataset['RosTime'][length]))
                 self.writelog("Early stop detected for '%s' at %.2fs." % (names[i], float(dataset['RosTime'][length])))
 
         fig, axes = plt.subplots(3, 2)
         axes[0, 0].plot(x, means['MeanError'], 'b-')
-        axes[0, 0].fill_between(x, means['MeanError']-std_devs['MeanError'], means['MeanError'] + std_devs['MeanError'],
+        axes[0, 0].fill_between(x, means['MeanError'] - std_devs['MeanError'],
+                                means['MeanError'] + std_devs['MeanError'],
                                 facecolor='b', alpha=.2)
         axes[0, 0].plot([x[i] for i in early_stops], [means['MeanError'][i] for i in early_stops], 'kx',
                         markersize=9, markeredgewidth=2)
@@ -339,7 +337,7 @@ class EvalPlotting:
             axes[0, 1].fill_between(x, means['Volume'] - std_devs['Volume'], means['Volume'] + std_devs['Volume'],
                                     facecolor='g', alpha=.2)
             axes[0, 1].set_ylabel('Explored Volume [m3]')
-            axes[0, 1].set_ylim(0, 40*40*3)
+            axes[0, 1].set_ylim(0, 40 * 40 * 3)
         axes[0, 1].set_xlim(left=0, right=x[-1])
         axes[1, 1].plot(x, means['NPointclouds'], 'k-')
         axes[1, 1].fill_between(x, means['NPointclouds'] - std_devs['NPointclouds'],
@@ -354,7 +352,7 @@ class EvalPlotting:
         x = np.concatenate((np.array([0]), x[:-1]))
         axes[2, 1].plot(x, cpu_use, 'k-')
         axes[2, 1].fill_between(x, cpu_use - cpu_std, cpu_use + cpu_std, facecolor='k', alpha=.2)
-        axes[2, 1].plot([x[i*2+1] for i in early_stops], [cpu_use[i*2+1] for i in early_stops], 'kx',
+        axes[2, 1].plot([x[i * 2 + 1] for i in early_stops], [cpu_use[i * 2 + 1] for i in early_stops], 'kx',
                         markersize=9, markeredgewidth=2)
         axes[2, 1].set_ylabel('Simulated CPU usage [cores]')
         axes[2, 1].set_xlabel("Simulated Time [%s]" % unit)
@@ -401,9 +399,9 @@ class EvalPlotting:
         pointclouds = np.cumsum(np.array(data['NPointclouds'], dtype=float))
         ros_time = np.array(data['RosTime'], dtype=float)
         cpu_time = np.array(data['CPUTime'], dtype=float)
-        cpu_use =np.zeros(np.shape(cpu_time))
-        for i in range(len(cpu_time)-1):
-            cpu_use[i] = (cpu_time[i+1])/(ros_time[i+1]-ros_time[i])
+        cpu_use = np.zeros(np.shape(cpu_time))
+        for i in range(len(cpu_time) - 1):
+            cpu_use[i] = (cpu_time[i + 1]) / (ros_time[i + 1] - ros_time[i])
         cpu_use[-1] = cpu_use[-2]
         cpu_use = np.repeat(cpu_use, 2)
 
@@ -426,14 +424,14 @@ class EvalPlotting:
         if np.max(unknown) > 0:
             # compensate unobservable voxels
             unknown = (unknown - self.unobservable_points_pct) / (
-                        1.0 - self.unobservable_points_pct)  # compensate invisible
+                    1.0 - self.unobservable_points_pct)  # compensate invisible
             unknown = np.maximum(unknown, np.zeros_like(unknown))
             axes[0, 1].set_ylabel('Unknown Voxels [%]')
             axes[0, 1].set_ylim(0, 1)
         else:
             unknown = np.array(data['Volume'], dtype=float)
             axes[0, 1].set_ylabel('Explored Volume [m3]')
-            axes[0, 1].set_ylim(0, 40*40*3)
+            axes[0, 1].set_ylim(0, 40 * 40 * 3)
         axes[0, 1].plot(x, unknown, 'g-')
         axes[0, 1].set_xlim(left=0, right=x[-1])
         axes[1, 1].plot(x, pointclouds, 'k-')
@@ -490,16 +488,16 @@ class EvalPlotting:
         y9 = 1.0 - np.divide(y_ros, y_tot)
 
         sum_tot = np.sum(y_tot)
-        s0 = np.sum(y_select)/sum_tot*100
-        s1 = np.sum(y_expand)/sum_tot*100
-        s2 = np.sum(y_gain)/sum_tot*100
-        s3 = np.sum(y_cost)/sum_tot*100
-        s4 = np.sum(y_value)/sum_tot*100
-        s5 = np.sum(y_next)/sum_tot*100
-        s6 = np.sum(y_upTG)/sum_tot*100
-        s7 = np.sum(y_upTE)/sum_tot*100
-        s8 = np.sum(y_vis)/sum_tot*100
-        s9 = np.sum(y_ros)/sum_tot*100
+        s0 = np.sum(y_select) / sum_tot * 100
+        s1 = np.sum(y_expand) / sum_tot * 100
+        s2 = np.sum(y_gain) / sum_tot * 100
+        s3 = np.sum(y_cost) / sum_tot * 100
+        s4 = np.sum(y_value) / sum_tot * 100
+        s5 = np.sum(y_next) / sum_tot * 100
+        s6 = np.sum(y_upTG) / sum_tot * 100
+        s7 = np.sum(y_upTE) / sum_tot * 100
+        s8 = np.sum(y_vis) / sum_tot * 100
+        s9 = np.sum(y_ros) / sum_tot * 100
         s10 = 100 - s0 - s1 - s2 - s3 - s4 - s5 - s6 - s7 - s8 - s9
 
         x = np.repeat(x, 2)
@@ -558,7 +556,7 @@ class EvalPlotting:
                      y_select + y_expand + y_gain + y_cost + y_value + y_next + y_upTE + y_upTG]  # Total, Planning
         cpu_use = [np.array([])] * len(cpu_times)
         i = 0
-        averaging_threshold = 2.0    # seconds, for smoothing
+        averaging_threshold = 2.0  # seconds, for smoothing
         t_curr = ros_time[0]
         x_curr = 0
         cpu_curr = [time[0] for time in cpu_times]

@@ -2,22 +2,18 @@
 
 # ros
 import rospy
-from std_msgs.msg import String
 from sensor_msgs.msg import PointCloud2
+from std_msgs.msg import String
 from std_srvs.srv import SetBool
 from voxblox_msgs.srv import FilePath
-import tf
-
 # Python
 import sys
-import math
-import numpy as np
-import os
 import time
-import datetime
 import csv
-import subprocess
+import datetime
+import os
 import re
+import subprocess
 
 
 class EvalData:
@@ -26,9 +22,9 @@ class EvalData:
         '''  Initialize ros node and read params '''
         # Parse parameters
         self.ns_planner = rospy.get_param('~ns_planner', "/firefly/planner_node")
-        self.planner_delay = rospy.get_param('~delay', 0.0)     # Waiting time until the planner is launched
-        self.evaluate = rospy.get_param('~evaluate', False)     # Periodically save the voxblox state In reality literally blocks everything...)
-        self.startup_timeout = rospy.get_param('~startup_timeout', 0.0)     # Max allowed time for startup, 0 for inf
+        self.planner_delay = rospy.get_param('~delay', 0.0)  # Waiting time until the planner is launched
+        self.evaluate = rospy.get_param('~evaluate', False)  # Periodically save the voxblox state
+        self.startup_timeout = rospy.get_param('~startup_timeout', 0.0)  # Max allowed time for startup, 0 for inf
 
         self.eval_frequency = rospy.get_param('~eval_frequency', 5.0)  # Save rate in seconds
         self.time_limit = rospy.get_param('~time_limit', 0.0)  # Maximum sim duration in minutes, 0 for inf
@@ -46,7 +42,6 @@ class EvalData:
                 sys.exit(-1)
 
             self.ns_voxblox = rospy.get_param('~ns_voxblox', "/voxblox/voxblox_node")
-
 
             # Statistics
             self.eval_n_maps = 0
@@ -210,4 +205,3 @@ if __name__ == '__main__':
     rospy.init_node('eval_data_node', anonymous=True)
     ed = EvalData()
     rospy.spin()
-

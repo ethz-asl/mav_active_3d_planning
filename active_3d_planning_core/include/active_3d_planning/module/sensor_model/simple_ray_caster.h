@@ -6,36 +6,36 @@
 #include "active_3d_planning/module/sensor_model/camera_model.h"
 
 namespace active_3d_planning {
-namespace sensor_model {
+    namespace sensor_model {
 
-// Get minimum resolution reuqired for 1 ray per voxel at max distance, then
-// cast a ray through every such voxel to detect visible voxels (timed at 98 +/-
-// 30 ms)
-class SimpleRayCaster : public CameraModel {
-public:
-  SimpleRayCaster(PlannerI &planner);
-  virtual ~SimpleRayCaster() = default;
+        // Get minimum resolution reuqired for 1 ray per voxel at max distance, then
+        // cast a ray through every such voxel to detect visible voxels (timed at 98 +/- 30 ms)
+        class SimpleRayCaster : public CameraModel {
+        public:
+            SimpleRayCaster(PlannerI &planner);
 
-  // Override virutal functions
-  bool getVisibleVoxels(std::vector<Eigen::Vector3d> *result,
-                        const Eigen::Vector3d &position,
-                        const Eigen::Quaterniond &orientation) override;
+            virtual ~SimpleRayCaster() = default;
 
-  void setupFromParamMap(Module::ParamMap *param_map) override;
+            // Override virutal functions
+            bool getVisibleVoxels(std::vector<Eigen::Vector3d> *result,
+                                  const Eigen::Vector3d &position,
+                                  const Eigen::Quaterniond &orientation) override;
 
-protected:
-  static ModuleFactoryRegistry::Registration<SimpleRayCaster> registration;
+            void setupFromParamMap(Module::ParamMap *param_map) override;
 
-  // params
-  double p_ray_step_;
-  double p_downsampling_factor_; // Artificially reduce the minimum resolution
-                                 // to increase performance
+        protected:
+            static ModuleFactoryRegistry::Registration<SimpleRayCaster> registration;
 
-  // constants
-  int c_res_x_; // factual resolution that is used for ray casting
-  int c_res_y_;
-};
+            // params
+            double p_ray_step_;
+            double p_downsampling_factor_; // Artificially reduce the minimum resolution
+            // to increase performance
 
-} // namespace sensor_model
+            // constants
+            int c_res_x_; // factual resolution that is used for ray casting
+            int c_res_y_;
+        };
+
+    } // namespace sensor_model
 } // namespace active_3d_planning
 #endif // ACTIVE_3D_PLANNING_CORE_SENSOR_MODEL_SIMPLE_RAY_CASTER_H

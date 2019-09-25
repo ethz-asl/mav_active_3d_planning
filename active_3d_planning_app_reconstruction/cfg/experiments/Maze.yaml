@@ -16,7 +16,7 @@ evaluation_bounding_volum:
   y_max: 20.0
   z_min: -1.5
   z_max: 1.5
-  
+
 target_bounding_volume:
   x_min: -25.0
   x_max: 25.0
@@ -24,7 +24,7 @@ target_bounding_volume:
   y_max: 25.0
   z_min: -1.5
   z_max: 1.5
-  
+
 # System Constraints
 planner:
   system_constraints:

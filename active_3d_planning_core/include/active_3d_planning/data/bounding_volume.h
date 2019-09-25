@@ -9,31 +9,31 @@
 
 namespace active_3d_planning {
 
-// struct for bounding volumes (simple box atm, might include z-rotation,
-// sphere, set of planes, ...)
-struct BoundingVolume : public Module {
-  BoundingVolume(PlannerI &planner);
+    // struct for bounding volumes (simple box atm, might include z-rotation,
+    // sphere, set of planes, ...)
+    struct BoundingVolume : public Module {
+        BoundingVolume(PlannerI &planner);
 
-  virtual ~BoundingVolume() = default;
+        virtual ~BoundingVolume() = default;
 
-  // factory parametrization
-  void setupFromFactory(std::string args, bool verbose);
+        // factory parametrization
+        void setupFromFactory(std::string args, bool verbose);
 
-  // populate the bounding volume
-  void setupFromParamMap(Module::ParamMap *param_map);
+        // populate the bounding volume
+        void setupFromParamMap(Module::ParamMap *param_map);
 
-  // check wether point is in bounding box, if bounding box is setup
-  bool contains(const Eigen::Vector3d &point);
+        // check wether point is in bounding box, if bounding box is setup
+        bool contains(const Eigen::Vector3d &point);
 
-  // variables
-  bool is_setup;
-  double x_min, x_max, y_min, y_max, z_min, z_max,
-      rotation; // meters, rotation around Z in deg
-  Eigen::Quaterniond rotation_quat;
+        // variables
+        bool is_setup;
+        double x_min, x_max, y_min, y_max, z_min, z_max,
+                rotation; // meters, rotation around Z in deg
+        Eigen::Quaterniond rotation_quat;
 
-protected:
-  static ModuleFactoryRegistry::Registration<BoundingVolume> registration;
-};
+    protected:
+        static ModuleFactoryRegistry::Registration<BoundingVolume> registration;
+    };
 
 } // namespace active_3d_planning
 

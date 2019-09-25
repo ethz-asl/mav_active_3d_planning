@@ -5,46 +5,48 @@
 #include "active_3d_planning/module/trajectory_evaluator.h"
 
 namespace active_3d_planning {
-namespace value_computer {
+    namespace value_computer {
 
-// Computes efficiency as gain divided by cost
-class RelativeGain : public ValueComputer {
-public:
-  RelativeGain(PlannerI &planner);
-  // override virtual functions
-  bool computeValue(TrajectorySegment *traj_in) override;
+        // Computes efficiency as gain divided by cost
+        class RelativeGain : public ValueComputer {
+        public:
+            RelativeGain(PlannerI &planner);
 
-  void setupFromParamMap(Module::ParamMap *param_map) override;
+            // override virtual functions
+            bool computeValue(TrajectorySegment *traj_in) override;
 
-protected:
-  static ModuleFactoryRegistry::Registration<RelativeGain> registration;
+            void setupFromParamMap(Module::ParamMap *param_map) override;
 
-  // params
-  bool p_accumulate_; // true: return total gain divided by total cost
-};
+        protected:
+            static ModuleFactoryRegistry::Registration<RelativeGain> registration;
 
-// Computes efficiency as gain divided by cost, where future gains are
-// discounted per segment
-class DiscountedRelativeGain : public ValueComputer {
-public:
-  DiscountedRelativeGain(PlannerI &planner);
-  // override virtual functions
-  bool computeValue(TrajectorySegment *traj_in) override;
+            // params
+            bool p_accumulate_; // true: return total gain divided by total cost
+        };
 
-  void setupFromParamMap(Module::ParamMap *param_map) override;
+        // Computes efficiency as gain divided by cost, where future gains are
+        // discounted per segment
+        class DiscountedRelativeGain : public ValueComputer {
+        public:
+            DiscountedRelativeGain(PlannerI &planner);
 
-protected:
-  static ModuleFactoryRegistry::Registration<DiscountedRelativeGain>
-      registration;
+            // override virtual functions
+            bool computeValue(TrajectorySegment *traj_in) override;
 
-  // params
-  double p_discount_factor_;
+            void setupFromParamMap(Module::ParamMap *param_map) override;
 
-  // recursively compute the discounted gain sum
-  void iterate(TrajectorySegment *current, double *factor, double *gain,
-               double *cost);
-};
+        protected:
+            static ModuleFactoryRegistry::Registration<DiscountedRelativeGain>
+                    registration;
 
-} // namespace value_computer
+            // params
+            double p_discount_factor_;
+
+            // recursively compute the discounted gain sum
+            void iterate(TrajectorySegment *current, double *factor, double *gain,
+                         double *cost);
+        };
+
+    } // namespace value_computer
 } // namespace active_3d_planning
 #endif // ACTIVE_3D_PLANNING_CORE_VALUE_COMPUTER_RELATIVE_GAIN_H

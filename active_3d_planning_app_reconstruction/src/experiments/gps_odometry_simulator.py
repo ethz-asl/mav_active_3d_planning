@@ -1,17 +1,15 @@
 #!/usr/bin/env python
 
-# ros
-import rospy
-from nav_msgs.msg import Odometry
-from geometry_msgs.msg import TransformStamped
-from mav_active_3d_planning.msg import OdometryOffset
-from collections import deque
-import tf
-
 # Python
 import math
 import numpy as np
 import random
+# ros
+import rospy
+import tf
+from collections import deque
+from mav_active_3d_planning.msg import OdometryOffset
+from nav_msgs.msg import Odometry
 
 
 class GPSSimulator:
@@ -23,13 +21,14 @@ class GPSSimulator:
         self.roll_pitch_uncertainty = rospy.get_param('~roll_pitch_uncertainty', 1.0)  # [deg]
         self.yaw_uncertainty = rospy.get_param('~yaw_uncertainty', 3.0)  # [deg]
         self.crop_frequency = rospy.get_param('~crop_frequency', 0.0)  # Hz (0 for max throughput)
-        self.noise_model = rospy.get_param('~noise_model', "ground_truth")  # ground_truth, uniform, gaussian, random_walk
+        self.noise_model = rospy.get_param('~noise_model',
+                                           "ground_truth")  # ground_truth, uniform, gaussian, random_walk
         self.publish_difference = rospy.get_param('~publish_difference', True)
         self.publish_tf = rospy.get_param('~publish_tf', True)
         # constants
         self.uncertainty = np.array([self.position_uncertainty] * 3 + [self.roll_pitch_uncertainty] * 2 +
                                     [self.yaw_uncertainty])
-        self.measure_length = 20    # For correct (constant) output frequency
+        self.measure_length = 20  # For correct (constant) output frequency
 
         # variables
         self.times = deque([0.0] * self.measure_length, self.measure_length)
@@ -87,13 +86,13 @@ class GPSSimulator:
                                 ros_data.pose.pose.position.z])
             msg = OdometryOffset()
             msg.header.stamp = rospy.Time.now()
-            msg.x = (new_pos[0]-prev_pos[0]) * 100    # cm
-            msg.y = (new_pos[1]-prev_pos[1]) * 100
-            msg.z = (new_pos[2]-prev_pos[2]) * 100
+            msg.x = (new_pos[0] - prev_pos[0]) * 100  # cm
+            msg.y = (new_pos[1] - prev_pos[1]) * 100
+            msg.z = (new_pos[2] - prev_pos[2]) * 100
             msg.norm = np.linalg.norm(prev_pos - new_pos) * 100
             (r1, p1, y1) = tf.transformations.euler_from_quaternion(prev_ori)
             (r2, p2, y2) = tf.transformations.euler_from_quaternion(new_ori)
-            msg.roll = self.angle_diff(r1, r2) * 180.0 / math.pi    # deg
+            msg.roll = self.angle_diff(r1, r2) * 180.0 / math.pi  # deg
             msg.pitch = self.angle_diff(p1, p2) * 180.0 / math.pi
             msg.yaw = self.angle_diff(y1, y2) * 180.0 / math.pi
             msg.angle = 2.0 * math.acos(min(math.fabs(np.dot(prev_ori, new_ori)), 1.0)) * 180 / math.pi
@@ -250,7 +249,7 @@ class GPSSimulator:
 
     @staticmethod
     def angle_diff(a1, a2):
-        angle = (a2-a1)
+        angle = (a2 - a1)
         if angle > math.pi:
             angle -= 2.0 * math.pi
         if angle < -math.pi:

@@ -4,9 +4,9 @@
 
 namespace active_3d_planning {
 
-BackTracker::BackTracker(PlannerI &planner) : Module(planner) {}
+    BackTracker::BackTracker(PlannerI &planner) : Module(planner) {}
 
-bool BackTracker::segmentIsExecuted(const TrajectorySegment &segment) {
-  return false; // Default does not register movement
-}
+    bool BackTracker::segmentIsExecuted(const TrajectorySegment &segment) {
+        return false; // Default does not register movement
+    }
 } // namespace active_3d_planning

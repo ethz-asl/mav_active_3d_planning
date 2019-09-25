@@ -1,6 +1,6 @@
 #!/usr/bin/env python 
-from Tkinter import *
 import rospy
+from Tkinter import *
 from std_srvs.srv import Empty
 from std_srvs.srv import SetBool
 

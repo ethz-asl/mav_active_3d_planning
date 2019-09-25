@@ -7,15 +7,15 @@ namespace active_3d_planning {
     // Throw an exception if module parametrization is invalid. Call this after module constructors.
     void ModuleBase::assureParamsValid() {
         std::string error_message(""); // default error
-        if (!checkParamsValid(&error_message)){
+        if (!checkParamsValid(&error_message)) {
             throw std::invalid_argument("Invalid module parameters: " + error_message);
         }
     }
 
-    void ModuleBase::setVerbose(bool verbose){
+    void ModuleBase::setVerbose(bool verbose) {
         verbose_modules_ = verbose;
     }
 
-    Module::Module(PlannerI& planner) : planner_(planner){}
+    Module::Module(PlannerI &planner) : planner_(planner) {}
 
 } // namepsace active_3d_planning

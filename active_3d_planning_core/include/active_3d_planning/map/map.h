@@ -5,17 +5,18 @@
 #include "active_3d_planning/planner/planner_I.h"
 #include "active_3d_planning/data/trajectory.h"
 
-namespace active_3d_planning{
+namespace active_3d_planning {
 
-        // base interface for the bare minimum any map must provide
-    class Map : public Module{
+    // base interface for the bare minimum any map must provide
+    class Map : public Module {
     public:
         virtual ~Map() = default;
+
         Map(PlannerI &planner);
 
         // check collision for a single pose
         virtual bool isTraversable(const Eigen::Vector3d &position,
-                const Eigen::Quaterniond &orientation=Eigen::Quaterniond(1, 0, 0,0)) = 0;
+                                   const Eigen::Quaterniond &orientation = Eigen::Quaterniond(1, 0, 0, 0)) = 0;
 
         // check collision for a path
         virtual bool isTraversablePath(const EigenTrajectoryPointVector &trajectory);

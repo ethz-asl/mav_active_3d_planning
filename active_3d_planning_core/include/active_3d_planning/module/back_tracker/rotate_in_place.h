@@ -4,28 +4,31 @@
 #include "active_3d_planning/module/back_tracker.h"
 
 namespace active_3d_planning {
-namespace back_tracker {
+    namespace back_tracker {
 
-// Try rotating in place until feasible trajectories were found
-class RotateInPlace : public BackTracker {
-public:
-  RotateInPlace(PlannerI &planner);
-  // implement virtual functions
-  bool trackBack(TrajectorySegment *target) override;
-  void setupFromParamMap(Module::ParamMap *param_map) override;
-  bool checkParamsValid(std::string *error_message) override;
+        // Try rotating in place until feasible trajectories were found
+        class RotateInPlace : public BackTracker {
+        public:
+            RotateInPlace(PlannerI &planner);
 
-protected:
-  static ModuleFactoryRegistry::Registration<RotateInPlace> registration;
+            // implement virtual functions
+            bool trackBack(TrajectorySegment *target) override;
 
-  // params
-  double turn_rate_;   // rad/s
-  double update_rate_; // Hz, determines length of rotation arc (after which we
-                       // check for new trajectories)
-  double sampling_rate_; // Hz, trajectory is sampled with sample_rate
-};
+            void setupFromParamMap(Module::ParamMap *param_map) override;
 
-} // namespace back_tracker
+            bool checkParamsValid(std::string *error_message) override;
+
+        protected:
+            static ModuleFactoryRegistry::Registration<RotateInPlace> registration;
+
+            // params
+            double turn_rate_;   // rad/s
+            double update_rate_; // Hz, determines length of rotation arc (after which we
+            // check for new trajectories)
+            double sampling_rate_; // Hz, trajectory is sampled with sample_rate
+        };
+
+    } // namespace back_tracker
 } // namespace active_3d_planning
 
 #endif // ACTIVE_3D_PLANNING_CORE_BACK_TRACKERS_ROTATE_IN_PLACE_H

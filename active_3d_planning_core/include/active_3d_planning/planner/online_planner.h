@@ -24,7 +24,7 @@ namespace active_3d_planning {
 
     class OnlinePlanner : public PlannerI, public ModuleBase {
     public:
-        OnlinePlanner(ModuleFactory* factory, Module::ParamMap *param_map);
+        OnlinePlanner(ModuleFactory *factory, Module::ParamMap *param_map);
 
         virtual ~OnlinePlanner();
 
@@ -35,6 +35,7 @@ namespace active_3d_planning {
         const Eigen::Vector3d &getCurrentPosition() const override {
             return current_position_;
         }
+
         const Eigen::Quaterniond &getCurrentOrientation() const override {
             return current_orientation_;
         }
@@ -65,12 +66,14 @@ namespace active_3d_planning {
 
         // logging and printing
         virtual void printInfo(const std::string &text) override;
+
         virtual void printWarning(const std::string &text) override;
+
         virtual void printError(const std::string &text) override;
 
     protected:
         // factory access
-        ModuleFactory* factory_;
+        ModuleFactory *factory_;
 
         // members
         std::unique_ptr<Map> map_;
@@ -100,7 +103,7 @@ namespace active_3d_planning {
         int info_killed_next_;        // number of segments killed during root change
         int info_killed_update_;      // number of segments killed during updating
         std::ofstream perf_log_file_;  // performance file
-        std::vector<double>  perf_log_data_; // select, expand, gain, cost, value [cpu seconds]
+        std::vector<double> perf_log_data_; // select, expand, gain, cost, value [cpu seconds]
         std::clock_t perf_cpu_timer_; // total time counter
 
         // params
@@ -149,8 +152,9 @@ namespace active_3d_planning {
         bool checkMinNewValue(const std::unique_ptr<TrajectorySegment> &segment);
 
         // Recursively update the tree
-        void updateGeneratorStep(TrajectorySegment* target);
-        void updateEvaluatorStep(TrajectorySegment* target);
+        void updateGeneratorStep(TrajectorySegment *target);
+
+        void updateEvaluatorStep(TrajectorySegment *target);
 
     };
 } // namespace active_3d_planning

@@ -1,6 +1,6 @@
 #include "active_3d_planning/map/map.h"
 
-namespace active_3d_planning{
+namespace active_3d_planning {
 
     Map::Map(PlannerI &planner) : Module(planner) {}
 
