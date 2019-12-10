@@ -18,10 +18,13 @@ highlight_executed_trajectory: true
 # TG
 trajectory_generator:
   collision_optimistic: false 
-  collision_radius: 0.7
+  collision_radius: 1.0
+  clearing_radius: 0.5
   
   type: "FeasibleRRT"
   crop_segments: false
+  crop_margin: 0.3
+  crop_min_length: 0.5
   max_extension_range: 1.5
   use_spheric_sampling: true
   maximum_tries: 1000
