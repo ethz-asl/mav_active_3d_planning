@@ -70,7 +70,7 @@ trajectory_evaluator:
       visualize_sensor_view: true
       accurate_frontiers: true 
       checking_distance: 2.0
-      frontier_voxel_weight: 1.0
+      frontier_voxel_weight: 1.1
       new_voxel_weight: 0.0
       min_impact_factor: 0.01
       ray_angle_x: 0.00217

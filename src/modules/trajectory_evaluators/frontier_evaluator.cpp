@@ -72,7 +72,7 @@ namespace mav_active_3d_planning {
                 for (int i = 0; i < 26; ++i) {
                     if (esdf_map->getDistanceAtPosition(voxel + c_neighbor_voxels_[i], &distance)) {
                         if (p_surface_frontiers_) {
-                            return distance < 0.0;
+                            return distance < c_voxel_size_;
                         } else {
                             return true;
                         }

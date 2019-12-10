@@ -71,6 +71,7 @@ namespace mav_active_3d_planning {
             // Unobserved voxels
             if (p_frontier_voxel_weight_ > 0.0) {
                 if (isFrontierVoxel(voxel)) {
+                    std::cout << ".";
                     return p_frontier_voxel_weight_;
                 }
             }
