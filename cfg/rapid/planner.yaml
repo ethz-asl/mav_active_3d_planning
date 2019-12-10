@@ -1,0 +1,45 @@
+# General
+exploration_strategy: 1            # 1 := rapid exploration || 2 := classic frontier explroation
+choose_closest_frontier: false     # true := select closest frontier || false := select frontier that minimizes velocity correction
+pass_unknown_space: true          # true := slack condition for accessible frontiers 
+max_velocity: 0.7                 # maximum velocity during exploration
+trajectory_throttle: 0.7           # choose s.t. trajectory_velocity is around 1 m/s
+max_rotation: 1.0                  # maximum rotational velocity
+safety_distance: 1.1
+
+# Bounding box to explore
+#box_x_max: 22.0
+#box_x_min: 2.0
+#box_y_max: 10.0
+#box_y_min: -14.0
+#box_z_max: 12.0
+#box_z_min: -1.50
+
+# maze
+box_x_max: 20.0
+box_x_min: -20.0
+box_y_max: 20.0
+box_y_min: -20.0
+box_z_max: 1.50
+box_z_min: -1.50
+
+# Octomap
+resolution: 0.3                    # OctoMap voxel size
+octomap_downsample_factor: 2       # To speed up dijkstra path calculation, build temp. OctoMap with lower resolution
+sensor_model/max_range: 5.0        # Include measured points into map up to this range
+octomap_frame_id: world            # Frame id of displayed OctoMap
+occupancy_max_z: 3.0               # Visualize voxels in lower half space 2.6
+filter_speckles: true              # Remove OctoMap voxels with no neighbors
+
+# Frontier parameters
+downsample_accessible_frontiers: 1 # only check every n-th visible frontier for accessibility, for computation speedup
+frustum_near_plane: 0.0            # near plane of frustum to determine visible frontiers
+frustum_far_plane: 5.0             # far plane of frustum to determine visible frontiers
+
+# Dijkstra path planner
+min_distance_dijkstra: 1.0         # prevent really short dijkstra paths, set minimum distance of path
+max_offset_degree: 45.0            # robot only performs yawing motion when heading differs more than threshold from selected frontier
+
+# Camera parameters
+camera_opening_angle_yaw: 90      # horizontal opening angle of camera, defines frustum to determine visible frontiers
+camera_opening_angle_pitch: 73.7     # vertical opening angle of camera, defines frustum to determine visible frontiers

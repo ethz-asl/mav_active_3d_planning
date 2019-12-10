@@ -1,14 +1,14 @@
 <launch>
   <!-- Data source Data, -->
-  <arg name="target_directory" default="/home/lukas/Documents/MT/Data/R7_exp" />
+  <arg name="target_directory" default="/home/lukas/Documents/MT/Data/review2" />
   <arg name="gt_file_path" default="/home/lukas/Documents/MT/experiment1/gt_surface_pcl.ply"/>
   <arg name="experiment_config" default="experiment1.yaml"/>
   <arg name="method" default="recent"/>
   
   <!-- what to evaluate -->
-  <arg name="series" default="true"/>
-  <arg name="evaluate" default="false"/>
-  <arg name="evaluate_volume" default="true"/>
+  <arg name="series" default="false"/>
+  <arg name="evaluate" default="true"/>
+  <arg name="evaluate_volume" default="false"/>
   <arg name="error_histogram" default="true"/>
   <arg name="create_meshes" default="false"/>
   <arg name="create_plots" default="true"/>

@@ -27,17 +27,17 @@
   
   <!--  Planner arguments (tg_uniform, tg_random_linear, tg_rrt, general, nbvp_bircher, te_frontier, te_yaw, weight_planner, real_world)-->
   <arg name="use_separate_configs" default="false"/>
-  <arg name="planner_general_config" default="planners/Review.yaml"/>
+  <arg name="planner_general_config" default="planners/weight_planner_new_vol.yaml"/>
   <arg name="planner_generator_config" default="planners/modules/tg_rrt.yaml"/>
   <arg name="planner_evaluator_config" default="planners/modules/te_weight.yaml"/>
   <arg name="verbose_planner" default="true"/>
   <arg name="visualize" default="true"/>
   
   <!--  Experiment arguments -->  
-  <arg name="experiment_config" default="experiment1.yaml"/>
-  <arg name="record_data" default="false"/>
-  <arg name="record_visualization" default="false"/>
-  <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
+  <arg name="experiment_config" default="experiment4.yaml"/>
+  <arg name="record_data" default="true"/>
+  <arg name="record_visualization" default="true"/>
+  <arg name="data_directory" default="/home/lukas/Documents/MT/Data/rapid"/> 
   <arg name="data_frequency" default="30.0" />
   <arg name="time_limit" default="30" />
   
@@ -72,7 +72,7 @@
     <!-- MPC trajectory tracker (0.0021 sampling time needs to match odom publish rate!)-->
     <node name="mav_nonlinear_mpc" pkg="mav_nonlinear_mpc" type="nonlinear_mpc_node" respawn="true" clear_params="true">
       <remap from="odometry" to="ground_truth/odometry" />
-      <rosparam file="$(find mav_nonlinear_mpc)/resources/nonlinear_mpc_$(arg mav_name).yaml" />
+      <rosparam file="$(find mav_nonlinear_mpc)/resources/nonlinear_mpc_$(arg mav_name)_rapid.yaml" />
       <rosparam file="$(find mav_disturbance_observer)/resources/disturbance_observer_$(arg mav_name).yaml"/>
       <param name="use_rc_teleop" value="false"/>
       <param name="verbose" value="false" />
@@ -122,7 +122,6 @@
       <param name="flatten_distance" value="$(arg flatten_distance)"/>
       <param name="model_type" value="$(arg model_type)" />
       <param name="maximum_distance" value="$(arg maximum_distance)" />
-      <param name="publish_gray_images" value="$(arg use_rovio)" />
       <param name="k_mu_2" value="0.0024" />
       <param name="k_sigma_2" value="0.0024" />
       <remap from="ue_sensor_raw" to="unreal_ros_client/ue_sensor_raw" />
@@ -178,39 +177,55 @@
       <param name="publish_map_incremental" value="true" />
     </node>
     
-    <!-- Planner -->
-    <node name="planner_node" pkg="mav_active_3d_planning" type="planner_node" output="screen" >
-      <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
-      <remap from="planner_node/tsdf_map_in" to="voxblox_node/tsdf_map_out" />
-      <param name="use_tf_transforms" value="false" />
-      <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
-      <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
-      <param name="update_mesh_every_n_sec" value="0.0" />   
-      <param name="publish_traversable" value="false" />         
+    <!-- Planner -->		
+    <!--rapid-->
+ 	  <node
+	  pkg="realsense_exploration"
+	  type="realsense_exploration_node"
+	  name="realsense_exploration_node"
+	  output="screen"
+	  args="--v=3">
+	  <rosparam file="$(find mav_active_3d_planning)/cfg/rapid/planner.yaml"/>
+<!--	  <remap from="cloud_in" to="pcl_transformer/pcl_out" />	-->
+	  <remap from="cloud_in" to="/unreal/unreal_sensor_model/ue_sensor_out" />	
+	  <!-- input cloud, in world frame! -->
+	  <remap from="pose_estimate" to="aep_adaptor/pose_out"/>  <!-- pose estimate passed to the algorithm -->
+	  <remap from="manual_desired_velocity" to="/velocity_cmd"/> <!-- velocity commands produced by the algorithm in world frame -->
+	  <remap from="start_exploration" to="/start_exploration"/>
+	  <remap from="land" to="/land"/>	  
+	  <remap from="off" to="/off"/>
+	  <remap from="octomap_full" to="/octomap_full"/>
+	  <remap from="feedthrough" to="/feedthrough"/>  
+</node>
+		
+	  <!-- pose_adaptor -->
+		<node name="aep_adaptor" pkg="mav_active_3d_planning" type="aep_adaptor.py" output="screen" required="true">
+	    <remap from="odometry_in" to="/$(arg mav_name)/ground_truth/odometry" />
+	  </node>
+	  <!-- traj adaptor -->
+	  <node name="rapid_trajectory_adapter" pkg="mav_active_3d_planning" type="rapid_trajectory_adapter" output="screen" required="true">
+		    <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
+		    <remap from="vel_in" to="/velocity_cmd" />
+		    <remap from="pose_in" to="aep_adaptor/pose_out" />
+		  </node>
+	  <!-- pcl adaptor -->
+<!--		<node name="pcl_transformer" pkg="mav_active_3d_planning" type="pcl_transformer.py" output="screen" required="true">-->
+<!--	    <remap from="~pcl_in" to="/unreal/unreal_sensor_model/ue_sensor_out" />-->
+<!--	  </node>-->
+	  
+<!--		  <node name="aep_trajectory_adapter" pkg="mav_active_3d_planning" type="aep_trajectory_adapter" output="screen" required="true">-->
+<!--		    <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />-->
+<!--		    <remap from="traj_in" to="/mavros/setpoint_position/local" />-->
+<!--		    <remap from="pose_in" to="aep_adaptor/pose_out" />-->
+<!--		  </node>-->
+	  
+		<!-- tf -->
+		<node pkg="tf" type="static_transform_publisher" name="tf_aep" args="0 0 0 0 0 0 1 /world /map 100"/> 
+		<node pkg="tf" type="static_transform_publisher" name="tf_aep2" args="0 0 0 0 0 0 1 /camera_link /base_link 100"/> 
+
     
-      <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
-      <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
-      <param name="verbose" value="$(arg verbose_planner)" />
-      <param name="visualize" value="$(arg visualize)" />
-      <param name="log_performance" value="$(arg record_data)" />
-    
-      <!-- Experiment dependent -->
-      <param name="trajectory_evaluator/sensor_model/ray_length" value="$(arg ray_length)" />
-      <param name="trajectory_evaluator/bounding_volume_args" value="/target_bounding_volume" />
-      <param name="trajectory_generator/bounding_volume_args" value="/map_bounding_volume" />
-      <param name="trajectory_generator/system_constraints_args" value="/planner/system_constraints" />
-      
-      <!-- General Config -->    
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_general_config)"/>
-    </node>    
-    
-    <!-- Modular config -->    
-    <group if="$(arg use_separate_configs)">
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_generator_config)" ns="planner_node"/>
-      <rosparam command="load" file="$(find mav_active_3d_planning)/cfg/$(arg planner_evaluator_config)" ns="planner_node"/> 
-    </group>
  </group>
 
   <!-- RVIZ Visualization -->
-  <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/experiments/experiment_visualization.rviz" if="$(arg visualize)"/>
+  <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/rapid/visualization.rviz" if="$(arg visualize)"/>
 </launch>

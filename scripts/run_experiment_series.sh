@@ -35,9 +35,9 @@ fi
 
 
 # *** 1st exp ***
-n_experiments=5
-target_dir="/home/lukas/Documents/MT/Data/R6_surface_rays"		# Can reuse same dir to add experiments
-planner_cfg="planners/R6_surface_rays.yaml"
+n_experiments=1
+target_dir="/home/lukas/Documents/MT/Data/review"		# Can reuse same dir to add experiments
+planner_cfg="planners/Review.yaml"
 
 echo "Starting experiment${experiment} series of ${n_experiments} runs at '${target_dir}'!"
 if [ ! -d "$target_dir" ]; then
@@ -60,22 +60,22 @@ roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$t
 
 
 ## *** Run 2nd exp ***
-#n_experiments=12
-#target_dir="/home/lukas/Documents/MT/Data/R7_lin"
-#planner_cfg="planners/R7_c_lin.yaml"
+n_experiments=2
+target_dir="/home/lukas/Documents/MT/Data/review2"
+planner_cfg="planners/Review2.yaml"
 
-#echo "Starting experiment${experiment} series of ${n_experiments} runs at '${target_dir}'!"
-#if [ ! -d "$target_dir" ]; then
-#  mkdir $target_dir
-#fi
-#for (( i=1; i<=n_experiments; i++ ))
-#do  
-#   run experiment
-#  roslaunch mav_active_3d_planning run_experiment.launch data_directory:=$target_dir record_data:=true experiment_config:=$cfg data_frequency:=$freq time_limit:=$dur planner_general_config:=$planner_cfg
-#   roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir method:=recent series:=false clear_voxblox_maps:=$clear_voxblox_maps gt_file_path:=$pcl evaluate:=$evaluate create_meshes:=$evaluate evaluate_volume:=$eval_volume experiment_config:=$cfg method:=recent
-#done
+echo "Starting experiment${experiment} series of ${n_experiments} runs at '${target_dir}'!"
+if [ ! -d "$target_dir" ]; then
+  mkdir $target_dir
+fi
+for (( i=1; i<=n_experiments; i++ ))
+do  
+   run experiment
+  roslaunch mav_active_3d_planning run_experiment.launch data_directory:=$target_dir record_data:=true experiment_config:=$cfg data_frequency:=$freq time_limit:=$dur planner_general_config:=$planner_cfg
+   roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir method:=recent series:=false clear_voxblox_maps:=$clear_voxblox_maps gt_file_path:=$pcl evaluate:=$evaluate create_meshes:=$evaluate evaluate_volume:=$eval_volume experiment_config:=$cfg method:=recent
+done
 
-#roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir series:=true 
+roslaunch mav_active_3d_planning evaluate_experiment.launch target_directory:=$target_dir series:=true 
 
 
 

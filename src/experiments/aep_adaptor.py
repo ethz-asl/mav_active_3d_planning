@@ -6,6 +6,7 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseStamped
 import tf
 from std_srvs.srv import SetBool
+from std_msgs.msg import Bool
 from trajectory_msgs.msg import MultiDOFJointTrajectory, MultiDOFJointTrajectoryPoint
 from geometry_msgs.msg import Transform
 
@@ -27,6 +28,7 @@ class AEPAdaptor:
 
         self.pose_pub = rospy.Publisher("~pose_out", PoseStamped, queue_size=10)
         self.odom_sub = rospy.Subscriber("odometry_in", Odometry, self.odom_callback, queue_size=1, buff_size=(2 ** 24))
+        self.start_pub = rospy.Publisher("/start_exploration", Bool, queue_size=10)
         rospy.Service('/planner/planner_node/get_cpu_time', SetBool, self.getCPUTime)
 
         # launch
@@ -65,6 +67,12 @@ class AEPAdaptor:
         #     t = t + 0.02
         # traj_msg.header.stamp = rospy.Time.now()
         # self.traj_pub.publish(traj_msg)
+
+        # Launch rapid
+        # start_msg = Bool()
+        self.start_pub.publish(Bool(True))
+        print("TestTestTest")
+
         return [True, ""]
 
     def getCPUTime(self, _):

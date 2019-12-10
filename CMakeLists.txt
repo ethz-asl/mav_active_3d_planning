@@ -72,6 +72,11 @@ cs_add_executable(aep_trajectory_adapter
         )
 target_link_libraries(aep_trajectory_adapter ${PROJECT_NAME})
 
+cs_add_executable(rapid_trajectory_adapter
+        src/experiments/rapid_trajectory_adapter.cpp
+        )
+target_link_libraries(aep_trajectory_adapter ${PROJECT_NAME})
+
 #############
 ## Install ##
 #############
