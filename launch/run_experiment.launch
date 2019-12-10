@@ -172,7 +172,7 @@
       <param name="color_mode" value="color" />
       <param name="update_mesh_every_n_sec" value="1.0" />
       <param name="method" value="$(arg method)" />
-      <param name="max_ray_length" value="$(arg ray_length)" />
+      <param name="max_ray_length_m" value="$(arg ray_length)" />
       <param name="allow_clear" value="true" />
       <param name="verbose" value="$(arg verbose_voxblox)" />
       <param name="publish_map_incremental" value="true" />

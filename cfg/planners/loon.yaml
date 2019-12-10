@@ -44,23 +44,12 @@ trajectory_generator:
   max_density_range: 0.0
   n_neighbors: 20
   
-  bounding_volume:
-    x_min: -2.0
-    x_max: 2.0
-    y_min: -1.0
-    y_max: 10.0
-    z_min: 1.0
-    z_max: 3.0
-    rotation: 0.0
+  bounding_volume_args: "/map_bounding_volume"
 
   generator_updater:
     type: "RecheckCollision"
     
-  system_constraints:
-    v_max: 0.5
-    a_max: 0.2
-    yaw_rate_max: 0.3
-    yaw_accel_max: 0.3
+  system_constraints_args: "/planner/system_constraints"
   
 # TE
 trajectory_evaluator:
@@ -87,7 +76,8 @@ trajectory_evaluator:
       ray_angle_x: 0.00217
       ray_angle_y: 0.00232
       use_frontier_voxels: true
-            
+      
+      bounding_volume_args: "/target_bounding_volume"      
 #      bounding_volume:
 #        x_min: -1.079
 #        x_max: 0.914
@@ -96,7 +86,7 @@ trajectory_evaluator:
 #        z_min: -1.000
 #        z_max: 1.000
 #        rotation: 85.269
-       
+     
       sensor_model:
         type: "IterativeRayCaster"
         sampling_time: 0.0
@@ -145,9 +135,5 @@ back_tracker:
   sampling_rate: 20.0
   n_rotations: 0
   stack_size: 10
-  system_constraints:
-    v_max: 0.5
-    a_max: 0.2
-    yaw_rate_max: 0.3
-    yaw_accel_max: 0.3
+  system_constraints_args: "/planner/system_constraints"
 

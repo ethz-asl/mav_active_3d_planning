@@ -1,0 +1,86 @@
+# Base config for final weight planner
+# Planner node
+replan_pos_threshold: 0.15
+replan_yaw_threshold: 0.15
+
+max_new_segments: 15
+min_new_segments: 15
+max_new_tries: 1000
+min_new_tries: 0
+min_new_value: 0.0001
+
+verbose_modules: true
+build_modules_on_init: true
+expand_batch: 1
+visualize_gain: true
+highlight_executed_trajectory: true
+
+# TG
+trajectory_generator:
+  collision_optimistic: false 
+  collision_radius: 0.7
+  
+  type: "FeasibleRRT"
+  crop_segments: false
+  max_extension_range: 1.5
+  use_spheric_sampling: true
+  maximum_tries: 1000
+  sampling_rate: 20.0
+  sample_yaw: true
+  
+  bounding_volume_args: "/map_bounding_volume"
+  system_constraints_args: "/planner/system_constraints"
+  
+  generator_updater:
+    type: "RecheckCollision"
+    
+# TE
+trajectory_evaluator:
+  type: "NaiveEvaluator"
+  clear_from_parents: false
+  bounding_volume_args: "/target_bounding_volume"    
+    
+  sensor_model:
+    type: "IterativeRayCaster"
+    sampling_time: 0.0
+    ray_length: 4.8
+    focal_length: 385.0
+    resolution_x: 640 # 640-79.4 / 181 cont yaw 12
+    resolution_y: 480 # 480-63.8
+    mounting_translation_x: 0.15
+    mounting_translation_y: 0.0
+    mounting_translation_z: 0.0
+    mounting_rotation_x: 0
+    mounting_rotation_y: 0.1305262
+    mounting_rotation_z: 0
+    mounting_rotation_w: 0.9914449
+
+  cost_computer:
+    type: "SegmentLength"
+    accumulate: true
+    
+  value_computer:
+    type: "AccumulateValue"
+    following_value_computer:
+      type: "ExponentialDiscount"
+      cost_scale: 0.5
+      accumulate: false
+    
+  next_selector:
+    type: "SubsequentBest"
+    
+  evaluator_updater:
+    type: "UpdateAll"
+    update_gain: true
+    update_cost: true
+    update_value: true
+
+back_tracker:
+  type: "FeasibleRotateReverse"
+  turn_rate: 0.3
+  update_rate: 0.5
+  sampling_rate: 20.0
+  n_rotations: 0
+  stack_size: 10
+  system_constraints_args: "/planner/system_constraints"
+
