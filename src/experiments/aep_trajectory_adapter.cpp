@@ -9,6 +9,7 @@
 #include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
 #include <mav_msgs/default_topics.h>
 #include <mav_msgs/conversions.h>
+#include <nav_msgs/Odometry.h>
 #include <tf/tf.h>
 #include <visualization_msgs/MarkerArray.h>
 
@@ -39,6 +40,7 @@ namespace mav_active_3d_planning {
 
         // variables
         Eigen::Vector3d current_position_;  // Current pose of the mav
+        Eigen::Vector3d current_v_;
         double current_yaw_;
         Eigen::Vector3d goal_pos_;
         double goal_yaw_;
@@ -63,11 +65,13 @@ namespace mav_active_3d_planning {
         generator_.setConstraints(1.0, 1.0, 1.57, 1.57, 20.0);  // v, a, yaw_rate, yaw_accel, sampling_rate
     }
 
-    void AEPTrajectoryAdapter::poseCallback(const geometry_msgs::PoseStamped &msg) {
+    void AEPTrajectoryAdapter::poseCallback(const nav_msgs::Odometry &msg) {
         // Track the current pose
-        current_position_ = Eigen::Vector3d(msg.pose.position.x, msg.pose.position.y,
-                                            msg.pose.position.z);
-        current_yaw_ = tf::getYaw(msg.pose.orientation);
+        current_position_ = Eigen::Vector3d(msg.pose.pose.position.x, msg.pose.pose.position.y,
+                                            msg.pose.pose.position.z);
+        current_v_ = Eigen::Vector3d(msg.twist.twist.linear.x, msg.twist.twist.linear.y,
+                                     msg.twist.twist.linear.z);
+        current_yaw_ = tf::getYaw(msg.pose.pose.orientation);
 
         if ((goal_pos_-current_position_).norm() < 0.15 && defaults::angleDifference(goal_yaw_, current_yaw_) < 0.15) {
             goal_reached_ = true;
@@ -75,9 +79,9 @@ namespace mav_active_3d_planning {
     }
 
     void AEPTrajectoryAdapter::trajCallback(const geometry_msgs::PoseStamped &msg) {
-        if (!goal_reached_) {
-            return;
-        }
+//        if (!goal_reached_) {
+//            return;
+//        }
         goal_reached_ = false;
         mav_msgs::EigenTrajectoryPoint start;
         mav_msgs::EigenTrajectoryPoint goal;
@@ -86,6 +90,7 @@ namespace mav_active_3d_planning {
         // set goal
         start.position_W = current_position_;
         start.setFromYaw(current_yaw_);
+        start.velocity_W = current_v_;
         goal.position_W.x() = msg.pose.position.x;
         goal.position_W.y() = msg.pose.position.y;
         goal.position_W.z() = msg.pose.position.z;

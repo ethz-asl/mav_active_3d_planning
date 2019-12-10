@@ -8,8 +8,9 @@ echo "Starting Epxeriment (Run ${run_no})!"
 
 
 # run
-rosservice call /loon/voxblox_node/clear_map
-rosservice call /loon/planner_node/toggle_running 1
+#rosservice call /loon/voxblox_node/clear_map
+#rosservice call /loon/planner_node/toggle_running 1
+rosparam set /start_aep 1
 sleep 1m
 rosservice call /loon/voxblox_node/save_map "run${run_no}_min1"
 echo "Saving map: 1 minute!"
