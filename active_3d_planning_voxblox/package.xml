@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="2">
+    <name>active_3d_planning_voxblox</name>
+    <version>0.0.0</version>
+    <description>Voxblox as map representation</description>
+
+    <author email="schmluk@mavt.ethz.ch">Lukas Schmid</author>
+
+    <maintainer email="schmluk@mavt.ethz.ch">Lukas Schmid</maintainer>
+
+    <license>BSD</license>
+
+    <buildtool_depend>catkin</buildtool_depend>
+    <buildtool_depend>catkin_simple</buildtool_depend>
+
+    <depend>active_3d_planning_core</depend>
+    <depend>voxblox_ros</depend>
+    <depend>voxblox</depend>
+</package>

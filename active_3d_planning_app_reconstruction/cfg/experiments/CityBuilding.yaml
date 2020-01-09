@@ -1,0 +1,25 @@
+# Experiment (City Building) specific parameters
+
+# Bounding boxes (in initialization frame, relative to PlayerStart)
+map_bounding_volume:
+  x_min: -10.0
+  x_max: 30.0
+  y_min: -22.0
+  y_max: 18.0
+  z_min: -1.5
+  z_max: 13.5
+
+target_bounding_volume:
+  x_min: 0
+  x_max: 20
+  y_min: -12
+  y_max: 8
+  z_min: -1.5
+  z_max: 10
+
+# System Constraints
+planner:
+  system_constraints:
+    v_max: 1.0
+    a_max: 1.0
+    yaw_rate_max: 1.57

@@ -1,0 +1,103 @@
+# General parameters for the planner node
+replan_pos_threshold: 0.25
+replan_yaw_threshold: 0.15
+
+max_new_segments: 0
+min_new_segments: 0
+max_new_tries: 0
+min_new_tries: 0
+min_new_value: 0
+
+# Verbosity and visualization
+verbose: true
+verbose_modules: true
+build_modules_on_init: true
+visualize: true
+highlight_executed_trajectory: true
+
+# Specify a map representation
+map:
+  type: "VoxbloxMap"
+
+# System constraints
+system_constraints:
+  v_max: 1.0
+  a_max: 1.0
+  yaw_rate_max: 1.6
+  yaw_accel_max: 1.6
+  collision_radius: 0.7
+
+# Specifying a trajectory generator
+trajectory_generator:
+  collision_optimistic: false
+  bounding_volume_args: "/map_bounding_volume"
+  type: "Uniform"
+
+  # Generator Params
+  n_segments: 5
+  distance: 1.5
+  yaw_angle: 1.2
+  ascent_angle: 0.523
+  sampling_rate: 20
+
+  # Expansion site selection policy
+  segment_selector:
+    type: "RandomWeighted"
+    revisit: false
+    factor: 2.0
+    leaf_probability: 1.0
+    uniform_probability: 0.2
+
+  # Generator Update step
+  generator_updater:
+    type: "RecheckCollision"
+
+# Specifying a trajectory evaluator
+trajectory_evaluator:
+  type: "NaiveEvaluator"
+
+  # Evaluator params and sensor model for simulated sensor evaluators
+  clear_from_parents: false
+  camera_params_ns: "/unreal/unreal_ros_client/camera_params"
+  visualize_sensor_view: true
+  bounding_volume_args: "/target_bounding_volume"
+  sensor_model:
+    type: "IterativeRayCaster"
+    sampling_time: 0.0
+    ray_length: 5.0
+    focal_length: 320.0
+    resolution_x: 640
+    resolution_y: 480
+    downsampling_factor: 3.0
+
+  # Choose a cost
+  cost_computer:
+    type: "SegmentTime"
+
+  # How to compute the values
+  value_computer:
+    type: "AccumulateValue"
+    following_value_computer:
+      type: "LinearValue"
+      cost_weight: 1.0
+      gain_weight: 0.1
+
+  # Execution policy for available segments
+  next_selector:
+    type: "SubsequentBest"
+
+  # Evaluator Update step
+  evaluator_updater:
+    type: "UpdateAll"
+    update_gain: false
+    update_cost: false
+    update_value: true
+
+# Specify a backtracker if the planner gets stuck
+back_tracker:
+  type: "RotateReverse"
+  turn_rate: 1.6
+  update_rate: 2.0
+  sampling_rate: 20.0
+  n_rotations: 1
+  stack_size: 10

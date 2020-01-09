@@ -1,7 +1,0 @@
-<launch>
-	<!-- Box Computer -->
-	<node pkg="mav_active_3d_planning" type="bounding_box_computer.py" name="bbox_computer" output="screen"/>
-
-  <!-- RVIZ-->
-	<node type="rviz" name="rviz_bbox" pkg="rviz" args="-d $(find mav_active_3d_planning)/cfg/bounding_box_computer.rviz"/>
-</launch>

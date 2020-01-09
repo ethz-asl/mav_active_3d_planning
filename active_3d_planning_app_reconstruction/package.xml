@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<package format="2">
+    <name>active_3d_planning_app_reconstruction</name>
+    <version>0.0.0</version>
+    <description>Sampling-based Online Informative Path Planning.</description>
+
+    <author email="schmluk@mavt.ethz.ch">Lukas Schmid</author>
+
+    <maintainer email="schmluk@mavt.ethz.ch">Lukas Schmid</maintainer>
+
+    <license>BSD</license>
+
+    <buildtool_depend>catkin</buildtool_depend>
+    <buildtool_depend>catkin_simple</buildtool_depend>
+
+    <depend>active_3d_planning_core</depend>
+    <depend>active_3d_planning_ros</depend>
+    <depend>active_3d_planning_mav</depend>
+    <depend>active_3d_planning_voxblox</depend>
+    <depend>roscpp</depend>
+    <depend>rospy</depend>
+    <depend>voxblox_ros</depend>
+    <depend>voxblox</depend>
+    <depend>trajectory_msgs</depend>
+    <depend>mav_msgs</depend>
+    <depend>std_msgs</depend>
+    <depend>sensor_msgs</depend>
+    <depend>geometry_msgs</depend>
+    <depend>nav_msgs</depend>
+
+</package>
