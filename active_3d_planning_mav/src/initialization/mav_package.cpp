@@ -1,4 +1,4 @@
-#include "active_3d_planning/initialization/mav_package.h"
+#include "active_3d_planning_mav/initialization/mav_package.h"
 
 namespace active_3d_planning {
     namespace initialize {

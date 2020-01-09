@@ -29,7 +29,7 @@
 #include <voxblox_ros/mesh_vis.h>
 #include <voxblox_ros/ptcloud_vis.h>
 
-#include "active_3d_planning/libs/nanoflann.hpp"
+#include "active_3d_planning_core/libs/nanoflann.hpp"
 
 namespace active_3d_planning {
 

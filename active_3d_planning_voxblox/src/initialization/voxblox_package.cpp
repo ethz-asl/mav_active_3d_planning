@@ -1,4 +1,4 @@
-#include "active_3d_planning/initialization/voxblox_package.h"
+#include "active_3d_planning_voxblox/initialization/voxblox_package.h"
 
 namespace active_3d_planning {
     namespace initialize {

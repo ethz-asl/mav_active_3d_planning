@@ -1,8 +1,8 @@
-#include "active_3d_planning/module/module_factory_ros.h"
-#include "active_3d_planning/planner/ros_planner.h"
+#include "active_3d_planning_ros/module/module_factory_ros.h"
+#include "active_3d_planning_ros/planner/ros_planner.h"
 
-#include "active_3d_planning/initialization/voxblox_package.h"
-#include "active_3d_planning/initialization/mav_package.h"
+#include "active_3d_planning_voxblox/initialization/voxblox_package.h"
+#include "active_3d_planning_mav/initialization/mav_package.h"
 
 #include <glog/logging.h>
 #include <chrono>

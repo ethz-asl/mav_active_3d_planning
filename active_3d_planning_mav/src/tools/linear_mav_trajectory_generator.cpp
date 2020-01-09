@@ -1,9 +1,9 @@
 #define _USE_MATH_DEFINES
 
-#include "active_3d_planning/tools/linear_mav_trajectory_generator.h"
+#include "active_3d_planning_mav/tools/linear_mav_trajectory_generator.h"
 
-#include "active_3d_planning/tools/defaults.h"
-#include "active_3d_planning/tools/tools.h"
+#include "active_3d_planning_core/tools/defaults.h"
+#include "active_3d_planning_mav/tools/tools.h"
 
 #include <mav_trajectory_generation/trajectory_sampling.h>
 

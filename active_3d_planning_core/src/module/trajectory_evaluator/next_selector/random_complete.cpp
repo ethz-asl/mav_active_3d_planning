@@ -1,4 +1,4 @@
-#include "active_3d_planning/module/trajectory_evaluator/next_selector/random_complete.h"
+#include "active_3d_planning_core/module/trajectory_evaluator/next_selector/random_complete.h"
 
 #include <algorithm>
 #include <vector>

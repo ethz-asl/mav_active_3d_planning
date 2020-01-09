@@ -1,4 +1,4 @@
-#include <active_3d_planning/module/module_factory_ros.h>
+#include <active_3d_planning_ros/module/module_factory_ros.h>
 
 // ROS factory
 #include <XmlRpcValue.h>

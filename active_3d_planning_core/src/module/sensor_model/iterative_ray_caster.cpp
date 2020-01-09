@@ -1,4 +1,4 @@
-#include "active_3d_planning/module/sensor_model/iterative_ray_caster.h"
+#include "active_3d_planning_core/module/sensor_model/iterative_ray_caster.h"
 
 #include <Eigen/Dense>
 

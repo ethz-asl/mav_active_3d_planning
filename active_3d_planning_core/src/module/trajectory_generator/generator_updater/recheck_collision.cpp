@@ -1,7 +1,7 @@
-#include "active_3d_planning/module/trajectory_generator/generator_updater/recheck_collision.h"
+#include "active_3d_planning_core/module/trajectory_generator/generator_updater/recheck_collision.h"
 
-#include "active_3d_planning/data/trajectory.h"
-#include "active_3d_planning/planner/planner_I.h"
+#include "active_3d_planning_core/data/trajectory.h"
+#include "active_3d_planning_core/planner/planner_I.h"
 
 #include <algorithm>
 #include <memory>

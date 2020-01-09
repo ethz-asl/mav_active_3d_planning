@@ -1,9 +1,9 @@
 #define _USE_MATH_DEFINES
 
-#include "active_3d_planning/module/back_tracker/rotate_in_place.h"
+#include "active_3d_planning_core/module/back_tracker/rotate_in_place.h"
 
-#include "active_3d_planning/data/trajectory.h"
-#include "active_3d_planning/tools/defaults.h"
+#include "active_3d_planning_core/data/trajectory.h"
+#include "active_3d_planning_core/tools/defaults.h"
 
 #include <cmath>
 

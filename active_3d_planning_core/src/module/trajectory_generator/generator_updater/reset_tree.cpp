@@ -1,4 +1,4 @@
-#include "active_3d_planning/module/trajectory_generator/generator_updater/reset_tree.h"
+#include "active_3d_planning_core/module/trajectory_generator/generator_updater/reset_tree.h"
 
 #include <algorithm>
 #include <memory>

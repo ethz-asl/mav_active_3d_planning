@@ -1,7 +1,7 @@
-#include "active_3d_planning/module/trajectory_generator/generator_updater/simple_rrt_star_collision_updater.h"
+#include "active_3d_planning_core/module/trajectory_generator/generator_updater/simple_rrt_star_collision_updater.h"
 
-#include "active_3d_planning/module/module_factory.h"
-#include "active_3d_planning/planner/planner_I.h"
+#include "active_3d_planning_core/module/module_factory.h"
+#include "active_3d_planning_core/planner/planner_I.h"
 
 #include <algorithm>
 #include <memory>

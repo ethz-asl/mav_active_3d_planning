@@ -1,8 +1,8 @@
-#include "active_3d_planning/module/trajectory_evaluator/evaluator_updater/constrained_updater.h"
+#include "active_3d_planning_core/module/trajectory_evaluator/evaluator_updater/constrained_updater.h"
 
-#include <active_3d_planning/planner/planner_I.h>
-#include <active_3d_planning/module/module_factory.h>
-#include <active_3d_planning/module/trajectory_evaluator.h>
+#include <active_3d_planning_core/planner/planner_I.h>
+#include <active_3d_planning_core/module/module_factory.h>
+#include <active_3d_planning_core/module/trajectory_evaluator.h>
 
 namespace active_3d_planning {
     namespace evaluator_updater {

@@ -1,4 +1,4 @@
-#include "active_3d_planning/module/trajectory_evaluator/frontier_evaluator.h"
+#include "active_3d_planning_core/module/trajectory_evaluator/frontier_evaluator.h"
 
 #include <algorithm>
 

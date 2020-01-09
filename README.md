@@ -12,11 +12,12 @@ If you find this package useful for your research, please consider citing our pa
 }
 ```
 
-The presented planner is given in `cfg/planners/reconstruction_planner.yaml`.
+The planner presented in the paper is given in `cfg/planners/reconstruction_planner.yaml`.
 A video of the approach is available on [YouTube](#https://www.youtube.com/watch?v=lEadqJ1_8Do&t=9s).
 
 # Table of Contents
 **Installation**
+* [Packages](#Packages)
 * [Dependencies](#Dependencies)
 * [Installation](#Installation)
 * [Data Repository](#Data-Repository)
@@ -34,24 +35,36 @@ A video of the approach is available on [YouTube](#https://www.youtube.com/watch
 For additional information please see the wiki.
 
 # Installation
-## Dependencies
-**ROS Packages:**
+## Packages
+The mav_active_3d_planning package is divided into separate packages, such that only the dependencies necessary for your application package need to be built.
 
-The mav_active_3d_planning package is divded into separate packages, such that only the dependencies necessary for your application package need to be built.
-Packages depend on:
+Although packages are organized for the catkin workflow, the *core* package can be built as a stand-alone library for non-ROS use.
+## Dependencies
+Packages and their dependencies:
 * **core:**
+ 
+   Central logic of active\_3d\_planners. Dependencies:
     * `catkin_simple` ([https://github.com/catkin/catkin_simple](https://github.com/catkin/catkin_simple))
     * `glog_catkin` ([https://github.com/ethz-asl/glog_catkin](https://github.com/ethz-asl/glog_catkin))
     * `eigen_catkin` ([https://github.com/ethz-asl/eigen_catkin](https://github.com/ethz-asl/eigen_catkin))
     
-* **mav:**
+* **ros:** 
+
+   Interface to ROS for the general active\_3d\_planner and ROS specific modules.
+
+* **mav:** 
+
+   Modules and interfaces specific to Micro Aerial Vehicles (MAV), using ROS. Dependencies:
     * `mav_trajectory_generation` ([https://github.com/ethz-asl/mav_trajectory_generation](https://github.com/ethz-asl/mav_trajectory_generation))
 
-
 * **voxblox:**
+
+   Using voxblox as map representation and modules specific to voxblox. Dependencies:
     * `voxblox` ([https://github.com/ethz-asl/voxblox](https://github.com/ethz-asl/voxblox))
 
 * **app_reconstruction:**
+
+   Application package for autonomous 3D reconstruction with MAVs, including automated simulation and evaluation routines. Dependencies:
     * `unreal_cv_ros` ([https://github.com/ethz-asl/unreal_cv_ros](https://github.com/ethz-asl/unreal_cv_ros))
     * `rotors_simulator` ([https://github.com/ethz-asl/rotors_simulator](https://github.com/ethz-asl/rotors_simulator))
     * `mav_control_rw` ([https://github.com/ethz-asl/mav_control_rw](https://github.com/ethz-asl/mav_control_rw))

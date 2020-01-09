@@ -1,7 +1,7 @@
-#include "active_3d_planning/module/trajectory_generator.h"
+#include "active_3d_planning_core/module/trajectory_generator.h"
 
-#include "active_3d_planning/module/module_factory.h"
-#include "active_3d_planning/map/map.h"
+#include "active_3d_planning_core/module/module_factory.h"
+#include "active_3d_planning_core/map/map.h"
 
 namespace active_3d_planning {
 

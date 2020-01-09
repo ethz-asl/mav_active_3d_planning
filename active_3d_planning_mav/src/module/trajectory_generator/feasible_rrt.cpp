@@ -1,5 +1,5 @@
-#include "active_3d_planning/module/trajectory_generator/feasible_rrt.h"
-#include "active_3d_planning/data/system_constraints.h"
+#include "active_3d_planning_mav/module/trajectory_generator/feasible_rrt.h"
+#include "active_3d_planning_core/data/system_constraints.h"
 
 #include <cmath>
 #include <memory>

@@ -1,6 +1,6 @@
 #define _USE_MATH_DEFINES
 
-#include "active_3d_planning/planner/online_planner.h"
+#include "active_3d_planning_core/planner/online_planner.h"
 
 #include <algorithm>
 #include <cmath>

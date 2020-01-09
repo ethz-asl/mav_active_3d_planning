@@ -1,4 +1,4 @@
-#include "active_3d_planning/module/trajectory_evaluator/voxel_weight_evaluator.h"
+#include "active_3d_planning_core/module/trajectory_evaluator/voxel_weight_evaluator.h"
 
 namespace active_3d_planning {
     namespace trajectory_evaluator {

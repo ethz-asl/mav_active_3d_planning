@@ -1,4 +1,4 @@
-#include <active_3d_planning/module/module.h>
+#include <active_3d_planning_core/module/module.h>
 
 namespace active_3d_planning {
 
