@@ -1,21 +1,13 @@
-The mav_active_3d_planning package is dedicated to the design, evaluation and application of active informative path planning algorithms. 
+**mav\_active\_3d\_planning** - A modular framework for online informative path planner design. 
 We provide a modular framework for creating, evaluating and employing primarily sampling based, receding horizon algorithms that optimize a gain while minimizing a cost.
-For example, maximizing exploration and quality against execution time in the case of autonomous 3D reconstruction. 
 
-
-# Paper
-If you find this package useful for your research, please consider citing our paper:
-```
-@beingWritten{
-  A paper is currently being written.
-  The repo is for confidential use only at the moment.
-}
-```
-
-The planner presented in the paper is given in `cfg/planners/reconstruction_planner.yaml`.
-A video of the approach is available on [YouTube](#https://www.youtube.com/watch?v=lEadqJ1_8Do&t=9s).
+Online-IPP for **Exploration** (left), **3D Reconstruction** (right) & **more**.
+![git_gif](https://user-images.githubusercontent.com/36043993/72073736-cbbe2f00-32f0-11ea-977a-dbe7e7a05098.gif)
 
 # Table of Contents
+**Credits**
+* [Paper and Video](#Paper-and-Video)
+
 **Installation**
 * [Packages](#Packages)
 * [Dependencies](#Dependencies)
@@ -33,6 +25,20 @@ A video of the approach is available on [YouTube](#https://www.youtube.com/watch
 * [Code Index](https://github.com/ethz-asl/mav_active_3d_planning/wiki/Code-Index)
 
 For additional information please see the wiki.
+
+#Credits
+## Paper and Video
+If you find this package useful for your research, please consider citing our paper:
+```
+@beingWritten{
+  A paper is currently being written.
+  The repo is for confidential use only at the moment.
+}
+```
+
+The planner presented in the paper is given in `active_3d_planning_app_reconstruction/cfg/planners/reconstruction_planner.yaml`.
+A video of the approach is available [here](https://www.youtube.com/watch?v=lEadqJ1_8Do).
+
 
 # Installation
 ## Packages
@@ -70,19 +76,35 @@ Packages and their dependencies:
     * `mav_control_rw` ([https://github.com/ethz-asl/mav_control_rw](https://github.com/ethz-asl/mav_control_rw))
 
 ## Installation
-Installation instructions on Linux:
+Installation instructions for Linux.
+
+Install system dependencies: 
+```
+sudo apt-get install python-wstool python-catkin-tools
+```
+If not already done so, install [ROS](http://wiki.ros.org/ROS/Installation) and prepare a [catkin workspace](https://catkin-tools.readthedocs.io/en/latest/verbs/catkin_init.html).
 
 Move to your catkin workspace: 
 ```
 cd catkin_ws/src
 ```
-Install using a SSH key: 
+
+Download repo using a SSH key: 
 ```
 git clone git@github.com:ethz-asl/mav_active_3d_planning.git
 ```
-Compile everything: 
+
+Download and install all dependencies of the packages you intend to use and remove unwanted packages. To clone everything run:
+```
+wstool init . ./mav_active_3d_planning/mav_active_3d_planning_ssh.rosinstall  
+# If you have already initalized wstool use 'wstool merge -t'
+wstool update
+```
+
+Compile and source: 
 ```
 catkin build mav_active_3d_planning
+source ../devel/setup.bash
 ```
 
 ## Data Repository
