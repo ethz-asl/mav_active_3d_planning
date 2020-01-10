@@ -9,7 +9,7 @@ Online-IPP for **Exploration** (left), **3D Reconstruction** (right) & **more**.
 **Credits**
 * [Paper and Video](#Paper-and-Video)
 
-**Installation**
+**Setup**
 * [Packages](#Packages)
 * [Dependencies](#Dependencies)
 * [Installation](#Installation)
@@ -41,7 +41,7 @@ The planner presented in the paper is given in `active_3d_planning_app_reconstru
 A video of the approach is available [here](https://www.youtube.com/watch?v=lEadqJ1_8Do).
 
 
-# Installation
+# Setup
 ## Packages
 The mav_active_3d_planning package is divided into separate packages, such that only the dependencies necessary for your application package need to be built.
 
@@ -79,31 +79,48 @@ Packages and their dependencies:
 ## Installation
 Installation instructions for Linux.
 
-Install system dependencies: 
+**Prerequisites**
+
+1. If not already done so, install [ROS and its building dependencies](http://wiki.ros.org/ROS/Installation).
+
+2. If not already done so, create a catkin workspace:
+
+```shell script
+sudo apt-get install python-catkin-tools
+mkdir -p ~/catkin_ws/src
+cd ~/catkin_ws
+catkin init
+catkin config --extend /opt/ros/melodic  # exchange melodic for your ros distro if necessary
+catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release
+catkin config --merge-devel
+
 ```
+
+3. Move to your catkin workspace: 
+```shell script
+cd ~/catkin_ws/src
+```
+
+Install system dependencies: 
+```shell script
 sudo apt-get install python-wstool python-catkin-tools
 ```
-If not already done so, install [ROS](http://wiki.ros.org/ROS/Installation) and prepare a [catkin workspace](https://catkin-tools.readthedocs.io/en/latest/verbs/catkin_init.html).
 
-Move to your catkin workspace: 
-```
-cd catkin_ws/src
-```
-
-Download repo using a SSH key: 
-```
-git clone git@github.com:ethz-asl/mav_active_3d_planning.git
+Download repo using a SSH key or via HTTPS: 
+```shell script
+git clone git@github.com:ethz-asl/mav_active_3d_planning.git #
+git clone https://github.com/ethz-asl/mav_active_3d_planning.git
 ```
 
 Download and install all dependencies of the packages you intend to use and remove unwanted packages. To clone everything run:
-```
+```shell script
 wstool init . ./mav_active_3d_planning/mav_active_3d_planning_ssh.rosinstall  
 # If you have already initalized wstool use 'wstool merge -t'
 wstool update
 ```
 
 Compile and source: 
-```
+```shell script
 catkin build mav_active_3d_planning
 source ../devel/setup.bash
 ```
