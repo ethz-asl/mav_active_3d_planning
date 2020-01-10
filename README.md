@@ -81,9 +81,9 @@ Installation instructions for Linux.
 
 **Prerequisites**
 
-1. If not already done so, install [ROS and its building dependencies](http://wiki.ros.org/ROS/Installation).
+1. If not already done so, install [ROS](http://wiki.ros.org/ROS/Installation) (Desktop-Full is recommended).
 
-2. If not already done so, create a catkin workspace:
+2. If not already done so, create a catkin workspace and install [catkin tools](https://catkin-tools.readthedocs.io/en/latest/):
 
 ```shell script
 sudo apt-get install python-catkin-tools
@@ -101,22 +101,25 @@ catkin config --merge-devel
 cd ~/catkin_ws/src
 ```
 
-Install system dependencies: 
+3. Install system dependencies: 
 ```shell script
 sudo apt-get install python-wstool python-catkin-tools
 ```
 
-Download repo using a SSH key or via HTTPS: 
+4. Download repo using a SSH key or via HTTPS: 
 ```shell script
-git clone git@github.com:ethz-asl/mav_active_3d_planning.git #
-git clone https://github.com/ethz-asl/mav_active_3d_planning.git
+git clone git@github.com:ethz-asl/mav_active_3d_planning.git # SSH
+git clone https://github.com/ethz-asl/mav_active_3d_planning.git # HTTPS
 ```
 
-Download and install all dependencies of the packages you intend to use and remove unwanted packages. To clone everything run:
+5. Download and install all dependencies of the packages you intend to use and remove unwanted packages. 
+
+* Dependencies of **all** packages can be installed using rosinstall:
 ```shell script
-wstool init . ./mav_active_3d_planning/mav_active_3d_planning_ssh.rosinstall  
-# If you have already initalized wstool use 'wstool merge -t'
-wstool update
+# system dependencies, replace melodic with your ros distro if necessary
+sudo apt-get install ros-melodic-cmake-modules autoconf libyaml-cpp-dev protobuf-compiler
+
+#TODO dependencies of dependencies? rotors etc?
 ```
 
 Compile and source: 
