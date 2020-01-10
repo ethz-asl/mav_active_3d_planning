@@ -13,6 +13,7 @@
   <exec_depend>active_3d_planning_core</exec_depend>
   <exec_depend>active_3d_planning_ros</exec_depend>
   <exec_depend>active_3d_planning_mav</exec_depend>
+  <exec_depend>active_3d_planning_voxblox</exec_depend>
   <exec_depend>active_3d_planning_app_reconstruction</exec_depend>
 
   <export>
