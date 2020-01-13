@@ -1,5 +1,5 @@
-#include "active_3d_planning/module/module_factory_ros.h"
-#include "active_3d_planning/planner/ros_planner.h"
+#include "active_3d_planning_ros/module/module_factory_ros.h"
+#include "active_3d_planning_ros/planner/ros_planner.h"
 
 #include <glog/logging.h>
 

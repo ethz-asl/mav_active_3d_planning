@@ -1,22 +1,16 @@
-The mav_active_3d_planning package is dedicated to the design, evaluation and application of active informative path planning algorithms. 
+# mav\_active\_3d\_planning
+**mav\_active\_3d\_planning** is a modular framework for online informative path planner (IPP) design. 
 We provide a modular framework for creating, evaluating and employing primarily sampling based, receding horizon algorithms that optimize a gain while minimizing a cost.
-For example, maximizing exploration and quality against execution time in the case of autonomous 3D reconstruction. 
 
-
-# Paper
-If you find this package useful for your research, please consider citing our paper:
-```
-@beingWritten{
-  A paper is currently being written.
-  The repo is for confidential use only at the moment.
-}
-```
-
-The presented planner is given in `cfg/planners/reconstruction_planner.yaml`.
-A video of the approach is available on [YouTube](#https://www.youtube.com/watch?v=lEadqJ1_8Do&t=9s).
+Online-IPP for **Exploration** (left), **3D Reconstruction** (right) & **more**.
+![git_gif](https://user-images.githubusercontent.com/36043993/72073736-cbbe2f00-32f0-11ea-977a-dbe7e7a05098.gif)
 
 # Table of Contents
-**Installation**
+**Credits**
+* [Paper and Video](#Paper-and-Video)
+
+**Setup**
+* [Packages](#Packages)
 * [Dependencies](#Dependencies)
 * [Installation](#Installation)
 * [Data Repository](#Data-Repository)
@@ -33,43 +27,105 @@ A video of the approach is available on [YouTube](#https://www.youtube.com/watch
 
 For additional information please see the wiki.
 
-# Installation
-## Dependencies
-**ROS Packages:**
+# Credits
+## Paper and Video
+If you find this package useful for your research, please consider citing our paper:
+```
+@beingWritten{
+  A paper is currently being written.
+  The repo is for confidential use only at the moment.
+}
+```
 
-The mav_active_3d_planning package is divded into separate packages, such that only the dependencies necessary for your application package need to be built.
-Packages depend on:
+The planner presented in the paper is given in `active_3d_planning_app_reconstruction/cfg/planners/reconstruction_planner.yaml`.
+A video of the approach is available [here](https://www.youtube.com/watch?v=lEadqJ1_8Do).
+
+
+# Setup
+## Packages
+The mav_active_3d_planning package is divided into separate packages, such that only the dependencies necessary for your application package need to be built.
+
+Although packages are organized for the catkin workflow, the *core* package can be built as a stand-alone library for non-ROS use.
+## Dependencies
+Packages and their dependencies:
 * **core:**
+ 
+   Central logic of active\_3d\_planners. Dependencies:
     * `catkin_simple` ([https://github.com/catkin/catkin_simple](https://github.com/catkin/catkin_simple))
     * `glog_catkin` ([https://github.com/ethz-asl/glog_catkin](https://github.com/ethz-asl/glog_catkin))
     * `eigen_catkin` ([https://github.com/ethz-asl/eigen_catkin](https://github.com/ethz-asl/eigen_catkin))
     
-* **mav:**
+* **ros:** 
+
+   Interface to ROS for the general active\_3d\_planner and ROS specific modules.
+
+* **mav:** 
+
+   Modules and interfaces specific to Micro Aerial Vehicles (MAV), using ROS. Dependencies:
     * `mav_trajectory_generation` ([https://github.com/ethz-asl/mav_trajectory_generation](https://github.com/ethz-asl/mav_trajectory_generation))
 
-
 * **voxblox:**
+
+   Using voxblox as map representation and modules specific to voxblox. Dependencies:
     * `voxblox` ([https://github.com/ethz-asl/voxblox](https://github.com/ethz-asl/voxblox))
 
 * **app_reconstruction:**
+
+   Application package for autonomous 3D reconstruction with MAVs, including automated simulation and evaluation routines. Dependencies:
     * `unreal_cv_ros` ([https://github.com/ethz-asl/unreal_cv_ros](https://github.com/ethz-asl/unreal_cv_ros))
     * `rotors_simulator` ([https://github.com/ethz-asl/rotors_simulator](https://github.com/ethz-asl/rotors_simulator))
     * `mav_control_rw` ([https://github.com/ethz-asl/mav_control_rw](https://github.com/ethz-asl/mav_control_rw))
 
 ## Installation
-Installation instructions on Linux:
+Installation instructions for Linux.
 
-Move to your catkin workspace: 
+**Prerequisites**
+
+1. If not already done so, install [ROS](http://wiki.ros.org/ROS/Installation) (Desktop-Full is recommended).
+
+2. If not already done so, create a catkin workspace and install [catkin tools](https://catkin-tools.readthedocs.io/en/latest/):
+
+```shell script
+sudo apt-get install python-catkin-tools
+mkdir -p ~/catkin_ws/src
+cd ~/catkin_ws
+catkin init
+catkin config --extend /opt/ros/melodic  # exchange melodic for your ros distro if necessary
+catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release
+catkin config --merge-devel
+
 ```
-cd catkin_ws/src
+
+3. Move to your catkin workspace: 
+```shell script
+cd ~/catkin_ws/src
 ```
-Install using a SSH key: 
+
+3. Install system dependencies: 
+```shell script
+sudo apt-get install python-wstool python-catkin-tools
 ```
-git clone git@github.com:ethz-asl/mav_active_3d_planning.git
+
+4. Download repo using a SSH key or via HTTPS: 
+```shell script
+git clone git@github.com:ethz-asl/mav_active_3d_planning.git # SSH
+git clone https://github.com/ethz-asl/mav_active_3d_planning.git # HTTPS
 ```
-Compile everything: 
+
+5. Download and install all dependencies of the packages you intend to use and remove unwanted packages. 
+
+* Dependencies of **all** packages can be installed using rosinstall:
+```shell script
+# system dependencies, replace melodic with your ros distro if necessary
+sudo apt-get install ros-melodic-cmake-modules autoconf libyaml-cpp-dev protobuf-compiler
+
+#TODO dependencies of dependencies? rotors etc?
 ```
+
+Compile and source: 
+```shell script
 catkin build mav_active_3d_planning
+source ../devel/setup.bash
 ```
 
 ## Data Repository

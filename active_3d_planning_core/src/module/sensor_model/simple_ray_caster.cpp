@@ -1,6 +1,5 @@
-#include "active_3d_planning/module/sensor_model/simple_ray_caster.h"
+#include "active_3d_planning_core/module/sensor_model/simple_ray_caster.h"
 
-#include <algorithm>
 #include <cmath>
 #include <vector>
 

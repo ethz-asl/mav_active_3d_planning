@@ -1,13 +1,8 @@
-#define _USE_MATH_DEFINES
-
-#include "active_3d_planning/planner/ros_planner.h"
-#include "active_3d_planning/tools/ros_conversion.h"
-#include "active_3d_planning/module/module_factory_ros.h"
+#include "active_3d_planning_ros/planner/ros_planner.h"
+#include "active_3d_planning_ros/tools/ros_conversion.h"
+#include "active_3d_planning_ros/module/module_factory_ros.h"
 
 #include <geometry_msgs/Point.h>
-#include <geometry_msgs/Pose.h>
-#include <std_msgs/Empty.h>
-#include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
 #include <tf/transform_datatypes.h>
 
 #include <algorithm>
@@ -15,7 +10,6 @@
 #include <cmath>
 #include <iostream>
 #include <random>
-#include <sstream>
 
 namespace active_3d_planning {
     namespace ros {

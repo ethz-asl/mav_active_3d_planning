@@ -1,8 +1,8 @@
 #define _USE_MATH_DEFINES
 
-#include "active_3d_planning/module/trajectory_evaluator/simple_yaw_planning_evaluator.h"
+#include "active_3d_planning_core/module/trajectory_evaluator/simple_yaw_planning_evaluator.h"
 
-#include "active_3d_planning/tools/defaults.h"
+#include "active_3d_planning_core/tools/defaults.h"
 
 #include <cmath>
 #include <vector>

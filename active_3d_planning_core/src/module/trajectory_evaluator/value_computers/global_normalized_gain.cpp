@@ -1,4 +1,4 @@
-#include "active_3d_planning/module/trajectory_evaluator/value_computer/global_normalized_gain.h"
+#include "active_3d_planning_core/module/trajectory_evaluator/value_computer/global_normalized_gain.h"
 
 #include <cmath>
 

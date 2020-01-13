@@ -1,4 +1,4 @@
-#include <active_3d_planning/module/module_factory_registry.h>
+#include <active_3d_planning_core/module/module_factory_registry.h>
 
 namespace active_3d_planning {
 

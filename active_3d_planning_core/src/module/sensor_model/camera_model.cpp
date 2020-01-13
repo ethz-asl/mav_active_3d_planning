@@ -1,6 +1,6 @@
-#include "active_3d_planning/module/sensor_model/camera_model.h"
+#include "active_3d_planning_core/module/sensor_model/camera_model.h"
 
-#include "active_3d_planning/tools/defaults.h"
+#include "active_3d_planning_core/tools/defaults.h"
 
 #include <algorithm>
 #include <chrono>

@@ -1,5 +1,5 @@
-#include "active_3d_planning/map/voxblox.h"
-#include "active_3d_planning/data/system_constraints.h"
+#include "active_3d_planning_voxblox/map/voxblox.h"
+#include "active_3d_planning_core/data/system_constraints.h"
 
 #include <voxblox_ros/ros_params.h>
 

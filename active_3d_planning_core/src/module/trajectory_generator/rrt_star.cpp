@@ -1,11 +1,11 @@
 #define _USE_MATH_DEFINES
 
-#include "active_3d_planning/module/trajectory_generator/rrt_star.h"
+#include "active_3d_planning_core/module/trajectory_generator/rrt_star.h"
 
-#include "active_3d_planning/data/trajectory.h"
-#include "active_3d_planning/module/module_factory.h"
-#include "active_3d_planning/planner/planner_I.h"
-#include "active_3d_planning/tools/defaults.h"
+#include "active_3d_planning_core/data/trajectory.h"
+#include "active_3d_planning_core/module/module_factory.h"
+#include "active_3d_planning_core/planner/planner_I.h"
+#include "active_3d_planning_core/tools/defaults.h"
 
 #include <algorithm>
 #include <cmath>

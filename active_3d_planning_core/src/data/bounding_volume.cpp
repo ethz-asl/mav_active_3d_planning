@@ -1,4 +1,4 @@
-#include "active_3d_planning/data/bounding_volume.h"
+#include "active_3d_planning_core/data/bounding_volume.h"
 
 
 namespace active_3d_planning {
