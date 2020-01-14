@@ -31,10 +31,10 @@ For additional information please see the [wiki](https://github.com/ethz-asl/mav
 ## Paper and Video
 If you find this package useful for your research, please consider citing our paper:
 
-> The paper is in the process of being published, the citation will be updated in the coming days. 
-> A pre-print version is available on [arXiv]().
+* Lukas Schmid, Michael Pantic, Raghav Khanna, Lionel Ott, Roland Siegwart, and Juan Nieto, "**An Efficient Sampling-based Method for Online Informative Path Planning in Unknown Environments**", 2020
 
-* Lukas Schmid, Michael Pantic, Raghav Khanna, Lionel Ott, Roland Siegwart, and Juan Nieto, "**An Efficient Sampling-based Method for Online Informative Path Planning in Unknown Environments**", arXiv preprint, 2020.
+> The paper is in the process of being published, the citation will be updated in the coming days. 
+> A pre-print version is available on [arXiv](https://arxiv.org/abs/1909.09548).
 
 ```bibtex
 @article{
