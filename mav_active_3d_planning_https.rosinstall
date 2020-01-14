@@ -1,0 +1,19 @@
+- git: {local-name: glog_catkin, uri: 'https://github.com/ethz-asl/glog_catkin.git'}
+- git: {local-name: catkin_simple, uri: 'https://github.com/catkin/catkin_simple.git'}
+- git: {local-name: eigen_catkin, uri: 'https://github.com/ethz-asl/eigen_catkin.git'}
+- git: {local-name: mav_trajectory_generation, uri: 'https://github.com/ethz-asl/mav_trajectory_generation.git'}
+- git: {local-name: voxblox, uri: 'https://github.com/ethz-asl/voxblox.git'}
+- git: {local-name: unreal_cv_ros, uri: 'https://github.com/ethz-asl/unreal_cv_ros.git'} 
+- git: {local-name: rotors_simulator, uri: 'https://github.com/ethz-asl/rotors_simulator.git'} 
+- git: {local-name: mav_control_rw, uri: 'https://github.com/ethz-asl/mav_control_rw.git'}
+
+- git: {local-name: eigen_checks, uri: 'https://github.com/ethz-asl/eigen_checks.git'}
+- git: {local-name: mav_comm, uri: 'https://github.com/ethz-asl/mav_comm.git'}
+- git: {local-name: nlopt, uri: 'https://github.com/ethz-asl/nlopt.git'}
+- git: {local-name: yaml_cpp_catkin, uri: 'https://github.com/ethz-asl/yaml_cpp_catkin'}
+- git: {local-name: minkindr, uri: 'https://github.com/ethz-asl/minkindr.git'}
+- git: {local-name: minkindr_ros, uri: 'https://github.com/ethz-asl/minkindr_ros.git'}
+- git: {local-name: gflags_catkin, uri: 'https://github.com/ethz-asl/gflags_catkin.git'}
+- git: {local-name: mavros, uri: 'https://github.com/ethz-asl/mavros.git'}
+- git: {local-name: catkin_boost_python_buildtool, uri: 'https://github.com/ethz-asl/catkin_boost_python_buildtool.git'}
+- git: {local-name: numpy_eigen, uri: 'https://github.com/ethz-asl/numpy_eigen.git'}
