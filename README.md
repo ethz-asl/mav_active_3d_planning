@@ -25,13 +25,14 @@ Online-IPP for **Exploration** (left), **3D Reconstruction** (right) & **more**.
 * [Running and Evaluating a Simulated Experiment](https://github.com/ethz-asl/mav_active_3d_planning/wiki/Running-and-Evaluating-a-Simulated-Experiment)
 * [Code Index](https://github.com/ethz-asl/mav_active_3d_planning/wiki/Code-Index)
 
-For additional information please see the wiki.
+For additional information please see the [wiki](https://github.com/ethz-asl/mav_active_3d_planning/wiki).
 
 # Credits
 ## Paper and Video
 If you find this package useful for your research, please consider citing our paper:
-```
-@beingWritten{
+
+```bibtex
+@article{
   A paper is currently being written.
   The repo is for confidential use only at the moment.
 }
@@ -45,7 +46,8 @@ A video of the approach is available [here](https://www.youtube.com/watch?v=lEad
 ## Packages
 The mav_active_3d_planning package is divided into separate packages, such that only the dependencies necessary for your application package need to be built.
 
-Although packages are organized for the catkin workflow, the *core* package can be built as a stand-alone library for non-ROS use.
+Although packages are organized for the catkin workflow, the *core* package can be built as a stand-alone library for non-ROS use. All packages with a short description are listed below.
+
 ## Dependencies
 Packages and their dependencies:
 * **core:**
@@ -83,7 +85,7 @@ Installation instructions for Linux.
 
 1. If not already done so, install [ROS](http://wiki.ros.org/ROS/Installation) (Desktop-Full is recommended).
 
-2. If not already done so, create a catkin workspace and install [catkin tools](https://catkin-tools.readthedocs.io/en/latest/):
+2. If not already done so, create a catkin workspace with [catkin tools](https://catkin-tools.readthedocs.io/en/latest/):
 
 ```shell script
 sudo apt-get install python-catkin-tools
@@ -96,36 +98,45 @@ catkin config --merge-devel
 
 ```
 
-3. Move to your catkin workspace: 
+**Installation**
+
+1. Move to your catkin workspace: 
 ```shell script
 cd ~/catkin_ws/src
 ```
 
-3. Install system dependencies: 
+2. Install system dependencies: 
 ```shell script
 sudo apt-get install python-wstool python-catkin-tools
 ```
 
-4. Download repo using a SSH key or via HTTPS: 
+3. Download repo using a SSH key or via HTTPS: 
 ```shell script
 git clone git@github.com:ethz-asl/mav_active_3d_planning.git # SSH
 git clone https://github.com/ethz-asl/mav_active_3d_planning.git # HTTPS
 ```
 
-5. Download and install all dependencies of the packages you intend to use and remove unwanted packages. 
+4. Download and install the dependencies of the packages you intend to use.
 
-* Dependencies of **all** packages can be installed using rosinstall:
+* **Full Install:** dependencies of **all** packages can be installed using rosinstall:
 ```shell script
-# system dependencies, replace melodic with your ros distro if necessary
-sudo apt-get install ros-melodic-cmake-modules autoconf libyaml-cpp-dev protobuf-compiler
+# system dependencies, replace melodic with your ros distro if necessary:
+sudo apt-get install ros-melodic-cmake-modules ros-melodic-control-toolbox ros-melodic-joy ros-melodic-octomap-ros ros-melodic-mavlink ros-melodic-geographic-msgs autoconf libyaml-cpp-dev protobuf-compiler libgoogle-glog-dev liblapacke-dev libgeographic-dev
+pip install future unrealcv
 
-#TODO dependencies of dependencies? rotors etc?
+# If you already intialized ws tool use 'wstool merge -t'
+wstool init . ./mav_active_3d_planning/mav_active_3d_planning_ssh.rosinstall # SSH
+wstool init . ./mav_active_3d_planning/mav_active_3d_planning_https.rosinstall # HTTPS
+wstool update
 ```
 
-Compile and source: 
+* **Partial Install:** Install dependencies of the packages you intend to use ([listed above](#Dependencies)) and remove unwanted packages from `mav_active_3d_planning/package.xml` as well as their source folders.
+
+5. Source and compile: 
 ```shell script
-catkin build mav_active_3d_planning
 source ../devel/setup.bash
+catkin build mav_active_3d_planning # Builds this package only
+catkin build # Builds entire workspace, recommended for full install.
 ```
 
 ## Data Repository
