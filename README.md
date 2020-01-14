@@ -31,10 +31,14 @@ For additional information please see the [wiki](https://github.com/ethz-asl/mav
 ## Paper and Video
 If you find this package useful for your research, please consider citing our paper:
 
+> The paper is in the process of being published, the citation will be updated in the coming days. 
+> A pre-print version is available on [arXiv]().
+
+* Lukas Schmid, Michael Pantic, Raghav Khanna, Lionel Ott, Roland Siegwart, and Juan Nieto, "**An Efficient Sampling-based Method for Online Informative Path Planning in Unknown Environments**", arXiv preprint, 2020.
+
 ```bibtex
 @article{
-  A paper is currently being written.
-  The repo is for confidential use only at the moment.
+  coming soon.
 }
 ```
 
@@ -95,7 +99,6 @@ catkin init
 catkin config --extend /opt/ros/melodic  # exchange melodic for your ros distro if necessary
 catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release
 catkin config --merge-devel
-
 ```
 
 **Installation**
@@ -118,19 +121,18 @@ git clone https://github.com/ethz-asl/mav_active_3d_planning.git # HTTPS
 
 4. Download and install the dependencies of the packages you intend to use.
 
-* **Full Install:** dependencies of **all** packages can be installed using rosinstall:
-```shell script
-# system dependencies, replace melodic with your ros distro if necessary:
-sudo apt-get install ros-melodic-cmake-modules ros-melodic-control-toolbox ros-melodic-joy ros-melodic-octomap-ros ros-melodic-mavlink ros-melodic-geographic-msgs autoconf libyaml-cpp-dev protobuf-compiler libgoogle-glog-dev liblapacke-dev libgeographic-dev
-pip install future unrealcv
+   * **Full Install:** dependencies of **all** packages can be installed using rosinstall:
+   ```shell script
+   # system dependencies, replace melodic with your ros distro if necessary:
+   sudo apt-get install ros-melodic-cmake-modules ros-melodic-control-toolbox ros-melodic-joy ros-melodic-octomap-ros ros-melodic-mavlink ros-melodic-geographic-msgs autoconf libyaml-cpp-dev protobuf-compiler libgoogle-glog-dev liblapacke-dev libgeographic-dev
+   pip install future unrealcv
 
-# If you already intialized ws tool use 'wstool merge -t'
-wstool init . ./mav_active_3d_planning/mav_active_3d_planning_ssh.rosinstall # SSH
-wstool init . ./mav_active_3d_planning/mav_active_3d_planning_https.rosinstall # HTTPS
-wstool update
-```
-
-* **Partial Install:** Install dependencies of the packages you intend to use ([listed above](#Dependencies)) and remove unwanted packages from `mav_active_3d_planning/package.xml` as well as their source folders.
+   # If you already intialized ws tool use 'wstool merge -t'
+   wstool init . ./mav_active_3d_planning/mav_active_3d_planning_ssh.rosinstall # SSH
+   wstool init . ./mav_active_3d_planning/mav_active_3d_planning_https.rosinstall # HTTPS
+   wstool update
+   ```
+   * **Partial Install:** Install dependencies of the packages you intend to use ([listed above](#Dependencies)) and remove unwanted packages from `mav_active_3d_planning/package.xml` as well as their source folders.
 
 5. Source and compile: 
 ```shell script
