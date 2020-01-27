@@ -31,15 +31,21 @@ For additional information please see the [wiki](https://github.com/ethz-asl/mav
 ## Paper and Video
 If you find this package useful for your research, please consider citing our paper:
 
-* Lukas Schmid, Michael Pantic, Raghav Khanna, Lionel Ott, Roland Siegwart, and Juan Nieto, "**An Efficient Sampling-based Method for Online Informative Path Planning in Unknown Environments**", 2020
-
-> The paper is in the process of being published, the citation will be updated in the coming days. 
-> A pre-print version is available on [arXiv](https://arxiv.org/abs/1909.09548).
+* Lukas Schmid, Michael Pantic, Raghav Khanna, Lionel Ott, Roland Siegwart, and Juan Nieto, "**An Efficient Sampling-based Method for Online Informative Path Planning in Unknown Environments**", in *IEEE Robotics and Automation Letters*, 2020
 
 ```bibtex
-@article{
-  coming soon.
-}
+@ARTICLE{active_3d_planning,
+  author={L. M. {Schmid} and M. {Pantic} and R. {Khanna} and L. {Ott} and R. {Siegwart} and J. {Nieto}},
+  journal={IEEE Robotics and Automation Letters},
+  title={An Efficient Sampling-based Method for Online Informative Path Planning in Unknown Environments},
+  year={2020},
+  volume={},
+  number={},
+  pages={1-1},
+  keywords={Motion and Path Planning;Aerial Systems;Perception and Autonomy;Reactive and Sensor-Based Planning},
+  doi={10.1109/LRA.2020.2969191},
+  ISSN={2377-3774},
+  month={},}
 ```
 
 The planner presented in the paper is given in `active_3d_planning_app_reconstruction/cfg/planners/reconstruction_planner.yaml`.
