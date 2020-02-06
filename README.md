@@ -31,21 +31,22 @@ For additional information please see the [wiki](https://github.com/ethz-asl/mav
 ## Paper and Video
 If you find this package useful for your research, please consider citing our paper:
 
-* Lukas Schmid, Michael Pantic, Raghav Khanna, Lionel Ott, Roland Siegwart, and Juan Nieto, "**An Efficient Sampling-based Method for Online Informative Path Planning in Unknown Environments**", in *IEEE Robotics and Automation Letters*, 2020
+* Lukas Schmid, Michael Pantic, Raghav Khanna, Lionel Ott, Roland Siegwart, and Juan Nieto, "**An Efficient Sampling-based Method for Online Informative Path Planning in Unknown Environments**", in *IEEE Robotics and Automation Letters*, vol. 5, no. 2, pp. 1500-1507, April 2020
 
 ```bibtex
-@ARTICLE{active_3d_planning,
-  author={L. M. {Schmid} and M. {Pantic} and R. {Khanna} and L. {Ott} and R. {Siegwart} and J. {Nieto}},
+@ARTICLE{Schmid20ActivePlanning,
+  author={L. {Schmid} and M. {Pantic} and R. {Khanna} and L. {Ott} and R. {Siegwart} and J. {Nieto}},
   journal={IEEE Robotics and Automation Letters},
-  title={An Efficient Sampling-based Method for Online Informative Path Planning in Unknown Environments},
+  title={An Efficient Sampling-Based Method for Online Informative Path Planning in Unknown Environments},
   year={2020},
-  volume={},
-  number={},
-  pages={1-1},
-  keywords={Motion and Path Planning;Aerial Systems;Perception and Autonomy;Reactive and Sensor-Based Planning},
+  volume={5},
+  number={2},
+  pages={1500-1507},
+  keywords={Motion and path planning;aerial systems;perception and autonomy;reactive and sensor-based planning},
   doi={10.1109/LRA.2020.2969191},
   ISSN={2377-3774},
-  month={},}
+  month={April},
+}
 ```
 
 The planner presented in the paper is given in `active_3d_planning_app_reconstruction/cfg/planners/reconstruction_planner.yaml`.
