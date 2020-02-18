@@ -76,7 +76,7 @@ class EvalData:
         self.launch_simulation()
 
     def launch_simulation(self):
-        rospy.loginfo("Experiment setup: waiting for unreal MAV simulationto setup...")
+        rospy.loginfo("Experiment setup: waiting for unreal MAV simulation to setup...")
         # Wait for unreal simulation to setup
         if self.startup_timeout > 0.0:
             try:

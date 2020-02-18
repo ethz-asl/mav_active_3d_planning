@@ -29,9 +29,9 @@ system_constraints:
 
 # Specifying a trajectory generator
 trajectory_generator:
+  type: "Uniform"
   collision_optimistic: false
   bounding_volume_args: "/map_bounding_volume"
-  type: "Uniform"
 
   # Generator Params
   n_segments: 5

@@ -8,7 +8,7 @@ import random
 import rospy
 import tf
 from collections import deque
-from mav_active_3d_planning.msg import OdometryOffset
+from active_3d_planning_app_reconstruction.msg import OdometryOffset
 from nav_msgs.msg import Odometry
 
 

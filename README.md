@@ -149,7 +149,7 @@ Related ressources, such as experiment scenarios and ground truth point clouds, 
 The `active_3d_planning_app_reconstruction` is an application package, that launches an active\_3d\_planner.
 A verbose example of how planner configurations are specified is given in `cfg/planners/example_config.yaml`.
 The example planner uses local motion primitives to expand new segments and the number of unknown voxels as gain formulation. 
-To see the planner in action, start an unreal\_cv\_ros game, e.g. CityBuilding, make sure to tab out of game control with Ctrl+Shift+F1 and then run 
+To see the planner in action, start an unreal\_cv\_ros game, e.g. [CityBuilding](#Data-Repository), make sure to tab out of game control (Alt+Tab for Binary, Ctrl+Shift+F1 for Editor) and then run 
 ```
 roslaunch active_3d_planning_app_reconstruction example.launch
 ```
@@ -158,13 +158,12 @@ A useful parameter to set is `verbose_modules: true`, as all available params of
 
 ![mav_3d_ex_config](https://user-images.githubusercontent.com/36043993/58561558-aaa84280-8227-11e9-9b89-def052db17a8.png)
 
-A local motion primitve based planner starting exploration.
+A local motion primitive based planner starting exploration.
 
 ## Run an Experiment
 In order to record data of the example planner, run 
 ```
-roslaunch active_3d_planning_app_reconstruction run_experiment.launch planner_general_config:=
-planners/example_config.yaml data_directory:=/path/to/my_data_dir
+roslaunch active_3d_planning_app_reconstruction run_experiment.launch data_directory:=/path/to/my_data_dir
 ```
 This will collect and store raw data in a new folder in `my_data_dir`.
 When the experiment has finished by time limit (30 minutes) or by pressing Ctrl+C, run 

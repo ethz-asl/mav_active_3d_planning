@@ -80,7 +80,7 @@ class EvalPlotting:
         rospy.loginfo("Starting evaluation on target '%s'.", target_dir)
         # Check target dir is valid (approximately)
         if not os.path.isfile(os.path.join(target_dir, "data_log.txt")):
-            rospy.logerr("Invalid target directory.")
+            rospy.logerr("Invalid target directory: Could not find a 'data_log.txt' file.")
             return
 
         # Check for rosbag renaming

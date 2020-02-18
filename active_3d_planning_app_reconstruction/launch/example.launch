@@ -13,16 +13,15 @@
     
   <!-- Unreal Routine arguments -->
   <arg name="uecv_mode" default="fast"/>
-  <arg name="slowdown" default="0.2"/>
+  <arg name="slowdown" default="0.0"/>
   <arg name="delay" default="3.0"/>  
   
-  <!-- Unreal Sensor arguments (ground_truth, kinect, gaussian_depth_noise)-->
+  <!-- Unreal Sensor arguments (ground_truth, kinect, gaussian_depth_noise) -->
   <arg name="model_type" default="gaussian_depth_noise"/>
   <arg name="flatten_distance" default="6.0"/>
   <arg name="maximum_distance" default="0.0"/>
   
-  <!-- Odometry  arguments (random_walk, ground_truth)-->
-  <arg name="use_rovio" default="false"/>
+  <!-- Odometry  arguments (random_walk, ground_truth) -->
   <arg name="odom_noise_model" default="random_walk"/>
   
   <!--  Planner arguments-->
@@ -76,14 +75,8 @@
       <rosparam file="$(find mav_lowlevel_attitude_controller)/resources/PID_attitude_$(arg mav_name).yaml" />
     </node>
     
-    <!-- Odometry: noise model / rovio -->
-    <node pkg="rovio" type="rovio_node" name="rovio" output="screen" if="$(arg use_rovio)">
-      <param name="filter_config" value="$(find active_3d_planning_app_reconstruction)/cfg/rovio/rovio.info"/>
-      <param name="camera0_config" value="$(find active_3d_planning_app_reconstruction)/cfg/rovio/unreal_cam0.yaml"/>
-      <remap from="cam0/image_raw" to="/unreal/unreal_sensor_model/ue_gray_image_out" />
-      <remap from="imu0" to="ground_truth/imu" />
-    </node>
-    <node name="odometry_noise_model" pkg="active_3d_planning_app_reconstruction" type="gps_odometry_simulator.py" output="screen" unless="$(arg use_rovio)">
+    <!-- Odometry: noise model -->
+    <node name="odometry_noise_model" pkg="active_3d_planning_app_reconstruction" type="gps_odometry_simulator.py" output="screen">
       <param name="position_uncertainty" value="0.05"/>
       <param name="roll_pitch_uncertainty" value="1.5" />
       <param name="yaw_uncertainty" value="5.0" />
@@ -112,7 +105,6 @@
       <param name="flatten_distance" value="$(arg flatten_distance)"/>
       <param name="model_type" value="$(arg model_type)" />
       <param name="maximum_distance" value="$(arg maximum_distance)" />
-      <param name="publish_gray_images" value="$(arg use_rovio)" />
       <param name="k_mu_2" value="0.0024" />
       <param name="k_sigma_2" value="0.0024" />
       <remap from="ue_sensor_raw" to="unreal_ros_client/ue_sensor_raw" />
@@ -145,9 +137,7 @@
     <!-- Voxblox -->
     <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
       <remap from="pointcloud" to="/unreal/unreal_sensor_model/ue_sensor_out"/>
-      <remap from="transform" to="/$(arg mav_name)/rovio/transform" if="$(arg use_rovio)"/>
-      <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/voxblox/transforms.yaml" if="$(arg use_rovio)"/> 
-      <param name="use_tf_transforms" value="$(eval arg('use_rovio') == false)"/>
+      <param name="use_tf_transforms" value="true"/>
       <param name="publish_tsdf_map" value="true" />
       <param name="publish_esdf_map" value="true" />
       <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
@@ -176,7 +166,7 @@
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
       <remap from="command/trajectory" to="/$(arg mav_name)/command/trajectory" />
 
-      <!-- Build the Planner by Configuration -->    
+      <!-- Build the Planner by Configuration     -->
       <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/$(arg planner_config)"/>
     </node>    
   </group>
