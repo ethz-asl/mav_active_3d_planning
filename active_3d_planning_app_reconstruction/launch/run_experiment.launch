@@ -27,9 +27,7 @@
   
   <!--  Planner arguments (can use a single config or compose the planner)-->
   <arg name="use_separate_configs" default="false"/>
-  <arg name="planner_general_config" default="planners/reconstruction_planner.yaml"/>
-  <arg name="planner_generator_config" default="planners/modules/tg_rrt.yaml"/>
-  <arg name="planner_evaluator_config" default="planners/modules/te_weight.yaml"/>
+  <arg name="planner_config" default="planners/example_config.yaml"/>
   <arg name="verbose_planner" default="true"/>
   <arg name="visualize" default="true"/>
   
@@ -37,7 +35,7 @@
   <arg name="experiment_config" default="CityBuilding.yaml"/>
   <arg name="record_data" default="true"/>
   <arg name="record_visualization" default="true"/>
-  <arg name="data_directory" default="/home/lukas/Documents/MT/Data"/> 
+  <arg name="data_directory" default="/home/user/Documents/Data"/> 
   <arg name="data_frequency" default="30.0" />
   <arg name="time_limit" default="30" />
 
@@ -197,15 +195,10 @@
       <param name="trajectory_evaluator/bounding_volume_args" value="/target_bounding_volume" />
       <param name="trajectory_generator/bounding_volume_args" value="/map_bounding_volume" />
       
-      <!-- General Config -->    
-      <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/$(arg planner_general_config)"/>
+      <!-- Modular Config -->    
+      <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/$(arg planner_config)"/>
     </node>    
-    
-    <!-- Modular config -->    
-    <group if="$(arg use_separate_configs)">
-      <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/$(arg planner_generator_config)" ns="planner_node"/>
-      <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/$(arg planner_evaluator_config)" ns="planner_node"/> 
-    </group>
+   
  </group>
 
   <!-- RVIZ Visualization -->
