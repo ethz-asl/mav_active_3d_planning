@@ -29,7 +29,7 @@ trajectory_generator:
   bounding_volume_args: "/map_bounding_volume"
   clearing_radius: 0.0
 
-  type: "FeasibleRRTStar"
+  type: "RRTStar"
   all_semgents_feasible: false
   crop_segments: true
   crop_margin: 0.3
@@ -98,7 +98,7 @@ trajectory_evaluator:
         type: "SubsequentBest"
 
 back_tracker:
-  type: "FeasibleRotateReverse"
+  type: "RotateReverse"
   turn_rate: 1.6
   update_rate: 0.5
   sampling_rate: 20.0
