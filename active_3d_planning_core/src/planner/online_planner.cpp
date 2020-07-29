@@ -261,6 +261,7 @@ namespace active_3d_planning {
         EigenTrajectoryPointVector trajectory;
         trajectory_generator_->extractTrajectoryToPublish(&trajectory, *current_segment_);
         current_segment_->trajectory = trajectory;
+
         requestMovement(trajectory);
         target_position_ = trajectory.back().position_W;
         target_yaw_ = trajectory.back().getYaw();
@@ -472,8 +473,6 @@ namespace active_3d_planning {
             msg.type = VisualizationMarker::TEXT_VIEW_FACING;
             msg.id = i;
             msg.ns = "candidate_text";
-            msg.scale.x() = 0.2;
-            msg.scale.y() = 0.2;
             msg.scale.z() = 0.2;
             msg.color.r = 0.0f;
             msg.color.g = 0.0f;
