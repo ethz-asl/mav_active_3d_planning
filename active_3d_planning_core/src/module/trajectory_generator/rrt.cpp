@@ -34,6 +34,7 @@ namespace active_3d_planning {
                              &p_semilocal_radius_max_, 1.0);
             setParam<double>(param_map, "semilocal_sampling_radius_min",
                              &p_semilocal_radius_min_, 0.2);
+            setParam<double>(param_map, "min_path_length", &p_min_path_length_, 0.0);
             previous_root_ = nullptr;
 
             // setup parent
@@ -230,9 +231,16 @@ namespace active_3d_planning {
                                const EigenTrajectoryPoint &goal,
                                EigenTrajectoryPointVector *result,
                                bool check_collision) {
-            // try creating a linear trajectory and check for collision
+            // try creating a linear trajectory
             Eigen::Vector3d start_pos = start.position_W;
             Eigen::Vector3d direction = goal.position_W - start_pos;
+
+            // check minimum length
+            if ((start_pos - goal.position_W).norm() < p_min_path_length_) {
+              return false;
+            }
+
+            // check collision
             int n_points = std::ceil(direction.norm() / planner_.getSystemConstraints().v_max * p_sampling_rate_);
             if (check_collision) {
                 for (int i = 0; i < n_points; ++i) {
@@ -259,6 +267,10 @@ namespace active_3d_planning {
         bool RRT::adjustGoalPosition(const Eigen::Vector3d &start_pos,
                                      Eigen::Vector3d *goal_pos_) {
             Eigen::Vector3d direction = *goal_pos_ - start_pos;
+            // check min length
+            if (direction.norm() < p_min_path_length_) {
+              return false;
+            }
             if (p_max_extension_range_ > 0.0 && direction.norm() > p_max_extension_range_) {
                 // check max length
                 direction *= p_max_extension_range_ / direction.norm();

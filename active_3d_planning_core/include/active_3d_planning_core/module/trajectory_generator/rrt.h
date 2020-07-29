@@ -77,6 +77,7 @@ namespace active_3d_planning {
             // points in radius
             bool p_sample_yaw_;     // True: random yaw, false: face direction of travel
             int p_maximum_tries_;   // sampling tries, 0 for inf
+            double p_min_path_length_;  // disallow all segments shorter than min length
 
             // kdtree
             std::unique_ptr<KDTree> kdtree_;

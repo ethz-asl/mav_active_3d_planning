@@ -21,6 +21,7 @@ cs_add_library(${PROJECT_NAME}
         src/map/map.cpp
         src/module/back_tracker.cpp
         src/module/back_tracker/rotate_in_place.cpp
+        src/module/back_tracker/reverse.cpp
         src/module/back_tracker/rotate_reverse.cpp
         src/module/module_factory.cpp
         src/module/module_factory_registry.cpp

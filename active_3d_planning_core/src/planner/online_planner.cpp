@@ -472,8 +472,6 @@ namespace active_3d_planning {
             msg.type = VisualizationMarker::TEXT_VIEW_FACING;
             msg.id = i;
             msg.ns = "candidate_text";
-            msg.scale.x() = 0.2;
-            msg.scale.y() = 0.2;
             msg.scale.z() = 0.2;
             msg.color.r = 0.0f;
             msg.color.g = 0.0f;

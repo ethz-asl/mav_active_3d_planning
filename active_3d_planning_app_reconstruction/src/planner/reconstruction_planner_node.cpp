@@ -23,6 +23,8 @@ int main(int argc, char **argv) {
     // Set logging to debug for testing
     ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug);
     google::InitGoogleLogging(argv[0]);
+    google::InstallFailureSignalHandler();
+    google::ParseCommandLineFlags(&argc, &argv, false);
 
     // node handles
     ros::NodeHandle nh("");
