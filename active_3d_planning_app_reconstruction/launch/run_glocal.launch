@@ -1,0 +1,111 @@
+<launch>
+  <!-- Airsim arguments -->
+  <arg name="airsim_config" default="maze_airsim.yaml"/>
+  <arg name="use_airsim_time" default="false"/>
+  <arg name="mav_name" default="airsim_drone"/>
+  
+  <!-- Voxblox arguments -->
+  <arg name="voxel_size" default="0.20"/>
+  <arg name="voxels_per_side" default="16"/>
+  <arg name="ray_length" default="10.0"/>
+  <arg name="method" default="merged"/>
+  <arg name="verbose_voxblox" default="false"/>
+  
+  <!--  Planner arguments (can use a single config or compose the planner)-->
+  <arg name="use_separate_configs" default="false"/>
+  <arg name="planner_config" default="planners/glocal.yaml"/>
+  <arg name="verbose_planner" default="true"/>
+  <arg name="visualize" default="true"/>
+  
+  <!--  Experiment arguments -->  
+  <arg name="experiment_config" default="Maze.yaml"/>
+  <arg name="record_data" default="true"/>
+  <arg name="record_visualization" default="false"/>
+  <arg name="data_directory" default="/home/lukas/Documents/Glocal/active_3d"/> 
+  <arg name="data_frequency" default="30.0" />
+  <arg name="time_limit" default="30" />
+
+
+  <!-- *** Experiment Execution *** -->
+  
+  <!-- Setup experiment params, data, nodes -->
+  <param name="/use_sim_time" value="true" if="$(arg use_airsim_time)"/>
+  <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/experiments/$(arg experiment_config)"/> 
+  
+  <!-- airsim client -->
+  <node name="airsim_simulator" pkg="unreal_airsim" type="airsim_simulator_node" required="true" output="screen" args="-alsologtostderr">
+     <rosparam file="$(find glocal_exploration_ros)/config/$(arg airsim_config)"/>
+  </node>  
+    
+  <!-- Experiment launcher, data generation-->
+  <node name="eval_data_node" pkg="active_3d_planning_app_reconstruction" type="eval_data_node.py" output="screen" required="true">
+    <remap from="collision" to="/airsim_drone/collision" />
+    <param name="ns_planner" value="/planner/planner_node" />
+    <param name="ns_voxblox" value="/planner/voxblox_node" />
+    <param name="delay" value="3" />
+    <param name="startup_timeout" value="30.0" />
+    <param name="evaluate" value="$(arg record_data)" />
+    <param name="eval_directory" value="$(arg data_directory)" />
+    <param name="eval_frequency" value="$(arg data_frequency)" />
+    <param name="time_limit" value="$(arg time_limit)" />
+  </node>
+  
+  <!-- adaptor -->
+  <node name="airsim_adaptor" pkg="active_3d_planning_app_reconstruction" type="airsim_adaptor.py" output="screen" required="true">
+    <remap from="trajectory_in" to="planner/command/trajectory" />
+    <remap from="command_pose_out" to="/airsim_drone/command/pose" />
+  </node>
+  
+  <!-- tf -->
+  <node pkg="tf" type="static_transform_publisher" name="static_tf" args="0 0 0 0 0 0 1 /odom /world 100"/>
+  
+  <!-- Record a rosbag of the visualization-->
+  <node pkg="rosbag" type="record" name="rosbag_vis_recorder"
+     args="record -o $(arg data_directory)/tmp_bags/tmp_bag /rosout /clock /tf /planner/voxblox_node/mesh /firefly/reference_trajectory /firefly/base_link /planner/trajectory_visualization" if="$(eval arg('record_data') and arg('record_visualization'))"/>
+
+  <group ns="planner">
+    <!-- Voxblox -->
+    <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
+      <remap from="pointcloud" to="/airsim_drone/Lidar"/> 
+      <param name="use_tf_transforms" value="true"/>
+      <param name="publish_tsdf_map" value="true" />
+      <param name="publish_esdf_map" value="true" />
+      <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
+      <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
+      <param name="color_mode" value="normals" />
+      <param name="update_mesh_every_n_sec" value="1.0" />
+      <param name="method" value="$(arg method)" />
+      <param name="max_ray_length_m" value="$(arg ray_length)" />
+      <param name="allow_clear" value="true" />
+      <param name="verbose" value="$(arg verbose_voxblox)" />
+      <param name="publish_map_incremental" value="true" />
+    </node>
+    
+    <!-- Planner -->
+    <node name="planner_node" pkg="active_3d_planning_app_reconstruction" type="reconstruction_planner_node" output="screen" >
+      <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
+      <remap from="planner_node/tsdf_map_in" to="voxblox_node/tsdf_map_out" />
+      <param name="use_tf_transforms" value="false" />
+      <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
+      <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
+      <param name="update_mesh_every_n_sec" value="0.0" />   
+      <param name="publish_traversable" value="false" />         
+    
+      <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
+      <param name="verbose" value="$(arg verbose_planner)" />
+      <param name="visualize" value="$(arg visualize)" />
+      <param name="log_performance" value="$(arg record_data)" />
+    
+      <!-- Experiment dependent -->
+      <param name="trajectory_evaluator/bounding_volume_args" value="/target_bounding_volume" />
+      <param name="trajectory_generator/bounding_volume_args" value="/map_bounding_volume" />
+      
+      <!-- Modular Config -->    
+      <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/$(arg planner_config)"/>
+    </node>    
+   
+ </group>
+
+  <!-- RVIZ Visualization -->
+  <node type="rviz" name="rviz_experiment" pkg="rviz" args="-d $(find active_3d_planning_app_reconstruction)/cfg/experiments/glocal.rviz" if="$(arg visualize)"/>
+</launch>

@@ -3,7 +3,7 @@
 # ros
 import rospy
 from sensor_msgs.msg import PointCloud2
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from std_srvs.srv import SetBool
 from voxblox_msgs.srv import FilePath
 # Python
@@ -39,7 +39,7 @@ class EvalData:
             self.eval_directory = rospy.get_param('~eval_directory', 'DirParamNotSet')  # Periodically save voxblox map
             if not os.path.isdir(self.eval_directory):
                 rospy.logfatal("Invalid target directory '%s'.", self.eval_directory)
-                sys.exit(-1)
+                sys.exit(1)
 
             self.ns_voxblox = rospy.get_param('~ns_voxblox', "/voxblox/voxblox_node")
 
@@ -63,7 +63,7 @@ class EvalData:
 
             # Subscribers, Services
             self.ue_out_sub = rospy.Subscriber("ue_out_in", PointCloud2, self.ue_out_callback, queue_size=10)
-            self.collision_sub = rospy.Subscriber("collision", String, self.collision_callback, queue_size=10)
+            self.collision_sub = rospy.Subscriber("collision", Bool, self.collision_callback, queue_size=10)
             self.cpu_time_srv = rospy.ServiceProxy(self.ns_planner + "/get_cpu_time", SetBool)
 
             # Finish
@@ -80,12 +80,12 @@ class EvalData:
         # Wait for unreal simulation to setup
         if self.startup_timeout > 0.0:
             try:
-                rospy.wait_for_message("unreal_simulation_ready", String, self.startup_timeout)
+                rospy.wait_for_message("/simulation_is_ready", Bool, self.startup_timeout)
             except rospy.ROSException:
                 self.stop_experiment("Simulation startup failed (timeout after " + str(self.startup_timeout) + "s).")
                 return
         else:
-            rospy.wait_for_message("unreal_simulation_ready", String)
+            rospy.wait_for_message("/simulation_is_ready", Bool)
         rospy.loginfo("Waiting for unreal MAV simulation to setup... done.")
 
         # Launch planner (by service, every planner needs to advertise this service when ready)
@@ -184,13 +184,6 @@ class EvalData:
         reason = "Stopping the experiment: " + reason
         if self.evaluate:
             self.writelog(reason)
-        if self.reset_unreal_cv_ros:
-            try:
-                # If unreal is running, this will reset it, otherwise map is already in initial state
-                terminate_srv = rospy.ServiceProxy(self.ns_unreal_cv_ros + "/terminate_with_reset", SetBool)
-                terminate_srv(True)
-            except:
-                pass
         width = len(reason) + 4
         rospy.loginfo("\n" + "*" * width + "\n* " + reason + " *\n" + "*" * width)
         rospy.signal_shutdown(reason)

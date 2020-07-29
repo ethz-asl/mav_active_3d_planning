@@ -1,0 +1,102 @@
+#Config for 3D Reconstruction Planner
+replan_pos_threshold: 0.3
+replan_yaw_threshold: 0.1 # ~7deg
+
+max_new_segments: 0
+min_new_segments: 0
+max_new_tries: 0
+min_new_tries: 0
+min_new_value: 0
+
+verbose_modules: true
+build_modules_on_init: true
+expand_batch: 1
+visualize_gain: true
+highlight_executed_trajectory: true
+
+map:
+  type: "VoxbloxMap"
+
+system_constraints:
+  a_max: 1.0
+  v_max: 0.8
+  yaw_rate_max: 10
+  yaw_accel_max: 10
+  collision_radius: 0.7
+
+trajectory_generator:
+  collision_optimistic: false
+  bounding_volume_args: "/map_bounding_volume"
+  clearing_radius: 0.5
+
+  type: "RRTStar"
+  min_path_length: 1.45
+  crop_segments: true
+  crop_margin: 0.5
+  crop_min_length: 1.5
+  max_extension_range: 2.0
+  maximum_tries: 1000
+  sampling_rate: 20.0
+  sample_yaw: true
+
+  sampling_mode: "semilocal"
+  semilocal_sampling_count: 10
+  semilocal_sampling_radius_max: 1.5
+  semilocal_sampling_radius_min: 1.5
+
+  rewire_root: true
+  rewire_intermediate: true
+  reinsert_root: true
+  max_rewire_range: 2.0
+  max_density_range: 0.0
+  n_neighbors: 50
+
+  generator_updater:
+    type: "RecheckCollision"
+
+trajectory_evaluator:
+  type: "RRTStarEvaluatorAdapter"
+  
+  following_evaluator:
+    type: "SimpleYawPlanningEvaluator"
+    n_directions: 4
+    select_by_value: false
+
+    following_evaluator:
+      type: "NaiveEvaluator" # FrontierEvaluator
+      visualize_sensor_view: true
+      accurate_frontiers: true
+      checking_distance: 2.0
+      bounding_volume_args: "/target_bounding_volume"
+      camera_params_ns: "/unreal/unreal_ros_client/camera_params"
+
+      frontier_voxel_weight: 1.0
+      new_voxel_weight: 0.0
+      min_impact_factor: 0.01
+      ray_angle_x: 0.002454
+      ray_angle_y: 0.002681
+
+      sensor_model:
+        type: "IterativeRayCasterLidar"
+        sampling_time: 0.0
+        ray_length: 10.0
+        fov_x: 360
+        fov_y: 45
+        res_x: 10000000
+        res_y: 10000000
+        downsampling_factor: 3.0
+        mounting_rotation_y: 0.2164396
+        mounting_rotation_w: 0.976296
+
+      cost_computer:
+        type: "SegmentTime"
+
+      value_computer:
+        type: "GlobalNormalizedGain"
+
+      next_selector:
+        type: "SubsequentBest"
+
+back_tracker:
+  type: "Reverse"
+
