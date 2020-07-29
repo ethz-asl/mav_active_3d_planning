@@ -139,6 +139,10 @@ namespace active_3d_planning {
         }
 
         void RosPlanner::requestMovement(const EigenTrajectoryPointVector &trajectory) {
+            if (trajectory.empty()) {
+              LOG(WARNING) << "Tried to publish an empty trajectory";
+              return;
+            }
             trajectory_msgs::MultiDOFJointTrajectoryPtr msg(new trajectory_msgs::MultiDOFJointTrajectory);
             msg->header.stamp = ::ros::Time::now();
             int n_points = trajectory.size();
@@ -147,8 +151,6 @@ namespace active_3d_planning {
                 msgMultiDofJointTrajectoryPointFromEigen(trajectory[i], &msg->points[i]);
             }
             target_pub_.publish(msg);
-            target_position_ = trajectory.back().position_W;
-            target_yaw_ = trajectory.back().getYaw();
         }
 
         void RosPlanner::publishVisualization(const VisualizationMarkers &markers) {

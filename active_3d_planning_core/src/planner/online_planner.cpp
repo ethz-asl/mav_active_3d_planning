@@ -261,6 +261,7 @@ namespace active_3d_planning {
         EigenTrajectoryPointVector trajectory;
         trajectory_generator_->extractTrajectoryToPublish(&trajectory, *current_segment_);
         current_segment_->trajectory = trajectory;
+
         requestMovement(trajectory);
         target_position_ = trajectory.back().position_W;
         target_yaw_ = trajectory.back().getYaw();

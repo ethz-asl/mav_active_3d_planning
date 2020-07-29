@@ -22,7 +22,7 @@ system_constraints:
   a_max: 1.0
   yaw_rate_max: 1.6
   yaw_accel_max: 1.6
-  collision_radius: 0.7
+  collision_radius: 1.0
 
 trajectory_generator:
   collision_optimistic: false
@@ -34,6 +34,7 @@ trajectory_generator:
   crop_segments: true
   crop_margin: 0.3
   crop_min_length: 0.5
+  min_path_length: 0.5
   max_extension_range: 1.5
   maximum_tries: 1000
   sampling_rate: 20.0
