@@ -1,6 +1,6 @@
 #Config for 3D Reconstruction Planner
-replan_pos_threshold: 0.3
-replan_yaw_threshold: 0.1 # ~7deg
+replan_pos_threshold: 0.4
+replan_yaw_threshold: 0.15 # ~7deg
 
 max_new_segments: 0
 min_new_segments: 0
