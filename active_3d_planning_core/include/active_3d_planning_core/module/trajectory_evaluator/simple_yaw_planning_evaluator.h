@@ -21,7 +21,10 @@ namespace active_3d_planning {
 
             void setupFromParamMap(Module::ParamMap *param_map) override;
 
-        protected:
+          bool updateSegment(TrajectorySegment *segment) override;
+
+
+         protected:
             friend class evaluator_updater::YawPlanningUpdater;
 
             static ModuleFactoryRegistry::Registration<SimpleYawPlanningEvaluator>
@@ -30,6 +33,11 @@ namespace active_3d_planning {
             // params
             bool p_visualize_followup_; // true: also visualize the gain of the best
             // orientation
+            double p_update_range_; // Update only gains within this distance (use 0.0 to
+          // check all)
+          double p_update_gain_;  // Update only gains within above this
+          bool p_update_sections_separate_; // True: check for each section, false:
+          // check for whole segment
 
             // methods
             double sampleYaw(double original_yaw, int sample) override;

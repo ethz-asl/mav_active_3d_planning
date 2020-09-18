@@ -34,7 +34,7 @@
   
   <!-- airsim client -->
   <node name="airsim_simulator" pkg="unreal_airsim" type="airsim_simulator_node" required="true" output="screen" args="-alsologtostderr">
-     <rosparam file="$(find glocal_exploration_ros)/config/$(arg airsim_config)"/>
+     <rosparam file="$(find active_3d_planning_app_reconstruction)/cfg/$(arg airsim_config)"/>
   </node>  
     
   <!-- Experiment launcher, data generation-->

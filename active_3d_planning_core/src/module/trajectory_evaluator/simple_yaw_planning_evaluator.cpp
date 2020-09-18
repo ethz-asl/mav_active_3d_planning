@@ -37,9 +37,55 @@ namespace active_3d_planning {
         void SimpleYawPlanningEvaluator::setupFromParamMap(
                 Module::ParamMap *param_map) {
             setParam<bool>(param_map, "visualize_followup", &p_visualize_followup_, true);
+          setParam<double>(param_map, "update_range", &p_update_range_,
+                           -1.0); // default is no updates
+          setParam<double>(param_map, "update_gain", &p_update_gain_, 0.0);
+          setParam<bool>(param_map, "update_sections_separate",
+                         &p_update_sections_separate_, false);
             // setup parent
             YawPlanningEvaluator::setupFromParamMap(param_map);
         }
+
+    bool SimpleYawPlanningEvaluator::updateSegment(TrajectorySegment *segment) {
+      if (segment->parent && segment->info) {
+        YawPlanningInfo
+            * info = reinterpret_cast<YawPlanningInfo*>(segment->info.get());
+        double dist = (planner_.getCurrentPosition()
+            - segment->trajectory.back().position_W).norm();
+        if (p_update_range_ == 0.0 || p_update_range_ > dist) {
+          bool update_all =
+              (~p_update_sections_separate_)
+                  && (segment->gain > p_update_gain_);
+          double current_value = -1.0;
+          double best_value= -1.0;
+          for (int i = 0; i < info->orientations.size(); ++i) {
+            if (update_all || info->orientations[i].gain > p_update_gain_) {
+              // all conditions met: update gain of segment
+              following_evaluator_->computeGain(&(info->orientations[i]));
+              if (p_select_by_value_) {
+                following_evaluator_->computeCost(&(info->orientations.back()));
+                following_evaluator_->computeValue(&(info->orientations.back()));
+                current_value = info->orientations.back().value;
+              } else {
+                current_value = info->orientations.back().gain;
+              }
+              if (current_value > best_value) {
+                best_value = current_value;
+                info->active_orientation = i;
+              }
+            }
+          }
+        }
+        // Update trajectory
+        segment->trajectory = info->orientations[info->active_orientation].trajectory;
+        segment->gain = info->orientations[info->active_orientation].gain;
+        if (p_select_by_value_) {
+          segment->cost = info->orientations[info->active_orientation].cost;
+          segment->value = info->orientations[info->active_orientation].value;
+        }
+      }
+      return following_evaluator_->updateSegment(segment);
+    }
 
         void SimpleYawPlanningEvaluator::visualizeTrajectoryValue(VisualizationMarkers *markers,
                                                                   const TrajectorySegment &trajectory) {

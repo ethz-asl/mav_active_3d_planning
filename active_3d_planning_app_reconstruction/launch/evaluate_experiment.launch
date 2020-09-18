@@ -1,16 +1,16 @@
 <launch>
   <!-- Data source Data, -->
-  <arg name="target_directory" default="/home/user/Documents/Data" />
+  <arg name="target_directory" default="/home/lukas/Documents/Glocal/active_3d" />
   <arg name="gt_file_path" default="/home/user/Documents/CityBuilding/gt_surface_pcl.ply"/>
-  <arg name="experiment_config" default="CityBuilding.yaml"/>
+  <arg name="experiment_config" default="Maze.yaml"/>
   <arg name="method" default="recent"/>
   
   <!-- what to evaluate -->
   <arg name="series" default="false"/>
   <arg name="evaluate" default="true"/>
-  <arg name="evaluate_volume" default="false"/>
+  <arg name="evaluate_volume" default="true"/>
   <arg name="error_histogram" default="false"/>
-  <arg name="create_meshes" default="true"/>
+  <arg name="create_meshes" default="false"/>
   <arg name="create_plots" default="true"/>
   <arg name="show_plots" default="false"/>
   <arg name="clear_voxblox_maps" default="false"/>	<!-- automatic irreversible(!) map removal to free disk space -->

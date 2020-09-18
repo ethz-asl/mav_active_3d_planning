@@ -19,15 +19,15 @@ map:
 
 system_constraints:
   a_max: 1.0
-  v_max: 0.8
+  v_max: 1.0
   yaw_rate_max: 10
   yaw_accel_max: 10
-  collision_radius: 0.7
+  collision_radius: 1.0
 
 trajectory_generator:
   collision_optimistic: false
   bounding_volume_args: "/map_bounding_volume"
-  clearing_radius: 0.5
+  clearing_radius: 1.0
 
   type: "RRTStar"
   min_path_length: 1.45
@@ -61,20 +61,16 @@ trajectory_evaluator:
     type: "SimpleYawPlanningEvaluator"
     n_directions: 4
     select_by_value: false
+    
+    update_range: 3.0
+    update_gain: 0.0
+    update_sections_separate: true
+
 
     following_evaluator:
       type: "NaiveEvaluator" # FrontierEvaluator
       visualize_sensor_view: true
-      accurate_frontiers: true
-      checking_distance: 2.0
       bounding_volume_args: "/target_bounding_volume"
-      camera_params_ns: "/unreal/unreal_ros_client/camera_params"
-
-      frontier_voxel_weight: 1.0
-      new_voxel_weight: 0.0
-      min_impact_factor: 0.01
-      ray_angle_x: 0.002454
-      ray_angle_y: 0.002681
 
       sensor_model:
         type: "IterativeRayCasterLidar"
