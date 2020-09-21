@@ -42,6 +42,7 @@ namespace active_3d_planning {
         void RosPlanner::setupFromParamMap(Module::ParamMap *param_map) {
             setParam<double>(param_map, "replan_pos_threshold", &p_replan_pos_threshold_, 0.1);
             setParam<double>(param_map, "replan_yaw_threshold", &p_replan_yaw_threshold_, 0.1);
+            setParam<double>(param_map, "replan_timeout", &p_replan_timeout_, 3600);
         }
 
         void RosPlanner::setupFactoryAndParams(ModuleFactory *factory, Module::ParamMap *param_map,
@@ -74,6 +75,7 @@ namespace active_3d_planning {
             // Setup counters
             cpu_srv_timer_ = std::clock();
             ros_timing_ = ::ros::Time::now();
+            previous_stamp_timeout_ = ros_timing_;
             perf_log_data_[5] = 0;        // reset count
 
         }
@@ -123,16 +125,19 @@ namespace active_3d_planning {
                     msg.pose.pose.orientation.w, msg.pose.pose.orientation.x,
                     msg.pose.pose.orientation.y, msg.pose.pose.orientation.z);
             if (running_ && !target_reached_) {
-                // check goal pos reached (if tol is set)
-                if (p_replan_pos_threshold_ <= 0 ||
+                // Check timeout reached
+                if ((msg.header.stamp - previous_stamp_timeout_).toSec() >= p_replan_timeout_) {
+                  target_reached_ = true;
+                } else if (p_replan_pos_threshold_ <= 0 ||
                     (target_position_ - current_position_).norm() <
                     p_replan_pos_threshold_) {
-                    // check goal yaw reached (if tol is set)
+                  // check goal pos reached (if tol is set)
                     double yaw = tf::getYaw(msg.pose.pose.orientation);
                     if (p_replan_yaw_threshold_ <= 0 ||
                         defaults::angleDifference(target_yaw_, yaw) <
                         p_replan_yaw_threshold_) {
-                        target_reached_ = true;
+                      // check goal yaw reached (if tol is set)
+                      target_reached_ = true;
                     }
                 }
             }
@@ -145,6 +150,7 @@ namespace active_3d_planning {
             }
             trajectory_msgs::MultiDOFJointTrajectoryPtr msg(new trajectory_msgs::MultiDOFJointTrajectory);
             msg->header.stamp = ::ros::Time::now();
+            previous_stamp_timeout_ = msg->header.stamp;
             int n_points = trajectory.size();
             msg->points.resize(n_points);
             for (int i = 0; i < n_points; ++i) {
@@ -197,9 +203,13 @@ namespace active_3d_planning {
                                         std_srvs::SetBool::Response &res) {
             res.success = true;
             if (req.data) {
+              if (!planning_) {
                 initializePlanning();
                 planning_ = true;
                 ROS_INFO("Started planning.");
+              } else {
+                ROS_INFO("Is already planning.");
+              }
             } else {
                 planning_ = false;
                 ROS_INFO("Stopped planning.");

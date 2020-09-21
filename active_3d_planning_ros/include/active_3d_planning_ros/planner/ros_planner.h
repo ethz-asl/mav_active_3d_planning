@@ -65,10 +65,12 @@ namespace active_3d_planning {
             ::ros::Time ros_timing_;              // track simulated time
             std::clock_t cpu_srv_timer_;        // To get CPU usage for service
             std::map<std::string, int> visualization_overwrite_counter_;    // store the previous number of visualizations to overwrite in RVIZ
+            ::ros::Time previous_stamp_timeout_;
 
             // params
             double p_replan_pos_threshold_;     // m, when is the goal considered reached
             double p_replan_yaw_threshold_;     // rad
+            double p_replan_timeout_;   // s
 
             // override/adapt planner methods
             virtual void initializePlanning() override;
