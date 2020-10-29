@@ -49,7 +49,7 @@ trajectory_generator:
   rewire_intermediate: true
   reinsert_root: true
   max_rewire_range: 1.6
-  max_density_range: 0.0
+  max_density_range: 1.0
   n_neighbors: 20
 
   generator_updater:
