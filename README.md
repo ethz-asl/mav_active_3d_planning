@@ -31,27 +31,26 @@ For additional information please see the [wiki](https://github.com/ethz-asl/mav
 ## Paper and Video
 If you find this package useful for your research, please consider citing our paper:
 
+* [IEEE](https://ieeexplore.ieee.org/abstract/document/8968434) | [ArXiv](https://arxiv.org/abs/1909.09548) | [Video](https://www.youtube.com/watch?v=lEadqJ1_8Do)
+
 * Lukas Schmid, Michael Pantic, Raghav Khanna, Lionel Ott, Roland Siegwart, and Juan Nieto, "**An Efficient Sampling-based Method for Online Informative Path Planning in Unknown Environments**", in *IEEE Robotics and Automation Letters*, vol. 5, no. 2, pp. 1500-1507, April 2020
+  ```bibtex
+  @ARTICLE{Schmid20ActivePlanning,
+    author={L. {Schmid} and M. {Pantic} and R. {Khanna} and L. {Ott} and R. {Siegwart} and J. {Nieto}},
+    journal={IEEE Robotics and Automation Letters},
+    title={An Efficient Sampling-Based Method for Online Informative Path Planning in Unknown Environments},
+    year={2020},
+    volume={5},
+    number={2},
+    pages={1500-1507},
+    keywords={Motion and path planning;aerial systems;perception and autonomy;reactive and sensor-based planning},
+    doi={10.1109/LRA.2020.2969191},
+    ISSN={2377-3774},
+    month={April},
+  }
+  ```
 
-```bibtex
-@ARTICLE{Schmid20ActivePlanning,
-  author={L. {Schmid} and M. {Pantic} and R. {Khanna} and L. {Ott} and R. {Siegwart} and J. {Nieto}},
-  journal={IEEE Robotics and Automation Letters},
-  title={An Efficient Sampling-Based Method for Online Informative Path Planning in Unknown Environments},
-  year={2020},
-  volume={5},
-  number={2},
-  pages={1500-1507},
-  keywords={Motion and path planning;aerial systems;perception and autonomy;reactive and sensor-based planning},
-  doi={10.1109/LRA.2020.2969191},
-  ISSN={2377-3774},
-  month={April},
-}
-```
-
-The planner presented in the paper is given in `active_3d_planning_app_reconstruction/cfg/planners/reconstruction_planner.yaml`.
-A video of the approach is available [here](https://www.youtube.com/watch?v=lEadqJ1_8Do).
-
+* The planner presented in the paper is given in `active_3d_planning_app_reconstruction/cfg/planners/reconstruction_planner.yaml`.
 
 # Setup
 ## Packages
@@ -166,6 +165,11 @@ A useful parameter to set is `verbose_modules: true`, as all available params of
 ![mav_3d_ex_config](https://user-images.githubusercontent.com/36043993/58561558-aaa84280-8227-11e9-9b89-def052db17a8.png)
 
 A local motion primitive based planner starting exploration.
+
+**Note:** The reconstruction planner used in the paper is given in `active_3d_planning_app_reconstruction/cfg/planners/reconstruction_planner.yaml`.
+```
+roslaunch active_3d_planning_app_reconstruction example.launch planner_config:=planners/reconstruction_planner.yaml
+```
 
 ## Run an Experiment
 In order to record data of the example planner, run 
