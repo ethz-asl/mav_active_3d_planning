@@ -166,7 +166,7 @@ A useful parameter to set is `verbose_modules: true`, as all available params of
 
 A local motion primitive based planner starting exploration.
 
-**Note:** The reconstruction planner used in the paper is given in `active_3d_planning_app_reconstruction/cfg/planners/reconstruction_planner.yaml`.
+**Note:** The reconstruction planner used in the paper is not the demo one and is given in `active_3d_planning_app_reconstruction/cfg/planners/reconstruction_planner.yaml`. You can run it using
 ```
 roslaunch active_3d_planning_app_reconstruction example.launch planner_config:=planners/reconstruction_planner.yaml
 ```
