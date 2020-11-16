@@ -17,3 +17,8 @@ cs_add_executable(reconstruction_planner_node
         src/planner/reconstruction_planner_node.cpp
         )
 target_link_libraries(reconstruction_planner_node ${catkin_LIBRARIES})
+
+cs_add_executable(trajectory_adaptor
+        src/experiments/trajectory_adaptor.cpp
+        )
+target_link_libraries(reconstruction_planner_node ${catkin_LIBRARIES})
