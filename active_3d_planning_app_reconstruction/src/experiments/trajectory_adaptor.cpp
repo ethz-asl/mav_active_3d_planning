@@ -133,9 +133,11 @@ void TrajectoryAdaptor::requestCallback(const geometry_msgs::Pose &msg) {
   for (int i = 0; i < n_points; ++i) {
     ros::msgMultiDofJointTrajectoryPointFromEigen(result[i], &(msg_out->points[i]));
   }
+
   traj_pub_.publish(msg_out);
   goal_pos_ = result.back().position_W;
   goal_yaw_ = result.back().getYaw();
+
 
   // vis
   visualization_msgs::Marker msg_vis;

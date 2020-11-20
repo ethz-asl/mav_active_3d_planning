@@ -91,7 +91,22 @@ namespace active_3d_planning {
                 trajectory, 1.0 / sampling_rate_, &tmp_states)) {
             return false;
         }
-        EigenTrajectoryPoint::Vector states = mavMsgToPlanningMsg(tmp_states);
+      EigenTrajectoryPoint::Vector states; // = mavMsgToPlanningMsg(tmp_states);
+      states.resize(tmp_states.size());
+      for (size_t i = 0; i < tmp_states.size(); ++i) {
+        EigenTrajectoryPoint pt;
+        pt.timestamp_ns = tmp_states[i].timestamp_ns;
+        pt.time_from_start_ns = tmp_states[i].time_from_start_ns;
+        pt.position_W = tmp_states[i].position_W;
+        pt.velocity_W = tmp_states[i].velocity_W;
+        pt.acceleration_W = tmp_states[i].acceleration_W;
+        pt.jerk_W = tmp_states[i].jerk_W;
+        pt.snap_W = tmp_states[i].snap_W;
+        pt.orientation_W_B = tmp_states[i].orientation_W_B;
+        pt.angular_velocity_W = tmp_states[i].angular_velocity_W;
+        pt.angular_acceleration_W = tmp_states[i].angular_acceleration_W;
+        states.emplace_back(pt);
+      }
 
         // Build result
         *result = states;
