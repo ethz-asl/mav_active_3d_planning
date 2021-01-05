@@ -92,7 +92,7 @@ namespace active_3d_planning {
             return false;
         }
       EigenTrajectoryPoint::Vector states; // = mavMsgToPlanningMsg(tmp_states);
-      states.resize(tmp_states.size());
+      states.reserve(tmp_states.size());
       for (size_t i = 0; i < tmp_states.size(); ++i) {
         EigenTrajectoryPoint pt;
         pt.timestamp_ns = tmp_states[i].timestamp_ns;
