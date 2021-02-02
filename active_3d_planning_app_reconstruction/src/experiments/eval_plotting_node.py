@@ -12,6 +12,7 @@ import shutil
 import sys
 # Plotting
 from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from std_srvs.srv import Empty
 
 
