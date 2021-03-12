@@ -160,7 +160,7 @@ namespace active_3d_planning {
             visualization_msgs::MarkerArray msg;
             visualizationMarkersToMsg(markers, &msg);
             for (visualization_msgs::Marker &m : msg.markers) {
-                m.header.frame_id = "/world";
+                m.header.frame_id = "world";
                 m.header.stamp = ::ros::Time::now();
             }
             // check overwrite flag (for full array)
@@ -179,7 +179,7 @@ namespace active_3d_planning {
                     for (int i = markers.getMarkers().size(); i < count; ++i) {
                         // publish empty marker to remove previous ids
                         auto empty_marker = visualization_msgs::Marker();
-                        empty_marker.header.frame_id = "/world";
+                        empty_marker.header.frame_id = "world";
                         empty_marker.header.stamp = ::ros::Time::now();
                         empty_marker.type = visualization_msgs::Marker::POINTS;
                         empty_marker.id = i;
