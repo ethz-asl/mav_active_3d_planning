@@ -72,7 +72,7 @@ namespace active_3d_planning {
                     }
                 }
             }
-            RRT::selectSegment(result, root);
+            return RRT::selectSegment(result, root);
         }
 
         bool RRTStar::expandSegment(TrajectorySegment *target,

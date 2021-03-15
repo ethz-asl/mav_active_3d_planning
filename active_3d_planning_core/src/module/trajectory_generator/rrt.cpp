@@ -225,6 +225,7 @@ namespace active_3d_planning {
                     return true;
                 }
             }
+            return false;
         }
 
         bool RRT::connectPoses(const EigenTrajectoryPoint &start,

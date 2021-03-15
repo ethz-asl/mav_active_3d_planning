@@ -42,6 +42,7 @@ namespace active_3d_planning {
             YawPlanningEvaluator::computeGain(traj_in);
             // find best stored yaw and apply it
             setBestYaw(traj_in);
+            return true;
         }
 
         bool ContinuousYawPlanningEvaluator::updateSegment(TrajectorySegment *segment) {
