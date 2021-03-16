@@ -1,0 +1,99 @@
+#Config for Volumetric Exploration Planner
+replan_pos_threshold: 0.15
+replan_yaw_threshold: 0.15
+
+max_new_segments: 0
+min_new_segments: 0
+max_new_tries: 0
+min_new_tries: 0
+min_new_value: 0
+
+verbose_modules: true
+build_modules_on_init: true
+expand_batch: 1
+visualize_gain: true
+highlight_executed_trajectory: true
+
+map:
+  type: "VoxbloxMap"
+
+system_constraints:
+  v_max: 1.0
+  a_max: 1.0
+  yaw_rate_max: 1.6
+  yaw_accel_max: 1.6
+  collision_radius: 1.0
+
+trajectory_generator:
+  collision_optimistic: false
+  bounding_volume_args: "/map_bounding_volume"
+  clearing_radius: 1.0
+
+  type: "RRTStar"
+  all_semgents_feasible: false
+  crop_segments: true
+  crop_margin: 0.3
+  crop_min_length: 0.5
+  min_path_length: 0.5
+  max_extension_range: 1.5
+  maximum_tries: 1000
+  sampling_rate: 20.0
+  sample_yaw: true
+
+  sampling_mode: "semilocal"
+  semilocal_sampling_count: 10
+  semilocal_sampling_radius_max: 1.5
+  semilocal_sampling_radius_min: 1.5
+
+  rewire_root: true
+  rewire_intermediate: true
+  reinsert_root: true
+  max_rewire_range: 1.6
+  max_density_range: 1.0
+  n_neighbors: 20
+
+  generator_updater:
+    type: "RecheckCollision"
+
+trajectory_evaluator:
+  type: "RRTStarEvaluatorAdapter"
+
+  following_evaluator:
+    type: "ContinuousYawPlanningEvaluator"
+    n_directions: 12
+    n_sections_fov: 3
+    update_range: 3.0
+    update_gain: 0.0
+    update_sections_separate: false
+
+    following_evaluator:
+      type: "NaiveEvaluator"
+      visualize_sensor_view: true
+      bounding_volume_args: "/target_bounding_volume"
+
+      sensor_model:
+        type: "IterativeRayCaster"
+        sampling_time: 0.0
+        ray_length: 5.0
+        focal_length: 320.0
+        resolution_x: 172 # 640-90/172-30/127-22.5 deg fov
+        resolution_y: 480
+        downsampling_factor: 5.0
+
+      cost_computer:
+        type: "SegmentTime"
+
+      value_computer:
+        type: "GlobalNormalizedGain"
+
+      next_selector:
+        type: "SubsequentBest"
+
+back_tracker:
+  type: "RotateReverse"
+  turn_rate: 1.6
+  update_rate: 0.5
+  sampling_rate: 20.0
+  n_rotations: 0
+  stack_size: 10
+

@@ -148,7 +148,6 @@
       <param name="max_ray_length" value="$(arg ray_length)" />
       <param name="allow_clear" value="true" />
       <param name="verbose" value="$(arg verbose_voxblox)" />
-      <param name="publish_map_incremental" value="true" />
     </node>
     
     <!-- Planner -->
@@ -160,7 +159,8 @@
       <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
       <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
       <param name="update_mesh_every_n_sec" value="0.0" />   
-      <param name="publish_traversable" value="false" />         
+      <param name="publish_traversable" value="false" />    
+      <param name="publish_pointclouds" value="false" />              
     
     	<!-- General Settings -->
       <remap from="odometry" to="/$(arg mav_name)/ground_truth/odometry" />
