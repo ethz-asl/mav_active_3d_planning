@@ -1,6 +1,6 @@
-#!/usr/bin/env python 
-import rospy
+#!/usr/bin/env python
 from Tkinter import *
+import rospy
 from std_srvs.srv import Empty
 from std_srvs.srv import SetBool
 
@@ -19,11 +19,9 @@ except:
     rospy.logwarn("Services not available")
     exit(1)
 
-pos_hold_service = rospy.ServiceProxy(pos_hold_service_topic,
-                                      Empty)
+pos_hold_service = rospy.ServiceProxy(pos_hold_service_topic, Empty)
 
-toggle_service = rospy.ServiceProxy(toggle_service_topic,
-                                    SetBool)
+toggle_service = rospy.ServiceProxy(toggle_service_topic, SetBool)
 
 
 # Button Callbacks

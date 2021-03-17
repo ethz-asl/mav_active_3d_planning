@@ -2,48 +2,59 @@
 
 import csv
 import datetime
-import numpy as np
 import os
 import re
-# ros
-import rospy
 import shutil
-# Python
 import sys
+
+import numpy as np
+import rospy
+
 # Plotting
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from std_srvs.srv import Empty
 
 
-class EvalPlotting:
+class EvalPlotting(object):
     """
-    This is the main evaluation node. It expects the data folders and files to have the format hardcoded in the
-    eval_data_node and calls the eval_voxblox_node to execute c++ code. Pretty ugly and non-general code but just
-    needs to work in this specific case atm...
+    This is the main evaluation node. It expects the data folders and files to
+    have the format hardcoded in the eval_data_node and calls the
+    eval_voxblox_node to execute c++ code. Pretty ugly and non-general code but
+    just needs to work in this specific case atm...
     """
-
     def __init__(self):
         # Parse parameters
         target_dir = rospy.get_param('~target_directory')
         self.method = rospy.get_param('~method', 'single')
-        self.ns_voxblox = rospy.get_param('~ns_eval_voxblox_node', '/eval_voxblox_node')
+        self.ns_voxblox = rospy.get_param('~ns_eval_voxblox_node',
+                                          '/eval_voxblox_node')
         self.evaluate = rospy.get_param('~evaluate', True)
         self.evaluate_volume = rospy.get_param('~evaluate_volume', False)
         self.create_plots = rospy.get_param('~create_plots', True)
-        self.show_plots = rospy.get_param('~show_plots', False)  # Auxiliary param, prob removed later
+        self.show_plots = rospy.get_param(
+            '~show_plots', False)  # Auxiliary param, prob removed later
         self.create_meshes = rospy.get_param('~create_meshes', True)
-        self.series = rospy.get_param('~series', False)  # True: skip single evaluation and create
+        self.series = rospy.get_param(
+            '~series', False)  # True: skip single evaluation and create
         # series evaluation data and plots for all runs in the target directory
-        self.clear_voxblox_maps = rospy.get_param('~clear_voxblox_maps', False)  # rm all maps after eval (disk space!)
-        self.unobservable_points_pct = rospy.get_param('~unobservable_points_pct', 0.0)  # Exlude unobservable points
+        self.clear_voxblox_maps = rospy.get_param(
+            '~clear_voxblox_maps',
+            False)  # rm all maps after eval (disk space!)
+        self.unobservable_points_pct = rospy.get_param(
+            '~unobservable_points_pct', 0.0)  # Exlude unobservable points
         # from the plots (in percent of total)
 
         # Check for valid params
-        methods = {'single': 'single', 'recent': 'recent', 'all': 'all'}  # Dictionary of implemented models
+        methods = {
+            'single': 'single',
+            'recent': 'recent',
+            'all': 'all'
+        }  # Dictionary of implemented models
         selected = methods.get(self.method, 'NotFound')
         if selected == 'NotFound':
-            warning = "Unknown method '" + model_type_in + "'. Implemented are: " + \
+            warning = "Unknown method '" + self.method + \
+                      "'. Implemented are: " + \
                       "".join(["'" + m + "', " for m in methods])
             rospy.logfatal(warning[:-2])
             sys.exit(-1)
@@ -53,7 +64,8 @@ class EvalPlotting:
         # Setup
         self.eval_log_file = None
         rospy.wait_for_service(self.ns_voxblox + "/evaluate")
-        self.eval_voxblox_srv = rospy.ServiceProxy(self.ns_voxblox + "/evaluate", Empty)
+        self.eval_voxblox_srv = rospy.ServiceProxy(
+            self.ns_voxblox + "/evaluate", Empty)
 
         # Evaluate
         if self.series:
@@ -61,43 +73,63 @@ class EvalPlotting:
         elif self.method == 'single':
             self.run_single_evaluation(target_dir)
         elif self.method == 'recent':
-            dir_expression = re.compile('\d{8}_\d{6}')  # Only check the default names
-            subdirs = [o for o in os.listdir(target_dir) if os.path.isdir(os.path.join(target_dir, o)) and
-                       dir_expression.match(o)]
+            dir_expression = re.compile(
+                r'\d{8}_\d{6}')  # Only check the default names
+            subdirs = [
+                o for o in os.listdir(target_dir)
+                if os.path.isdir(os.path.join(target_dir, o))
+                and dir_expression.match(o)
+            ]
             subdirs.sort(reverse=True)
             if len(subdirs) == 0:
-                rospy.loginfo("No recent directories in target dir '%s' to evaluate.", target_dir)
+                rospy.loginfo(
+                    "No recent directories in target dir '%s' to evaluate.",
+                    target_dir)
                 sys.exit(-1)
 
             self.run_single_evaluation(os.path.join(target_dir, subdirs[0]))
         elif self.method == 'all':
-            subdirs = [o for o in os.listdir(target_dir) if os.path.isdir(os.path.join(target_dir, o))]
+            subdirs = [
+                o for o in os.listdir(target_dir)
+                if os.path.isdir(os.path.join(target_dir, o))
+            ]
             for subdir in subdirs:
                 self.run_single_evaluation(os.path.join(target_dir, subdir))
 
-        rospy.loginfo("\n" + "*" * 53 + "\n* Evaluation completed successfully, shutting down. *\n" + "*" * 53)
+        rospy.loginfo(
+            "\n" + "*" * 53 +
+            "\n* Evaluation completed successfully, shutting down. *\n" +
+            "*" * 53)
 
     def run_single_evaluation(self, target_dir):
         rospy.loginfo("Starting evaluation on target '%s'.", target_dir)
         # Check target dir is valid (approximately)
         if not os.path.isfile(os.path.join(target_dir, "data_log.txt")):
-            rospy.logerr("Invalid target directory: Could not find a 'data_log.txt' file.")
+            rospy.logerr("Invalid target directory: Could not find a "
+                         "'data_log.txt' file.")
             return
 
         # Check for rosbag renaming
-        self.eval_log_file = open(os.path.join(target_dir, "data_log.txt"), 'a+')
+        self.eval_log_file = open(os.path.join(target_dir, "data_log.txt"),
+                                  'a+')
         lines = [line.rstrip('\n') for line in self.eval_log_file]
         if not "[FLAG] Rosbag renamed" in lines:
             for line in lines:
                 if line[:14] == "[FLAG] Rosbag:":
-                    file_name = os.path.join(os.path.dirname(target_dir), "tmp_bags", line[15:] + ".bag")
+                    file_name = os.path.join(os.path.dirname(target_dir),
+                                             "tmp_bags", line[15:] + ".bag")
                     if os.path.isfile(file_name):
-                        os.rename(file_name, os.path.join(target_dir, "visualization.bag"))
-                        self.writelog("Moved the tmp rosbag into 'visualization.bag'")
+                        os.rename(
+                            file_name,
+                            os.path.join(target_dir, "visualization.bag"))
+                        self.writelog(
+                            "Moved the tmp rosbag into 'visualization.bag'")
                         self.eval_log_file.write("[FLAG] Rosbag renamed\n")
                     else:
-                        self.writelog("Error: unable to locate '" + file_name + "'.")
-                        rospy.logwarn("Error: unable to locate '" + file_name + "'.")
+                        self.writelog("Error: unable to locate '" + file_name +
+                                      "'.")
+                        rospy.logwarn("Error: unable to locate '" + file_name +
+                                      "'.")
 
         self.eval_log_file.close()  # Make it available for voxblox node
 
@@ -113,11 +145,13 @@ class EvalPlotting:
             try:
                 self.eval_voxblox_srv()
             except:
-                rospy.logerr("eval_voxblox service call failed. Shutting down.")
+                rospy.logerr(
+                    "eval_voxblox service call failed. Shutting down.")
                 sys.exit(-1)
 
         # Reopen logfile
-        self.eval_log_file = open(os.path.join(target_dir, "data_log.txt"), 'a+')
+        self.eval_log_file = open(os.path.join(target_dir, "data_log.txt"),
+                                  'a+')
 
         if self.create_plots:
             # Create dirs
@@ -126,23 +160,33 @@ class EvalPlotting:
 
             if os.path.isfile(os.path.join(target_dir, "voxblox_data.csv")):
                 # Read voxblox data file
-                data_voxblox = self.read_voxblox_data(os.path.join(target_dir, "voxblox_data.csv"))
+                data_voxblox = self.read_voxblox_data(
+                    os.path.join(target_dir, "voxblox_data.csv"))
                 if len(data_voxblox['RosTime']) > 1:
                     if 'MeanError' in data_voxblox:
                         self.plot_sim_overview(data_voxblox, target_dir)
                     else:
-                        rospy.loginfo("Unevaluated 'voxblox_data.csv', skipping dependent graphs.")
+                        rospy.loginfo(
+                            "Unevaluated 'voxblox_data.csv', skipping dependent"
+                            " graphs.")
                 else:
-                    rospy.loginfo("Too few entries in 'voxblox_data.csv', skipping dependent graphs.")
+                    rospy.loginfo(
+                        "Too few entries in 'voxblox_data.csv', skipping "
+                        "dependent graphs.")
             else:
-                rospy.loginfo("No 'voxblox_data.csv' found, skipping dependent graphs.")
+                rospy.loginfo(
+                    "No 'voxblox_data.csv' found, skipping dependent graphs.")
 
             if os.path.isfile(os.path.join(target_dir, "performance_log.csv")):
                 # Read performance data file
                 data_perf = {}
                 headers = None
-                with open(os.path.join(target_dir, "performance_log.csv")) as infile:
-                    reader = csv.reader(infile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                with open(os.path.join(target_dir,
+                                       "performance_log.csv")) as infile:
+                    reader = csv.reader(infile,
+                                        delimiter=',',
+                                        quotechar='|',
+                                        quoting=csv.QUOTE_MINIMAL)
                     for row in reader:
                         if row[0] == 'RunTime':
                             headers = row
@@ -156,26 +200,36 @@ class EvalPlotting:
                 if len(data_perf['RosTime']) > 1:
                     self.plot_perf_overview(data_perf, target_dir)
                 else:
-                    rospy.loginfo("Too few entries in 'performance_log.csv', skipping dependent graphs.")
+                    rospy.loginfo(
+                        "Too few entries in 'performance_log.csv', skipping "
+                        "dependent graphs.")
             else:
-                rospy.loginfo("No 'performance_log.csv' found, skipping dependent graphs.")
+                rospy.loginfo(
+                    "No 'performance_log.csv' found, skipping dependent graphs."
+                )
 
             if os.path.isfile(os.path.join(target_dir, "error_hist.csv")):
                 # Read error data file
-                with open(os.path.join(target_dir, "error_hist.csv")) as infile:
-                    reader = csv.reader(infile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                with open(os.path.join(target_dir,
+                                       "error_hist.csv")) as infile:
+                    reader = csv.reader(infile,
+                                        delimiter=',',
+                                        quotechar='|',
+                                        quoting=csv.QUOTE_MINIMAL)
                     data = np.array(list(reader))
                     data_error_hist = data[1:, 1:].astype(int)
 
                 # Create graph
                 self.plot_error_hist(data_error_hist, target_dir)
             else:
-                rospy.loginfo("No 'error_hist.csv' found, skipping dependent graphs.")
+                rospy.loginfo(
+                    "No 'error_hist.csv' found, skipping dependent graphs.")
 
             # Finish
             if self.clear_voxblox_maps:
                 # Remove all voxblox maps to free up disk space
-                shutil.rmtree(os.path.join(target_dir, 'voxblox_maps'), ignore_errors=True)
+                shutil.rmtree(os.path.join(target_dir, 'voxblox_maps'),
+                              ignore_errors=True)
             self.eval_log_file.close()
 
     def evaluate_series(self, target_dir):
@@ -185,20 +239,27 @@ class EvalPlotting:
         folder_name = "series_evaluation"
         if not os.path.isdir(os.path.join(target_dir, folder_name)):
             os.mkdir(os.path.join(target_dir, folder_name))
-        self.eval_log_file = open(os.path.join(target_dir, folder_name, "eval_log.txt"), 'a')
+        self.eval_log_file = open(
+            os.path.join(target_dir, folder_name, "eval_log.txt"), 'a')
 
         # Read all the data
-        dir_expression = re.compile('\d{8}_\d{6}')
-        subdirs = [o for o in os.listdir(target_dir) if os.path.isdir(os.path.join(target_dir, o)) and
-                   dir_expression.match(o)]
-        self.writelog("Evaluating '%s' (%i subdirs)." % (target_dir, len(subdirs)))
+        dir_expression = re.compile(r'\d{8}_\d{6}')
+        subdirs = [
+            o for o in os.listdir(target_dir)
+            if os.path.isdir(os.path.join(target_dir, o))
+            and dir_expression.match(o)
+        ]
+        self.writelog("Evaluating '%s' (%i subdirs)." %
+                      (target_dir, len(subdirs)))
         voxblox_data = []
         max_data_length = 0
         names = []
         for o in subdirs:
-            if os.path.isfile((os.path.join(target_dir, o, "graphs", "SimulationOverview.png"))):
+            if os.path.isfile((os.path.join(target_dir, o, "graphs",
+                                            "SimulationOverview.png"))):
                 # Valid evaluated directory
-                data = self.read_voxblox_data(os.path.join(target_dir, o, "voxblox_data.csv"))
+                data = self.read_voxblox_data(
+                    os.path.join(target_dir, o, "voxblox_data.csv"))
                 max_data_length = max(max_data_length, len(data["RosTime"]))
                 voxblox_data.append(data)
                 names.append(o)
@@ -207,14 +268,21 @@ class EvalPlotting:
                 self.writelog("Experiment at '%s' not properly evaluated!" % o)
 
         if max_data_length < 2:
-            rospy.loginfo("No valid experiments found, stopping series evaluation.")
-            self.writelog("No valid experiments found, stopping series evaluation.")
+            rospy.loginfo(
+                "No valid experiments found, stopping series evaluation.")
+            self.writelog(
+                "No valid experiments found, stopping series evaluation.")
             self.eval_log_file.close()
             return
 
-        # Create common data timeline by averaging measurement times (these should be similar)
-        data_file = open(os.path.join(target_dir, folder_name, "series_data.csv"), 'wb')
-        data_writer = csv.writer(data_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL,
+        # Create common data timeline by averaging measurement times (these
+        # should be similar)
+        data_file = open(
+            os.path.join(target_dir, folder_name, "series_data.csv"), 'wb')
+        data_writer = csv.writer(data_file,
+                                 delimiter=',',
+                                 quotechar='|',
+                                 quoting=csv.QUOTE_MINIMAL,
                                  lineterminator='\n')
         means = {}
         std_devs = {}
@@ -245,7 +313,8 @@ class EvalPlotting:
                         if key == 'NPointclouds':
                             # These need to accumulate
                             ind = voxblox_data.index(dataset)
-                            prev_pcls[ind] = prev_pcls[ind] + float(dataset[key][i])
+                            prev_pcls[ind] = prev_pcls[ind] + float(
+                                dataset[key][i])
                             line.append(prev_pcls[ind])
                             values.append(prev_pcls[ind])
                         else:
@@ -289,33 +358,50 @@ class EvalPlotting:
             if length < max_data_length - 1:
                 early_stops.append(length)
                 x_early.append(float(dataset['RosTime'][length]))
-                self.writelog("Early stop detected for '%s' at %.2fs." % (names[i], float(dataset['RosTime'][length])))
+                self.writelog("Early stop detected for '%s' at %.2fs." %
+                              (names[i], float(dataset['RosTime'][length])))
 
         fig, axes = plt.subplots(3, 2)
         axes[0, 0].plot(x, means['MeanError'], 'b-')
-        axes[0, 0].fill_between(x, means['MeanError'] - std_devs['MeanError'],
+        axes[0, 0].fill_between(x,
+                                means['MeanError'] - std_devs['MeanError'],
                                 means['MeanError'] + std_devs['MeanError'],
-                                facecolor='b', alpha=.2)
-        axes[0, 0].plot([x[i] for i in early_stops], [means['MeanError'][i] for i in early_stops], 'kx',
-                        markersize=9, markeredgewidth=2)
+                                facecolor='b',
+                                alpha=.2)
+        axes[0, 0].plot([x[i] for i in early_stops],
+                        [means['MeanError'][i] for i in early_stops],
+                        'kx',
+                        markersize=9,
+                        markeredgewidth=2)
         axes[0, 0].set_ylabel('MeanError [m]')
         axes[0, 0].set_ylim(bottom=0)
         axes[0, 0].set_xlim(left=0, right=x[-1])
         axes[1, 0].plot(x, means['StdDevError'], 'b-')
-        axes[1, 0].fill_between(x, means['StdDevError'] - std_devs['StdDevError'],
+        axes[1, 0].fill_between(x,
+                                means['StdDevError'] - std_devs['StdDevError'],
                                 means['StdDevError'] + std_devs['StdDevError'],
-                                facecolor='b', alpha=.2)
-        axes[1, 0].plot([x[i] for i in early_stops], [means['StdDevError'][i] for i in early_stops], 'kx',
-                        markersize=9, markeredgewidth=2)
+                                facecolor='b',
+                                alpha=.2)
+        axes[1, 0].plot([x[i] for i in early_stops],
+                        [means['StdDevError'][i] for i in early_stops],
+                        'kx',
+                        markersize=9,
+                        markeredgewidth=2)
         axes[1, 0].set_ylabel('StdDevError [m]')
         axes[1, 0].set_ylim(bottom=0)
         axes[1, 0].set_xlim(left=0, right=x[-1])
         axes[2, 0].plot(x, means['OutsideTruncation'], 'r-')
-        axes[2, 0].fill_between(x, means['OutsideTruncation'] - std_devs['OutsideTruncation'],
-                                means['OutsideTruncation'] + std_devs['OutsideTruncation'],
-                                facecolor='r', alpha=.2)
-        axes[2, 0].plot([x[i] for i in early_stops], [means['OutsideTruncation'][i] for i in early_stops], 'kx',
-                        markersize=9, markeredgewidth=2)
+        axes[2, 0].fill_between(
+            x,
+            means['OutsideTruncation'] - std_devs['OutsideTruncation'],
+            means['OutsideTruncation'] + std_devs['OutsideTruncation'],
+            facecolor='r',
+            alpha=.2)
+        axes[2, 0].plot([x[i] for i in early_stops],
+                        [means['OutsideTruncation'][i] for i in early_stops],
+                        'kx',
+                        markersize=9,
+                        markeredgewidth=2)
         axes[2, 0].set_ylabel('Truncated Voxels [%]')
         axes[2, 0].set_ylim(0, 1)
         axes[2, 0].set_xlabel("Simulated Time [%s]" % unit)
@@ -323,38 +409,60 @@ class EvalPlotting:
 
         # Compensate unobservable voxels
         if np.max(means['UnknownVoxels']) > 0:
-            unknown = (means['UnknownVoxels'] - self.unobservable_points_pct) / (1.0 - self.unobservable_points_pct)
+            unknown = (means['UnknownVoxels'] - self.unobservable_points_pct
+                       ) / (1.0 - self.unobservable_points_pct)
             unknown = np.maximum(unknown, np.zeros_like(unknown))
             axes[0, 1].plot(x, unknown, 'g-')
-            axes[0, 1].fill_between(x, unknown - std_devs['UnknownVoxels'],
+            axes[0, 1].fill_between(x,
+                                    unknown - std_devs['UnknownVoxels'],
                                     unknown + std_devs['UnknownVoxels'],
-                                    facecolor='g', alpha=.2)
-            axes[0, 1].plot([x[i] for i in early_stops], [means['UnknownVoxels'][i] for i in early_stops], 'kx',
-                            markersize=9, markeredgewidth=2)
+                                    facecolor='g',
+                                    alpha=.2)
+            axes[0, 1].plot([x[i] for i in early_stops],
+                            [means['UnknownVoxels'][i] for i in early_stops],
+                            'kx',
+                            markersize=9,
+                            markeredgewidth=2)
             axes[0, 1].set_ylabel('Unknown Voxels [%]')
             axes[0, 1].set_ylim(0, 1)
         else:
             axes[0, 1].plot(x, means['Volume'], 'g-')
-            axes[0, 1].fill_between(x, means['Volume'] - std_devs['Volume'], means['Volume'] + std_devs['Volume'],
-                                    facecolor='g', alpha=.2)
+            axes[0, 1].fill_between(x,
+                                    means['Volume'] - std_devs['Volume'],
+                                    means['Volume'] + std_devs['Volume'],
+                                    facecolor='g',
+                                    alpha=.2)
             axes[0, 1].set_ylabel('Explored Volume [m3]')
             axes[0, 1].set_ylim(0, 40 * 40 * 3)
         axes[0, 1].set_xlim(left=0, right=x[-1])
         axes[1, 1].plot(x, means['NPointclouds'], 'k-')
-        axes[1, 1].fill_between(x, means['NPointclouds'] - std_devs['NPointclouds'],
-                                means['NPointclouds'] + std_devs['NPointclouds'],
-                                facecolor='k', alpha=.2)
-        axes[1, 1].plot([x[i] for i in early_stops], [means['NPointclouds'][i] for i in early_stops], 'kx',
-                        markersize=9, markeredgewidth=2)
+        axes[1,
+             1].fill_between(x,
+                             means['NPointclouds'] - std_devs['NPointclouds'],
+                             means['NPointclouds'] + std_devs['NPointclouds'],
+                             facecolor='k',
+                             alpha=.2)
+        axes[1, 1].plot([x[i] for i in early_stops],
+                        [means['NPointclouds'][i] for i in early_stops],
+                        'kx',
+                        markersize=9,
+                        markeredgewidth=2)
         axes[1, 1].set_ylabel('Processed Pointclouds [-]')
         axes[1, 1].set_xlim(left=0, right=x[-1])
 
         x = np.repeat(x, 2)
         x = np.concatenate((np.array([0]), x[:-1]))
         axes[2, 1].plot(x, cpu_use, 'k-')
-        axes[2, 1].fill_between(x, cpu_use - cpu_std, cpu_use + cpu_std, facecolor='k', alpha=.2)
-        axes[2, 1].plot([x[i * 2 + 1] for i in early_stops], [cpu_use[i * 2 + 1] for i in early_stops], 'kx',
-                        markersize=9, markeredgewidth=2)
+        axes[2, 1].fill_between(x,
+                                cpu_use - cpu_std,
+                                cpu_use + cpu_std,
+                                facecolor='k',
+                                alpha=.2)
+        axes[2, 1].plot([x[i * 2 + 1] for i in early_stops],
+                        [cpu_use[i * 2 + 1] for i in early_stops],
+                        'kx',
+                        markersize=9,
+                        markeredgewidth=2)
         axes[2, 1].set_ylabel('Simulated CPU usage [cores]')
         axes[2, 1].set_xlabel("Simulated Time [%s]" % unit)
         axes[2, 1].set_ylim(bottom=0)
@@ -374,7 +482,10 @@ class EvalPlotting:
         data_voxblox = {}
         headers = None
         with open(file_name) as infile:
-            reader = csv.reader(infile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            reader = csv.reader(infile,
+                                delimiter=',',
+                                quotechar='|',
+                                quoting=csv.QUOTE_MINIMAL)
             for row in reader:
                 if row[0] == 'MapName':
                     headers = row
@@ -425,7 +536,7 @@ class EvalPlotting:
         if np.max(unknown) > 0:
             # compensate unobservable voxels
             unknown = (unknown - self.unobservable_points_pct) / (
-                    1.0 - self.unobservable_points_pct)  # compensate invisible
+                1.0 - self.unobservable_points_pct)  # compensate invisible
             unknown = np.maximum(unknown, np.zeros_like(unknown))
             axes[0, 1].set_ylabel('Unknown Voxels [%]')
             axes[0, 1].set_ylim(0, 1)
@@ -449,7 +560,8 @@ class EvalPlotting:
         plt.suptitle("Simulation Overview")
         fig.set_size_inches(15, 10, forward=True)
 
-        save_name = os.path.join(target_dir, "graphs", "SimulationOverview.png")
+        save_name = os.path.join(target_dir, "graphs",
+                                 "SimulationOverview.png")
         plt.savefig(save_name, dpi=300, format='png', bbox_inches='tight')
         self.writelog("Created graph 'SimulationOverview'.")
 
@@ -515,7 +627,11 @@ class EvalPlotting:
         y9 = np.repeat(y9, 2)
 
         fig = plt.figure()
-        axes = [plt.subplot2grid((5, 1), (0, 0), rowspan=3), plt.subplot(5, 1, 4), plt.subplot(5, 1, 5)]
+        axes = [
+            plt.subplot2grid((5, 1), (0, 0), rowspan=3),
+            plt.subplot(5, 1, 4),
+            plt.subplot(5, 1, 5)
+        ]
 
         axes[0].fill_between(x, 0, y0, facecolor="#a1b400", alpha=.5)
         axes[0].fill_between(x, y0, y1, facecolor="#009000", alpha=.5)
@@ -544,7 +660,11 @@ class EvalPlotting:
         axes[1].plot(x, n_trajectories, 'b-')
         axes[1].plot(x, n_new, 'g-')
         axes[1].fill_between(x, 0, n_new, facecolor="#009000", alpha=.3)
-        axes[1].fill_between(x, n_new, n_trajectories, facecolor="#0000ff", alpha=.3)
+        axes[1].fill_between(x,
+                             n_new,
+                             n_trajectories,
+                             facecolor="#0000ff",
+                             alpha=.3)
         axes[1].set_xlim(left=0, right=x[-1])
         axes[1].set_ylim(bottom=0)
         axes[1].set_title("Trajectory Tree Size")
@@ -553,8 +673,10 @@ class EvalPlotting:
 
         x = np.array([])
         ros_time = np.array(data['RosTime'], dtype=float)
-        cpu_times = [np.array(data['Total'], dtype=float),
-                     y_select + y_expand + y_gain + y_cost + y_value + y_next + y_upTE + y_upTG]  # Total, Planning
+        cpu_times = [
+            np.array(data['Total'], dtype=float), y_select + y_expand +
+            y_gain + y_cost + y_value + y_next + y_upTE + y_upTG
+        ]  # Total, Planning
         cpu_use = [np.array([])] * len(cpu_times)
         i = 0
         averaging_threshold = 2.0  # seconds, for smoothing
@@ -581,26 +703,44 @@ class EvalPlotting:
 
         axes[2].plot(x, cpu_use[0], 'k-')
         axes[2].plot(x, cpu_use[1], linestyle='-', color='#5492E7')
-        axes[2].plot(np.array([0, x[-1]]), np.array([1, 1]), linestyle='-', color='0.7', alpha=0.8)
+        axes[2].plot(np.array([0, x[-1]]),
+                     np.array([1, 1]),
+                     linestyle='-',
+                     color='0.7',
+                     alpha=0.8)
         axes[2].set_xlim(left=0, right=x[-1])
         axes[2].set_ylim(bottom=0)
         axes[2].set_ylabel('CPU Usage [cores]')
         axes[2].set_title("Planner Consumed CPU Time per Simulated Time")
         axes[2].set_xlabel('Simulated Time [%s]' % unit)
-        axes[2].legend(["Process", "Planning"], loc='upper left', fancybox=True)
+        axes[2].legend(["Process", "Planning"],
+                       loc='upper left',
+                       fancybox=True)
 
         fig.set_size_inches(15, 15, forward=True)
         plt.tight_layout()
 
         box = axes[0].get_position()
-        axes[0].set_position([box.x0, box.y0 + box.height * 0.16, box.width, box.height * 0.84])
-        legend = ["({0:02.1f}%) Select".format(s0), "({0:02.1f}%) Expand".format(s1), "({0:02.1f}%) Gain".format(s2),
-                  "({0:02.1f}%) Cost".format(s3), "({0:02.1f}%) Value".format(s4), "({0:02.1f}%) NextBest".format(s5),
-                  "({0:02.1f}%) updateGen".format(s6), "({0:02.1f}%) UpdateEval".format(s7),
-                  "({0:02.1f}%) Vis".format(s8), "({0:02.1f}%) Other".format(s10), "({0:02.1f}%) ROS".format(s9)]
-        axes[0].legend(legend, loc='upper center', bbox_to_anchor=(0.5, -0.04), ncol=6, fancybox=True)
+        axes[0].set_position(
+            [box.x0, box.y0 + box.height * 0.16, box.width, box.height * 0.84])
+        legend = [
+            "({0:02.1f}%) Select".format(s0), "({0:02.1f}%) Expand".format(s1),
+            "({0:02.1f}%) Gain".format(s2), "({0:02.1f}%) Cost".format(s3),
+            "({0:02.1f}%) Value".format(s4),
+            "({0:02.1f}%) NextBest".format(s5),
+            "({0:02.1f}%) updateGen".format(s6),
+            "({0:02.1f}%) UpdateEval".format(s7),
+            "({0:02.1f}%) Vis".format(s8), "({0:02.1f}%) Other".format(s10),
+            "({0:02.1f}%) ROS".format(s9)
+        ]
+        axes[0].legend(legend,
+                       loc='upper center',
+                       bbox_to_anchor=(0.5, -0.04),
+                       ncol=6,
+                       fancybox=True)
 
-        save_name = os.path.join(target_dir, "graphs", "PerformanceOverview.png")
+        save_name = os.path.join(target_dir, "graphs",
+                                 "PerformanceOverview.png")
         plt.savefig(save_name, dpi=300, format='png', bbox_inches='tight')
         self.writelog("Created graph 'PerformanceOverview'.")
 
@@ -656,7 +796,9 @@ class EvalPlotting:
 
     def writelog(self, text):
         if self.eval_log_file is not None:
-            self.eval_log_file.write(datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") + text + "\n")
+            self.eval_log_file.write(
+                datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ") +
+                text + "\n")
 
 
 if __name__ == '__main__':

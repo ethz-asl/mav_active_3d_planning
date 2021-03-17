@@ -1,60 +1,60 @@
-#ifndef ACTIVE_3D_PLANNING_CORE_TRAJECTORY_EVALUATOR_CONTINUOUS_YAW_PLANNING_EVALUATOR_H
-#define ACTIVE_3D_PLANNING_CORE_TRAJECTORY_EVALUATOR_CONTINUOUS_YAW_PLANNING_EVALUATOR_H
+#ifndef ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_EVALUATOR_CONTINUOUS_YAW_PLANNING_EVALUATOR_H_
+#define ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_EVALUATOR_CONTINUOUS_YAW_PLANNING_EVALUATOR_H_
 
 #include "active_3d_planning_core/module/trajectory_evaluator/yaw_planning_evaluator.h"
 
 namespace active_3d_planning {
-    namespace evaluator_updater {
-        class YawPlanningUpdater;
-    }
-    namespace trajectory_evaluator {
+namespace evaluator_updater {
+class YawPlanningUpdater;
+}
+namespace trajectory_evaluator {
 
 // Split full yaw into sections and find best orientation by conbining sections.
 // From this paper: https://ieeexplore.ieee.org/abstract/document/8594502
 // Samples yaws uniformly and assigns the same yaw to all trajectory points.
 // Make sure the horizontal FOV of the sensor model matches the spacing of the
 // evaluator
-        class ContinuousYawPlanningEvaluator : public YawPlanningEvaluator {
-        public:
-            explicit ContinuousYawPlanningEvaluator(PlannerI &planner);
+class ContinuousYawPlanningEvaluator : public YawPlanningEvaluator {
+ public:
+  explicit ContinuousYawPlanningEvaluator(PlannerI& planner);  // NOLINT
 
-            // Override virtual functions
-            bool computeGain(TrajectorySegment *traj_in) override;
+  // Override virtual functions
+  bool computeGain(TrajectorySegment* traj_in) override;
 
-            bool updateSegment(TrajectorySegment *segment) override;
+  bool updateSegment(TrajectorySegment* segment) override;
 
-            void visualizeTrajectoryValue(VisualizationMarkers *markers,
-                                          const TrajectorySegment &trajectory) override;
+  void visualizeTrajectoryValue(VisualizationMarkers* markers,
+                                const TrajectorySegment& trajectory) override;
 
-            void setupFromParamMap(Module::ParamMap *param_map) override;
+  void setupFromParamMap(Module::ParamMap* param_map) override;
 
-        protected:
-            friend class evaluator_updater::YawPlanningUpdater;
+ protected:
+  friend class evaluator_updater::YawPlanningUpdater;
 
-            // factory access
+  // factory access
 
-            static ModuleFactoryRegistry::Registration<ContinuousYawPlanningEvaluator>
-                    registration;
+  static ModuleFactoryRegistry::Registration<ContinuousYawPlanningEvaluator>
+      registration;
 
-            // params
-            bool p_visualize_followup_; // true: also visualize the gain of the best
-            // orientation
-            int p_n_sections_fov_;  // Number of sections visible, i.e. fov/section_width
-            double p_update_range_; // Update only gains within this distance (use 0.0 to
-            // check all)
-            double p_update_gain_;  // Update only gains within above this
-            bool p_update_sections_separate_; // True: check for each section, false:
-            // check for whole segment
+  // params
+  bool p_visualize_followup_;  // true: also visualize the gain of the best
+  // orientation
+  int p_n_sections_fov_;   // Number of sections visible, i.e. fov/section_width
+  double p_update_range_;  // Update only gains within this distance (use 0.0 to
+  // check all)
+  double p_update_gain_;             // Update only gains within above this
+  bool p_update_sections_separate_;  // True: check for each section, false:
+  // check for whole segment
 
-            // methods
-            double sampleYaw(double original_yaw, int sample) override;
+  // methods
+  double sampleYaw(double original_yaw, int sample) override;
 
-            void setTrajectoryYaw(TrajectorySegment *segment, double start_yaw,
-                                  double target_yaw) override;
+  void setTrajectoryYaw(TrajectorySegment* segment, double start_yaw,
+                        double target_yaw) override;
 
-            void setBestYaw(TrajectorySegment *segment);
-        };
+  void setBestYaw(TrajectorySegment* segment);
+};
 
-    } // namespace trajectory_evaluator
-} // namespace active_3d_planning
-#endif // ACTIVE_3D_PLANNING_CORE_TRAJECTORY_EVALUATOR_CONTINUOUS_YAW_PLANNING_EVALUATOR_H
+}  // namespace trajectory_evaluator
+}  // namespace active_3d_planning
+#endif  // ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_EVALUATOR_CONTINUOUS_YAW_PLANNING_EVALUATOR_H_

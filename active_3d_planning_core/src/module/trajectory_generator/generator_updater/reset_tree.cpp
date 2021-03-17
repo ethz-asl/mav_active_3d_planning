@@ -5,19 +5,17 @@
 #include <vector>
 
 namespace active_3d_planning {
-    namespace generator_updater {
+namespace generator_updater {
 
 // ResetTree
-        ModuleFactoryRegistry::Registration<ResetTree>
-                ResetTree::registration("ResetTreeGenerator");
+ModuleFactoryRegistry::Registration<ResetTree> ResetTree::registration(
+    "ResetTreeGenerator");
 
-        ResetTree::ResetTree(PlannerI &planner) : GeneratorUpdater(planner) {}
+ResetTree::ResetTree(PlannerI& planner) : GeneratorUpdater(planner) {}
 
-        void ResetTree::setupFromParamMap(Module::ParamMap *param_map) {}
+void ResetTree::setupFromParamMap(Module::ParamMap* param_map) {}
 
-        bool ResetTree::updateSegment(TrajectorySegment *segment) {
-            return false;
-        }
+bool ResetTree::updateSegment(TrajectorySegment* segment) { return false; }
 
-    } // namespace generator_updater
-} // namespace active_3d_planning
+}  // namespace generator_updater
+}  // namespace active_3d_planning

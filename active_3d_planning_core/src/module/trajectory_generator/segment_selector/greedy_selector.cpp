@@ -6,29 +6,30 @@
 #include <vector>
 
 namespace active_3d_planning {
-    namespace segment_selector {
+namespace segment_selector {
 
-        // Greedy
-        ModuleFactoryRegistry::Registration<GreedySelector> GreedySelector::registration("GreedySelector");
+// Greedy
+ModuleFactoryRegistry::Registration<GreedySelector>
+    GreedySelector::registration("GreedySelector");
 
-        GreedySelector::GreedySelector(PlannerI &planner) : SegmentSelector(planner) {}
+GreedySelector::GreedySelector(PlannerI& planner) : SegmentSelector(planner) {}
 
-        bool GreedySelector::selectSegment(TrajectorySegment **result,
-                                   TrajectorySegment *root) {
-            std::vector<TrajectorySegment *> candidates;
-            if (leaves_only_) {
-                root->getLeaves(&candidates);
-            } else {
-                root->getTree(&candidates);
-            }
-            *result = *std::max_element(candidates.begin(), candidates.end(),
-                                        TrajectorySegment::comparePtr);
-            return true;
-        }
+bool GreedySelector::selectSegment(TrajectorySegment** result,
+                                   TrajectorySegment* root) {
+  std::vector<TrajectorySegment*> candidates;
+  if (leaves_only_) {
+    root->getLeaves(&candidates);
+  } else {
+    root->getTree(&candidates);
+  }
+  *result = *std::max_element(candidates.begin(), candidates.end(),
+                              TrajectorySegment::comparePtr);
+  return true;
+}
 
-        void GreedySelector::setupFromParamMap(Module::ParamMap *param_map) {
-            setParam<bool>(param_map, "leaves_only", &leaves_only_, false);
-        }
+void GreedySelector::setupFromParamMap(Module::ParamMap* param_map) {
+  setParam<bool>(param_map, "leaves_only", &leaves_only_, false);
+}
 
-    } // namespace segment_selector
-} // namespace active_3d_planning
+}  // namespace segment_selector
+}  // namespace active_3d_planning

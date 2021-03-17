@@ -5,16 +5,16 @@
 #include <vector>
 
 namespace active_3d_planning {
-    namespace generator_updater {
+namespace generator_updater {
 
-        ModuleFactoryRegistry::Registration<UpdateNothing>
-                UpdateNothing::registration("UpdateNothingGenerator");
+ModuleFactoryRegistry::Registration<UpdateNothing> UpdateNothing::registration(
+    "UpdateNothingGenerator");
 
-        UpdateNothing::UpdateNothing(PlannerI &planner) : GeneratorUpdater(planner) {}
+UpdateNothing::UpdateNothing(PlannerI& planner) : GeneratorUpdater(planner) {}
 
-        bool UpdateNothing::updateSegment(TrajectorySegment *segment) { return true; }
+bool UpdateNothing::updateSegment(TrajectorySegment* segment) { return true; }
 
-        void UpdateNothing::setupFromParamMap(Module::ParamMap *param_map) {}
+void UpdateNothing::setupFromParamMap(Module::ParamMap* param_map) {}
 
-    } // namespace generator_updater
-} // namespace active_3d_planning
+}  // namespace generator_updater
+}  // namespace active_3d_planning

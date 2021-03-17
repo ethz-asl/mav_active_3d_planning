@@ -2,12 +2,12 @@
 
 namespace active_3d_planning {
 
-    ModuleFactoryRegistry &ModuleFactoryRegistry::Instance() {
-        static ModuleFactoryRegistry instance;
-        return instance;
-    }
+ModuleFactoryRegistry& ModuleFactoryRegistry::Instance() {
+  static ModuleFactoryRegistry instance;
+  return instance;
+}
 
-    ModuleFactoryRegistry::ModuleFactoryRegistry() = default;
+ModuleFactoryRegistry::ModuleFactoryRegistry() = default;
 
-//ModuleFactoryRegistry::ModuleMap ModuleFactoryRegistry::module_map_;
-} // namespace active_3d_planning
+// ModuleFactoryRegistry::ModuleMap ModuleFactoryRegistry::module_map_;
+}  // namespace active_3d_planning
