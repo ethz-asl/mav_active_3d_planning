@@ -7,6 +7,7 @@
 
 #include <cmath>
 #include <memory>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -180,7 +181,7 @@ bool RRT::sampleGoal(Eigen::Vector3d* goal_pos) {
   if (p_sampling_mode_ == "uniform") {
     // sample from bounding volume (assumes box atm)
     (*goal_pos)[0] = bounding_volume_->x_min +
-                     static_cast<double>(rand() / RAND_MAX *
+                     static_cast<double>(rand()) / RAND_MAX *
                          (bounding_volume_->x_max - bounding_volume_->x_min);
     (*goal_pos)[1] = bounding_volume_->y_min +
                      static_cast<double>(rand()) / RAND_MAX *
