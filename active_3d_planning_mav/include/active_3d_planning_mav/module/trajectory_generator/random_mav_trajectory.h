@@ -1,14 +1,14 @@
 #ifndef ACTIVE_3D_PLANNING_MAV_MODULE_TRAJECTORY_GENERATOR_RANDOM_MAV_TRAJECTORY_H_
 #define ACTIVE_3D_PLANNING_MAV_MODULE_TRAJECTORY_GENERATOR_RANDOM_MAV_TRAJECTORY_H_
 
-#include "active_3d_planning_core/module/trajectory_generator.h"
+#include <string>
+#include <vector>
 
 #include <mav_msgs/eigen_mav_msgs.h>
 #include <mav_trajectory_generation/polynomial_optimization_nonlinear.h>
 #include <mav_trajectory_generation_ros/feasibility_analytic.h>
 
-#include <string>
-#include <vector>
+#include "active_3d_planning_core/module/trajectory_generator.h"
 
 namespace active_3d_planning {
 namespace trajectory_generator {

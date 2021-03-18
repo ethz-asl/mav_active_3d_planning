@@ -1,15 +1,15 @@
 #define _USE_MATH_DEFINES
 
 #include "active_3d_planning_core/module/trajectory_generator/rrt.h"
-#include "active_3d_planning_core/data/system_constraints.h"
-
-#include "active_3d_planning_core/data/trajectory.h"
 
 #include <cmath>
 #include <memory>
 #include <random>
 #include <string>
 #include <vector>
+
+#include "active_3d_planning_core/data/system_constraints.h"
+#include "active_3d_planning_core/data/trajectory.h"
 
 namespace active_3d_planning {
 namespace trajectory_generator {

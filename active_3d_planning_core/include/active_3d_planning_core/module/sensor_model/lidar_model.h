@@ -1,12 +1,12 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_MODULE_SENSOR_MODEL_LIDAR_MODEL_H_
 #define ACTIVE_3D_PLANNING_CORE_MODULE_SENSOR_MODEL_LIDAR_MODEL_H_
 
+#include <string>
+#include <vector>
+
 #include "active_3d_planning_core/data/trajectory_segment.h"
 #include "active_3d_planning_core/data/visualization_markers.h"
 #include "active_3d_planning_core/module/sensor_model/sensor_model.h"
-
-#include <string>
-#include <vector>
 
 namespace active_3d_planning {
 namespace sensor_model {

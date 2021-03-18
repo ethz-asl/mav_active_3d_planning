@@ -1,17 +1,17 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_GENERATOR_H_
 #define ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_GENERATOR_H_
 
+#include <memory>
+#include <string>
+#include <vector>
+
+#include <Eigen/Core>
+
 #include "active_3d_planning_core/data/bounding_volume.h"
 #include "active_3d_planning_core/data/trajectory_segment.h"
 #include "active_3d_planning_core/module/module_factory_registry.h"
 #include "active_3d_planning_core/planner/planner_I.h"
 #include "active_3d_planning_core/tools/defaults.h"
-
-#include <Eigen/Core>
-
-#include <memory>
-#include <string>
-#include <vector>
 
 namespace active_3d_planning {
 

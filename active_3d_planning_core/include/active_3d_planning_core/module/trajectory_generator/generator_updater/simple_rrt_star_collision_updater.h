@@ -1,10 +1,10 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_GENERATOR_GENERATOR_UPDATER_SIMPLE_RRT_STAR_COLLISION_UPDATER_H_
 #define ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_GENERATOR_GENERATOR_UPDATER_SIMPLE_RRT_STAR_COLLISION_UPDATER_H_
 
-#include "active_3d_planning_core/module/trajectory_generator/rrt_star.h"
-
 #include <memory>
 #include <vector>
+
+#include "active_3d_planning_core/module/trajectory_generator/rrt_star.h"
 
 namespace active_3d_planning {
 namespace generator_updater {

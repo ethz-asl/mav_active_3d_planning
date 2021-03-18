@@ -1,15 +1,14 @@
 #ifndef ACTIVE_3D_PLANNING_ROS_TOOLS_ROS_CONVERSION_H_
 #define ACTIVE_3D_PLANNING_ROS_TOOLS_ROS_CONVERSION_H_
 
-#include "active_3d_planning_core/data/visualization_markers.h"
-
+#include <Eigen/Core>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Pose.h>
 #include <std_msgs/ColorRGBA.h>
 #include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
 #include <visualization_msgs/MarkerArray.h>
 
-#include <Eigen/Core>
+#include "active_3d_planning_core/data/visualization_markers.h"
 
 namespace active_3d_planning {
 namespace ros {

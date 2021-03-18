@@ -1,10 +1,11 @@
 #include "active_3d_planning_mav/module/trajectory_generator/feasible_rrt_star.h"
-#include "active_3d_planning_core/data/system_constraints.h"
 
 #include <cmath>
 #include <memory>
 #include <random>
 #include <vector>
+
+#include "active_3d_planning_core/data/system_constraints.h"
 
 namespace active_3d_planning {
 

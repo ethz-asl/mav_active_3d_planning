@@ -1,7 +1,12 @@
 #ifndef ACTIVE_3D_PLANNING_ROS_PLANNER_ROS_PLANNER_H_
 #define ACTIVE_3D_PLANNING_ROS_PLANNER_ROS_PLANNER_H_
 
-#include "active_3d_planning_core/planner/online_planner.h"
+#include <ctime>
+#include <fstream>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
@@ -9,12 +14,7 @@
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <visualization_msgs/MarkerArray.h>
 
-#include <ctime>
-#include <fstream>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
+#include "active_3d_planning_core/planner/online_planner.h"
 
 namespace active_3d_planning {
 namespace ros {

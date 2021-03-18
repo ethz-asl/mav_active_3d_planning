@@ -2,11 +2,11 @@
 
 #include "active_3d_planning_core/module/back_tracker/rotate_in_place.h"
 
-#include "active_3d_planning_core/data/trajectory.h"
-#include "active_3d_planning_core/tools/defaults.h"
-
 #include <cmath>
 #include <string>
+
+#include "active_3d_planning_core/data/trajectory.h"
+#include "active_3d_planning_core/tools/defaults.h"
 
 namespace active_3d_planning {
 namespace back_tracker {

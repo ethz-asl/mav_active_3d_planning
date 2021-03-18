@@ -1,11 +1,11 @@
 #ifndef ACTIVE_3D_PLANNING_MAV_TOOLS_LINEAR_MAV_TRAJECTORY_GENERATOR_H_
 #define ACTIVE_3D_PLANNING_MAV_TOOLS_LINEAR_MAV_TRAJECTORY_GENERATOR_H_
 
-#include "active_3d_planning_core/data/trajectory.h"
-
 #include <mav_msgs/eigen_mav_msgs.h>
 #include <mav_trajectory_generation/polynomial_optimization_nonlinear.h>
 #include <mav_trajectory_generation_ros/feasibility_analytic.h>
+
+#include "active_3d_planning_core/data/trajectory.h"
 
 namespace active_3d_planning {
 

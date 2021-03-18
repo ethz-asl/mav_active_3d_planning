@@ -1,11 +1,11 @@
 #include "active_3d_planning_core/module/trajectory_generator/generator_updater/recheck_collision.h"
 
-#include "active_3d_planning_core/data/trajectory.h"
-#include "active_3d_planning_core/planner/planner_I.h"
-
 #include <algorithm>
 #include <memory>
 #include <vector>
+
+#include "active_3d_planning_core/data/trajectory.h"
+#include "active_3d_planning_core/planner/planner_I.h"
 
 namespace active_3d_planning {
 namespace generator_updater {

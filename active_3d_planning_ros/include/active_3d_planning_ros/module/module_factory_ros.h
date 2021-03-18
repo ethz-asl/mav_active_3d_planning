@@ -1,9 +1,9 @@
 #ifndef ACTIVE_3D_PLANNING_ROS_MODULE_MODULE_FACTORY_ROS_H_
 #define ACTIVE_3D_PLANNING_ROS_MODULE_MODULE_FACTORY_ROS_H_
 
-#include "active_3d_planning_core/module/module_factory.h"
-
 #include <string>
+
+#include "active_3d_planning_core/module/module_factory.h"
 
 namespace active_3d_planning {
 namespace ros {

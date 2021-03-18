@@ -1,9 +1,10 @@
 #include "active_3d_planning_core/module/trajectory_generator/segment_selector/greedy_selector.h"
-#include "active_3d_planning_core/tools/defaults.h"
 
 #include <algorithm>
 #include <random>
 #include <vector>
+
+#include "active_3d_planning_core/tools/defaults.h"
 
 namespace active_3d_planning {
 namespace segment_selector {

@@ -1,9 +1,9 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_MODULE_SENSOR_MODEL_ITERATIVE_RAY_CASTER_LIDAR_H_
 #define ACTIVE_3D_PLANNING_CORE_MODULE_SENSOR_MODEL_ITERATIVE_RAY_CASTER_LIDAR_H_
 
-#include "active_3d_planning_core/module/sensor_model/lidar_model.h"
-
 #include <vector>
+
+#include "active_3d_planning_core/module/sensor_model/lidar_model.h"
 
 namespace active_3d_planning {
 namespace sensor_model {

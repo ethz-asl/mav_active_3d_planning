@@ -1,7 +1,8 @@
 #include "active_3d_planning_core/module/back_tracker/reverse.h"
-#include "active_3d_planning_core/tools/defaults.h"
 
 #include <string>
+
+#include "active_3d_planning_core/tools/defaults.h"
 
 namespace active_3d_planning {
 namespace back_tracker {

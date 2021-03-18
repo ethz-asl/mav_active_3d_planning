@@ -1,13 +1,13 @@
 #include <active_3d_planning_ros/module/module_factory_ros.h>
 
 // ROS factory
-#include <XmlRpcValue.h>
-#include <ros/console.h>
-#include <ros/node_handle.h>
-
 #include <map>
 #include <string>
 #include <vector>
+
+#include <XmlRpcValue.h>
+#include <ros/console.h>
+#include <ros/node_handle.h>
 
 namespace active_3d_planning {
 namespace ros {

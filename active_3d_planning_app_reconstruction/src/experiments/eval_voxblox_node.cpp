@@ -1,14 +1,5 @@
-#include <pcl/conversions.h>
-#include <pcl/filters/filter.h>
-#include <pcl/io/ply_io.h>
-#include <pcl/point_types.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl_ros/transforms.h>
-#include <ros/ros.h>
-#include <std_srvs/Empty.h>
-
 #include <stdio.h>
+
 #include <algorithm>
 #include <cmath>
 #include <ctime>
@@ -20,6 +11,15 @@
 #include <string>
 #include <vector>
 
+#include <pcl/conversions.h>
+#include <pcl/filters/filter.h>
+#include <pcl/io/ply_io.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/point_cloud.h>
+#include <pcl_ros/transforms.h>
+#include <ros/ros.h>
+#include <std_srvs/Empty.h>
 #include <voxblox/core/esdf_map.h>
 #include <voxblox/core/occupancy_map.h>
 #include <voxblox/core/tsdf_map.h>

@@ -1,6 +1,6 @@
-#include <active_3d_planning_core/data/visualization_markers.h>
-
 #include <vector>
+
+#include <active_3d_planning_core/data/visualization_markers.h>
 
 namespace active_3d_planning {
 

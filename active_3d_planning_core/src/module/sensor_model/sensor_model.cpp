@@ -1,4 +1,5 @@
 #include "active_3d_planning_core/module/sensor_model/sensor_model.h"
+
 #include "active_3d_planning_core/planner/planner_I.h"
 
 namespace active_3d_planning {

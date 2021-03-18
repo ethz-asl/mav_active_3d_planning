@@ -1,10 +1,10 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_EVALUATOR_EVALUATOR_UPDATER_CONSTRAINED_UPDATER_H_
 #define ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_EVALUATOR_EVALUATOR_UPDATER_CONSTRAINED_UPDATER_H_
 
+#include <memory>
+
 #include "active_3d_planning_core/module/module_factory.h"
 #include "active_3d_planning_core/module/trajectory_evaluator.h"
-
-#include <memory>
 
 namespace active_3d_planning {
 namespace evaluator_updater {

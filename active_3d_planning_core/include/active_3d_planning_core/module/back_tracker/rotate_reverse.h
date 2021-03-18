@@ -1,12 +1,12 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_MODULE_BACK_TRACKER_ROTATE_REVERSE_H_
 #define ACTIVE_3D_PLANNING_CORE_MODULE_BACK_TRACKER_ROTATE_REVERSE_H_
 
-#include "active_3d_planning_core/module/back_tracker.h"
+#include <string>
+#include <vector>
 
 #include <active_3d_planning_core/data/trajectory.h>
 
-#include <string>
-#include <vector>
+#include "active_3d_planning_core/module/back_tracker.h"
 
 namespace active_3d_planning {
 namespace back_tracker {

@@ -1,9 +1,9 @@
 #ifndef ACTIVE_3D_PLANNING_MAV_TOOLS_TOOLS_H_
 #define ACTIVE_3D_PLANNING_MAV_TOOLS_TOOLS_H_
 
-#include "active_3d_planning_core/data/trajectory.h"
-
 #include <mav_msgs/eigen_mav_msgs.h>
+
+#include "active_3d_planning_core/data/trajectory.h"
 
 namespace active_3d_planning {
 

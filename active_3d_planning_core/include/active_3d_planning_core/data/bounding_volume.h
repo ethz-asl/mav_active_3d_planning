@@ -1,11 +1,11 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_DATA_BOUNDING_VOLUME_H_
 #define ACTIVE_3D_PLANNING_CORE_DATA_BOUNDING_VOLUME_H_
 
-#include <active_3d_planning_core/data/trajectory_segment.h>
-#include <active_3d_planning_core/module/module_factory_registry.h>
+#include <string>
 
 #include <Eigen/Core>
-#include <string>
+#include <active_3d_planning_core/data/trajectory_segment.h>
+#include <active_3d_planning_core/module/module_factory_registry.h>
 
 namespace active_3d_planning {
 

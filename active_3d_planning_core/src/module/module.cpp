@@ -1,6 +1,6 @@
-#include <active_3d_planning_core/module/module.h>
-
 #include <string>
+
+#include <active_3d_planning_core/module/module.h>
 
 namespace active_3d_planning {
 

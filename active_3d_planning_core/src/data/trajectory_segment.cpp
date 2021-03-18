@@ -1,7 +1,7 @@
-#include <active_3d_planning_core/data/trajectory_segment.h>
-
 #include <memory>
 #include <vector>
+
+#include <active_3d_planning_core/data/trajectory_segment.h>
 
 namespace active_3d_planning {
 

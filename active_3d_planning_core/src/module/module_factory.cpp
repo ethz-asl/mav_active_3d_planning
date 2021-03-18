@@ -1,13 +1,13 @@
 #include <active_3d_planning_core/module/module_factory.h>
 
 // Default types
+#include <map>
+#include <string>
+
 #include "active_3d_planning_core/data/bounding_volume.h"
 #include "active_3d_planning_core/data/system_constraints.h"
 #include "active_3d_planning_core/module/trajectory_evaluator.h"
 #include "active_3d_planning_core/module/trajectory_generator.h"
-
-#include <map>
-#include <string>
 
 namespace active_3d_planning {
 

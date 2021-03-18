@@ -1,10 +1,10 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_EVALUATOR_VOXEL_WEIGHT_EVALUATOR_H_
 #define ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_EVALUATOR_VOXEL_WEIGHT_EVALUATOR_H_
 
+#include <vector>
+
 #include "active_3d_planning_core/map/tsdf_map.h"
 #include "active_3d_planning_core/module/trajectory_evaluator/frontier_evaluator.h"
-
-#include <vector>
 
 namespace active_3d_planning {
 namespace trajectory_evaluator {

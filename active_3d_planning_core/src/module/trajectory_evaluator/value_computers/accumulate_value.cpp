@@ -1,9 +1,9 @@
 #include "active_3d_planning_core/module/trajectory_evaluator/value_computer/accumulate_value.h"
 
+#include <string>
+
 #include "active_3d_planning_core/module/module_factory.h"
 #include "active_3d_planning_core/planner/planner_I.h"
-
-#include <string>
 
 namespace active_3d_planning {
 namespace value_computer {

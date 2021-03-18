@@ -1,12 +1,12 @@
 #ifndef ACTIVE_3D_PLANNING_VOXBLOX_MAP_VOXBLOX_H_
 #define ACTIVE_3D_PLANNING_VOXBLOX_MAP_VOXBLOX_H_
 
-#include <active_3d_planning_core/module/module_factory_registry.h>
-#include "active_3d_planning_core/map/tsdf_map.h"
+#include <memory>
 
+#include <active_3d_planning_core/module/module_factory_registry.h>
 #include <voxblox_ros/esdf_server.h>
 
-#include <memory>
+#include "active_3d_planning_core/map/tsdf_map.h"
 
 namespace active_3d_planning {
 namespace map {

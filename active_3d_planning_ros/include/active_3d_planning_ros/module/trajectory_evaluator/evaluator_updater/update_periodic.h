@@ -1,12 +1,12 @@
 #ifndef ACTIVE_3D_PLANNING_ROS_MODULE_TRAJECTORY_EVALUATOR_EVALUATOR_UPDATER_UPDATE_PERIODIC_H_
 #define ACTIVE_3D_PLANNING_ROS_MODULE_TRAJECTORY_EVALUATOR_EVALUATOR_UPDATER_UPDATE_PERIODIC_H_
 
-#include "active_3d_planning_core/module/module_factory_registry.h"
-#include "active_3d_planning_core/module/trajectory_evaluator.h"
+#include <memory>
 
 #include <ros/time.h>
 
-#include <memory>
+#include "active_3d_planning_core/module/module_factory_registry.h"
+#include "active_3d_planning_core/module/trajectory_evaluator.h"
 
 namespace active_3d_planning {
 namespace evaluator_updater {

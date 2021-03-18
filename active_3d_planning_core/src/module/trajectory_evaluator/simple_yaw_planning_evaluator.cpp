@@ -2,11 +2,11 @@
 
 #include "active_3d_planning_core/module/trajectory_evaluator/simple_yaw_planning_evaluator.h"
 
-#include "active_3d_planning_core/tools/defaults.h"
-
 #include <algorithm>
 #include <cmath>
 #include <vector>
+
+#include "active_3d_planning_core/tools/defaults.h"
 
 namespace active_3d_planning {
 namespace trajectory_evaluator {

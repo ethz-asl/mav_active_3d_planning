@@ -2,15 +2,15 @@
 
 #include "active_3d_planning_core/module/trajectory_generator/random_linear.h"
 
-#include "active_3d_planning_core/data/system_constraints.h"
-#include "active_3d_planning_core/data/trajectory.h"
-#include "active_3d_planning_core/tools/defaults.h"
-
 #include <algorithm>
 #include <cmath>
 #include <random>
 #include <string>
 #include <vector>
+
+#include "active_3d_planning_core/data/system_constraints.h"
+#include "active_3d_planning_core/data/trajectory.h"
+#include "active_3d_planning_core/tools/defaults.h"
 
 namespace active_3d_planning {
 namespace trajectory_generator {

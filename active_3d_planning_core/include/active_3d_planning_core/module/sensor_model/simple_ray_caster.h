@@ -1,11 +1,11 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_MODULE_SENSOR_MODEL_SIMPLE_RAY_CASTER_H_
 #define ACTIVE_3D_PLANNING_CORE_MODULE_SENSOR_MODEL_SIMPLE_RAY_CASTER_H_
 
+#include <vector>
+
 #include "active_3d_planning_core/data/trajectory_segment.h"
 #include "active_3d_planning_core/module/sensor_model/camera_model.h"
 #include "active_3d_planning_core/tools/defaults.h"
-
-#include <vector>
 
 namespace active_3d_planning {
 namespace sensor_model {

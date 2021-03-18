@@ -1,13 +1,13 @@
 #include "active_3d_planning_mav/module/trajectory_generator/random_mav_trajectory.h"
 
-#include "active_3d_planning_core/data/system_constraints.h"
-#include "active_3d_planning_mav/tools/tools.h"
-
-#include <mav_trajectory_generation/trajectory_sampling.h>
-
 #include <random>
 #include <string>
 #include <vector>
+
+#include <mav_trajectory_generation/trajectory_sampling.h>
+
+#include "active_3d_planning_core/data/system_constraints.h"
+#include "active_3d_planning_mav/tools/tools.h"
 
 namespace active_3d_planning {
 namespace trajectory_generator {

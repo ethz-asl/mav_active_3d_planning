@@ -1,12 +1,12 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_EVALUATOR_SIMULATED_SENSOR_EVALUATOR_H_
 #define ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_EVALUATOR_SIMULATED_SENSOR_EVALUATOR_H_
 
+#include <memory>
+#include <vector>
+
 #include "active_3d_planning_core/map/occupancy_map.h"
 #include "active_3d_planning_core/module/sensor_model/sensor_model.h"
 #include "active_3d_planning_core/module/trajectory_evaluator.h"
-
-#include <memory>
-#include <vector>
 
 namespace active_3d_planning {
 namespace evaluator_updater {

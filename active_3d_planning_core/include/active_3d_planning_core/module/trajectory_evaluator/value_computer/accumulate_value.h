@@ -1,10 +1,10 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_EVALUATOR_VALUE_COMPUTER_ACCUMULATE_VALUE_H_
 #define ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_EVALUATOR_VALUE_COMPUTER_ACCUMULATE_VALUE_H_
 
+#include <memory>
+
 #include "active_3d_planning_core/module/module_factory_registry.h"
 #include "active_3d_planning_core/module/trajectory_evaluator.h"
-
-#include <memory>
 
 namespace active_3d_planning {
 namespace value_computer {

@@ -1,7 +1,8 @@
 #include "active_3d_planning_voxblox/map/voxblox.h"
-#include "active_3d_planning_core/data/system_constraints.h"
 
 #include <voxblox_ros/ros_params.h>
+
+#include "active_3d_planning_core/data/system_constraints.h"
 
 namespace active_3d_planning {
 namespace map {

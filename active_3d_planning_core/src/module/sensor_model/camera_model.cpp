@@ -1,10 +1,11 @@
 #include "active_3d_planning_core/module/sensor_model/camera_model.h"
 
-#include <glog/logging.h>
 #include <algorithm>
 #include <chrono>
 #include <string>
 #include <vector>
+
+#include <glog/logging.h>
 
 namespace active_3d_planning {
 namespace sensor_model {

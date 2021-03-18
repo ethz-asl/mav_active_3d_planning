@@ -1,16 +1,16 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_MODULE_SENSOR_MODEL_SENSOR_MODEL_H_
 #define ACTIVE_3D_PLANNING_CORE_MODULE_SENSOR_MODEL_SENSOR_MODEL_H_
 
+#include <memory>
+#include <string>
+#include <vector>
+
+#include <Eigen/Core>
+
 #include "active_3d_planning_core/data/trajectory_segment.h"
 #include "active_3d_planning_core/data/visualization_markers.h"
 #include "active_3d_planning_core/map/occupancy_map.h"
 #include "active_3d_planning_core/module/module_factory.h"
-
-#include <Eigen/Core>
-
-#include <memory>
-#include <string>
-#include <vector>
 
 namespace active_3d_planning {
 

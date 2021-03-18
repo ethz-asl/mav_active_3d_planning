@@ -1,10 +1,10 @@
 #include "active_3d_planning_core/module/sensor_model/iterative_ray_caster.h"
 
-#include <Eigen/Dense>
-
 #include <algorithm>
 #include <cmath>
 #include <vector>
+
+#include <Eigen/Dense>
 
 namespace active_3d_planning {
 namespace sensor_model {

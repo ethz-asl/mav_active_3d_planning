@@ -1,16 +1,15 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_EVALUATOR_H_
 #define ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_EVALUATOR_H_
 
+#include <memory>
+#include <string>
+
+#include <Eigen/Core>
 #include <active_3d_planning_core/data/bounding_volume.h>
 #include <active_3d_planning_core/data/trajectory_segment.h>
 #include <active_3d_planning_core/data/visualization_markers.h>
 #include <active_3d_planning_core/module/module_factory_registry.h>
 #include <active_3d_planning_core/tools/defaults.h>
-
-#include <Eigen/Core>
-
-#include <memory>
-#include <string>
 
 namespace active_3d_planning {
 

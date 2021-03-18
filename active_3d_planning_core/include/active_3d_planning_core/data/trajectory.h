@@ -1,11 +1,12 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_DATA_TRAJECTORY_H_
 #define ACTIVE_3D_PLANNING_CORE_DATA_TRAJECTORY_H_
 
-#include <Eigen/Eigen>
 #include <deque>
 #include <iostream>
 #include <string>
 #include <vector>
+
+#include <Eigen/Eigen>
 
 namespace active_3d_planning {
 

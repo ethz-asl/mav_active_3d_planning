@@ -1,6 +1,13 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_PLANNER_ONLINE_PLANNER_H_
 #define ACTIVE_3D_PLANNING_CORE_PLANNER_ONLINE_PLANNER_H_
 
+#include <ctime>
+#include <fstream>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "active_3d_planning_core/data/system_constraints.h"
 #include "active_3d_planning_core/data/trajectory_segment.h"
 #include "active_3d_planning_core/data/visualization_markers.h"
@@ -12,13 +19,6 @@
 #include "active_3d_planning_core/module/trajectory_generator.h"
 #include "active_3d_planning_core/planner/planner_I.h"
 #include "active_3d_planning_core/tools/defaults.h"
-
-#include <ctime>
-#include <fstream>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
 
 namespace active_3d_planning {
 

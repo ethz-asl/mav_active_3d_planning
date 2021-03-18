@@ -1,10 +1,11 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_DATA_VISUALIZATION_MARKERS_H_
 #define ACTIVE_3D_PLANNING_CORE_DATA_VISUALIZATION_MARKERS_H_
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
 #include <string>
 #include <vector>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 namespace active_3d_planning {
 

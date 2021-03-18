@@ -1,14 +1,14 @@
 #define _USE_MATH_DEFINES
 
 #include "active_3d_planning_core/module/trajectory_generator/uniform.h"
-#include "active_3d_planning_core/data/system_constraints.h"
-
-#include "active_3d_planning_core/data/trajectory.h"
-#include "active_3d_planning_core/tools/defaults.h"
 
 #include <cmath>
 #include <random>
 #include <vector>
+
+#include "active_3d_planning_core/data/system_constraints.h"
+#include "active_3d_planning_core/data/trajectory.h"
+#include "active_3d_planning_core/tools/defaults.h"
 
 namespace active_3d_planning {
 namespace trajectory_generator {

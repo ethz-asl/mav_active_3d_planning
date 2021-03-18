@@ -1,9 +1,9 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_GENERATOR_UNIFORM_H_
 #define ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_GENERATOR_UNIFORM_H_
 
-#include "active_3d_planning_core/module/trajectory_generator.h"
-
 #include <vector>
+
+#include "active_3d_planning_core/module/trajectory_generator.h"
 
 namespace active_3d_planning {
 namespace trajectory_generator {

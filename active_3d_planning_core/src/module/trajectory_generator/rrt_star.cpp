@@ -2,16 +2,16 @@
 
 #include "active_3d_planning_core/module/trajectory_generator/rrt_star.h"
 
-#include "active_3d_planning_core/data/trajectory.h"
-#include "active_3d_planning_core/module/module_factory.h"
-#include "active_3d_planning_core/planner/planner_I.h"
-
 #include <algorithm>
 #include <cmath>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include "active_3d_planning_core/data/trajectory.h"
+#include "active_3d_planning_core/module/module_factory.h"
+#include "active_3d_planning_core/planner/planner_I.h"
 
 namespace active_3d_planning {
 namespace trajectory_generator {

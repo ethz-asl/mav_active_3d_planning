@@ -1,10 +1,10 @@
 #include "active_3d_planning_core/module/trajectory_evaluator/voxel_type_evaluator.h"
 
-#include "active_3d_planning_core/module/module_factory.h"
-#include "active_3d_planning_core/planner/planner_I.h"
-
 #include <algorithm>
 #include <string>
+
+#include "active_3d_planning_core/module/module_factory.h"
+#include "active_3d_planning_core/planner/planner_I.h"
 
 namespace active_3d_planning {
 namespace trajectory_evaluator {

@@ -1,9 +1,9 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_EVALUATOR_EVALUATOR_UPDATER_YAW_PLANNING_UPDATERS_H_
 #define ACTIVE_3D_PLANNING_CORE_MODULE_TRAJECTORY_EVALUATOR_EVALUATOR_UPDATER_YAW_PLANNING_UPDATERS_H_
 
-#include "active_3d_planning_core/module/trajectory_evaluator/yaw_planning_evaluator.h"
-
 #include <memory>
+
+#include "active_3d_planning_core/module/trajectory_evaluator/yaw_planning_evaluator.h"
 
 namespace active_3d_planning {
 namespace evaluator_updater {

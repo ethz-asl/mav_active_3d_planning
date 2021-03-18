@@ -11,6 +11,7 @@
 #include <typeinfo>
 
 #include <active_3d_planning_core/planner/planner_I.h>
+
 #include "active_3d_planning_core/module/module_factory_registry.h"
 
 namespace active_3d_planning {

@@ -1,8 +1,9 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_PLANNER_PLANNER_I_H_
 #define ACTIVE_3D_PLANNING_CORE_PLANNER_PLANNER_I_H_
 
-#include <Eigen/Dense>
 #include <string>
+
+#include <Eigen/Dense>
 
 namespace active_3d_planning {
 

@@ -1,7 +1,7 @@
+#include <glog/logging.h>
+
 #include "active_3d_planning_ros/module/module_factory_ros.h"
 #include "active_3d_planning_ros/planner/ros_planner.h"
-
-#include <glog/logging.h>
 
 int main(int argc, char** argv) {
   ros::init(argc, argv, "active_3d_planner");

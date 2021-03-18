@@ -1,10 +1,10 @@
 #ifndef ACTIVE_3D_PLANNING_CORE_DATA_TRAJECTORY_SEGMENT_H_
 #define ACTIVE_3D_PLANNING_CORE_DATA_TRAJECTORY_SEGMENT_H_
 
-#include <active_3d_planning_core/data/trajectory.h>
-
 #include <memory>
 #include <vector>
+
+#include <active_3d_planning_core/data/trajectory.h>
 
 namespace active_3d_planning {
 

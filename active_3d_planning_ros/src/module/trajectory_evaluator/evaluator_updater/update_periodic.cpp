@@ -1,8 +1,9 @@
 #include "active_3d_planning_ros/module/trajectory_evaluator/evaluator_updater/update_periodic.h"
-#include "active_3d_planning_core/module/module_factory.h"
-#include "active_3d_planning_core/planner/planner_I.h"
 
 #include <string>
+
+#include "active_3d_planning_core/module/module_factory.h"
+#include "active_3d_planning_core/planner/planner_I.h"
 
 namespace active_3d_planning {
 namespace evaluator_updater {

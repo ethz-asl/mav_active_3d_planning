@@ -2,7 +2,6 @@
 #define ACTIVE_3D_PLANNING_MAV_MODULE_TRAJECTORY_GENERATOR_FEASIBLE_RRT_H_
 
 #include "active_3d_planning_core/module/trajectory_generator/rrt_star.h"
-
 #include "active_3d_planning_mav/tools/linear_mav_trajectory_generator.h"
 
 namespace active_3d_planning {
