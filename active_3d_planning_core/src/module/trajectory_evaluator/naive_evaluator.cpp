@@ -25,12 +25,14 @@ namespace active_3d_planning {
             // remove all already observed voxels, count number of new voxels
             SimulatedSensorInfo *info =
                     reinterpret_cast<SimulatedSensorInfo *>(traj_in->info.get());
-            info->visible_voxels.erase(
-                    std::remove_if(info->visible_voxels.begin(), info->visible_voxels.end(),
-                                   [this](const Eigen::Vector3d &voxel) {
-                                       return planner_.getMap().isObserved(voxel);
-                                   }),
-                    info->visible_voxels.end());
+            size_t i = 0;
+            while (i < info->visible_voxels.size()) {
+              if (planner_.getMap().isObserved(info->visible_voxels[i])) {
+                info->visible_voxels.erase(info->visible_voxels.begin() + i);
+              } else {
+                ++i;
+              }
+            }
             traj_in->gain = (double) info->visible_voxels.size();
             return true;
         }
