@@ -1,58 +1,57 @@
-#ifndef ACTIVE_3D_PLANNING_CORE_PLANNER_I_H_
-#define ACTIVE_3D_PLANNING_CORE_PLANNER_I_H_
+#ifndef ACTIVE_3D_PLANNING_CORE_PLANNER_PLANNER_I_H_
+#define ACTIVE_3D_PLANNING_CORE_PLANNER_PLANNER_I_H_
+
+#include <string>
 
 #include <Eigen/Dense>
-#include <string>
 
 namespace active_3d_planning {
 
-    class BackTracker;
+class BackTracker;
 
-    class TrajectoryGenerator;
+class TrajectoryGenerator;
 
-    class TrajectoryEvaluator;
+class TrajectoryEvaluator;
 
-    class ModuleFactory;
+class ModuleFactory;
 
-    class Map;
+class Map;
 
-    struct VisualizationMarkers;
-    struct SystemConstraints;
-
+struct VisualizationMarkers;
+struct SystemConstraints;
 
 // basic interface of planners for module-access
-    class PlannerI {
-    public:
-        virtual ~PlannerI() = default;
+class PlannerI {
+ public:
+  virtual ~PlannerI() = default;
 
-        // state accessors
-        virtual const Eigen::Vector3d &getCurrentPosition() const = 0;
+  // state accessors
+  virtual const Eigen::Vector3d& getCurrentPosition() const = 0;
 
-        virtual const Eigen::Quaterniond &getCurrentOrientation() const = 0;
+  virtual const Eigen::Quaterniond& getCurrentOrientation() const = 0;
 
-        // member accessors
-        virtual BackTracker &getBackTracker() = 0;
+  // member accessors
+  virtual BackTracker& getBackTracker() = 0;
 
-        virtual TrajectoryGenerator &getTrajectoryGenerator() = 0;
+  virtual TrajectoryGenerator& getTrajectoryGenerator() = 0;
 
-        virtual TrajectoryEvaluator &getTrajectoryEvaluator() = 0;
+  virtual TrajectoryEvaluator& getTrajectoryEvaluator() = 0;
 
-        virtual ModuleFactory &getFactory() = 0;
+  virtual ModuleFactory& getFactory() = 0;
 
-        virtual Map &getMap() = 0;
+  virtual Map& getMap() = 0;
 
-        virtual SystemConstraints &getSystemConstraints() = 0;
+  virtual SystemConstraints& getSystemConstraints() = 0;
 
-        // methods
-        virtual void publishVisualization(const VisualizationMarkers &markers) = 0;
+  // methods
+  virtual void publishVisualization(const VisualizationMarkers& markers) = 0;
 
-        virtual void printInfo(const std::string &text) = 0;
+  virtual void printInfo(const std::string& text) = 0;
 
-        virtual void printWarning(const std::string &text) = 0;
+  virtual void printWarning(const std::string& text) = 0;
 
-        virtual void printError(const std::string &text) = 0;
+  virtual void printError(const std::string& text) = 0;
+};
+}  // namespace active_3d_planning
 
-    };
-} // namespace active_3d_planning
-
-#endif /* ACTIVE_3D_PLANNING_CORE_PLANNER_I_H_ */
+#endif  // ACTIVE_3D_PLANNING_CORE_PLANNER_PLANNER_I_H_

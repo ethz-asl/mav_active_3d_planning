@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
 import math
-import numpy as np
-import rospy
 from Tkinter import *
+
+import rospy
 from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
-
+import numpy as np
 """
-Script that computes and visualizes bounding boxes from 3 measured points to facilitate outdoor testing.
+Script that computes and visualizes bounding boxes from 3 measured points to
+facilitate outdoor testing.
 
 To get a bounding box:
 - Type 3 measured corner points into the fields
@@ -47,16 +48,20 @@ def compute():
     pts = [p1, p2, p3]
 
     # get corner and edges
-    dists = [np.linalg.norm(p[:-1] - p1[:-1]) + np.linalg.norm(p[:-1] - p2[:-1]) + np.linalg.norm(p[:-1] - p3[:-1])
-             for p in pts]
+    dists = [
+        np.linalg.norm(p[:-1] - p1[:-1]) + np.linalg.norm(p[:-1] - p2[:-1]) +
+        np.linalg.norm(p[:-1] - p3[:-1]) for p in pts
+    ]
     corner = pts[np.argmin(dists)]
     other1 = pts[(np.argmin(dists) + 1) % 3]
     other2 = pts[(np.argmin(dists) + 2) % 3]
 
     # find rotations
-    theta1 = math.degrees(math.atan2(other1[1] - corner[1], other1[0] - corner[0]))
+    theta1 = math.degrees(
+        math.atan2(other1[1] - corner[1], other1[0] - corner[0]))
     theta1 = (theta1 + 180) % 90
-    theta2 = math.degrees(math.atan2(other2[1] - corner[1], other2[0] - corner[0]))
+    theta2 = math.degrees(
+        math.atan2(other2[1] - corner[1], other2[0] - corner[0]))
     theta2 = (theta2 + 180) % 90
 
     # check average rot
@@ -65,7 +70,8 @@ def compute():
         theta_diff = math.fabs(theta2 - theta1)
     else:
         theta = ((theta1 + theta2 + 90) / 2) % 90
-        theta_diff = math.min(math.fabs(theta2 - theta1 + 90), math.fabs(theta2 - theta1 - 90))
+        theta_diff = math.min(math.fabs(theta2 - theta1 + 90),
+                              math.fabs(theta2 - theta1 - 90))
 
     # Rotate
     s = math.sin(theta / 180 * math.pi)
@@ -77,11 +83,15 @@ def compute():
     z = [p[2] for p in pts]
 
     t_res.delete('1.0', END)
-    t_res.insert(END, "x_min: {:.3f}\nx_max: {:.3f}\ny_min: {:.3f}\ny_max: {:.3f}\nz_min: {:.3f}\nz_max: "
-                      "{:.3f}\nrotation: {:.3f}".format(np.min(x), np.max(x), np.min(y), np.max(y), np.min(z),
-                                                        np.max(z), theta))
+    t_res.insert(
+        END,
+        "x_min: {:.3f}\nx_max: {:.3f}\ny_min: {:.3f}\ny_max: {:.3f}\nz_min: "
+        "{:.3f}\nz_max: {:.3f}\nrotation: {:.3f}".format(
+            np.min(x), np.max(x), np.min(y), np.max(y), np.min(z), np.max(z),
+            theta))
     if theta_diff <= 5:
-        rospy.loginfo("Success: Bounding Box computed (delta theta %.1fdeg)!" % theta_diff)
+        rospy.loginfo("Success: Bounding Box computed (delta theta %.1fdeg)!" %
+                      theta_diff)
     else:
         rospy.logwarn("Large delta theta (%.1fdeg) detected!" % theta_diff)
         rospy.loginfo("Success: Bounding Box computed!")
@@ -101,17 +111,19 @@ def visualize():
                 try:
                     value = float(line[len(field) + 2:])
                 except:
-                    rospy.logwarn("Cannot read value '%s' for field '%s'!" % (line[len(field) + 2:], field))
+                    rospy.logwarn("Cannot read value '%s' for field '%s'!" %
+                                  (line[len(field) + 2:], field))
                     continue
                 line_found = True
                 data[field] = value
-        if not line_found and len(line) > 0:
+        if not line_found and line:
             rospy.logwarn("Cannot read line '%s'!" % line)
 
     for field in fields:
         if field not in data:
             data[field] = 0
-            rospy.logwarn("Data for field '%s' not set, assuming 0.0 (default)." % field)
+            rospy.logwarn(
+                "Data for field '%s' not set, assuming 0.0 (default)." % field)
 
     # points
     points = []
@@ -252,10 +264,20 @@ e_z2.grid(column=2, row=3)
 e_z3.grid(column=3, row=3)
 
 btn_cmp = Button(window, text="Compute", command=compute, bg="green")
-btn_cmp.grid(row=4, column=0, columnspan=4, sticky=W + E + N + S, padx=1, pady=1)
+btn_cmp.grid(row=4,
+             column=0,
+             columnspan=4,
+             sticky=W + E + N + S,
+             padx=1,
+             pady=1)
 
 btn_vis = Button(window, text="Visualize", command=visualize, bg="#8080ff")
-btn_vis.grid(row=5, column=0, columnspan=4, sticky=W + E + N + S, padx=1, pady=1)
+btn_vis.grid(row=5,
+             column=0,
+             columnspan=4,
+             sticky=W + E + N + S,
+             padx=1,
+             pady=1)
 
 t_res = Text(window, height=8, width=20)
 t_res.grid(row=1, column=4, rowspan=5, sticky=W + E + N + S, padx=1, pady=1)

@@ -1,50 +1,53 @@
-#ifndef ACTIVE_3D_PLANNING_SENSOR_MODEL_ITERATIVE_RAY_CASTER_LIDAR_H
-#define ACTIVE_3D_PLANNING_SENSOR_MODEL_ITERATIVE_RAY_CASTER_LIDAR_H
+#ifndef ACTIVE_3D_PLANNING_CORE_MODULE_SENSOR_MODEL_ITERATIVE_RAY_CASTER_LIDAR_H_
+#define ACTIVE_3D_PLANNING_CORE_MODULE_SENSOR_MODEL_ITERATIVE_RAY_CASTER_LIDAR_H_
+
+#include <vector>
 
 #include "active_3d_planning_core/module/sensor_model/lidar_model.h"
 
 namespace active_3d_planning {
-    namespace sensor_model {
+namespace sensor_model {
 
-        // Cast Rays until they span 1 full voxel, then duplicate them to omit
-        // redundancies (timed at 42 +/- 20 ms)
-        class IterativeRayCasterLidar : public LidarModel {
-        public:
-            IterativeRayCasterLidar(PlannerI &planner);
+// Cast Rays until they span 1 full voxel, then duplicate them to omit
+// redundancies (timed at 42 +/- 20 ms)
+class IterativeRayCasterLidar : public LidarModel {
+ public:
+  IterativeRayCasterLidar(PlannerI& planner);  // NOLINT
 
-            virtual ~IterativeRayCasterLidar() = default;
+  virtual ~IterativeRayCasterLidar() = default;
 
-            // Override virtual functions
-            bool getVisibleVoxels(std::vector<Eigen::Vector3d> *result,
-                                  const Eigen::Vector3d &position,
-                                  const Eigen::Quaterniond &orientation) override;
+  // Override virtual functions
+  bool getVisibleVoxels(std::vector<Eigen::Vector3d>* result,
+                        const Eigen::Vector3d& position,
+                        const Eigen::Quaterniond& orientation) override;
 
-            void setupFromParamMap(Module::ParamMap *param_map) override;
+  void setupFromParamMap(Module::ParamMap* param_map) override;
 
-        protected:
-            static ModuleFactoryRegistry::Registration<IterativeRayCasterLidar>
-                    registration;
+ protected:
+  static ModuleFactoryRegistry::Registration<IterativeRayCasterLidar>
+      registration;
 
-            // params
-            double p_ray_step_;
-            double p_downsampling_factor_; // Artificially reduce the minimum resolution
-            // to increase performance
+  // params
+  double p_ray_step_;
+  double p_downsampling_factor_;  // Artificially reduce the minimum resolution
+  // to increase performance
 
-            // constants
-            int c_res_x_; // factual resolution that is used for ray casting
-            int c_res_y_;
-            int c_n_sections_;                      // number of ray duplications
-            std::vector<double> c_split_distances_; // distances where rays are duplicated
-            std::vector<int>
-                    c_split_widths_; // number of max distance rays that are covered per split
+  // constants
+  int c_res_x_;  // factual resolution that is used for ray casting
+  int c_res_y_;
+  int c_n_sections_;  // number of ray duplications
+  std::vector<double>
+      c_split_distances_;            // distances where rays are duplicated
+  std::vector<int> c_split_widths_;  // number of max distance rays that are
+                                     // covered per split
 
-            // variables
-            Eigen::ArrayXXi ray_table_;
+  // variables
+  Eigen::ArrayXXi ray_table_;
 
-            // methods
-            void markNeighboringRays(int x, int y, int segment, int value);
-        };
+  // methods
+  void markNeighboringRays(int x, int y, int segment, int value);
+};
 
-    } // namespace sensor_model
-} // namespace active_3d_planning
-#endif // ACTIVE_3D_PLANNING_SENSOR_MODEL_ITERATIVE_RAY_CASTER_LIDAR_H
+}  // namespace sensor_model
+}  // namespace active_3d_planning
+#endif  // ACTIVE_3D_PLANNING_CORE_MODULE_SENSOR_MODEL_ITERATIVE_RAY_CASTER_LIDAR_H_
