@@ -31,9 +31,7 @@ For additional information please see the [wiki](https://github.com/ethz-asl/mav
 ## Paper and Video
 If you find this package useful for your research, please consider citing our paper:
 
-* [IEEE](https://ieeexplore.ieee.org/abstract/document/8968434) | [ArXiv](https://arxiv.org/abs/1909.09548) | [Video](https://www.youtube.com/watch?v=lEadqJ1_8Do)
-
-* Lukas Schmid, Michael Pantic, Raghav Khanna, Lionel Ott, Roland Siegwart, and Juan Nieto, "**An Efficient Sampling-based Method for Online Informative Path Planning in Unknown Environments**", in *IEEE Robotics and Automation Letters*, vol. 5, no. 2, pp. 1500-1507, April 2020
+* Lukas Schmid, Michael Pantic, Raghav Khanna, Lionel Ott, Roland Siegwart, and Juan Nieto, "**An Efficient Sampling-based Method for Online Informative Path Planning in Unknown Environments**", in *IEEE Robotics and Automation Letters*, vol. 5, no. 2, pp. 1500-1507, April 2020 [[IEEE](https://ieeexplore.ieee.org/abstract/document/8968434) | [ArXiv](https://arxiv.org/abs/1909.09548) | [Video](https://www.youtube.com/watch?v=lEadqJ1_8Do)]
   ```bibtex
   @ARTICLE{Schmid20ActivePlanning,
     author={L. {Schmid} and M. {Pantic} and R. {Khanna} and L. {Ott} and R. {Siegwart} and J. {Nieto}},
@@ -49,9 +47,7 @@ If you find this package useful for your research, please consider citing our pa
     month={April},
   }
   ```
-
-* The planner presented in the paper is given in `active_3d_planning_app_reconstruction/cfg/planners/reconstruction_planner.yaml`.
-
+  
 # Setup
 ## Packages
 The mav_active_3d_planning package is divided into separate packages, such that only the dependencies necessary for your application package need to be built.
