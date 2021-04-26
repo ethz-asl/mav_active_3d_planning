@@ -1,0 +1,38 @@
+<launch>
+
+
+    <!-- Voxblox arguments -->
+    <arg name="voxel_size" default="0.1"/>
+    <arg name="voxels_per_side" default="16"/>
+    <arg name="ray_length" default="20.0"/>
+    <arg name="method" default="fast"/>
+    <arg name="verbose_voxblox" default="false"/>
+    <arg name="delay" default="3.0"/>
+
+    <arg name="mav_name" default="drone_1"/>
+
+    <!--  Experiment arguments -->
+    <arg name="experiment_config" default="CityBuilding.yaml"/>
+    <rosparam command="load"
+              file="$(find active_3d_planning_app_reconstruction)cfg/experiments/$(arg experiment_config)"/>
+    <!-- Planner -->
+
+    <node name="planner_node" pkg="active_3d_planning_app_reconstruction" type="reconstruction_planner_node" output="screen">
+        <!-- Voxblox Server -->
+        <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out"/>
+        <remap from="planner_node/tsdf_map_in" to="voxblox_node/tsdf_map_out"/>
+        <param name="use_tf_transforms" value="false"/>
+        <param name="tsdf_voxel_size" value="$(arg voxel_size)"/>
+        <param name="tsdf_voxels_per_srqt_ide" value="$(arg voxels_per_side)"/>
+        <param name="update_mesh_every_n_sec" value="1.0"/>
+        <param name="publish_traversable" value="false"/>
+
+        <!-- General Settings -->
+        <remap from="odometry" to="/airsim/airsim_node/$(arg mav_name)/odom_local_ned"/>
+        <remap from="command/trajectory" to="/airsim/$(arg mav_name)/command/trajectory"/>
+
+        <!-- Build the Planner by Configuration     -->
+        <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/planners/exploration_planner.yaml"/>
+    </node>
+
+</launch>
