@@ -11,9 +11,9 @@ namespace active_3d_planning {
 namespace trajectory_evaluator {
 
 // VoxelValue uses a value stored in the tsdf of surface voxels as gain to
-// evaluate a given trajectory Requires the map to be an isntance of
-// VoxelValueMap published to the planner intern voxblox server. Uses frontier
-// voxels to allow additional gain for exploration.
+// evaluate a given trajectory.
+// Requires the map to be an instance of VoxelValueMap.
+// Uses frontier voxels to allow additional gain for exploration.
 class VoxelValueEvaluator : public FrontierEvaluator {
  public:
   explicit VoxelValueEvaluator(PlannerI& planner);  // NOLINT
