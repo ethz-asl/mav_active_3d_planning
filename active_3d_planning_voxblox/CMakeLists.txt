@@ -10,6 +10,7 @@ catkin_package()
 
 cs_add_library(${PROJECT_NAME}
         src/map/voxblox.cpp
+        src/map/uncertainty_aware_map.cpp
         src/initialization/voxblox_package.cpp
         )
 

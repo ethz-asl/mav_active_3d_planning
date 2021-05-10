@@ -1,0 +1,93 @@
+#include "active_3d_planning_voxblox/map/uncertainty_aware_map.h"
+#include <voxblox_ros/ros_params.h>
+
+#include "active_3d_planning_core/data/system_constraints.h"
+
+namespace active_3d_planning {
+    namespace map {
+
+        ModuleFactoryRegistry::Registration<UncertaintyAwareMap> UncertaintyAwareMap::registration(
+                "VoxbloxMapWithUncertainty");
+
+        UncertaintyAwareMap::UncertaintyAwareMap(PlannerI &planner) : VoxelValueMap(planner), voxbloxMap(planner) {
+        }
+
+        voxblox::EsdfServer &UncertaintyAwareMap::getESDFServer() { return voxbloxMap.getESDFServer(); }
+
+        void UncertaintyAwareMap::setupFromParamMap(Module::ParamMap *param_map) {
+            voxbloxMap.setupFromParamMap(param_map);
+
+            ros::NodeHandle nh("/uncertainty/map/");
+            ros::NodeHandle nh_private("/uncertainty/map/");
+
+            uncertainty_aware_esdf_server.reset(new voxblox::EsdfServer(nh, nh_private));
+            uncertainty_aware_esdf_server->setTraversabilityRadius(
+                    planner_.getSystemConstraints().collision_radius);
+
+            // cache constants
+            c_voxel_size_ = uncertainty_aware_esdf_server->getEsdfMapPtr()->voxel_size();
+            c_block_size_ = uncertainty_aware_esdf_server->getEsdfMapPtr()->block_size();
+            c_maximum_weight_ = voxblox::getTsdfIntegratorConfigFromRosParam(nh_private)
+                    .max_weight;  // direct access is not exposed
+
+        }
+
+        bool UncertaintyAwareMap::isTraversable(const Eigen::Vector3d &position,
+                                                const Eigen::Quaterniond &orientation) {
+            return voxbloxMap.isTraversable(position, orientation);
+        }
+
+        bool UncertaintyAwareMap::isObserved(const Eigen::Vector3d &point) {
+            voxblox::Point voxblox_point(point.x(), point.y(), point.z());
+            return voxbloxMap.isObserved(point);
+        }
+
+// get occupancy
+        unsigned char UncertaintyAwareMap::getVoxelState(const Eigen::Vector3d &point) {
+            return voxbloxMap.getVoxelState(point);
+        }
+
+// get voxel size
+        double UncertaintyAwareMap::getVoxelSize() { return c_voxel_size_; }
+
+// get the center of a voxel from input point
+        bool UncertaintyAwareMap::getVoxelCenter(Eigen::Vector3d *center,
+                                                 const Eigen::Vector3d &point) {
+
+            return voxbloxMap.getVoxelCenter(center, point);
+        }
+
+        double UncertaintyAwareMap::getVoxelValue(const Eigen::Vector3d &point) {
+            voxblox::Point voxblox_point(point.x(), point.y(), point.z());
+            voxblox::Block<voxblox::TsdfVoxel>::Ptr block =
+                    uncertainty_aware_esdf_server->getTsdfMapPtr()
+                            ->getTsdfLayerPtr()
+                            ->getBlockPtrByCoordinates(voxblox_point);
+
+            if (block) {
+                voxblox::TsdfVoxel *tsdf_voxel =
+                        block->getVoxelPtrByCoordinates(voxblox_point);
+                double value = tsdf_voxel->color.b / 255.0;
+                if (value <= 0) return 0; // value -1 means voxel has not been seen in uncertainty map
+                return -log(value);
+            }
+
+            return -1;
+        }
+
+// get the stored TSDF distance
+        double UncertaintyAwareMap::getVoxelDistance(const Eigen::Vector3d &point) {
+            return voxbloxMap.getVoxelDistance(point);
+        }
+
+// get the stored weight
+
+        double UncertaintyAwareMap::getVoxelWeight(const Eigen::Vector3d &point) {
+            return voxbloxMap.getVoxelWeight(point);
+        }
+
+// get the maximum allowed weight (return 0 if using uncapped weights)
+        double UncertaintyAwareMap::getMaximumWeight() { return voxbloxMap.getMaximumWeight(); }
+
+    }  // namespace map
+}  // namespace active_3d_planning
