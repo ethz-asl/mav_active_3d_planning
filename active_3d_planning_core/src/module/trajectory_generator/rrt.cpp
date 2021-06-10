@@ -285,8 +285,7 @@ bool RRT::adjustGoalPosition(const Eigen::Vector3d& start_pos,
   }
   if (p_crop_segments_) {
     // if the full length cannot be reached, crop it
-    int n_points = std::ceil(direction.norm() / p_sampling_rate_ *
-                                 planner_.getSystemConstraints().v_max +
+    int n_points = std::ceil(direction.norm() * p_sampling_rate_ / planner_.getSystemConstraints().v_max +
                              1);
     for (int i = 0; i <= n_points; ++i) {
       if (!checkTraversable(start_pos + static_cast<double>(i) /
