@@ -21,9 +21,12 @@ void UncertaintyAwareMap::setupFromParamMap(Module::ParamMap* param_map) {
   // Reconstruction + collision map
   voxbloxMap.setupFromParamMap(param_map);
 
+  std::string uncertainty_ns;
+  setParam<std::string>(param_map, "uncertainty_namespace", &uncertainty_ns,
+                   "/uncertainty/map/");
   // Uncertainty Map
-  ros::NodeHandle nh("/uncertainty/map/");
-  ros::NodeHandle nh_private("/uncertainty/map/");
+  ros::NodeHandle nh(uncertainty_ns);
+  ros::NodeHandle nh_private(uncertainty_ns);
 
   uncertainty_aware_esdf_server.reset(new voxblox::EsdfServer(nh, nh_private));
   uncertainty_aware_esdf_server->setTraversabilityRadius(
