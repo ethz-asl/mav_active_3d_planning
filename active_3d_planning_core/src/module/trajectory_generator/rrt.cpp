@@ -210,7 +210,7 @@ bool RRT::sampleGoal(Eigen::Vector3d* goal_pos) {
     if (semilocal_count_ > 0) {
       // Not enough local points found, sample from local sphere
       double theta = 2.0 * M_PI * static_cast<double>(rand()) / RAND_MAX;
-      double phi = M_PI / 2;
+      double phi = M_PI / 2.0;
       if (!p_planar) {
         phi = acos(1.0 - 2.0 * static_cast<double>(rand()) / RAND_MAX);
       }
