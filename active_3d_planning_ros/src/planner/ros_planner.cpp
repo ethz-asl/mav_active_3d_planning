@@ -8,6 +8,7 @@
 
 #include <geometry_msgs/Point.h>
 #include <tf/transform_datatypes.h>
+#include "std_msgs/Bool.h"
 
 #include "active_3d_planning_ros/module/module_factory_ros.h"
 #include "active_3d_planning_ros/tools/ros_conversion.h"
@@ -30,8 +31,11 @@ RosPlanner::RosPlanner(const ::ros::NodeHandle& nh,
   trajectory_vis_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(
       "trajectory_visualization", 100);
   odom_sub_ = nh_.subscribe("odometry", 1, &RosPlanner::odomCallback, this);
+  col_sub = nh_.subscribe("colision", 1, &RosPlanner::collisionCallback, this);
   get_cpu_time_srv_ = nh_private_.advertiseService(
       "get_cpu_time", &RosPlanner::cpuSrvCallback, this);
+
+  target_reached_pub_ = nh_.advertise<std_msgs::Bool>("goalpoint_reached", 100);
 
   // Finish
   ROS_INFO_STREAM(
@@ -140,10 +144,22 @@ void RosPlanner::odomCallback(const nav_msgs::Odometry& msg) {
       if (p_replan_yaw_threshold_ <= 0 ||
           defaults::angleDifference(target_yaw_, yaw) <
               p_replan_yaw_threshold_) {
+        if(!target_reached_) {
+          // Only publish target reached exactly once
+          std_msgs::Bool bool_msg;
+          bool_msg.data = true;
+          target_reached_pub_.publish(bool_msg);
+        }
+
         target_reached_ = true;
       }
     }
   }
+}
+
+void RosPlanner::collisionCallback(const std_msgs::Bool) {
+    LOG(WARNING) << "GOT COLLISIION IN PLANNER, FORCING REPLANING";
+    target_reached_ = true;
 }
 
 void RosPlanner::requestMovement(const EigenTrajectoryPointVector& trajectory) {

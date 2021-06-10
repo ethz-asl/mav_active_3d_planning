@@ -13,6 +13,7 @@
 #include <std_srvs/SetBool.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <std_msgs/Bool.h>
 
 #include "active_3d_planning_core/planner/online_planner.h"
 
@@ -60,6 +61,8 @@ class RosPlanner : public OnlinePlanner {
   ::ros::Publisher trajectory_vis_pub_;
   ::ros::ServiceServer run_srv_;
   ::ros::ServiceServer get_cpu_time_srv_;
+  ::ros::Publisher target_reached_pub_;
+  ::ros::Subscriber col_sub;
 
   // variables
   ::ros::Time ros_timing_;      // track simulated time
@@ -80,6 +83,8 @@ class RosPlanner : public OnlinePlanner {
   void requestMovement(const EigenTrajectoryPointVector& trajectory) override;
 
   void setupFromParamMap(Module::ParamMap* param_map) override;
+
+    void collisionCallback(const std_msgs::Bool_<std::allocator<void>>);
 };
 
 }  // namespace ros

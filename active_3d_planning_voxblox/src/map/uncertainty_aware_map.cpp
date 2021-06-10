@@ -72,11 +72,13 @@ double UncertaintyAwareMap::getVoxelValue(const Eigen::Vector3d& point) {
     voxblox::TsdfVoxel* tsdf_voxel =
         block->getVoxelPtrByCoordinates(voxblox_point);
     double value = tsdf_voxel->color.b / 255.0;
-    return std::max(0,
-                    value);  // value can be -1 for unseen voxels. Map to [0,1]
+    return value;
+//    // value can be -1 for unseen voxels. Map to [0,1]
+//    if (value <= 0) return 0;
+//    return value / (weight*weight);
   }
 
-  return -1;
+  return 0;
 }
 
 // get the stored TSDF distance
@@ -87,7 +89,19 @@ double UncertaintyAwareMap::getVoxelDistance(const Eigen::Vector3d& point) {
 // get the stored weight
 
 double UncertaintyAwareMap::getVoxelWeight(const Eigen::Vector3d& point) {
-  return voxbloxMap.getVoxelWeight(point);
+  voxblox::Point voxblox_point(point.x(), point.y(), point.z());
+  voxblox::Block<voxblox::TsdfVoxel>::Ptr block =
+          uncertainty_aware_esdf_server->getTsdfMapPtr()
+                  ->getTsdfLayerPtr()
+                  ->getBlockPtrByCoordinates(voxblox_point);
+  if (block) {
+    voxblox::TsdfVoxel* tsdf_voxel =
+            block->getVoxelPtrByCoordinates(voxblox_point);
+    if (tsdf_voxel) {
+      return tsdf_voxel->weight;
+    }
+  }
+  return 0.0;
 }
 
 // get the maximum allowed weight (return 0 if using uncapped weights)
@@ -95,5 +109,19 @@ double UncertaintyAwareMap::getMaximumWeight() {
   return voxbloxMap.getMaximumWeight();
 }
 
-}  // namespace map
+unsigned char UncertaintyAwareMap::getValueVoxelState(const Eigen::Vector3d &point) {
+    double distance = 0.0;
+    if (uncertainty_aware_esdf_server->getEsdfMapPtr()->getDistanceAtPosition(point, &distance)) {
+        // This means the voxel is observed
+        if (distance < c_voxel_size_ * 1.5) {
+            return VoxbloxMap::OCCUPIED;
+        } else {
+            return VoxbloxMap::FREE;
+        }
+    } else {
+        return VoxbloxMap::UNKNOWN;
+    }
+}
+
+    }  // namespace map
 }  // namespace active_3d_planning

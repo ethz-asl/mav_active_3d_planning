@@ -32,6 +32,8 @@ class UncertaintyAwareMap : public VoxelValueMap {
   // get occupancy
   unsigned char getVoxelState(const Eigen::Vector3d& point) override;
 
+  unsigned char getValueVoxelState(const Eigen::Vector3d& point) override;
+
   // get voxel size
   double getVoxelSize() override;
 
