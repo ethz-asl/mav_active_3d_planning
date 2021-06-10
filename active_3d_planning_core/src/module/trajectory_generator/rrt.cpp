@@ -35,6 +35,8 @@ void RRT::setupFromParamMap(Module::ParamMap* param_map) {
   setParam<double>(param_map, "semilocal_sampling_radius_min",
                    &p_semilocal_radius_min_, 0.2);
   setParam<double>(param_map, "min_path_length", &p_min_path_length_, 0.0);
+
+  setParam<bool>(param_map, "planar", &p_planar, false);
   previous_root_ = nullptr;
 
   // setup parent
@@ -186,9 +188,11 @@ bool RRT::sampleGoal(Eigen::Vector3d* goal_pos) {
     (*goal_pos)[1] = bounding_volume_->y_min +
                      static_cast<double>(rand()) / RAND_MAX *
                          (bounding_volume_->y_max - bounding_volume_->y_min);
-    (*goal_pos)[2] = bounding_volume_->z_min +
-                     static_cast<double>(rand()) / RAND_MAX *
-                         (bounding_volume_->z_max - bounding_volume_->z_min);
+    if (!p_planar) {
+      (*goal_pos)[2] = bounding_volume_->z_min +
+                       static_cast<double>(rand()) / RAND_MAX *
+                           (bounding_volume_->z_max - bounding_volume_->z_min);
+    }
     return true;
 
   } else if (p_sampling_mode_ == "spheric") {
@@ -197,7 +201,7 @@ bool RRT::sampleGoal(Eigen::Vector3d* goal_pos) {
         std::pow(bounding_volume_->x_max - bounding_volume_->x_min, 2.0) +
         std::pow(bounding_volume_->y_max - bounding_volume_->y_min, 2.0) +
         std::pow(bounding_volume_->z_max - bounding_volume_->z_min, 2.0));
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 3 - p_planar; i++) {
       (*goal_pos)[i] +=
           2.0 * radius * (static_cast<double>(rand()) / RAND_MAX - 0.5);
     }
@@ -206,7 +210,11 @@ bool RRT::sampleGoal(Eigen::Vector3d* goal_pos) {
     if (semilocal_count_ > 0) {
       // Not enough local points found, sample from local sphere
       double theta = 2.0 * M_PI * static_cast<double>(rand()) / RAND_MAX;
-      double phi = acos(1.0 - 2.0 * static_cast<double>(rand()) / RAND_MAX);
+      double phi = M_PI / 2.0;
+      if (!p_planar) {
+        phi = acos(1.0 - 2.0 * static_cast<double>(rand()) / RAND_MAX);
+      }
+
       double rho = p_semilocal_radius_min_ +
                    (static_cast<double>(rand()) / RAND_MAX) *
                        (p_semilocal_radius_max_ - p_semilocal_radius_min_);
@@ -220,7 +228,7 @@ bool RRT::sampleGoal(Eigen::Vector3d* goal_pos) {
           std::pow(bounding_volume_->x_max - bounding_volume_->x_min, 2.0) +
           std::pow(bounding_volume_->y_max - bounding_volume_->y_min, 2.0) +
           std::pow(bounding_volume_->z_max - bounding_volume_->z_min, 2.0));
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < 3 - p_planar; i++) {
         (*goal_pos)[i] +=
             2.0 * radius * (static_cast<double>(rand()) / RAND_MAX - 0.5);
       }

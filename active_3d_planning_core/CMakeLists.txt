@@ -61,6 +61,7 @@ cs_add_library(${PROJECT_NAME}
         src/module/trajectory_evaluator/value_computers/global_normalized_gain.cpp
         src/module/trajectory_evaluator/voxel_type_evaluator.cpp
         src/module/trajectory_evaluator/voxel_weight_evaluator.cpp
+        src/module/trajectory_evaluator/voxel_value_evaluator.cpp
         src/module/trajectory_evaluator/yaw_planning_evaluator.cpp
         src/module/trajectory_generator.cpp
         src/module/trajectory_generator/generator_updater/recheck_collision.cpp

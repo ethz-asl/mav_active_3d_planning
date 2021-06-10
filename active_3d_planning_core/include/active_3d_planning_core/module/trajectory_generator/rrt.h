@@ -82,7 +82,7 @@ class RRT : public TrajectoryGenerator {
   bool p_sample_yaw_;    // True: random yaw, false: face direction of travel
   int p_maximum_tries_;  // sampling tries, 0 for inf
   double p_min_path_length_;  // disallow all segments shorter than min length
-
+  bool p_planar; // Only sample in xy plane
   // kdtree
   std::unique_ptr<KDTree> kdtree_;
   TreeData tree_data_;

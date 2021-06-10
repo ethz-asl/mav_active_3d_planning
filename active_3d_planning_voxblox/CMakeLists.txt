@@ -4,12 +4,13 @@ project(active_3d_planning_voxblox)
 find_package(catkin_simple REQUIRED)
 catkin_simple(ALL_DEPS_REQUIRED)
 
-add_definitions(-std=c++11)
+add_definitions(-std=c++14)
 
 catkin_package()
 
 cs_add_library(${PROJECT_NAME}
         src/map/voxblox.cpp
+        src/map/uncertainty_aware_map.cpp
         src/initialization/voxblox_package.cpp
         )
 
