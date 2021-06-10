@@ -74,9 +74,7 @@ double UncertaintyAwareMap::getVoxelValue(const Eigen::Vector3d& point) {
   if (block) {
     voxblox::TsdfVoxel* tsdf_voxel =
         block->getVoxelPtrByCoordinates(voxblox_point);
-    double value = tsdf_voxel->color.b / 255.0;
-    return std::max(0,
-                    value);  // value can be -1 for unseen voxels. Map to [0,1]
+    return tsdf_voxel->color.b / 255.0;
   }
 
   return -1;
