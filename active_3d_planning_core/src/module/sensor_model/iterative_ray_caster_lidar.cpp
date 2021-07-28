@@ -78,6 +78,11 @@ bool IterativeRayCasterLidar::getVisibleVoxels(
           current_position = position + distance * direction;
           distance += p_ray_step_;
 
+          // Add point (duplicates are handled in
+          // CameraModel::getVisibleVoxelsFromTrajectory)
+          map_->getVoxelCenter(&voxel_center, current_position);
+          result->push_back(voxel_center);
+
           // Check voxel occupied
           if (map_->getVoxelState(current_position) ==
               map::OccupancyMap::OCCUPIED) {
@@ -86,11 +91,6 @@ bool IterativeRayCasterLidar::getVisibleVoxels(
             cast_ray = false;
             break;
           }
-
-          // Add point (duplicates are handled in
-          // CameraModel::getVisibleVoxelsFromTrajectory)
-          map_->getVoxelCenter(&voxel_center, current_position);
-          result->push_back(voxel_center);
         }
         if (cast_ray) {
           current_segment++;
