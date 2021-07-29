@@ -1,3 +1,6 @@
 # Clion stuff
 **/.idea/
 **/cmake-build-debug/
+
+# VSCode
+.vscode/

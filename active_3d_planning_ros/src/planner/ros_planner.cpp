@@ -25,8 +25,12 @@ RosPlanner::RosPlanner(const ::ros::NodeHandle& nh,
       6, 0.0);  // select, expand, gain, cost, value, mainLoop, rosCallbacks
 
   // Subscribers and publishers
-  target_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
-      "command/trajectory", 10);
+  if (p_publish_output_as_pose_) {
+    target_pub_ = nh_.advertise<geometry_msgs::Pose>("command/pose", 10);
+  } else {
+    target_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
+        "command/trajectory", 10);
+  }
   trajectory_vis_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(
       "trajectory_visualization", 100);
   odom_sub_ = nh_.subscribe("odometry", 1, &RosPlanner::odomCallback, this);
@@ -46,6 +50,8 @@ void RosPlanner::setupFromParamMap(Module::ParamMap* param_map) {
                    0.1);
   setParam<double>(param_map, "replan_yaw_threshold", &p_replan_yaw_threshold_,
                    0.1);
+  setParam<bool>(param_map, "publish_output_as_pose",
+                 &p_publish_output_as_pose_, false);
 }
 
 void RosPlanner::setupFactoryAndParams(ModuleFactory* factory,
@@ -151,15 +157,30 @@ void RosPlanner::requestMovement(const EigenTrajectoryPointVector& trajectory) {
     LOG(WARNING) << "Tried to publish an empty trajectory";
     return;
   }
-  trajectory_msgs::MultiDOFJointTrajectoryPtr msg(
-      new trajectory_msgs::MultiDOFJointTrajectory);
-  msg->header.stamp = ::ros::Time::now();
-  int n_points = trajectory.size();
-  msg->points.resize(n_points);
-  for (int i = 0; i < n_points; ++i) {
-    msgMultiDofJointTrajectoryPointFromEigen(trajectory[i], &msg->points[i]);
+  if (p_publish_output_as_pose_) {
+    // publish the pose
+    geometry_msgs::Pose msg;
+    const EigenTrajectoryPoint& pose = trajectory.back();
+    msg.position.x = pose.position_W.x();
+    msg.position.y = pose.position_W.y();
+    msg.position.z = pose.position_W.z();
+    msg.orientation.x = pose.orientation_W_B.x();
+    msg.orientation.y = pose.orientation_W_B.y();
+    msg.orientation.z = pose.orientation_W_B.z();
+    msg.orientation.w = pose.orientation_W_B.w();
+    target_pub_.publish(msg);
+  } else {
+    // publish the trajectory
+    trajectory_msgs::MultiDOFJointTrajectoryPtr msg(
+        new trajectory_msgs::MultiDOFJointTrajectory);
+    msg->header.stamp = ::ros::Time::now();
+    int n_points = trajectory.size();
+    msg->points.resize(n_points);
+    for (int i = 0; i < n_points; ++i) {
+      msgMultiDofJointTrajectoryPointFromEigen(trajectory[i], &msg->points[i]);
+    }
+    target_pub_.publish(msg);
   }
-  target_pub_.publish(msg);
 }
 
 void RosPlanner::publishVisualization(const VisualizationMarkers& markers) {

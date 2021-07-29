@@ -71,6 +71,8 @@ class RosPlanner : public OnlinePlanner {
   // params
   double p_replan_pos_threshold_;  // m, when is the goal considered reached
   double p_replan_yaw_threshold_;  // rad
+  bool p_publish_output_as_pose_;  // True: Publish endpoints, False: publish
+                                   // full trajectory.
 
   // override/adapt planner methods
   void initializePlanning() override;
