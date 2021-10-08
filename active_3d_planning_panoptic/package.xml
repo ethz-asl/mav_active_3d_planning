@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="2">
+    <name>active_3d_planning_panoptic</name>
+    <version>0.0.0</version>
+    <description>Panoptic as map representation</description>
+
+    <author email="zrene@ethz.ch">René Zurbrügg</author>
+    <maintainer email="zrene@ethz.ch">René Zurbrügg</maintainer>
+
+    <license>BSD</license>
+
+    <buildtool_depend>catkin</buildtool_depend>
+    <buildtool_depend>catkin_simple</buildtool_depend>
+
+    <depend>active_3d_planning_core</depend>
+    <depend>panoptic_mapping</depend>
+    <depend>panoptic_mapping_ros</depend>
+</package>
