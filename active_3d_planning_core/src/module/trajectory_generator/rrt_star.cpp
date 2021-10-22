@@ -46,7 +46,6 @@ bool RRTStar::checkParamsValid(std::string* error_message) {
 
 bool RRTStar::selectSegment(TrajectorySegment** result,
                             TrajectorySegment* root) {
-  return RRT::selectSegment(result, root);
   // If the root has changed, reset the kdtree and populate with the current
   // trajectory tree
   if (previous_root_ != root) {

@@ -130,9 +130,13 @@ double ContinuousYawPlanningEvaluator::sampleYaw(double original_yaw,
 void ContinuousYawPlanningEvaluator::setTrajectoryYaw(
     TrajectorySegment* segment, double start_yaw, double target_yaw) {
   // just set the yaw of the entire trajectory to the sampled value
+
+  auto direction = segment->trajectory[1].position_W - segment->trajectory[0].position_W;
+  double yaw_in_move = atan2(direction.y(),direction.x());
   for (int i = 0; i < segment->trajectory.size(); ++i) {
-    segment->trajectory[i].setFromYaw(target_yaw);
+    segment->trajectory[i].setFromYaw(yaw_in_move);
   }
+  segment->trajectory.back().setFromYaw(target_yaw);
 }
 
 void ContinuousYawPlanningEvaluator::visualizeTrajectoryValue(

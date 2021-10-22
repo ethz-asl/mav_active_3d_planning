@@ -8,8 +8,10 @@
 
 #include <geometry_msgs/Point.h>
 #include <tf/transform_datatypes.h>
+#include <zconf.h>
 #include "std_msgs/Bool.h"
 
+#include "std_msgs/Float32.h"
 #include "active_3d_planning_ros/module/module_factory_ros.h"
 #include "active_3d_planning_ros/tools/ros_conversion.h"
 
@@ -28,6 +30,11 @@ RosPlanner::RosPlanner(const ::ros::NodeHandle& nh,
   // Subscribers and publishers
   target_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
       "command/trajectory", 10);
+
+
+  gain_pub_= nh_.advertise<std_msgs::Float32>(
+            "trajectory/gain", 10);
+
   trajectory_vis_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(
       "trajectory_visualization", 100);
   odom_sub_ = nh_.subscribe("odometry", 1, &RosPlanner::odomCallback, this);
@@ -71,6 +78,8 @@ void RosPlanner::setupFactoryAndParams(ModuleFactory* factory,
 }
 
 void RosPlanner::initializePlanning() {
+
+    std::cout << "_____ call parent" << std::endl;
   // setup standard
   OnlinePlanner::initializePlanning();
 
@@ -176,6 +185,14 @@ void RosPlanner::requestMovement(const EigenTrajectoryPointVector& trajectory) {
     msgMultiDofJointTrajectoryPointFromEigen(trajectory[i], &msg->points[i]);
   }
   target_pub_.publish(msg);
+
+  std_msgs::Float32 gain_msg;
+//  gain_msg.header.stamp = ::ros::Time::now()
+  std::cout << "curr gain:" <<  current_segment_->gain;
+    std::cout << "curr :" <<  current_segment_->value;
+    gain_msg.data =  current_segment_->gain;
+  gain_pub_.publish(gain_msg);
+
 }
 
 void RosPlanner::publishVisualization(const VisualizationMarkers& markers) {
@@ -223,6 +240,7 @@ bool RosPlanner::runSrvCallback(std_srvs::SetBool::Request& req,
                                 std_srvs::SetBool::Response& res) {
   res.success = true;
   if (req.data) {
+      std::cout << "_____ initiali planning" << std::endl;
     initializePlanning();
     planning_ = true;
     ROS_INFO("Started planning.");

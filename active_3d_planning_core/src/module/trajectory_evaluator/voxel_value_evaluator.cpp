@@ -66,13 +66,23 @@ bool VoxelValueEvaluator::computeGainFromVisibleVoxels(
 
 double VoxelValueEvaluator::getVoxelValue(const Eigen::Vector3d &voxel,
                                           const Eigen::Vector3d &origin) {
+//  std::cout << "voxel valut at: " << voxel << " orign: " << origin << std::endl;
   unsigned char voxel_state = map_->getValueVoxelState(voxel);
   if (voxel_state == map::TSDFMap::OCCUPIED) {
     // OCCUPIED -> Get value from Map
-    if (map_->getVoxelWeight(voxel) == 0) {
-      return 0;
+    // Surface voxel
+    double min_distance = 1;
+    double z = std::max(min_distance, (voxel - origin).norm());
+    double spanned_angle = 2.0 * atan2(c_voxel_size_, z * 2.0);
+    double new_weight = std::pow(spanned_angle, 2.0) /
+        (p_ray_angle_x_ * p_ray_angle_y_) / std::pow(z, 2.0);
+    double gain = new_weight / (new_weight + map_->getVoxelWeight(voxel));
+    if (gain > p_min_impact_factor_) {
+      return ( gain - p_min_impact_factor_) / (1 - p_min_impact_factor_) * value_factor * map_->getVoxelValue(voxel);// / pow(std::max(map_->getVoxelWeight(voxel), 1.0), weight_decay_power);
+    } else {
+      return 0.0;
     }
-    return value_factor*map_->getVoxelValue(voxel) / pow(map_->getVoxelWeight(voxel), weight_decay_power);
+
   } else if (voxel_state == map::TSDFMap::UNKNOWN) {
     // Unobserved voxels
     if (p_frontier_voxel_value_ > 0.0) {
@@ -105,53 +115,68 @@ void VoxelValueEvaluator::visualizeTrajectoryValue(
   SimulatedSensorInfo *info =
       reinterpret_cast<SimulatedSensorInfo *>(trajectory.info.get());
   for (int i = 0; i < info->visible_voxels.size(); ++i) {
+//    if (info->visible_voxels[i][2] < -1)
+//      continue;
+
     value = getVoxelValue(info->visible_voxels[i], origin);
 
     if (value > 0.0) {
       marker.points.push_back(info->visible_voxels[i]);
       Color color;
-      if (value == p_frontier_voxel_value_) {
-        color.r = 1;
-        color.g = 0;
-        color.b = 0;
-        color.a = 0.5;
-      } else if (value == p_new_voxel_value_) {
-        color.r = 0.0;
+      if (value == p_new_voxel_value_) {
+        color.r = 0;
         color.g = 1;
         color.b = 0;
-        color.a = 0.1;
+        color.a = 0.3;
       } else {
-        color.r = 1;
-        color.g = 0;
-        color.b = 0;
-        color.a = 0.5;
-        VisualizationMarker textMarker;
-        textMarker.type = VisualizationMarker::TEXT_VIEW_FACING;
-        textMarker.scale.x() = c_voxel_size_;
-        textMarker.scale.y() = c_voxel_size_;
-        textMarker.scale.z() = c_voxel_size_;
+        double val = value / 0.1;
+        if (val > 0.5) {
+          if (val > 1) {
+            val = 1.0f;
+          }
+          val = val - 0.5;
+          color.r = std::min(val * 2.f, 1.0);
+          color.g = std::max(1 - val * 2.f, 0.0);
+          color.a = 0.5;
+          color.b = 0;
+        } else {
+          color.g = 0;
+          color.r = std::min(val * 2.f, 1.0);
+          color.b = std::max(1 - val * 2.f, 0.0);
+          color.a = 0.5;
+        }
 
-        // Create an output string stream
-        std::ostringstream streamObj3;
-        // Set Fixed -Point Notation
-        streamObj3 << std::fixed;
-        // Set precision to 2 digits
-        streamObj3 << std::setprecision(2);
-        //Add double to stream
-
-        streamObj3 << value;
-        // Get string from output string stream
-        std::string strObj3 = streamObj3.str();
-        textMarker.text = strObj3;
-        auto pos = info->visible_voxels[i];
-        textMarker.position.x() = pos.x();
-        textMarker.position.y() = pos.y();
-        textMarker.position.z() = pos.z();
-        textMarker.color.a = 1.0;
-        textMarker.color.r = 1.0;
-        textMarker.color.g = 1.0;
-        textMarker.color.b = 1.0;
-        markers->addMarker(textMarker);
+//        color.g = std::max(1 - value / 0.2, 0.0);
+//        color.b = 0;
+////        color.r = std::min(value / 0.2, 1.0);
+//        color.a = std::min(value / 0.2, 1.0);
+//        VisualizationMarker textMarker;
+//        textMarker.type = VisualizationMarker::TEXT_VIEW_FACING;
+//        textMarker.scale.x() = c_voxel_size_;
+//        textMarker.scale.y() = c_voxel_size_;
+//        textMarker.scale.z() = c_voxel_size_;
+////
+////        // Create an output string stream
+//        std::ostringstream streamObj3;
+//        // Set Fixed -Point Notation
+//        streamObj3 << std::fixed;
+//        // Set precision to 2 digits
+//
+//        streamObj3 << std::setprecision(2);
+//        //Add double to stream
+//        streamObj3 << val;
+//        // Get string from output string stream
+//        std::string strObj3 = streamObj3.str();
+//        textMarker.text = strObj3;
+//        auto pos = info->visible_voxels[i];
+//        textMarker.position.x() = pos.x();
+//        textMarker.position.y() = pos.y();
+//        textMarker.position.z() = pos.z();
+//        textMarker.color.a = 1.0;
+//        textMarker.color.r = 1.0;
+//        textMarker.color.g = 1.0;
+//        textMarker.color.b = 1.0;
+//        markers->addMarker(textMarker);
       }
       marker.colors.push_back(color);
     }

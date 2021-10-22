@@ -11,7 +11,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-
+#include <typeinfo>
 namespace active_3d_planning {
 
 OnlinePlanner::OnlinePlanner(ModuleFactory* factory,
@@ -141,15 +141,24 @@ void OnlinePlanner::printError(const std::string& text) {
 }
 
 void OnlinePlanner::initializePlanning() {
+  int cnt = 0;
+  std::cout << "##" << cnt++ << std::endl;
   // Setup initial trajectory Segment at current location
   target_position_ = current_position_;
+  std::cout << "##" << cnt++ << std::endl;
   target_yaw_ = yawFromQuaternion(current_orientation_);
+  std::cout << "##" << cnt++ << std::endl;
   current_segment_ =
       std::unique_ptr<TrajectorySegment>(new TrajectorySegment());
+  std::cout << "##" << cnt++ << std::endl;
   EigenTrajectoryPoint trajectory_point;
+  std::cout << "##" << cnt++ << std::endl;
   trajectory_point.position_W = target_position_;
+  std::cout << "##" << cnt++ << std::endl;
   trajectory_point.setFromYaw(target_yaw_);
+  std::cout << "##" << cnt++ << std::endl;
   current_segment_->trajectory.push_back(trajectory_point);
+  std::cout << "##" << cnt++ << std::endl;
 
   // Setup counters
   info_timing_ = std::clock();
@@ -160,10 +169,12 @@ void OnlinePlanner::initializePlanning() {
   new_segment_tries_ = 0;
   min_new_value_reached_ = p_min_new_value_ == 0.0;
   vis_completed_count_ = 0;
+  std::cout << "##" << cnt++ << std::endl;
   std::fill(perf_log_data_.begin(), perf_log_data_.begin() + 5, 0.0);
 
   // Launch expansion as current goal is considered reached
   target_reached_ = true;
+  std::cout << "##" << cnt++ << std::endl;
 }
 
 void OnlinePlanner::planningLoop() {
@@ -176,6 +187,7 @@ void OnlinePlanner::planningLoop() {
     // [check update /exit conditions here]
   }
 }
+
 
 void OnlinePlanner::loopIteration() {
   // Continuosly expand the trajectory space
@@ -260,6 +272,7 @@ bool OnlinePlanner::requestNextTrajectory() {
   int next_segment =
       trajectory_evaluator_->selectNextBest(current_segment_.get());
   current_segment_ = std::move(current_segment_->children[next_segment]);
+  double c_gain = current_segment_->gain;
   current_segment_->parent = nullptr;
   current_segment_->gain = 0.0;
   current_segment_->cost = 0.0;
@@ -276,8 +289,9 @@ bool OnlinePlanner::requestNextTrajectory() {
   trajectory_generator_->extractTrajectoryToPublish(&trajectory,
                                                     *current_segment_);
   current_segment_->trajectory = trajectory;
-
+  current_segment_->gain = c_gain;
   requestMovement(trajectory);
+  current_segment_->gain = 0.0;
   target_position_ = trajectory.back().position_W;
   target_yaw_ = trajectory.back().getYaw();
   back_tracker_->segmentIsExecuted(*current_segment_);
@@ -462,7 +476,12 @@ void OnlinePlanner::publishTrajectoryVisualization(
 
     // points
     for (int j = 0; j < trajectories[i]->trajectory.size(); ++j) {
-      msg.points.push_back(trajectories[i]->trajectory[j].position_W);
+      if (trajectories[i]->trajectory[j].position_W.allFinite()) {
+        // Ugly fix to sometimes having NaN in position z TODO @zrene
+        msg.points.push_back(trajectories[i]->trajectory[j].position_W);
+      } else {
+        std::cout << "FOIUND NON FINITE CANDIDATE TRAJ: " << trajectories[i]->trajectory[j].position_W << std::endl;
+      }
     }
     value_markers.addMarker(msg);
 
@@ -591,6 +610,12 @@ void OnlinePlanner::publishEvalVisualization(
     i++;
     marker.ns = "trajectory_evaluation";
     marker.action = VisualizationMarker::OVERWRITE;
+    for(auto p: marker.points) {
+      if(std::isnan(p.z())) {
+        p.z() = 0;
+        std::cout << "[ActivePlanner] WARNIN. NaN value in trajectory_evaluation" << std::endl;
+      }
+    }
   }
   publishVisualization(msg);
 }

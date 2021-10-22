@@ -36,7 +36,7 @@ void RRT::setupFromParamMap(Module::ParamMap* param_map) {
                    &p_semilocal_radius_min_, 0.2);
   setParam<double>(param_map, "min_path_length", &p_min_path_length_, 0.0);
 
-  setParam<bool>(param_map, "planar", &planar, false);
+  setParam<bool>(param_map, "planar", &p_planar, false);
   previous_root_ = nullptr;
 
   // setup parent
@@ -188,7 +188,7 @@ bool RRT::sampleGoal(Eigen::Vector3d* goal_pos) {
     (*goal_pos)[1] = bounding_volume_->y_min +
                      static_cast<double>(rand()) / RAND_MAX *
                          (bounding_volume_->y_max - bounding_volume_->y_min);
-    if (!planar) {
+    if (!p_planar) {
       (*goal_pos)[2] = bounding_volume_->z_min +
                        static_cast<double>(rand()) / RAND_MAX *
                            (bounding_volume_->z_max - bounding_volume_->z_min);
@@ -201,7 +201,7 @@ bool RRT::sampleGoal(Eigen::Vector3d* goal_pos) {
         std::pow(bounding_volume_->x_max - bounding_volume_->x_min, 2.0) +
         std::pow(bounding_volume_->y_max - bounding_volume_->y_min, 2.0) +
         std::pow(bounding_volume_->z_max - bounding_volume_->z_min, 2.0));
-    for (int i = 0; i < 3 - planar; i++) {
+    for (int i = 0; i < 3 - p_planar; i++) {
       (*goal_pos)[i] +=
           2.0 * radius * (static_cast<double>(rand()) / RAND_MAX - 0.5);
     }
@@ -210,8 +210,8 @@ bool RRT::sampleGoal(Eigen::Vector3d* goal_pos) {
     if (semilocal_count_ > 0) {
       // Not enough local points found, sample from local sphere
       double theta = 2.0 * M_PI * static_cast<double>(rand()) / RAND_MAX;
-      double phi = M_PI / 2;
-      if (!planar) {
+      double phi = M_PI / 2.0;
+      if (!p_planar) {
         phi = acos(1.0 - 2.0 * static_cast<double>(rand()) / RAND_MAX);
       }
 
@@ -228,7 +228,7 @@ bool RRT::sampleGoal(Eigen::Vector3d* goal_pos) {
           std::pow(bounding_volume_->x_max - bounding_volume_->x_min, 2.0) +
           std::pow(bounding_volume_->y_max - bounding_volume_->y_min, 2.0) +
           std::pow(bounding_volume_->z_max - bounding_volume_->z_min, 2.0));
-      for (int i = 0; i < 3 - planar; i++) {
+      for (int i = 0; i < 3 - p_planar; i++) {
         (*goal_pos)[i] +=
             2.0 * radius * (static_cast<double>(rand()) / RAND_MAX - 0.5);
       }
@@ -256,6 +256,7 @@ bool RRT::connectPoses(const EigenTrajectoryPoint& start,
       std::ceil(direction.norm() / planner_.getSystemConstraints().v_max *
                     p_sampling_rate_ +
                 1);
+
   if (check_collision) {
     for (int i = 0; i <= n_points; ++i) {
       if (!checkTraversable(start_pos + static_cast<double>(i) /
@@ -265,17 +266,37 @@ bool RRT::connectPoses(const EigenTrajectoryPoint& start,
       }
     }
   }
+
+  double start_yaw = start.getYaw();
+  double yaw_from_direction = atan2(direction.y(),direction.x());
+
   // Build trajectory
   for (int i = 0; i < n_points; ++i) {
     EigenTrajectoryPoint trajectory_point;
     trajectory_point.position_W =
         start_pos +
         static_cast<double>(i) / static_cast<double>(n_points) * direction;
-    trajectory_point.setFromYaw(goal.getYaw());
+    trajectory_point.setFromYaw(yaw_from_direction);
     trajectory_point.time_from_start_ns =
         static_cast<int64_t>(static_cast<double>(i) / p_sampling_rate_ * 1.0e9);
     result->push_back(trajectory_point);
+//    yaw_from_direction += 0.5;
   }
+
+  EigenTrajectoryPoint trajectory_point_before_goal;
+  trajectory_point_before_goal.position_W = goal.position_W;
+  trajectory_point_before_goal.setFromYaw(yaw_from_direction);
+  trajectory_point_before_goal.time_from_start_ns =
+      static_cast<int64_t>(static_cast<double>(n_points) / p_sampling_rate_ * 1.0e9);
+  result->push_back(trajectory_point_before_goal);
+
+  EigenTrajectoryPoint trajectory_point;
+  trajectory_point.position_W = goal.position_W;
+  trajectory_point.setFromYaw(goal.getYaw());
+  trajectory_point.time_from_start_ns =
+      static_cast<int64_t>(static_cast<double>(n_points + 1) / p_sampling_rate_ * 1.0e9);
+  result->push_back(trajectory_point);
+
   return true;
 }
 
@@ -311,6 +332,7 @@ bool RRT::adjustGoalPosition(const Eigen::Vector3d& start_pos,
     }
   }
   *goal_pos_ = start_pos + direction;
+  std::cout << "goal pos:" << *goal_pos_ << std::endl;
   return true;
 }
 
@@ -332,8 +354,10 @@ void RRT::TreeData::clear() {
 }
 
 void RRT::TreeData::addSegment(TrajectorySegment* to_add) {
-  points.push_back(to_add->trajectory.back().position_W);
-  data.push_back(to_add);
+  if(to_add && !to_add->trajectory.empty()) {
+    points.push_back(to_add->trajectory.back().position_W);
+    data.push_back(to_add);
+  }
 }
 
 }  // namespace trajectory_generator

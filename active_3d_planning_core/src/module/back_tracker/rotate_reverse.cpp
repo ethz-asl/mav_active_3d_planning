@@ -62,6 +62,10 @@ bool RotateReverse::rotate(TrajectorySegment* target) {
   for (int i = 0; i < std::ceil(sampling_rate_ / update_rate_); ++i) {
     EigenTrajectoryPoint trajectory_point;
     trajectory_point.position_W = target->trajectory.back().position_W;
+
+    trajectory_point.position_W.x() += 0.05;
+    trajectory_point.position_W.y() += 0.05;
+
     yaw += turn_rate_ / sampling_rate_;
     trajectory_point.setFromYaw(defaults::angleScaled(yaw));
     trajectory_point.time_from_start_ns =

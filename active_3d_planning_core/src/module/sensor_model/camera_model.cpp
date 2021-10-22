@@ -62,8 +62,10 @@ bool CameraModel::getVisibleVoxelsFromTrajectory(
 void CameraModel::sampleViewpoints(std::vector<int>* result,
                                    const TrajectorySegment& traj_in) {
   if (p_sampling_time_ <= 0.0) {
+
     // Rate of 0 means only last point
     result->push_back(traj_in.trajectory.size() - 1);
+//    result->push_back(1);
   } else {
     int64_t sampling_time_ns = static_cast<int64_t>(p_sampling_time_ * 1.0e9);
     if (sampling_time_ns >= traj_in.trajectory.back().time_from_start_ns) {
@@ -156,6 +158,23 @@ void CameraModel::visualizeSingleView(VisualizationMarkers* markers,
     marker.points.push_back(right[i]);
   }
   markers->addMarker(marker);
+
+
+  VisualizationMarker location;
+  location.type = VisualizationMarker::CUBE;
+  location.scale.x() = 0.1;
+  location.scale.y() = 0.1;
+  location.scale.z() = 0.1;
+  location.color.r = 0.0;
+  location.color.g = 1.0;
+  location.color.b = 0.0;
+  location.color.a = 1.0;
+  location.position = position;
+  location.orientation.w() = 1;
+  location.ns = "camera_pts";
+  markers->addMarker(location);
+
+
 }
 
 void CameraModel::getDirectionVector(Eigen::Vector3d* result, double relative_x,

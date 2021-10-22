@@ -20,6 +20,7 @@
 #include "active_3d_planning_core/planner/planner_I.h"
 #include "active_3d_planning_core/tools/defaults.h"
 
+
 namespace active_3d_planning {
 
 class OnlinePlanner : public PlannerI, public ModuleBase {

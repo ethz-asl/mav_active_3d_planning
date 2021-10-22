@@ -21,9 +21,12 @@ void UncertaintyAwareMap::setupFromParamMap(Module::ParamMap* param_map) {
   // Reconstruction + collision map
   voxbloxMap.setupFromParamMap(param_map);
 
+  std::string uncertainty_ns;
+  setParam<std::string>(param_map, "uncertainty_namespace", &uncertainty_ns,
+                   "/uncertainty/map/");
   // Uncertainty Map
-  ros::NodeHandle nh("/uncertainty/map/");
-  ros::NodeHandle nh_private("/uncertainty/map/");
+  ros::NodeHandle nh(uncertainty_ns);
+  ros::NodeHandle nh_private(uncertainty_ns);
 
   uncertainty_aware_esdf_server.reset(new voxblox::EsdfServer(nh, nh_private));
   uncertainty_aware_esdf_server->setTraversabilityRadius(
@@ -71,14 +74,10 @@ double UncertaintyAwareMap::getVoxelValue(const Eigen::Vector3d& point) {
   if (block) {
     voxblox::TsdfVoxel* tsdf_voxel =
         block->getVoxelPtrByCoordinates(voxblox_point);
-    double value = tsdf_voxel->color.b / 255.0;
-    return value;
-//    // value can be -1 for unseen voxels. Map to [0,1]
-//    if (value <= 0) return 0;
-//    return value / (weight*weight);
+    return ((double) tsdf_voxel->color.b) / 255.0;
   }
 
-  return 0;
+  return -1;
 }
 
 // get the stored TSDF distance
@@ -109,19 +108,21 @@ double UncertaintyAwareMap::getMaximumWeight() {
   return voxbloxMap.getMaximumWeight();
 }
 
-unsigned char UncertaintyAwareMap::getValueVoxelState(const Eigen::Vector3d &point) {
-    double distance = 0.0;
-    if (uncertainty_aware_esdf_server->getEsdfMapPtr()->getDistanceAtPosition(point, &distance)) {
-        // This means the voxel is observed
-        if (distance < c_voxel_size_ * 1.5) {
-            return VoxbloxMap::OCCUPIED;
-        } else {
-            return VoxbloxMap::FREE;
-        }
-    } else {
-        return VoxbloxMap::UNKNOWN;
-    }
-}
 
-    }  // namespace map
+
+// get occupancy
+unsigned char UncertaintyAwareMap::getValueVoxelState(const Eigen::Vector3d& point) {
+  double distance = 0.0;
+  if (uncertainty_aware_esdf_server->getEsdfMapPtr()->getDistanceAtPosition(point, &distance)) {
+    // This means the voxel is observed
+    if (distance < 2.5 * c_voxel_size_) {
+      return VoxbloxMap::OCCUPIED;
+    } else {
+      return VoxbloxMap::FREE;
+    }
+  } else {
+    return VoxbloxMap::UNKNOWN;
+  }
+}
+}  // namespace map
 }  // namespace active_3d_planning
