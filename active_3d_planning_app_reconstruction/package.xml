@@ -29,9 +29,9 @@
     <depend>nav_msgs</depend>
     
     <!-- Dependencies to run simulation -->
-    <depend>mav_nonlinear_mpc</depend>
-    <depend>mav_lowlevel_attitude_controller</depend>
-    <depend>rotors_gazebo</depend>
-    <depend>rotors_description</depend>
-    <depend>unreal_cv_ros</depend>
+    <exec_depend>>mav_nonlinear_mpc</exec_depend>
+    <exec_depend>mav_lowlevel_attitude_controller</exec_depend>
+    <exec_depend>rotors_gazebo</exec_depend>
+    <exec_depend>rotors_description</exec_depend>
+    <exec_depend>unreal_cv_ros</exec_depend>
 </package>
