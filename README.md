@@ -79,7 +79,9 @@ Packages and their dependencies:
 
 * **app_reconstruction:**
 
-   Application package for autonomous 3D reconstruction with MAVs, including automated simulation and evaluation routines. Dependencies:
+   Application package for autonomous 3D reconstruction with MAVs, including automated simulation and evaluation routines. 
+   In order to enable simulations uncomment the dependencies in these [lines](https://github.com/ethz-asl/mav_active_3d_planning/blob/46143ae558c3d62fa2673a43cbfdd22fb6de12a9/mav_active_3d_planning/package.xml#L13-L17)
+   Dependencies:
     * `unreal_cv_ros` ([https://github.com/ethz-asl/unreal_cv_ros](https://github.com/ethz-asl/unreal_cv_ros))
     * `rotors_simulator` ([https://github.com/ethz-asl/rotors_simulator](https://github.com/ethz-asl/rotors_simulator))
     * `mav_control_rw` ([https://github.com/ethz-asl/mav_control_rw](https://github.com/ethz-asl/mav_control_rw))
