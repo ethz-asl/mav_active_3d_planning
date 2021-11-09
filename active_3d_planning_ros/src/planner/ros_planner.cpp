@@ -79,7 +79,6 @@ void RosPlanner::setupFactoryAndParams(ModuleFactory* factory,
 
 void RosPlanner::initializePlanning() {
 
-    std::cout << "_____ call parent" << std::endl;
   // setup standard
   OnlinePlanner::initializePlanning();
 
@@ -187,10 +186,7 @@ void RosPlanner::requestMovement(const EigenTrajectoryPointVector& trajectory) {
   target_pub_.publish(msg);
 
   std_msgs::Float32 gain_msg;
-//  gain_msg.header.stamp = ::ros::Time::now()
-  std::cout << "curr gain:" <<  current_segment_->gain;
-    std::cout << "curr :" <<  current_segment_->value;
-    gain_msg.data =  current_segment_->gain;
+  gain_msg.data =  current_segment_->gain;
   gain_pub_.publish(gain_msg);
 
 }
@@ -240,7 +236,6 @@ bool RosPlanner::runSrvCallback(std_srvs::SetBool::Request& req,
                                 std_srvs::SetBool::Response& res) {
   res.success = true;
   if (req.data) {
-      std::cout << "_____ initiali planning" << std::endl;
     initializePlanning();
     planning_ = true;
     ROS_INFO("Started planning.");
