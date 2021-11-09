@@ -10,10 +10,10 @@
 
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
+#include <std_msgs/Bool.h>
 #include <std_srvs/SetBool.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <std_msgs/Bool.h>
 
 #include "active_3d_planning_core/planner/online_planner.h"
 
@@ -85,7 +85,7 @@ class RosPlanner : public OnlinePlanner {
 
   void setupFromParamMap(Module::ParamMap* param_map) override;
 
-    void collisionCallback(const std_msgs::Bool_<std::allocator<void>>);
+  void collisionCallback(const std_msgs::Bool_<std::allocator<void>>);
 };
 
 }  // namespace ros

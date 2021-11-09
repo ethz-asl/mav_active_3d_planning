@@ -97,19 +97,19 @@ bool YawPlanningEvaluator::computeCost(TrajectorySegment* traj_in) {
 }
 
 bool YawPlanningEvaluator::computeValue(TrajectorySegment* traj_in) {
-  if(traj_in->info) {
-//    YawPlanningInfo *info =
-//        reinterpret_cast<YawPlanningInfo *>(traj_in->info.get());
-//    for (int orientationIdx = 0; orientationIdx < info->orientations.size(); orientationIdx++) {
-//      for (int i = 0; i < info->orientations[orientationIdx].trajectory.size(); i++) {
-////        if (info->orientations[orientationIdx].trajectory[i].position_W.x() == traj_in->trajectory[i].position_W.x()) {
-////          continue;
-////        }
-//        info->orientations[orientationIdx].trajectory[i].position_W = traj_in->trajectory[i].position_W;
-//        if(i != info->orientations[orientationIdx].trajectory.size() -1)
-//        info->orientations[orientationIdx].trajectory[i].setFromYaw(traj_in->trajectory[i].getYaw());
-//      }
-//    }
+  if (traj_in->info) {
+    YawPlanningInfo* info =
+        reinterpret_cast<YawPlanningInfo*>(traj_in->info.get());
+    for (int orientationIdx = 0; orientationIdx < info->orientations.size();
+         orientationIdx++) {
+      for (int i = 0; i < info->orientations[orientationIdx].trajectory.size();
+           i++) {
+        // Update all intermediate yaw values to the final yaw value
+        if (i != info->orientations[orientationIdx].trajectory.size() - 1)
+          info->orientations[orientationIdx].trajectory[i].setFromYaw(
+              traj_in->trajectory[i].getYaw());
+      }
+    }
   }
   return following_evaluator_->computeValue(traj_in);
 }

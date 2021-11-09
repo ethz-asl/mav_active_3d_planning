@@ -267,7 +267,6 @@ bool RRT::connectPoses(const EigenTrajectoryPoint& start,
     }
   }
 
-  double start_yaw = start.getYaw();
   double yaw_from_direction = atan2(direction.y(),direction.x());
 
   // Build trajectory
@@ -276,11 +275,10 @@ bool RRT::connectPoses(const EigenTrajectoryPoint& start,
     trajectory_point.position_W =
         start_pos +
         static_cast<double>(i) / static_cast<double>(n_points) * direction;
-    trajectory_point.setFromYaw(yaw_from_direction);
+    trajectory_point.setFromYaw(yaw_from_direction); // Set yaw from moving direction (emulates diff. drive)
     trajectory_point.time_from_start_ns =
         static_cast<int64_t>(static_cast<double>(i) / p_sampling_rate_ * 1.0e9);
     result->push_back(trajectory_point);
-//    yaw_from_direction += 0.5;
   }
 
   EigenTrajectoryPoint trajectory_point_before_goal;
@@ -292,7 +290,7 @@ bool RRT::connectPoses(const EigenTrajectoryPoint& start,
 
   EigenTrajectoryPoint trajectory_point;
   trajectory_point.position_W = goal.position_W;
-  trajectory_point.setFromYaw(goal.getYaw());
+  trajectory_point.setFromYaw(goal.getYaw()); // Final point has different yaw as desired
   trajectory_point.time_from_start_ns =
       static_cast<int64_t>(static_cast<double>(n_points + 1) / p_sampling_rate_ * 1.0e9);
   result->push_back(trajectory_point);
@@ -332,7 +330,6 @@ bool RRT::adjustGoalPosition(const Eigen::Vector3d& start_pos,
     }
   }
   *goal_pos_ = start_pos + direction;
-  std::cout << "goal pos:" << *goal_pos_ << std::endl;
   return true;
 }
 

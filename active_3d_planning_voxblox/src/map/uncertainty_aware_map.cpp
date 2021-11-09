@@ -119,7 +119,7 @@ unsigned char UncertaintyAwareMap::getValueVoxelState(const Eigen::Vector3d& poi
   double distance = 0.0;
   if (uncertainty_aware_esdf_server->getEsdfMapPtr()->getDistanceAtPosition(point, &distance)) {
     // This means the voxel is observed
-    if (distance < 2.5 * c_voxel_size_) {
+    if (distance < 1 * c_voxel_size_) {
       return VoxbloxMap::OCCUPIED;
     } else {
       return VoxbloxMap::FREE;

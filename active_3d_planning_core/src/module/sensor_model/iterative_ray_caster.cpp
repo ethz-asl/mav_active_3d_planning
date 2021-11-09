@@ -92,8 +92,6 @@ bool IterativeRayCaster::getVisibleVoxels(
             cast_ray = false;
             break;
           }
-
-
         }
         if (cast_ray) {
           current_segment++;
@@ -105,13 +103,6 @@ bool IterativeRayCaster::getVisibleVoxels(
           }
         }
       }
-    }
-  }
-
-  for(auto p : *result) {
-    if (std::isnan(p.z())) {
-      std::cout << "FOUND NAN VALUE " << p << std::endl;
-      break;
     }
   }
   return true;

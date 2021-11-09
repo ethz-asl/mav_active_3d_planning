@@ -36,9 +36,6 @@ bool VoxbloxMap::isTraversable(const Eigen::Vector3d& position,
   if (esdf_server_->getEsdfMapPtr()->getDistanceAtPosition(position,
                                                            &distance)) {
     // This means the voxel is observed
-//    std::cout << "checking" << position << std::endl;
-//    std::cout << "col rad " << planner_.getSystemConstraints().collision_radius << std::endl;
-    return distance > planner_.getSystemConstraints().collision_radius;
     return (distance > planner_.getSystemConstraints().collision_radius);
   }
   return false;
