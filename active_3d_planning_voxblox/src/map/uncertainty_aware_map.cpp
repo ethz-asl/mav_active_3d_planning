@@ -54,6 +54,10 @@ unsigned char UncertaintyAwareMap::getVoxelState(const Eigen::Vector3d& point) {
   return voxbloxMap.getVoxelState(point);
 }
 
+int UncertaintyAwareMap::getVoxelObservedCount(const Eigen::Vector3d& point) {
+    return (int) getVoxelWeight(point); // Voxel observed count encoded in linear weight
+};
+
 // get voxel size
 double UncertaintyAwareMap::getVoxelSize() { return c_voxel_size_; }
 

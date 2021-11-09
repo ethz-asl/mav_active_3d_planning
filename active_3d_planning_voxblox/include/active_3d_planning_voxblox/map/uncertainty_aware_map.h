@@ -29,6 +29,8 @@ class UncertaintyAwareMap : public VoxelValueMap {
   // check whether point is part of the map
   bool isObserved(const Eigen::Vector3d& point) override;
 
+  int getVoxelObservedCount(const Eigen::Vector3d& point) override;
+
   // get occupancy
   unsigned char getVoxelState(const Eigen::Vector3d& point) override;
 
