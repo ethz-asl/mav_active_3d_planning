@@ -42,11 +42,50 @@ const panoptic_mapping::Submap* PanopticMap::getPlanningSubmap() {
   return &mapper_->getSubmapCollection().getSubmap(
       mapper_->getSubmapCollection().getActiveFreeSpaceSubmapID());
 }
-
 bool PanopticMap::isTraversable(const Eigen::Vector3d& position,
                                 const Eigen::Quaterniond& orientation) {
+    // Danger points:
+    if ( (position.x() - 1.5) < 0.6 && (position.x() - 1.5) > -0.6 &&
+         (position.y() - 1.3) < 0.6 && (position.y() - 1.3) > -0.6) {
+        return false;
+    }
+    if ( (position.x() - 1.7) < 0.6 && (position.x() - 1.7) > -0.6 &&
+         (position.y() - 1.55) < 0.6 && (position.y() - 1.55) > -0.6) {
+        return false;
+    }
+    // Danger points:
+    if ( (position.x() - 0.8) < 0.6 && (position.x() - 0.8) > -0.6 &&
+            (position.y() - 1.7) < 0.6 && (position.y() - 1.7) > -0.6) {
+        return false;
+    }
+    if ( (position.x() - 1.0) < 0.6 && (position.x() -  (1.0)) > -0.6 &&
+         (position.y() - 2) < 0.4 && (position.y() - 2) > -0.4) {
+        return false;
+    }
+    // wtf point
+    if ( (position.x() - (-6.3)) < 0.2 && (position.x() -  (-6.3)) > -0.2 &&
+         (position.y() - 0.6) < 0.2 && (position.y() - 0.6) > -0.2) {
+        return false;
+    }
+    // wtf point
+    if ( (position.x() - (-6.0)) < 0.2 && (position.x() -  (-6.0)) > -0.2 &&
+         (position.y() - 0.3) < 0.2 && (position.y() - 0.3) > -0.2) {
+        return false;
+    }
+    // Stairs
+    if ( (position.x() - (-6.8)) < 0.6 && (position.x() -  (-6.8)) > -0.6 &&
+         (position.y() - (-0.44)) < 0.6 && (position.y() - (-0.44)) > -0.6) {
+        return false;
+    }
+
+    if  (position.y()  < - 0.17) { // STair check
+        return false;
+    }
+  Eigen::Vector3d robot_feet = position;
+    robot_feet.z() -= 0.40;
   return getVoxelDistance(position) >
-         planner_.getSystemConstraints().collision_radius;
+         planner_.getSystemConstraints().collision_radius && getVoxelDistance(robot_feet) >
+                                                             planner_.getSystemConstraints().collision_radius;
 }
 
 bool PanopticMap::isObserved(const Eigen::Vector3d& point) {
@@ -62,7 +101,15 @@ bool PanopticMap::isObserved(const Eigen::Vector3d& point) {
   return false;
 }
 
-// get occupancy
+int PanopticMap::getVoxelObservedCount(const Eigen::Vector3d& point) {
+    panoptic_mapping::ClassVoxelType voxel;
+    if(!getClassVoxelAt(point, voxel)) {
+        return 0;
+    }
+    return voxel.belongs_count + voxel.foreign_count;
+}
+
+    // get occupancy
 unsigned char PanopticMap::getVoxelState(const Eigen::Vector3d& point) {
   const panoptic_mapping::Submap* map = getPlanningSubmap();
   if (!map) return false;

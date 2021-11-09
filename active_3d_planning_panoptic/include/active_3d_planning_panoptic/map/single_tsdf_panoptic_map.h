@@ -57,6 +57,8 @@ class PanopticMap : public VoxelValueMap {
 
   unsigned char getValueVoxelState(const Eigen::Vector3d& matrix) override;
 
+  int getVoxelObservedCount(const Eigen::Vector3d& point) override;
+
   // Updates the internal panoptic mapper that is used
   void setPanopticMapper(
       std::shared_ptr<panoptic_mapping::PanopticMapper> mapper) {

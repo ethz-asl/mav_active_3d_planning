@@ -50,9 +50,9 @@ class VoxelValueEvaluator : public FrontierEvaluator {
   // constants
   double c_voxel_size_;
 
-  double weight_decay_power;
+  std::string p_discount_factor;
 
-  double value_factor;
+  double p_value_factor;
   // methods
   double getVoxelValue(const Eigen::Vector3d& voxel,
                        const Eigen::Vector3d& origin);

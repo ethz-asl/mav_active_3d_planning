@@ -16,6 +16,7 @@ class VoxelValueMap : public TSDFMap {
   virtual ~VoxelValueMap() = default;
 
   virtual double getVoxelValue(const Eigen::Vector3d& point) = 0;
+  virtual int getVoxelObservedCount(const Eigen::Vector3d& point) = 0;
   virtual unsigned char getValueVoxelState(const Eigen::Vector3d &matrix) = 0;
 };
 
