@@ -61,28 +61,32 @@ bool CameraModel::getVisibleVoxelsFromTrajectory(
 
 void CameraModel::sampleViewpoints(std::vector<int>* result,
                                    const TrajectorySegment& traj_in) {
-  if (p_sampling_time_ <= 0.0) {
 
+  if (p_sampling_time_ == -1) {
+    // use -1 to encode first and last points to sample
+    result->push_back(traj_in.trajectory.size() - 1);
+    result->push_back(1);
+  } else if (p_sampling_time_ <= 0.0) {
     // Rate of 0 means only last point
     result->push_back(traj_in.trajectory.size() - 1);
-//    result->push_back(1);
-  } else {
-    int64_t sampling_time_ns = static_cast<int64_t>(p_sampling_time_ * 1.0e9);
-    if (sampling_time_ns >= traj_in.trajectory.back().time_from_start_ns) {
-      // no points within one sampling interval: add last point
-      result->push_back(traj_in.trajectory.size() - 1);
-    } else {
-      // sample the trajectory according to the sampling rate
-      int64_t current_time = sampling_time_ns;
-      for (int i = 0; i < traj_in.trajectory.size(); ++i) {
-        if (traj_in.trajectory[i].time_from_start_ns >= current_time) {
-          current_time += sampling_time_ns;
-          result->push_back(i);
+  }  else {
+      int64_t sampling_time_ns = static_cast<int64_t>(p_sampling_time_ * 1.0e9);
+      if (sampling_time_ns >= traj_in.trajectory.back().time_from_start_ns) {
+        // no points within one sampling interval: add last point
+        result->push_back(traj_in.trajectory.size() - 1);
+      } else {
+        // sample the trajectory according to the sampling rate
+        int64_t current_time = sampling_time_ns;
+        for (int i = 0; i < traj_in.trajectory.size(); ++i) {
+          if (traj_in.trajectory[i].time_from_start_ns >= current_time) {
+            current_time += sampling_time_ns;
+            result->push_back(i);
+          }
         }
       }
     }
   }
-}
+
 
 void CameraModel::visualizeSensorView(VisualizationMarkers* markers,
                                       const TrajectorySegment& traj_in) {
