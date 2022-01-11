@@ -1,5 +1,5 @@
 
-name: Build Test
+name: Build Tests (Ubuntu 18.04 + ROS Melodic, Ubuntu 20.04 + ROS Noetic)
 on:
   push:
     branches:
