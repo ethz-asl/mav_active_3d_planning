@@ -2,7 +2,7 @@
 <package format="2">
     <name>active_3d_planning_voxblox</name>
     <version>0.0.0</version>
-    <description>Voxblox as map representation</description>
+    <description>Voxblox as map representation.</description>
 
     <author email="schmluk@mavt.ethz.ch">Lukas Schmid</author>
 
