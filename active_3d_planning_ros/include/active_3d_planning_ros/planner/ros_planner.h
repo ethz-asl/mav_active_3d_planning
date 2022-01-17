@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <std_srvs/SetBool.h>
@@ -26,8 +28,12 @@ class RosPlanner : public OnlinePlanner {
 
   virtual ~RosPlanner() = default;
 
-  // ros callbacks
+  // ROS callbacks.
+  // Note (schmluk): Either pose callback can be used to subscribe to the
+  // current robot pose.
   void odomCallback(const nav_msgs::Odometry& msg);
+  void poseStampedCallback(const geometry_msgs::PoseStamped& msg);
+  void poseCallback(const geometry_msgs::Pose& msg);
 
   bool runSrvCallback(std_srvs::SetBool::Request& req,    // NOLINT
                       std_srvs::SetBool::Response& res);  // NOLINT
@@ -56,6 +62,8 @@ class RosPlanner : public OnlinePlanner {
   ::ros::NodeHandle nh_;
   ::ros::NodeHandle nh_private_;
   ::ros::Subscriber odom_sub_;
+  ::ros::Subscriber pose_stamped_sub_;
+  ::ros::Subscriber pose_sub_;
   ::ros::Publisher target_pub_;
   ::ros::Publisher trajectory_vis_pub_;
   ::ros::ServiceServer run_srv_;

@@ -30,6 +30,10 @@ RosPlanner::RosPlanner(const ::ros::NodeHandle& nh,
   trajectory_vis_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(
       "trajectory_visualization", 100);
   odom_sub_ = nh_.subscribe("odometry", 1, &RosPlanner::odomCallback, this);
+  pose_stamped_sub_ =
+      nh_.subscribe("pose_stamped", 1, &RosPlanner::poseStampedCallback, this);
+  pose_sub_ = nh_.subscribe("pose", 1, &RosPlanner::poseCallback, this);
+
   get_cpu_time_srv_ = nh_private_.advertiseService(
       "get_cpu_time", &RosPlanner::cpuSrvCallback, this);
 
@@ -123,20 +127,27 @@ bool RosPlanner::requestNextTrajectory() {
 }
 
 void RosPlanner::odomCallback(const nav_msgs::Odometry& msg) {
+  poseCallback(msg.pose.pose);
+}
+
+void RosPlanner::poseStampedCallback(const geometry_msgs::PoseStamped& msg) {
+  poseCallback(msg.pose);
+}
+
+void RosPlanner::poseCallback(const geometry_msgs::Pose& msg) {
   // Track the current pose
   current_position_ =
-      Eigen::Vector3d(msg.pose.pose.position.x, msg.pose.pose.position.y,
-                      msg.pose.pose.position.z);
-  current_orientation_ = Eigen::Quaterniond(
-      msg.pose.pose.orientation.w, msg.pose.pose.orientation.x,
-      msg.pose.pose.orientation.y, msg.pose.pose.orientation.z);
+      Eigen::Vector3d(msg.position.x, msg.position.y, msg.position.z);
+  current_orientation_ =
+      Eigen::Quaterniond(msg.orientation.w, msg.orientation.x,
+                         msg.orientation.y, msg.orientation.z);
   if (running_ && !target_reached_) {
     // check goal pos reached (if tol is set)
     if (p_replan_pos_threshold_ <= 0 ||
         (target_position_ - current_position_).norm() <
             p_replan_pos_threshold_) {
       // check goal yaw reached (if tol is set)
-      double yaw = tf::getYaw(msg.pose.pose.orientation);
+      double yaw = tf::getYaw(msg.orientation);
       if (p_replan_yaw_threshold_ <= 0 ||
           defaults::angleDifference(target_yaw_, yaw) <
               p_replan_yaw_threshold_) {
