@@ -100,10 +100,20 @@ bool LinearMavTrajectoryGenerator::createTrajectory(
           trajectory, 1.0 / sampling_rate_, &tmp_states)) {
     return false;
   }
-  EigenTrajectoryPoint::Vector states = mavMsgToPlanningMsg(tmp_states);
+  // EigenTrajectoryPoint::Vector states = mavMsgToPlanningMsg(tmp_states);
 
+//mavMsgToPlanningMsg by reinterpret every element in vector.
+EigenTrajectoryPointVector R;
+  for( auto &ts : tmp_states)
+  {
+ EigenTrajectoryPoint r= *reinterpret_cast<const EigenTrajectoryPoint*> (&ts) ;
+ R.push_back(r);
+  }
+  
   // Build result
-  *result = states;
+  // *result = states;
+  *result = R;
+
   return true;
 }
 
