@@ -210,12 +210,14 @@ void OnlinePlanner::loopIteration() {
 }
 
 bool OnlinePlanner::requestNextTrajectory() {
+  std::cout << "[OnlinePlanner] requestNextTrajectory()" << std::endl;
   if (current_segment_->children.empty()) {
+    std::cout << "[OnlinePlanner]   - No trajectories available: call the backtracker" << std::endl;
     // No trajectories available: call the backtracker
     back_tracker_->trackBack(current_segment_.get());
     return false;
   }
-
+  std::cout << "[OnlinePlanner]   - Moving forward" << std::endl;
   // Performance tracking
   double perf_runtime;
   double perf_vis = 0.0;

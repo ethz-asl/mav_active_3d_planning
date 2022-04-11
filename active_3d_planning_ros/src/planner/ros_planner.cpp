@@ -130,17 +130,27 @@ void RosPlanner::odomCallback(const nav_msgs::Odometry& msg) {
   current_orientation_ = Eigen::Quaterniond(
       msg.pose.pose.orientation.w, msg.pose.pose.orientation.x,
       msg.pose.pose.orientation.y, msg.pose.pose.orientation.z);
+    std::cout << "[RosPlanner] OdomCallback" << std::endl;
+    std::cout << "[RosPlanner]  - running_: " << running_<< std::endl;
+    std::cout << "[RosPlanner]  - target_reached_: " << target_reached_<< std::endl;
+    std::cout << "[RosPlanner]  - target_position " << target_position_.transpose() << " - current_position " << current_position_.transpose() << std::endl;
+
   if (running_ && !target_reached_) {
     // check goal pos reached (if tol is set)
+    std::cout << "[RosPlanner]  - Check if goal pos reached " << std::endl;
     if (p_replan_pos_threshold_ <= 0 ||
         (target_position_ - current_position_).norm() <
             p_replan_pos_threshold_) {
+      std::cout << "[RosPlanner]  - Check if goal yaw reached " << std::endl;
+      std::cout << "[RosPlanner]    - target_yaw " << target_yaw_ << " - current_yaw " << tf::getYaw(msg.pose.pose.orientation) << std::endl;
       // check goal yaw reached (if tol is set)
       double yaw = tf::getYaw(msg.pose.pose.orientation);
+      std::cout << "[RosPlanner]    - angle difference: " << defaults::angleDifference(target_yaw_, yaw) << std::endl;
       if (p_replan_yaw_threshold_ <= 0 ||
           defaults::angleDifference(target_yaw_, yaw) <
               p_replan_yaw_threshold_) {
         target_reached_ = true;
+        std::cout << "[RosPlanner]  - target_reached_ " << target_reached_ << std::endl;
       }
     }
   }
@@ -164,8 +174,10 @@ void RosPlanner::requestMovement(const EigenTrajectoryPointVector& trajectory) {
 
 void RosPlanner::publishVisualization(const VisualizationMarkers& markers) {
   if (markers.getMarkers().empty()) {
+    std::cout << " RosPlanner: markers.getMarkers().empty(): " << markers.getMarkers().empty() << std::endl;
     return;
   }
+  std::cout << " Publishing" << std::endl;
   visualization_msgs::MarkerArray msg;
   visualizationMarkersToMsg(markers, &msg);
   for (visualization_msgs::Marker& m : msg.markers) {
