@@ -33,9 +33,9 @@ trajectory_generator:
   all_semgents_feasible: false
   crop_segments: true
   crop_margin: 0.3
-  crop_min_length: 0.5
-  min_path_length: 0.5
-  max_extension_range: 10.0
+  crop_min_length: 5.0
+  min_path_length: 5.0
+  max_extension_range: 30.0
   maximum_tries: 1000
   sampling_rate: 20.0
   sample_yaw: true
@@ -84,12 +84,12 @@ trajectory_evaluator:
       type: "IterativeRayCaster"
       sampling_time: 0.0
       ray_length: 50.0
-      focal_length: 320.0
-      resolution_x: 172 # 640-90/172-30/127-22.5 deg fov
-      resolution_y: 480
+      focal_length: 541.14
+      resolution_x: 480
+      resolution_y: 640
       downsampling_factor: 5.0
-      mounting_rotation_w: 0.707
-      mounting_rotation_y: 0.707
+      mounting_rotation_w: 0.9807
+      mounting_rotation_y: 0.1950
     cost_computer:
       type: "SegmentTime"
 

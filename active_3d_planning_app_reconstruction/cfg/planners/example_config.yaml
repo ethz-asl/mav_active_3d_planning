@@ -64,10 +64,10 @@ trajectory_evaluator:
   sensor_model:
     type: "IterativeRayCaster"
     sampling_time: 0.0
-    ray_length: 100.0
-    focal_length: 320.0
-    resolution_x: 640
-    resolution_y: 480
+    ray_length: 50.0
+    focal_length: 541.14
+    resolution_x: 320
+    resolution_y: 240
     downsampling_factor: 3.0
 
   # Choose a cost
