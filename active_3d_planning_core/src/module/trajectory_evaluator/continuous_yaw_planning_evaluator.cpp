@@ -27,9 +27,6 @@ void ContinuousYawPlanningEvaluator::setupFromParamMap(
     Module::ParamMap* param_map) {
   setParam<bool>(param_map, "visualize_followup", &p_visualize_followup_, true);
   setParam<int>(param_map, "n_sections_fov", &p_n_sections_fov_, 1);
-  setParam<double>(param_map, "update_range", &p_update_range_,
-                   -1.0);  // default is no updates
-  setParam<double>(param_map, "update_gain", &p_update_gain_, 0.0);
   setParam<bool>(param_map, "update_sections_separate",
                  &p_update_sections_separate_, false);
 

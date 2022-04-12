@@ -1,5 +1,6 @@
 #include "active_3d_planning_core/module/trajectory_evaluator/yaw_planning_evaluator.h"
 
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -16,6 +17,9 @@ YawPlanningEvaluator::YawPlanningEvaluator(PlannerI& planner)
 void YawPlanningEvaluator::setupFromParamMap(Module::ParamMap* param_map) {
   setParam<int>(param_map, "n_directions", &p_n_directions_, 4);
   setParam<bool>(param_map, "select_by_value", &p_select_by_value_, false);
+  setParam<double>(param_map, "update_range", &p_update_range_,
+                   -1.0);  // default is no updates
+  setParam<double>(param_map, "update_gain", &p_update_gain_, 0.0);
 
   // Register link for yaw planning udpaters
   planner_.getFactory().registerLinkableModule("YawPlanningEvaluator", this);
@@ -105,7 +109,44 @@ int YawPlanningEvaluator::selectNextBest(TrajectorySegment* traj_in) {
 }
 
 bool YawPlanningEvaluator::updateSegment(TrajectorySegment* segment) {
-  return following_evaluator_->updateSegment(segment);
+  if (segment->parent && segment->info) {
+    double dist =
+        (planner_.getCurrentPosition() - segment->trajectory.back().position_W)
+            .norm();
+    if (p_update_range_ == 0.0 || p_update_range_ > dist) {
+      YawPlanningInfo* info =
+          reinterpret_cast<YawPlanningInfo*>(segment->info.get());
+      double current_value = std::numeric_limits<double>::lowest();
+      double best_value = std::numeric_limits<double>::lowest();
+      for (int i = 0; i < info->orientations.size(); ++i) {
+        if (info->orientations[i].gain > p_update_gain_) {
+          // all conditions met: update gain of segment
+          following_evaluator_->computeGain(&(info->orientations[i]));
+          if (p_select_by_value_) {
+            following_evaluator_->computeCost(&(info->orientations[i]));
+            following_evaluator_->computeValue(&(info->orientations[i]));
+            current_value = info->orientations[i].value;
+          } else {
+            current_value = info->orientations[i].gain;
+          }
+          if (current_value > best_value) {
+            best_value = current_value;
+            info->active_orientation = i;
+          }
+        }
+      }
+      // Update trajectory
+      segment->trajectory =
+          info->orientations[info->active_orientation].trajectory;
+      segment->gain = info->orientations[info->active_orientation].gain;
+      if (p_select_by_value_) {
+        segment->cost = info->orientations[info->active_orientation].cost;
+        segment->value = info->orientations[info->active_orientation].value;
+      }
+    }
+    return following_evaluator_->updateSegment(segment);
+  }
+  return true;
 }
 
 void YawPlanningEvaluator::visualizeTrajectoryValue(
