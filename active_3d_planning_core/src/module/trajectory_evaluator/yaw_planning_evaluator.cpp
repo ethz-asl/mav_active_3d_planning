@@ -120,7 +120,12 @@ bool YawPlanningEvaluator::updateSegment(TrajectorySegment* segment) {
       double best_value = std::numeric_limits<double>::lowest();
       for (int i = 0; i < info->orientations.size(); ++i) {
         if (info->orientations[i].gain > p_update_gain_) {
-          // all conditions met: update gain of segment
+          // all conditions met: update gain and wiring of segment.
+          double start_yaw = segment->trajectory.front().getYaw();
+          double original_yaw =
+              info->orientations[i].trajectory.back().getYaw();
+          info->orientations[i].trajectory = segment->trajectory;
+          setTrajectoryYaw(&(info->orientations[i]), start_yaw, original_yaw);
           following_evaluator_->computeGain(&(info->orientations[i]));
           if (p_select_by_value_) {
             following_evaluator_->computeCost(&(info->orientations[i]));
@@ -144,9 +149,8 @@ bool YawPlanningEvaluator::updateSegment(TrajectorySegment* segment) {
         segment->value = info->orientations[info->active_orientation].value;
       }
     }
-    return following_evaluator_->updateSegment(segment);
   }
-  return true;
+  return following_evaluator_->updateSegment(segment);
 }
 
 void YawPlanningEvaluator::visualizeTrajectoryValue(
