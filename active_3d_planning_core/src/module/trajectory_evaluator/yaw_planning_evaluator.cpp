@@ -124,8 +124,8 @@ bool YawPlanningEvaluator::updateSegment(TrajectorySegment* segment) {
           double start_yaw = segment->trajectory.front().getYaw();
           double original_yaw =
               info->orientations[i].trajectory.back().getYaw();
-          info->orientations[i].trajectory = segment->trajectory;
-          setTrajectoryYaw(&(info->orientations[i]), start_yaw, original_yaw);
+          // info->orientations[i].trajectory = segment->trajectory;
+          // setTrajectoryYaw(&(info->orientations[i]), start_yaw, original_yaw);
           following_evaluator_->computeGain(&(info->orientations[i]));
           if (p_select_by_value_) {
             following_evaluator_->computeCost(&(info->orientations[i]));
@@ -141,9 +141,10 @@ bool YawPlanningEvaluator::updateSegment(TrajectorySegment* segment) {
         }
       }
       // Update trajectory
-      segment->trajectory =
-          info->orientations[info->active_orientation].trajectory;
+      // segment->trajectory =
+      //     info->orientations[info->active_orientation].trajectory;
       segment->gain = info->orientations[info->active_orientation].gain;
+      setTrajectoryYaw(segment, segment->trajectory.front().getYaw(), info->orientations[info->active_orientation].trajectory.back().getYaw());
       if (p_select_by_value_) {
         segment->cost = info->orientations[info->active_orientation].cost;
         segment->value = info->orientations[info->active_orientation].value;
