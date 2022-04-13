@@ -48,8 +48,8 @@ trajectory_generator:
   rewire_root: true
   rewire_intermediate: true
   reinsert_root: true
-  max_rewire_range: 15.0
-  max_density_range: 1.0
+  max_rewire_range: 31.0 # Ideally larger than the 'max_extension_range'.
+  max_density_range: 5.0 # I typically set this close to the 'min_path_length', since it does similar things.
   n_neighbors: 20
 
   generator_updater:
@@ -69,16 +69,16 @@ trajectory_evaluator:
   following_evaluator:
     type: "NaiveEvaluator"
     visualize_sensor_view: true
-    accurate_frontiers: true
+    # accurate_frontiers: true # The commented out params are not needed for this evaluator.
     checking_distance: 0.5
     bounding_volume_args: "/target_bounding_volume"
     # camera_params_ns: "/unreal/unreal_ros_client/camera_params"
 
-    frontier_voxel_weight: 1.0
-    new_voxel_weight: 0.0
-    min_impact_factor: 0.01
-    ray_angle_x: 0.002454
-    ray_angle_y: 0.002681
+    # frontier_voxel_weight: 1.0
+    # new_voxel_weight: 0.0
+    # min_impact_factor: 0.01
+    # ray_angle_x: 0.002454
+    # ray_angle_y: 0.002681
 
     sensor_model:
       type: "IterativeRayCaster"
@@ -90,6 +90,7 @@ trajectory_evaluator:
       downsampling_factor: 5.0
       mounting_rotation_w: 0.9807
       mounting_rotation_y: 0.1950
+      
     cost_computer:
       type: "SegmentTime"
 
@@ -98,6 +99,12 @@ trajectory_evaluator:
 
     next_selector:
       type: "SubsequentBest"
+     
+    evaluator_updater:
+      type: "UpdateAll" # This makes sure our gains are up to date (which I think was missing before). Not the most efficient but this should not be of much concern currently :P
+      update_gain: true
+      update_cost: false
+      update_value: false
 
 back_tracker:
   type: "RotateReverse"
