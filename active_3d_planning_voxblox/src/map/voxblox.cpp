@@ -16,8 +16,8 @@ voxblox::EsdfServer& VoxbloxMap::getESDFServer() { return *esdf_server_; }
 
 void VoxbloxMap::setupFromParamMap(Module::ParamMap* param_map) {
   // create an esdf server
-  ros::NodeHandle nh("");
-  ros::NodeHandle nh_private("~");
+  ros::NodeHandle nh("voxblox_map");
+  ros::NodeHandle nh_private("~voxblox_map");
   esdf_server_.reset(new voxblox::EsdfServer(nh, nh_private));
   esdf_server_->setTraversabilityRadius(
       planner_.getSystemConstraints().collision_radius);
