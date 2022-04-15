@@ -97,7 +97,7 @@ void ContinuousYawPlanningEvaluator::setBestYaw(TrajectorySegment* segment) {
     // got a best yaw
     best_yaw = defaults::angleScaled(
         info->orientations[max_index].trajectory.back().getYaw() +
-        static_cast<double>(p_n_sections_fov_) / p_n_directions_ * M_PI);
+        static_cast<double>(p_n_sections_fov_-1) / p_n_directions_ * M_PI);
   } else {
     // indifferent, use direction of travel
     Eigen::Vector3d direction = segment->trajectory.back().position_W -
