@@ -209,6 +209,39 @@ void OnlinePlanner::loopIteration() {
   }
 }
 
+void OnlinePlanner::verifyTree(TrajectorySegment* next_segment) {
+  std::vector<TrajectorySegment*> segments;
+  current_segment_->getTree(&segments);
+  int counter = 0;
+  const int num_segments = segments.size() - 1;
+  for (TrajectorySegment* segment : segments) {
+    // Check all non-root segments
+    if (segment->parent) {
+      counter++;
+      // Check connectedness.
+      constexpr float distance_tolerance = 0.1f;  // 10 cm
+      const float distance = (segment->trajectory.begin()->position_W -
+                              segment->parent->trajectory.end()->position_W)
+                                 .norm();
+      if (distance >= distance_tolerance) {
+        std::cout << "Segment " << counter << "/" << num_segments
+                  << (segment == next_segment ? " (NEXT SEGMENT!)" : "")
+                  << " is disconnected (d=" << distance << ")." << std::endl;
+      }
+
+      // Check collision.
+      for (const auto& point : segment->trajectory) {
+        if (!trajectory_generator_->checkTraversable(point.position_W)) {
+          std::cout << "Segment " << counter << "/" << num_segments
+                    << (segment == next_segment ? " (NEXT SEGMENT!)" : "")
+                    << " is colliding." << std::endl;
+          break;
+        }
+      }
+    }
+  }
+}
+
 bool OnlinePlanner::requestNextTrajectory() {
   if (current_segment_->children.empty()) {
     // No trajectories available: call the backtracker
@@ -226,6 +259,11 @@ bool OnlinePlanner::requestNextTrajectory() {
   if (p_log_performance_) {
     timer = std::clock();
   }
+
+   // TEST
+  std::cout <<"Next trajectory requested, verifying tree..." << std::endl;
+  verifyTree();
+
 
   // Visualize candidates
   std::vector<TrajectorySegment*> trajectories_to_vis;
@@ -259,6 +297,11 @@ bool OnlinePlanner::requestNextTrajectory() {
   // Select best next trajectory and update root
   int next_segment =
       trajectory_evaluator_->selectNextBest(current_segment_.get());
+
+  // TEST
+  std::cout <<"Next trajectory selected, verifying tree..." << std::endl;
+  verifyTree(current_segment_->children[next_segment].get());
+
   current_segment_ = std::move(current_segment_->children[next_segment]);
   current_segment_->parent = nullptr;
   current_segment_->gain = 0.0;

@@ -158,6 +158,9 @@ class OnlinePlanner : public PlannerI, public ModuleBase {
   void updateGeneratorStep(TrajectorySegment* target);
 
   void updateEvaluatorStep(TrajectorySegment* target);
+
+  // TEST verify that the entire tree is connected correctly and feasible.
+  void verifyTree(TrajectorySegment* next_segment = nullptr);
 };
 }  // namespace active_3d_planning
 
