@@ -447,7 +447,7 @@ void OnlinePlanner::publishTrajectoryVisualization(
   double min_value = trajectories[0]->value;
   double max_gain = trajectories[0]->gain;
   double min_gain = trajectories[0]->gain;
-  TrajectorySegment* goal;
+  TrajectorySegment* goal = nullptr;
   int goal_depth = 0;
 
   // Find highest gains and values.
@@ -492,10 +492,13 @@ void OnlinePlanner::publishTrajectoryVisualization(
       if (trajectories[i]->value == max_value) {
         int depth = 0;
         TrajectorySegment* current = trajectories[i];
+        std::cout << "Computing depth..." << std::endl;
         while (current) {
           depth++;
           current = current->parent;
         }
+                std::cout << "Computing depth... done." << std::endl;
+
         if (depth > goal_depth) {
         goal = trajectories[i];
         goal_depth = depth;
@@ -574,6 +577,8 @@ void OnlinePlanner::publishTrajectoryVisualization(
   msg.color.b = 0.0;
   msg.color.a = 1.0;
   msg.action = VisualizationMarker::OVERWRITE;
+                  std::cout << "Adding ogal points..." << std::endl;
+
   while (goal) {
     // points
       for (const EigenTrajectoryPoint& point : goal->trajectory) {
@@ -581,6 +586,8 @@ void OnlinePlanner::publishTrajectoryVisualization(
       }
     goal = goal->parent;
   }
+                    std::cout << "Adding ogal points... done." << std::endl;
+
   goal_markers.addMarker(msg);
 
   // visualize
