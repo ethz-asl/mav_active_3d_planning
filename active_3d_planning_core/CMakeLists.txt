@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.0)
 project(active_3d_planning_core)
 
 find_package(catkin_simple REQUIRED)
