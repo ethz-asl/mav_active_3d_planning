@@ -20,9 +20,9 @@ RecheckCollision::RecheckCollision(PlannerI& planner)
 void RecheckCollision::setupFromParamMap(Module::ParamMap* param_map) {}
 
 bool RecheckCollision::updateSegment(TrajectorySegment* segment) {
-  for (int i = 0; i < segment->trajectory.size(); ++i) {
+  for (const EigenTrajectoryPoint& point : segment->trajectory) {
     if (!(planner_.getTrajectoryGenerator().checkTraversable(
-            segment->trajectory[i].position_W))) {
+            point.position_W))) {
       return false;
     }
   }
