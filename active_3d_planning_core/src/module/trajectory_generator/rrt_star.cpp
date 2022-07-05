@@ -267,8 +267,6 @@ bool RRTStar::rewireRoot(TrajectorySegment* root, int* next_segment) {
               segment->parent->children.erase(
                   segment->parent->children.begin() + i);
               segment->parent = reinserted_root;
-
-              // TEST: could check here that the trajectories are actually aligned, although they shoudl ...
             }
           }
         }
