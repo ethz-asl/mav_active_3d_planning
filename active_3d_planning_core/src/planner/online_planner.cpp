@@ -220,8 +220,8 @@ void OnlinePlanner::verifyTree(TrajectorySegment* next_segment) {
       counter++;
       // Check connectedness.
       constexpr float distance_tolerance = 0.1f;  // 10 cm
-      const float distance = (segment->trajectory.begin()->position_W -
-                              segment->parent->trajectory.end()->position_W)
+      const float distance = (segment->trajectory.front().position_W -
+                              segment->parent->trajectory.back().position_W)
                                  .norm();
       if (distance >= distance_tolerance) {
         std::cout << "Segment " << counter << "/" << num_segments
@@ -260,10 +260,9 @@ bool OnlinePlanner::requestNextTrajectory() {
     timer = std::clock();
   }
 
-   // TEST
-  std::cout <<"Next trajectory requested, verifying tree..." << std::endl;
+  // TEST
+  std::cout << "Next trajectory requested, verifying tree..." << std::endl;
   verifyTree();
-
 
   // Visualize candidates
   std::vector<TrajectorySegment*> trajectories_to_vis;
@@ -299,7 +298,7 @@ bool OnlinePlanner::requestNextTrajectory() {
       trajectory_evaluator_->selectNextBest(current_segment_.get());
 
   // TEST
-  std::cout <<"Next trajectory selected, verifying tree..." << std::endl;
+  std::cout << "Next trajectory selected, verifying tree..." << std::endl;
   verifyTree(current_segment_->children[next_segment].get());
 
   current_segment_ = std::move(current_segment_->children[next_segment]);
@@ -456,11 +455,10 @@ void OnlinePlanner::publishTrajectoryVisualization(
   double min_value = trajectories[0]->value;
   double max_gain = trajectories[0]->gain;
   double min_gain = trajectories[0]->gain;
-  TrajectorySegment* goal = trajectories[0];
+  std::vector<TrajectorySegment*> goals;
   for (int i = 1; i < trajectories.size(); ++i) {
     if (trajectories[i]->value >= max_value) {
       max_value = trajectories[i]->value;
-      goal = trajectories[i];
     }
     if (trajectories[i]->value < min_value) {
       min_value = trajectories[i]->value;
@@ -495,7 +493,7 @@ void OnlinePlanner::publishTrajectoryVisualization(
       msg.color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
       msg.color.b = 0.0;
       if (trajectories[i]->value == max_value) {
-        goal = trajectories[i];
+        goals.push_back(trajectories[i]);
       }
     } else {
       msg.color.r = 0.3;
@@ -550,13 +548,14 @@ void OnlinePlanner::publishTrajectoryVisualization(
     msg.color.a = 1.0;
     msg.position = trajectories[i]->trajectory.back().position_W;
     std::stringstream stream;
-    stream << std::fixed << std::setprecision(2) << trajectories[i]->gain << "/"
-           << std::fixed << std::setprecision(2) << trajectories[i]->cost << "/"
-           << std::fixed << std::setprecision(2) << trajectories[i]->value;
+    stream << std::fixed << std::setprecision(1) << trajectories[i]->gain << "/"
+           << std::fixed << std::setprecision(1) << trajectories[i]->cost << "/"
+           << std::fixed << std::setprecision(1) << trajectories[i]->value;
     msg.text = stream.str();
     msg.action = VisualizationMarker::OVERWRITE;
     text_markers.addMarker(msg);
   }
+
   // visualize goal
   msg = VisualizationMarker();
   msg.orientation.w() = 1.0;
@@ -570,14 +569,10 @@ void OnlinePlanner::publishTrajectoryVisualization(
   msg.color.b = 0.0;
   msg.color.a = 1.0;
   msg.action = VisualizationMarker::OVERWRITE;
-  while (goal->parent) {
-    // points
-    if (goal->parent->parent) {
-      for (int j = 0; j < goal->trajectory.size(); ++j) {
-        msg.points.push_back(goal->trajectory[j].position_W);
-      }
+  for (const TrajectorySegment* goal_segment : goals) {
+    for (const EigenTrajectoryPoint& point : goal_segment->trajectory) {
+      msg.points.push_back(point.position_W);
     }
-    goal = goal->parent;
   }
   goal_markers.addMarker(msg);
 
@@ -614,8 +609,8 @@ void OnlinePlanner::publishCompletedTrajectoryVisualization(
   }
 
   // points
-  for (int i = 0; i < trajectories.trajectory.size(); ++i) {
-    msg.points.push_back(trajectories.trajectory[i].position_W);
+  for (const EigenTrajectoryPoint& point : trajectories.trajectory) {
+    msg.points.push_back(point.position_W);
   }
   VisualizationMarkers array_msg;
   array_msg.addMarker(msg);

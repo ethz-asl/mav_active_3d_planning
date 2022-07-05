@@ -44,6 +44,19 @@ bool ContinuousYawPlanningEvaluator::computeGain(TrajectorySegment* traj_in) {
 }
 
 bool ContinuousYawPlanningEvaluator::updateSegment(TrajectorySegment* segment) {
+  // Double check whether the trajectory has changed.
+  YawPlanningInfo* info =
+      reinterpret_cast<YawPlanningInfo*>(segment->info.get());
+  for (TrajectorySegment& orientation : info->orientations) {
+    if (orientation.parent != segment->parent ||
+        orientation.trajectory.front().position_W !=
+            segment->trajectory.front().position_W) {
+      orientation.parent = segment->parent;
+      orientation.trajectory = segment->trajectory;
+    }
+  }
+
+  // Update the gains if required.
   if (segment->parent && segment->info) {
     double dist =
         (planner_.getCurrentPosition() - segment->trajectory.back().position_W)
