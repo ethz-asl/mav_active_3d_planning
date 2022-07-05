@@ -106,7 +106,7 @@ void ContinuousYawPlanningEvaluator::setBestYaw(TrajectorySegment* segment) {
     }
   }
   double best_yaw;
-  if (max_gain > min_gain || segment->trajectory.size() > 1) {
+  if (max_gain > min_gain) {
     // got a best yaw
     best_yaw = defaults::angleScaled(
         info->orientations[max_index].trajectory.back().getYaw() +
