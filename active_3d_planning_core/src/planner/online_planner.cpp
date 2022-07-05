@@ -225,7 +225,7 @@ void OnlinePlanner::verifyTree(TrajectorySegment* next_segment) {
                                  .norm();
       if (distance >= distance_tolerance) {
         std::cout << "Segment " << counter << "/" << num_segments
-                  << (segment == next_segment ? " (NEXT SEGMENT!)" : "")
+                  << (segment == next_segment ? " (NEXT SEGMENT)" : "")
                   << " is disconnected (d=" << distance << ")." << std::endl;
       }
 
@@ -233,7 +233,7 @@ void OnlinePlanner::verifyTree(TrajectorySegment* next_segment) {
       for (const auto& point : segment->trajectory) {
         if (!trajectory_generator_->checkTraversable(point.position_W)) {
           std::cout << "Segment " << counter << "/" << num_segments
-                    << (segment == next_segment ? " (NEXT SEGMENT!)" : "")
+                    << (segment == next_segment ? " (NEXT SEGMENT)" : "")
                     << " is colliding." << std::endl;
           break;
         }
