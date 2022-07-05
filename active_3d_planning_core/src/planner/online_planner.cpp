@@ -209,6 +209,39 @@ void OnlinePlanner::loopIteration() {
   }
 }
 
+void OnlinePlanner::verifyTree(TrajectorySegment* next_segment) {
+  std::vector<TrajectorySegment*> segments;
+  current_segment_->getTree(&segments);
+  int counter = 0;
+  const int num_segments = segments.size() - 1;
+  for (TrajectorySegment* segment : segments) {
+    // Check all non-root segments
+    if (segment->parent) {
+      counter++;
+      // Check connectedness.
+      constexpr float distance_tolerance = 0.1f;  // 10 cm
+      const float distance = (segment->trajectory.front().position_W -
+                              segment->parent->trajectory.back().position_W)
+                                 .norm();
+      if (distance >= distance_tolerance) {
+        std::cout << "Segment " << counter << "/" << num_segments
+                  << (segment == next_segment ? " (NEXT SEGMENT)" : "")
+                  << " is disconnected (d=" << distance << ")." << std::endl;
+      }
+
+      // Check collision.
+      for (const auto& point : segment->trajectory) {
+        if (!trajectory_generator_->checkTraversable(point.position_W)) {
+          std::cout << "Segment " << counter << "/" << num_segments
+                    << (segment == next_segment ? " (NEXT SEGMENT)" : "")
+                    << " is colliding." << std::endl;
+          break;
+        }
+      }
+    }
+  }
+}
+
 bool OnlinePlanner::requestNextTrajectory() {
   if (current_segment_->children.empty()) {
     // No trajectories available: call the backtracker
@@ -259,6 +292,7 @@ bool OnlinePlanner::requestNextTrajectory() {
   // Select best next trajectory and update root
   int next_segment =
       trajectory_evaluator_->selectNextBest(current_segment_.get());
+
   current_segment_ = std::move(current_segment_->children[next_segment]);
   current_segment_->parent = nullptr;
   current_segment_->gain = 0.0;
@@ -413,11 +447,13 @@ void OnlinePlanner::publishTrajectoryVisualization(
   double min_value = trajectories[0]->value;
   double max_gain = trajectories[0]->gain;
   double min_gain = trajectories[0]->gain;
-  TrajectorySegment* goal = trajectories[0];
+  TrajectorySegment* goal = nullptr;
+  int goal_depth = 0;
+
+  // Find highest gains and values.
   for (int i = 1; i < trajectories.size(); ++i) {
     if (trajectories[i]->value >= max_value) {
       max_value = trajectories[i]->value;
-      goal = trajectories[i];
     }
     if (trajectories[i]->value < min_value) {
       min_value = trajectories[i]->value;
@@ -451,8 +487,20 @@ void OnlinePlanner::publishTrajectoryVisualization(
       msg.color.r = std::min((0.5 - frac) * 2.0 + 1.0, 1.0);
       msg.color.g = std::min((frac - 0.5) * 2.0 + 1.0, 1.0);
       msg.color.b = 0.0;
+
+      // Identify outmost goal pose.
       if (trajectories[i]->value == max_value) {
-        goal = trajectories[i];
+        int depth = 0;
+        TrajectorySegment* current = trajectories[i];
+        while (current) {
+          depth++;
+          current = current->parent;
+        }
+
+        if (depth > goal_depth) {
+          goal = trajectories[i];
+          goal_depth = depth;
+        }
       }
     } else {
       msg.color.r = 0.3;
@@ -507,9 +555,9 @@ void OnlinePlanner::publishTrajectoryVisualization(
     msg.color.a = 1.0;
     msg.position = trajectories[i]->trajectory.back().position_W;
     std::stringstream stream;
-    stream << std::fixed << std::setprecision(2) << trajectories[i]->gain << "/"
-           << std::fixed << std::setprecision(2) << trajectories[i]->cost << "/"
-           << std::fixed << std::setprecision(2) << trajectories[i]->value;
+    stream << std::fixed << std::setprecision(1) << trajectories[i]->gain << "/"
+           << std::fixed << std::setprecision(1) << trajectories[i]->cost << "/"
+           << std::fixed << std::setprecision(1) << trajectories[i]->value;
     msg.text = stream.str();
     msg.action = VisualizationMarker::OVERWRITE;
     text_markers.addMarker(msg);
@@ -527,15 +575,17 @@ void OnlinePlanner::publishTrajectoryVisualization(
   msg.color.b = 0.0;
   msg.color.a = 1.0;
   msg.action = VisualizationMarker::OVERWRITE;
-  while (goal->parent) {
+
+  while (goal) {
     // points
-    if (goal->parent->parent) {
-      for (int j = 0; j < goal->trajectory.size(); ++j) {
-        msg.points.push_back(goal->trajectory[j].position_W);
+    if (goal->parent) {
+      for (const EigenTrajectoryPoint& point : goal->trajectory) {
+        msg.points.push_back(point.position_W);
       }
     }
     goal = goal->parent;
   }
+
   goal_markers.addMarker(msg);
 
   // visualize
@@ -571,8 +621,8 @@ void OnlinePlanner::publishCompletedTrajectoryVisualization(
   }
 
   // points
-  for (int i = 0; i < trajectories.trajectory.size(); ++i) {
-    msg.points.push_back(trajectories.trajectory[i].position_W);
+  for (const EigenTrajectoryPoint& point : trajectories.trajectory) {
+    msg.points.push_back(point.position_W);
   }
   VisualizationMarkers array_msg;
   array_msg.addMarker(msg);

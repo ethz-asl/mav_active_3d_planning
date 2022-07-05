@@ -258,7 +258,7 @@ bool RRT::connectPoses(const EigenTrajectoryPoint& start,
     }
   }
   // Build trajectory
-  for (int i = 0; i < n_points; ++i) {
+  for (int i = 0; i <= n_points; ++i) {
     EigenTrajectoryPoint trajectory_point;
     trajectory_point.position_W =
         start_pos +

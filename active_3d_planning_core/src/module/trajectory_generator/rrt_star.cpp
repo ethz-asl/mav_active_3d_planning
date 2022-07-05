@@ -344,10 +344,10 @@ bool RRTStar::rewireToBestParent(
   TrajectorySegment* initial_parent = segment->parent;
 
   // Find best segment
-  for (int i = 0; i < candidates.size(); ++i) {
+  for (TrajectorySegment* candidate : candidates) {
     segment->trajectory.clear();
-    segment->parent = candidates[i];
-    if (connectPoses(candidates[i]->trajectory.back(), goal_point,
+    segment->parent = candidate;
+    if (connectPoses(candidate->trajectory.back(), goal_point,
                      &(segment->trajectory))) {
       // Feasible connection: evaluate the trajectory
       planner_.getTrajectoryEvaluator().computeCost(segment);
@@ -367,6 +367,7 @@ bool RRTStar::rewireToBestParent(
     segment->parent = best_segment.parent;
     segment->trajectory = best_segment.trajectory;
     segment->cost = best_segment.cost;
+    segment->value = best_segment.value;
     planner_.getTrajectoryEvaluator().computeValue(segment);
     if (segment->parent == initial_parent) {
       // Back to old parent

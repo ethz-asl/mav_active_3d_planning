@@ -21,8 +21,6 @@ class ContinuousYawPlanningEvaluator : public YawPlanningEvaluator {
   // Override virtual functions
   bool computeGain(TrajectorySegment* traj_in) override;
 
-  bool updateSegment(TrajectorySegment* segment) override;
-
   void visualizeTrajectoryValue(VisualizationMarkers* markers,
                                 const TrajectorySegment& trajectory) override;
 
@@ -40,11 +38,6 @@ class ContinuousYawPlanningEvaluator : public YawPlanningEvaluator {
   bool p_visualize_followup_;  // true: also visualize the gain of the best
   // orientation
   int p_n_sections_fov_;   // Number of sections visible, i.e. fov/section_width
-  double p_update_range_;  // Update only gains within this distance (use 0.0 to
-  // check all)
-  double p_update_gain_;             // Update only gains within above this
-  bool p_update_sections_separate_;  // True: check for each section, false:
-  // check for whole segment
 
   // methods
   double sampleYaw(double original_yaw, int sample) override;
@@ -52,7 +45,7 @@ class ContinuousYawPlanningEvaluator : public YawPlanningEvaluator {
   void setTrajectoryYaw(TrajectorySegment* segment, double start_yaw,
                         double target_yaw) override;
 
-  void setBestYaw(TrajectorySegment* segment);
+  void setBestYaw(TrajectorySegment* segment) override;
 };
 
 }  // namespace trajectory_evaluator
