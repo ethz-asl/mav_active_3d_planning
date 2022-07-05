@@ -260,11 +260,6 @@ bool OnlinePlanner::requestNextTrajectory() {
     timer = std::clock();
   }
 
-   // TEST
-  std::cout <<"Next trajectory requested, verifying tree..." << std::endl;
-  verifyTree();
-
-
   // Visualize candidates
   std::vector<TrajectorySegment*> trajectories_to_vis;
   current_segment_->getTree(&trajectories_to_vis);
@@ -297,10 +292,6 @@ bool OnlinePlanner::requestNextTrajectory() {
   // Select best next trajectory and update root
   int next_segment =
       trajectory_evaluator_->selectNextBest(current_segment_.get());
-
-  // TEST
-  std::cout <<"Next trajectory selected, verifying tree..." << std::endl;
-  verifyTree(current_segment_->children[next_segment].get());
 
   current_segment_ = std::move(current_segment_->children[next_segment]);
   current_segment_->parent = nullptr;
