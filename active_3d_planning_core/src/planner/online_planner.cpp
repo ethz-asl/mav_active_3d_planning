@@ -574,7 +574,7 @@ void OnlinePlanner::publishTrajectoryVisualization(
   msg.color.b = 0.0;
   msg.color.a = 1.0;
   msg.action = VisualizationMarker::OVERWRITE;
-  while (goal->parent) {
+  while (goal) {
     // points
       for (const EigenTrajectoryPoint& point : goal->trajectory) {
         msg.points.push_back(point.position_W);
