@@ -50,13 +50,15 @@ class YawPlanningEvaluator : public TrajectoryEvaluator {
   // gain+cost+value
   double p_update_range_;  // Update only gains within this distance (use 0.0 to
   // check all)
-  double p_update_gain_;             // Update only gains within above this
+  double p_update_gain_;  // Update only gains within above this
 
   // methods
   virtual double sampleYaw(double original_yaw, int sample) = 0;
 
   virtual void setTrajectoryYaw(TrajectorySegment* segment, double start_yaw,
                                 double target_yaw) = 0;
+
+  virtual void setBestYaw(TrajectorySegment* segment);
 };
 
 // Information struct that is assigned to segments

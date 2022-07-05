@@ -27,8 +27,6 @@ void ContinuousYawPlanningEvaluator::setupFromParamMap(
     Module::ParamMap* param_map) {
   setParam<bool>(param_map, "visualize_followup", &p_visualize_followup_, true);
   setParam<int>(param_map, "n_sections_fov", &p_n_sections_fov_, 1);
-  setParam<bool>(param_map, "update_sections_separate",
-                 &p_update_sections_separate_, false);
 
   // setup parent
   YawPlanningEvaluator::setupFromParamMap(param_map);
@@ -41,42 +39,6 @@ bool ContinuousYawPlanningEvaluator::computeGain(TrajectorySegment* traj_in) {
   // find best stored yaw and apply it
   setBestYaw(traj_in);
   return true;
-}
-
-bool ContinuousYawPlanningEvaluator::updateSegment(TrajectorySegment* segment) {
-  // Double check whether the trajectory has changed.
-  YawPlanningInfo* info =
-      reinterpret_cast<YawPlanningInfo*>(segment->info.get());
-  for (TrajectorySegment& orientation : info->orientations) {
-    if (orientation.parent != segment->parent ||
-        orientation.trajectory.front().position_W !=
-            segment->trajectory.front().position_W) {
-      orientation.parent = segment->parent;
-      orientation.trajectory = segment->trajectory;
-    }
-  }
-
-  // Update the gains if required.
-  if (segment->parent && segment->info) {
-    double dist =
-        (planner_.getCurrentPosition() - segment->trajectory.back().position_W)
-            .norm();
-    if (p_update_range_ == 0.0 || p_update_range_ > dist) {
-      bool update_all =
-          (~p_update_sections_separate_) && (segment->gain > p_update_gain_);
-      YawPlanningInfo* info =
-          reinterpret_cast<YawPlanningInfo*>(segment->info.get());
-      for (int i = 0; i < info->orientations.size(); ++i) {
-        if (update_all || info->orientations[i].gain > p_update_gain_) {
-          // all conditions met: update gain of segment
-          following_evaluator_->computeGain(&(info->orientations[i]));
-        }
-      }
-    }
-    // Update trajectory
-    setBestYaw(segment);
-  }
-  return following_evaluator_->updateSegment(segment);
 }
 
 void ContinuousYawPlanningEvaluator::setBestYaw(TrajectorySegment* segment) {
@@ -192,11 +154,7 @@ void ContinuousYawPlanningEvaluator::visualizeTrajectoryValue(
 
     // Color according to relative value (blue when indifferent, grey for values
     // below update range)
-    if (info->orientations[i].gain <= p_update_sections_separate_) {
-      marker.color.r = 0.5;
-      marker.color.g = 0.5;
-      marker.color.b = 0.5;
-    } else if (max_value != min_value) {
+    if (max_value != min_value) {
       double frac =
           (info->orientations[i].gain - min_value) / (max_value - min_value);
       if (p_select_by_value_) {
