@@ -492,16 +492,14 @@ void OnlinePlanner::publishTrajectoryVisualization(
       if (trajectories[i]->value == max_value) {
         int depth = 0;
         TrajectorySegment* current = trajectories[i];
-        std::cout << "Computing depth..." << std::endl;
         while (current) {
           depth++;
           current = current->parent;
         }
-                std::cout << "Computing depth... done." << std::endl;
 
         if (depth > goal_depth) {
-        goal = trajectories[i];
-        goal_depth = depth;
+          goal = trajectories[i];
+          goal_depth = depth;
         }
       }
     } else {
@@ -577,16 +575,16 @@ void OnlinePlanner::publishTrajectoryVisualization(
   msg.color.b = 0.0;
   msg.color.a = 1.0;
   msg.action = VisualizationMarker::OVERWRITE;
-                  std::cout << "Adding ogal points..." << std::endl;
 
   while (goal) {
     // points
+    if (goal->parent) {
       for (const EigenTrajectoryPoint& point : goal->trajectory) {
         msg.points.push_back(point.position_W);
       }
+    }
     goal = goal->parent;
   }
-                    std::cout << "Adding ogal points... done." << std::endl;
 
   goal_markers.addMarker(msg);
 
@@ -623,7 +621,7 @@ void OnlinePlanner::publishCompletedTrajectoryVisualization(
   }
 
   // points
-  for (const EigenTrajectoryPoint& point: trajectories.trajectory) {
+  for (const EigenTrajectoryPoint& point : trajectories.trajectory) {
     msg.points.push_back(point.position_W);
   }
   VisualizationMarkers array_msg;
