@@ -133,8 +133,7 @@ bool YawPlanningEvaluator::updateSegment(TrajectorySegment* segment) {
         info->orientations[i].parent = segment->parent;
         info->orientations[i].trajectory = segment->trajectory;
         setTrajectoryYaw(&(info->orientations[i]),
-                         segment->trajectory.front().getYaw(),
-                         sampleYaw(original_yaw, i));
+                         segment->trajectory.front().getYaw(), original_yaw);
       }
     }
   }
