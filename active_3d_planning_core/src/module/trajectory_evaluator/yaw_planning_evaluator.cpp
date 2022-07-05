@@ -125,12 +125,16 @@ bool YawPlanningEvaluator::updateSegment(TrajectorySegment* segment) {
   YawPlanningInfo* info =
       reinterpret_cast<YawPlanningInfo*>(segment->info.get());
   if (info) {
-    for (TrajectorySegment& orientation : info->orientations) {
-      if (orientation.parent != segment->parent ||
-          orientation.trajectory.front().position_W !=
+    for (size_t i = 0; i < info->orientations.size(); ++i) {
+      if (info->orientations[i].parent != segment->parent ||
+          info->orientations[i].trajectory.front().position_W !=
               segment->trajectory.front().position_W) {
-        orientation.parent = segment->parent;
-        orientation.trajectory = segment->trajectory;
+        double original_yaw = info->orientations[i].trajectory.back().getYaw();
+        info->orientations[i].parent = segment->parent;
+        info->orientations[i].trajectory = segment->trajectory;
+        setTrajectoryYaw(&(info->orientations[i]),
+                         segment->trajectory.front().getYaw(),
+                         sampleYaw(original_yaw, i));
       }
     }
   }
