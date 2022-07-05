@@ -21,15 +21,16 @@ inline ::mav_msgs::EigenTrajectoryPointVector& planningMsgToMavMsg(
       planningTraj);
 }
 
-inline const EigenTrajectoryPointVector& mavMsgToPlanningMsg(
+inline EigenTrajectoryPointVector mavMsgToPlanningMsg(
     const ::mav_msgs::EigenTrajectoryPointVector& mavTraj) {
-  return *reinterpret_cast<const EigenTrajectoryPointVector*>(&mavTraj);
-}
-
-inline EigenTrajectoryPointVector& mavMsgToPlanningMsg(
-    ::mav_msgs::EigenTrajectoryPointVector* mavTraj) {
-  CHECK_NOTNULL(mavTraj);
-  return *reinterpret_cast<EigenTrajectoryPointVector*>(mavTraj);
+  EigenTrajectoryPointVector result;
+  result.reserve(mavTraj.size());
+  for (auto& state : mavTraj) {
+    EigenTrajectoryPoint point =
+        *reinterpret_cast<const EigenTrajectoryPoint*>(&state);
+    result.push_back(point);
+  }
+  return result;
 }
 
 }  // namespace active_3d_planning
