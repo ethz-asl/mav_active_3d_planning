@@ -33,6 +33,8 @@ void RRTStar::setupFromParamMap(Module::ParamMap* param_map) {
                    p_max_extension_range_ + 0.1);
   setParam<double>(param_map, "max_density_range", &p_max_density_range_, 0.0);
   setParam<int>(param_map, "n_neighbors", &p_n_neighbors_, 10);
+  setParam<bool>(param_map, "recheck_collisions", &p_recheck_collisions_,
+                 false);
   planner_.getFactory().registerLinkableModule("RRTStarGenerator", this);
 }
 
@@ -284,6 +286,37 @@ bool RRTStar::rewireRoot(TrajectorySegment* root, int* next_segment) {
   return true;
 }
 
+void RRTStar::recheckCollisions(TrajectorySegment* trajectory_in) {
+  // This is called before selecting the next segment. Remove all colliding
+  // segments while trying to keep as much of the tree as possible.
+  if (!p_recheck_collisions_) {
+    return;
+  }
+
+  // Simple version: Just kill colliding segments. The re-sampling shouldn't be
+  // too expensive... Recursive pruning (On the first call the root is passed):
+  int j = 0;
+  for (int i = 0; i < trajectory_in->children.size(); ++i) {
+    bool collided = false;
+    for (const EigenTrajectoryPoint& point :
+         trajectory_in->children[j]->trajectory) {
+      if (!checkTraversable(point.position_W)) {
+        trajectory_in->children.erase(trajectory_in->children.begin() + j);
+        collided = true;
+        break;
+      }
+    }
+    if (!collided) {
+      j++;
+    }
+    
+    // Update remaining children recusrively
+    for (auto& child : trajectory_in->children) {
+      recheckCollisions(child.get());
+    }
+  }
+}
+
 bool RRTStar::rewireRootSingle(TrajectorySegment* segment,
                                TrajectorySegment* new_root) {
   // Try rewiring a single segment
@@ -426,6 +459,7 @@ bool RRTStarEvaluatorAdapter::computeValue(TrajectorySegment* traj_in) {
 }
 
 int RRTStarEvaluatorAdapter::selectNextBest(TrajectorySegment* traj_in) {
+  generator_->recheckCollisions(traj_in);
   int next = following_evaluator_->selectNextBest(traj_in);
   generator_->rewireRoot(traj_in, &next);
   return next;

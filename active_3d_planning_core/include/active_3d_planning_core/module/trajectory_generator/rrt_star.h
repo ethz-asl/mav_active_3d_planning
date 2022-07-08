@@ -60,7 +60,9 @@ class RRTStar : public RRT {
   double
       p_max_density_range_;  // only add points if theres no point closer than
   // this [m], 0.0 to ignore
-  int p_n_neighbors_;  // How many knns to consider for rewiring
+  int p_n_neighbors_;          // How many knns to consider for rewiring
+  bool p_recheck_collisions_;  // If true rewire or kill all colliding segments
+                               // before selecting the next move.
 
   // variables
   bool tree_is_reset_;  // Force reset of kdtree if requestNext is called twice
@@ -76,6 +78,9 @@ class RRTStar : public RRT {
 
   bool rewireRootSingle(TrajectorySegment* segment,
                         TrajectorySegment* new_root);
+
+  void recheckCollisions(TrajectorySegment* root);
+  
 };
 
 }  // namespace trajectory_generator
