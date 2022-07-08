@@ -309,11 +309,11 @@ void RRTStar::recheckCollisions(TrajectorySegment* trajectory_in) {
     if (!collided) {
       j++;
     }
-    
-    // Update remaining children recusrively
-    for (auto& child : trajectory_in->children) {
-      recheckCollisions(child.get());
-    }
+  }
+
+  // Update remaining children recusrively
+  for (auto& child : trajectory_in->children) {
+    recheckCollisions(child.get());
   }
 }
 
