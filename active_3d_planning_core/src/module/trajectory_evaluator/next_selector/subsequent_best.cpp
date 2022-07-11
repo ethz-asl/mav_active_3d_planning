@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <limits>
 
 namespace active_3d_planning {
 namespace next_selector {
@@ -16,8 +17,8 @@ void SubsequentBest::setupFromParamMap(Module::ParamMap* param_map) {}
 
 int SubsequentBest::selectNextBest(TrajectorySegment* traj_in) {
   std::vector<int> candidates = {0};
-  double current_max = evaluateSingle(traj_in->children[0].get());
-  for (int i = 1; i < traj_in->children.size(); ++i) {
+  double current_max = std::numeric_limits<double>::lowest();
+  for (int i = 0; i < traj_in->children.size(); ++i) {
     double current_value = evaluateSingle(traj_in->children[i].get());
     if (current_value > current_max) {
       current_max = current_value;
