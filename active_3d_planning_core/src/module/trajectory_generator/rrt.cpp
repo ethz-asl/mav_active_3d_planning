@@ -312,8 +312,8 @@ bool RRT::resetTree(TrajectorySegment* root) {
   std::vector<TrajectorySegment*> currrent_tree;
   root->getTree(&currrent_tree);
   tree_data_.clear();
-  for (int i = 0; i < currrent_tree.size(); ++i) {
-    tree_data_.addSegment(currrent_tree[i]);
+  for (TrajectorySegment* segment : currrent_tree) {
+    tree_data_.addSegment(segment);
   }
   kdtree_ = std::unique_ptr<KDTree>(new KDTree(3, tree_data_));
   kdtree_->addPoints(0, tree_data_.points.size() - 1);

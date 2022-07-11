@@ -295,6 +295,17 @@ void RRTStar::recheckCollisions(TrajectorySegment* trajectory_in) {
 
   // Simple version: Just kill colliding segments. The re-sampling shouldn't be
   // too expensive... Recursive pruning (On the first call the root is passed):
+  bool killed_a_segment = false;
+  recheckCollisionsStep(trajectory_in, &killed_a_segment);
+
+  // Fix the tree if it was modified.
+  if (killed_a_segment) {
+    resetTree(trajectory_in);
+  }
+}
+
+void RRTStar::recheckCollisionsStep(TrajectorySegment* trajectory_in,
+                                    bool* killed_a_segment) {
   int j = 0;
   for (int i = 0; i < trajectory_in->children.size(); ++i) {
     bool collided = false;
@@ -303,6 +314,7 @@ void RRTStar::recheckCollisions(TrajectorySegment* trajectory_in) {
       if (!checkTraversable(point.position_W)) {
         trajectory_in->children.erase(trajectory_in->children.begin() + j);
         collided = true;
+        *killed_a_segment = true;
         break;
       }
     }
@@ -313,7 +325,7 @@ void RRTStar::recheckCollisions(TrajectorySegment* trajectory_in) {
 
   // Update remaining children recusrively
   for (auto& child : trajectory_in->children) {
-    recheckCollisions(child.get());
+    recheckCollisionsStep(child.get(), killed_a_segment);
   }
 }
 

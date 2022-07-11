@@ -293,6 +293,10 @@ bool OnlinePlanner::requestNextTrajectory() {
   int next_segment =
       trajectory_evaluator_->selectNextBest(current_segment_.get());
 
+  // TEST
+  std::cout << "Selected segment, verifying tree: " << std::endl;
+  verifyTree(current_segment_->children[next_segment].get());
+
   current_segment_ = std::move(current_segment_->children[next_segment]);
   current_segment_->parent = nullptr;
   current_segment_->gain = 0.0;

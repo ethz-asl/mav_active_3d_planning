@@ -79,8 +79,9 @@ class RRTStar : public RRT {
   bool rewireRootSingle(TrajectorySegment* segment,
                         TrajectorySegment* new_root);
 
-  void recheckCollisions(TrajectorySegment* root);
-  
+  void recheckCollisions(TrajectorySegment* trajectory_in);
+  void recheckCollisionsStep(TrajectorySegment* trajectory_in, bool* killed_a_segment);
+
 };
 
 }  // namespace trajectory_generator
