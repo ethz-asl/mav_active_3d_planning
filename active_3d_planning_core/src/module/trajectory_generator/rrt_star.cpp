@@ -471,12 +471,16 @@ bool RRTStarEvaluatorAdapter::computeValue(TrajectorySegment* traj_in) {
 }
 
 int RRTStarEvaluatorAdapter::selectNextBest(TrajectorySegment* traj_in) {
-  generator_->recheckCollisions(traj_in);
-  if (traj_in->children.empty()) {
-    return -1;
+  if (!is_backtracking_) {
+    generator_->recheckCollisions(traj_in);
+    if (traj_in->children.empty()) {
+      is_backtracking_ = true;
+      return -1;
+    }
   }
   int next = following_evaluator_->selectNextBest(traj_in);
   generator_->rewireRoot(traj_in, &next);
+  is_backtracking_ = false;
   return next;
 }
 

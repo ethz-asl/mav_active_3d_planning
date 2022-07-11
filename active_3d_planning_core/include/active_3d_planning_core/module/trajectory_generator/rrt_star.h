@@ -80,8 +80,8 @@ class RRTStar : public RRT {
                         TrajectorySegment* new_root);
 
   void recheckCollisions(TrajectorySegment* trajectory_in);
-  void recheckCollisionsStep(TrajectorySegment* trajectory_in, bool* killed_a_segment);
-
+  void recheckCollisionsStep(TrajectorySegment* trajectory_in,
+                             bool* killed_a_segment);
 };
 
 }  // namespace trajectory_generator
@@ -113,6 +113,10 @@ class RRTStarEvaluatorAdapter : public TrajectoryEvaluator {
  protected:
   static ModuleFactoryRegistry::Registration<RRTStarEvaluatorAdapter>
       registration;
+
+  // Variables.
+  bool is_backtracking_ = false;  // Used for the collision checking to not
+                                  // remove back tracked semgents.
 
   // members
   std::unique_ptr<TrajectoryEvaluator> following_evaluator_;
