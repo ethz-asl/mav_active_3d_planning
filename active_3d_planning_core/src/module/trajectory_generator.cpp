@@ -28,28 +28,26 @@ void TrajectoryGenerator::setupFromParamMap(Module::ParamMap* param_map) {
 }
 
 bool TrajectoryGenerator::checkTraversable(const Eigen::Vector3d& position) {
-  // check bounding volume
+  // check bounding volume.
   if (!bounding_volume_->contains(position)) {
-    std::cout << "Out of bounds." << std::endl;
     return false;
   }
-  //
+
+  // Check observed map.
   if (planner_.getMap().isObserved(position)) {
     bool result = planner_.getMap().isTraversable(position);
-    std::cout << "Observed and " << (result ? "traversable" : "intraversable")
-              << std::endl;
     return result;
   }
+
+  // Check clearing radius.
   if (p_clearing_radius_ > 0.0) {
     if ((planner_.getCurrentPosition() - position).norm() <
         p_clearing_radius_) {
-      std::cout << "Unobserved but clearing." << std::endl;
       return true;
     }
   }
-  std::cout << "Unobserved and "
-            << (p_collision_optimistic_ ? "optimistic" : "conservative")
-            << std::endl;
+
+  // Optimism about unknown space.
   return p_collision_optimistic_;
 }
 
