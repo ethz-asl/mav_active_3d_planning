@@ -30,6 +30,8 @@ class PlannerI {
 
   virtual const Eigen::Quaterniond& getCurrentOrientation() const = 0;
 
+  virtual const Eigen::Vector3d& getInitialPosition() const = 0;
+
   // member accessors
   virtual BackTracker& getBackTracker() = 0;
 

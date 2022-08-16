@@ -143,6 +143,7 @@ void OnlinePlanner::printError(const std::string& text) {
 void OnlinePlanner::initializePlanning() {
   // Setup initial trajectory Segment at current location
   target_position_ = current_position_;
+  initial_position_ = current_position_;
   target_yaw_ = yawFromQuaternion(current_orientation_);
   current_segment_ =
       std::unique_ptr<TrajectorySegment>(new TrajectorySegment());

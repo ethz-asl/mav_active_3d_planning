@@ -36,6 +36,10 @@ class OnlinePlanner : public PlannerI, public ModuleBase {
     return current_position_;
   }
 
+  const Eigen::Vector3d& getInitialPosition() const override {
+    return initial_position_;
+  }
+
   const Eigen::Quaterniond& getCurrentOrientation() const override {
     return current_orientation_;
   }
@@ -84,6 +88,8 @@ class OnlinePlanner : public PlannerI, public ModuleBase {
   Eigen::Vector3d current_position_;  // Current pose of the robot
   Eigen::Quaterniond current_orientation_;
   Eigen::Vector3d target_position_;  // current movement goal
+  Eigen::Vector3d
+      initial_position_;  // Initial position for collision clearing.
   double target_yaw_;
   bool target_reached_;  // whether the goal point was reached, update based on
                          // odom input

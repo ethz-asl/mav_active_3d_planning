@@ -39,8 +39,9 @@ bool TrajectoryGenerator::checkTraversable(const Eigen::Vector3d& position) {
     return result;
   }
 
-  // Check clearing radius.
-  if (p_clearing_radius_ > 0.0 && position.norm() < p_clearing_radius_) {
+  // Check clearing radius for initial start.
+  if (p_clearing_radius_ > 0.0 &&
+      (planner_.getInitialPosition() - position).norm() < p_clearing_radius_) {
     return true;
   }
 
