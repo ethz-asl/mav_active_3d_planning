@@ -21,5 +21,10 @@ cs_add_library(${PROJECT_NAME}
         src/initialization/mav_package.cpp
         )
 
+cs_add_executable(trajectory_adapter_node
+        src/tools/trajectory_adapter_node.cpp
+)
+target_link_libraries(trajectory_adapter_node  ${PROJECT_NAME} ${catkin_LIBRARIES})
+
 cs_install()
 cs_export()

@@ -14,6 +14,7 @@
     <buildtool_depend>catkin_simple</buildtool_depend>
 
     <depend>active_3d_planning_core</depend>
+    <depend>active_3d_planning_ros</depend>
     <depend>message_generation</depend>
     <depend>message_runtime</depend>
     <depend>trajectory_msgs</depend>
