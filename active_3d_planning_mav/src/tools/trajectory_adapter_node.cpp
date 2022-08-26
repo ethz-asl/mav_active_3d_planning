@@ -172,15 +172,19 @@ void TrajectoryAdapter::commandPoseCallback(const geometry_msgs::Pose& msg) {
   for (int i = 0; i < n_points; ++i) {
     trajectory_msgs::MultiDOFJointTrajectoryPoint point;
     if (result[i].position_W.norm() <= 1.0e-6) {
-      ROS_WARN_STREAM("Found invalid entry at "
-                      << i << ": " << result[i].position_W.transpose() << ".");
+      ROS_WARN_STREAM("[TrajectoryAdapter] Found invalid entry at "
+                      << i << ": " << result[i].position_W.transpose()
+                      << ", skipping.");
     } else {
       ros::msgMultiDofJointTrajectoryPointFromEigen(result[i], &point);
       msg_out->points.emplace_back(point);
     }
   }
-
-  traj_pub_.publish(msg_out);
+  if (msg_out->points.empty()) {
+    ROS_WARN("[TrajectoryAdapter] Command is empty, not sending.");
+  } else {
+    traj_pub_.publish(msg_out);
+  }
   goal_pos_ = result.back().position_W;
   goal_yaw_ = result.back().getYaw();
 
