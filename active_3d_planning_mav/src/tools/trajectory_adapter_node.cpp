@@ -37,6 +37,7 @@ class TrajectoryAdapter {
   // ros
   ::ros::NodeHandle nh_;
   ::ros::NodeHandle nh_private_;
+  ::ros::Subscriber odom_sub_;
   ::ros::Subscriber pose_sub_;
   ::ros::Subscriber traj_sub_;
   ::ros::Publisher traj_pub_;
@@ -72,10 +73,13 @@ TrajectoryAdapter::TrajectoryAdapter(const ::ros::NodeHandle& nh,
   vis_pub_ = nh_.advertise<visualization_msgs::Marker>(
       "/planner/trajectory_visualization", 100);
 
-  pose_sub_ = nh_.subscribe("odometry_in", 1,
+  odom_sub_ = nh_.subscribe("odometry_in", 1,
                             &TrajectoryAdapter::odometryCallback, this);
-  traj_sub_ = nh_.subscribe("request_in", 1,
+  pose_sub_ = nh_.subscribe("command_pose_in", 1,
                             &TrajectoryAdapter::commandPoseCallback, this);
+  traj_sub_ =
+      nh_.subscribe("command_trajectory_in", 1,
+                    &TrajectoryAdapter::commandTrajectorycallback, this);
   float velocity = 1.0;
   float acceleration = 1.0;
   float yaw_rate = 1.57;
