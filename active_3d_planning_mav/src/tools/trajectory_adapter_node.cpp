@@ -165,6 +165,9 @@ void TrajectoryAdapter::commandPoseCallback(const geometry_msgs::Pose& msg) {
   goal.setFromYaw(tf::getYaw(msg.orientation));
 
   if (!generator_.createTrajectory(start, goal, &result)) {
+    ROS_WARN(
+        "[TrajectoryAdapter] Could not optimize trajectory, using "
+        "approximation.");
     generator_.simulateTrajectory(start, goal, &result);
   }
 
@@ -176,9 +179,8 @@ void TrajectoryAdapter::commandPoseCallback(const geometry_msgs::Pose& msg) {
   for (int i = 0; i < n_points; ++i) {
     trajectory_msgs::MultiDOFJointTrajectoryPoint point;
     if (result[i].position_W.norm() <= 1.0e-6) {
-      ROS_WARN_STREAM("[TrajectoryAdapter] Found invalid entry at "
-                      << i << ": " << result[i].position_W.transpose()
-                      << ", skipping.");
+      ROS_WARN_STREAM("[TrajectoryAdapter] Found invalid entry at point "
+                      << i << ", skipping.");
     } else {
       ros::msgMultiDofJointTrajectoryPointFromEigen(result[i], &point);
       msg_out->points.emplace_back(point);
@@ -225,8 +227,8 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "trajectory_adaptor");
 
   // Set logging to debug for testing
-  ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME,
-                                 ros::console::levels::Debug);
+  // ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME,
+  // ros::console::levels::Debug);
 
   ros::NodeHandle nh("");
   ros::NodeHandle nh_private("~");
