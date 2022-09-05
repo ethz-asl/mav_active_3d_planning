@@ -163,21 +163,21 @@ void TrajectoryAdapter::commandPoseCallback(const geometry_msgs::Pose& msg) {
   goal.position_W.y() = msg.position.y;
   goal.position_W.z() = msg.position.z;
   goal.setFromYaw(tf::getYaw(msg.orientation));
-  std::cout << "[TrajectoryAdapter]  Optimizing trajectory..." << std::endl;
-  if (!generator_.createTrajectory(start, goal, &result)) {
-    ROS_WARN(
-        "[TrajectoryAdapter] Could not optimize trajectory, using "
-        "approximation.");
-    generator_.simulateTrajectory(start, goal, &result);
-  }
+  // std::cout << "[TrajectoryAdapter]  Optimizing trajectory..." << std::endl;
+  // if (!generator_.createTrajectory(start, goal, &result)) {
+  //   ROS_WARN(
+  //       "[TrajectoryAdapter] Could not optimize trajectory, using "
+  //       "approximation.");
+  generator_.simulateTrajectory(start, goal, &result);
+  // }
 
   trajectory_msgs::MultiDOFJointTrajectoryPtr msg_out(
       new trajectory_msgs::MultiDOFJointTrajectory);
   msg_out->header.stamp = ::ros::Time::now();
   const int n_points = result.size();
   // msg_out->points.reserve(n_points);
-  std::cout << "[TrajectoryAdapter] Got optimized trajectory of " << n_points
-            << " points" << std::endl;
+  // std::cout << "[TrajectoryAdapter] Got optimized trajectory of " << n_points
+  //           << " points" << std::endl;
   for (int i = 0; i < n_points; ++i) {
     if (result[i].position_W.norm() <= 1.0e-6) {
       ROS_WARN_STREAM("[TrajectoryAdapter] Found invalid entry at point "
