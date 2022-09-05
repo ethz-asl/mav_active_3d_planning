@@ -163,7 +163,7 @@ void TrajectoryAdapter::commandPoseCallback(const geometry_msgs::Pose& msg) {
   goal.position_W.y() = msg.position.y;
   goal.position_W.z() = msg.position.z;
   goal.setFromYaw(tf::getYaw(msg.orientation));
-
+  std::cout << "[TrajectoryAdapter]  Optimizing trajectory..." << std::endl;
   if (!generator_.createTrajectory(start, goal, &result)) {
     ROS_WARN(
         "[TrajectoryAdapter] Could not optimize trajectory, using "
@@ -174,16 +174,18 @@ void TrajectoryAdapter::commandPoseCallback(const geometry_msgs::Pose& msg) {
   trajectory_msgs::MultiDOFJointTrajectoryPtr msg_out(
       new trajectory_msgs::MultiDOFJointTrajectory);
   msg_out->header.stamp = ::ros::Time::now();
-  int n_points = result.size();
-  msg_out->points.reserve(n_points);
+  const int n_points = result.size();
+  // msg_out->points.reserve(n_points);
+  std::cout << "[TrajectoryAdapter] Got optimized trajectory of " << n_points
+            << " points" << std::endl;
   for (int i = 0; i < n_points; ++i) {
-    trajectory_msgs::MultiDOFJointTrajectoryPoint point;
     if (result[i].position_W.norm() <= 1.0e-6) {
       ROS_WARN_STREAM("[TrajectoryAdapter] Found invalid entry at point "
                       << i << ", skipping.");
     } else {
+      trajectory_msgs::MultiDOFJointTrajectoryPoint point;
       ros::msgMultiDofJointTrajectoryPointFromEigen(result[i], &point);
-      msg_out->points.emplace_back(point);
+      msg_out->points.push_back(point);
     }
   }
   if (msg_out->points.empty()) {
@@ -193,6 +195,7 @@ void TrajectoryAdapter::commandPoseCallback(const geometry_msgs::Pose& msg) {
   }
   goal_pos_ = result.back().position_W;
   goal_yaw_ = result.back().getYaw();
+  std::cout << "[TrajectoryAdapter] Sent trajectory." << std::endl;
 
   // vis
   visualization_msgs::Marker msg_vis;
