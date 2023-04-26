@@ -12,7 +12,7 @@
 
 
 <!-- Voxblox arguments -->
-<arg name="voxel_size" default="0.50"/>
+<arg name="voxel_size" default="0.25"/>
 <arg name="voxels_per_side" default="16"/>
 <arg name="ray_length" default="5.0"/>
 <arg name="method" default="merged"/>
