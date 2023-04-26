@@ -6,11 +6,6 @@
 <arg name="delay" default="3.0"/>  
 
 
-<!-- It should keep refreshing the path -->
-<!-- change the paths to straight lights -->
-
-
-
 <!-- Voxblox arguments -->
 <arg name="voxel_size" default="0.25"/>
 <arg name="voxels_per_side" default="16"/>
