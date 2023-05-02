@@ -15,7 +15,6 @@
 - git: {local-name: minkindr, uri: 'https://github.com/ethz-asl/minkindr.git'}
 - git: {local-name: minkindr_ros, uri: 'https://github.com/ethz-asl/minkindr_ros.git'}
 - git: {local-name: gflags_catkin, uri: 'https://github.com/ethz-asl/gflags_catkin.git'}
-- git: {local-name: mavros, uri: 'https://github.com/ethz-asl/mavros.git'}
 - git: {local-name: catkin_boost_python_buildtool, uri: 'https://github.com/ethz-asl/catkin_boost_python_buildtool.git'}
 - git: {local-name: numpy_eigen, uri: 'https://github.com/ethz-asl/numpy_eigen.git'}
 - git: {local-name: catkin_grpc, uri: 'https://github.com/CogRob/catkin_grpc.git'}
