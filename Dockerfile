@@ -21,6 +21,7 @@ RUN apt update && apt-get install -y --no-install-recommends \
     ros-noetic-rviz \
     ros-noetic-cv-bridge \
     ros-noetic-pcl-ros \
+    ros-noetic-gazebo-plugins \
     qt5-default qt5-qmake qtbase5-dev-tools qt5-doc \
     autoconf \
     libtool \
@@ -43,7 +44,7 @@ RUN catkin init \
 WORKDIR /ws/src
 COPY mav_active_3d_planning_https.rosinstall /ws/src/.rosinstall
 RUN wstool update
-RUN catkin build eigen_catkin grpc
+RUN catkin build eigen_catkin grpc yaml_cpp_catkin
 COPY . /ws/src/mav_active_3d_planning
 RUN . /ws/devel/setup.sh && catkin build mav_active_3d_planning
 
