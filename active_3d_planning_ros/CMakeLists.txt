@@ -4,7 +4,7 @@ project(active_3d_planning_ros)
 find_package(catkin_simple REQUIRED)
 catkin_simple(ALL_DEPS_REQUIRED)
 
-add_definitions(-std=c++14)
+add_definitions(-std=c++17)
 
 catkin_package()
 
