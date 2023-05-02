@@ -57,6 +57,7 @@ class RosPlanner : public OnlinePlanner {
   ::ros::NodeHandle nh_private_;
   ::ros::Subscriber odom_sub_;
   ::ros::Publisher target_pub_;
+  ::ros::Publisher target_pub_path_;
   ::ros::Publisher trajectory_vis_pub_;
   ::ros::ServiceServer run_srv_;
   ::ros::ServiceServer get_cpu_time_srv_;

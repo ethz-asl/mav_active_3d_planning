@@ -194,3 +194,7 @@ Distribution of computation time for the different modules. The majority is expe
 
 ![mav_active](https://user-images.githubusercontent.com/36043993/59349935-253e8b00-8d1b-11e9-87d8-6d57463b9596.png)
 Final reconstruction mesh and error coloring visualized in CloudCompare.
+
+
+## CVG: Isaac-Sim
+In order to run with the simulation, launch the sutd_experiment.launch file, and then make a call to the toggle_running service to set it to True to start planning.

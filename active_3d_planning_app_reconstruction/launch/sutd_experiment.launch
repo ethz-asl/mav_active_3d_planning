@@ -1,0 +1,70 @@
+<launch>
+<!-- Gazebo arguments -->
+<arg name="mav_name" default="firefly"/>
+<arg name="gui" default="false"/>
+
+<arg name="delay" default="3.0"/>  
+
+
+<!-- Voxblox arguments -->
+<arg name="voxel_size" default="0.5"/>
+<arg name="voxels_per_side" default="16"/>
+<arg name="ray_length" default="5.0"/>
+<arg name="method" default="merged"/>
+<arg name="verbose_voxblox" default="false"/>
+
+  <!--  Experiment arguments -->  
+<arg name="experiment_config" default="Matterport.yaml"/>
+<rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/experiments/$(arg experiment_config)"/>
+
+<!-- Planner arguments-->
+<arg name="planner_config" default="planners/example_config_rrt_star.yaml"/>
+
+<group ns="planner">
+<!-- Voxblox -->
+<node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
+ <remap from="pointcloud" to="/anymal/downsampled_points"/>
+ <param name="use_tf_transforms" value="true"/>
+ <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/voxblox/transforms.yaml"/> 
+ <param name="publish_tsdf_map" value="true" />
+ <param name="publish_esdf_map" value="true" />
+ <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
+ <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
+ <param name="color_mode" value="color" />
+ <param name="update_mesh_every_n_sec" value="1.0" />
+ <param name="method" value="$(arg method)" />
+ <param name="max_ray_length" value="$(arg ray_length)" />
+ <param name="allow_clear" value="true" />
+ <param name="verbose" value="$(arg verbose_voxblox)" />
+</node>
+
+ <!-- Planner -->
+
+ <node name="planner_node" pkg="active_3d_planning_app_reconstruction" type="reconstruction_planner_node" output="screen">
+
+ <!-- Voxblox Server -->
+ <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
+ <remap from="planner_node/tsdf_map_in" to="voxblox_node/tsdf_map_out" />
+ <param name="use_tf_transforms" value="false" />
+ <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
+ <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
+ <param name="update_mesh_every_n_sec" value="0.0" />
+ <param name="publish_traversable" value="false" />
+ <param name="publish_pointclouds" value="false" />
+
+ <!-- General Settings -->
+ <remap from="odometry" to="/anymal/odom" />
+ <remap from="command/trajectory" to="/anymal/command/trajectory" />
+
+
+
+ <!-- Build the Planner by Configuration -->
+ <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/$(arg planner_config)"/>
+ </node>
+
+ </group>
+
+ <!-- RVIZ Visualization -->
+ <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d $(find active_3d_planning_app_reconstruction)/cfg/experiments/experiment_visualization.rviz"/>
+
+</launch>

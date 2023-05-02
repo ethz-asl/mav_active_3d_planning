@@ -7,7 +7,9 @@
 #include <vector>
 
 #include <geometry_msgs/Point.h>
+#include <nav_msgs/Path.h>
 #include <tf/transform_datatypes.h>
+#include <mav_msgs/conversions.h>
 
 #include "active_3d_planning_ros/module/module_factory_ros.h"
 #include "active_3d_planning_ros/tools/ros_conversion.h"
@@ -27,6 +29,11 @@ RosPlanner::RosPlanner(const ::ros::NodeHandle& nh,
   // Subscribers and publishers
   target_pub_ = nh_.advertise<trajectory_msgs::MultiDOFJointTrajectory>(
       "command/trajectory", 10);
+
+  // Publishing the Eigen trajectory before conversion to MultiDOF
+  target_pub_path_ = nh_.advertise<nav_msgs::Path>(
+      "command/trajectory_path", 10);
+    
   trajectory_vis_pub_ = nh_.advertise<visualization_msgs::MarkerArray>(
       "trajectory_visualization", 100);
   odom_sub_ = nh_.subscribe("odometry", 1, &RosPlanner::odomCallback, this);
@@ -151,15 +158,37 @@ void RosPlanner::requestMovement(const EigenTrajectoryPointVector& trajectory) {
     LOG(WARNING) << "Tried to publish an empty trajectory";
     return;
   }
+
   trajectory_msgs::MultiDOFJointTrajectoryPtr msg(
       new trajectory_msgs::MultiDOFJointTrajectory);
   msg->header.stamp = ::ros::Time::now();
+
+  nav_msgs::Path msg_path;
+  msg_path.header.stamp = ::ros::Time::now();
+  msg_path.header.frame_id = "world";
+
   int n_points = trajectory.size();
   msg->points.resize(n_points);
+  msg_path.poses.resize(n_points);
+
   for (int i = 0; i < n_points; ++i) {
     msgMultiDofJointTrajectoryPointFromEigen(trajectory[i], &msg->points[i]);
+  
+    // Publish Path msg
+    const mav_msgs::EigenTrajectoryPoint point_mav(trajectory[i].time_from_start_ns,
+                                               trajectory[i].position_W,
+                                               trajectory[i].velocity_W,
+                                               trajectory[i].acceleration_W,
+                                               trajectory[i].jerk_W,
+                                               trajectory[i].snap_W,
+                                               trajectory[i].orientation_W_B,
+                                               trajectory[i].angular_velocity_W,
+                                               trajectory[i].angular_acceleration_W);
+    mav_msgs::msgPoseStampedFromEigenTrajectoryPoint(point_mav, &msg_path.poses[i]);
   }
+
   target_pub_.publish(msg);
+  target_pub_path_.publish(msg_path);
 }
 
 void RosPlanner::publishVisualization(const VisualizationMarkers& markers) {
