@@ -1,6 +1,6 @@
 # General parameters for the planner node
-replan_pos_threshold: 0.25
-replan_yaw_threshold: 0.15
+replan_pos_threshold: 0.4
+replan_yaw_threshold: 0.05
 
 max_new_segments: 0
 min_new_segments: 0
@@ -28,12 +28,12 @@ system_constraints:
   a_max: 1.0
   yaw_rate_max: 1.6
   yaw_accel_max: 1.6
-  collision_radius: 0.7
+  collision_radius: 0.5
 
 trajectory_generator:
   collision_optimistic: false
   bounding_volume_args: "/map_bounding_volume"
-  clearing_radius: 1.0
+  clearing_radius: 2.0
 
   type: "RRTStar"
   all_semgents_feasible: false
@@ -81,10 +81,17 @@ trajectory_evaluator:
         type: "IterativeRayCaster"
         sampling_time: 0.0
         ray_length: 5.0
-        focal_length: 320.0
-        resolution_x: 172 # 640-90/172-30/127-22.5 deg fov
+        focal_length: 400.0
+        resolution_x: 640 
         resolution_y: 480
         downsampling_factor: 5.0
+        mounting_translation_x: 0.0 
+        mounting_translation_y: 0.0
+        mounting_translation_z: 0.0
+        mounting_rotation_x: 0
+        mounting_rotation_y: 0
+        mounting_rotation_z: 0
+        mounting_rotation_w: 1.0
 
       cost_computer:
         type: "SegmentTime"

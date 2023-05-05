@@ -13,17 +13,20 @@
 <arg name="method" default="merged"/>
 <arg name="verbose_voxblox" default="false"/>
 
+<!-- <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster_spot" args="0.554 0 0.1 -0.5 0.5 -0.5 0.5 body rgb_camera_link 100" /> -->
+<node pkg="tf" type="static_transform_publisher" name="kinect_to_frontright" args="0.5400380751114238 -0.0015723664141315957 0.11415735279845517 -0.004610651321446023 0.006540152164686021 -0.0006518984840654991 0.9999677711468627 body camera_base 100" />
+
   <!--  Experiment arguments -->  
 <arg name="experiment_config" default="Matterport.yaml"/>
 <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/experiments/$(arg experiment_config)"/>
 
 <!-- Planner arguments-->
-<arg name="planner_config" default="planners/example_config_rrt_star_anymal.yaml"/>
+<arg name="planner_config" default="planners/example_config_rrt_star_spot.yaml"/>
 
 <group ns="planner">
 <!-- Voxblox -->
 <node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
- <remap from="pointcloud" to="/anymal/downsampled_points"/>
+ <remap from="pointcloud" to="/spot/downsampled_throttled_points2"/>
  <param name="use_tf_transforms" value="true"/>
  <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/voxblox/transforms.yaml"/> 
  <param name="publish_tsdf_map" value="true" />
@@ -53,10 +56,8 @@
  <param name="publish_pointclouds" value="false" />
 
  <!-- General Settings -->
- <remap from="odometry" to="/anymal/odom" />
- <remap from="command/trajectory" to="/anymal/command/trajectory" />
-
-
+ <remap from="odometry" to="/spot/odometry" />
+ <remap from="command/trajectory" to="/spot/command/trajectory" />
 
  <!-- Build the Planner by Configuration -->
  <rosparam command="load" file="$(find active_3d_planning_app_reconstruction)/cfg/$(arg planner_config)"/>
