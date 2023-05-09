@@ -1,0 +1,77 @@
+<launch>
+<!-- Gazebo arguments -->
+<arg name="mav_name" default="firefly"/>
+<arg name="gui" default="false"/>
+
+<arg name="delay" default="3.0"/>  
+
+
+<!-- Voxblox arguments -->
+<arg name="voxel_size" default="0.1"/>
+<arg name="voxels_per_side" default="16"/>
+<arg name="ray_length" default="5.0"/>
+<arg name="method" default="merged"/>
+<arg name="verbose_voxblox" default="false"/>
+
+<!-- <node pkg="tf" type="static_transform_publisher" name="kinect_to_frontright" args="0.5400380751114238 -0.0015723664141315957 0.11415735279845517 -0.004610651321446023 0.006540152164686021 -0.0006518984840654991 0.9999677711468627 body camera_base 100" /> -->
+
+  <!--  Experiment arguments -->  
+<arg name="experiment_config" default="Maze.yaml"/>
+<rosparam command="load" file="/tmp/cfg/experiments/$(arg experiment_config)"/>
+
+<!-- Planner arguments-->
+<arg name="planner_config" default="planners/example_config_rrt_star_spot.yaml"/>
+
+<group ns="planner">
+<!-- Voxblox -->
+<node name="voxblox_node" pkg="voxblox_ros" type="esdf_server" output="screen" args="-alsologtostderr">
+ <remap from="pointcloud" to="/spot/downsampled_throttled_points2"/>
+ <param name="use_tf_transforms" value="true"/>
+ <param name="publish_tsdf_map" value="true" />
+ <param name="publish_esdf_map" value="true" />
+ <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
+ <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
+ <param name="color_mode" value="color" />
+ <param name="update_mesh_every_n_sec" value="1.0" />
+ <param name="method" value="$(arg method)" />
+ <param name="max_ray_length" value="$(arg ray_length)" />
+ <param name="allow_clear" value="true" />
+ <param name="verbose" value="$(arg verbose_voxblox)" />
+ <param name="world_frame" value="odom"/>
+ <param name="pointcloud_queue_size" value="10"/>
+ <param name="verbose" value="false"/>
+</node>
+
+ <!-- Planner -->
+
+ <node name="planner_node" pkg="active_3d_planning_app_reconstruction" type="reconstruction_planner_node" output="screen">
+
+ <!-- Voxblox Server -->
+ <remap from="planner_node/esdf_map_in" to="voxblox_node/esdf_map_out" />
+ <remap from="planner_node/tsdf_map_in" to="voxblox_node/tsdf_map_out" />
+ <param name="use_tf_transforms" value="false" />
+ <param name="tsdf_voxel_size" value="$(arg voxel_size)" />
+ <param name="tsdf_voxels_per_side" value="$(arg voxels_per_side)" />
+ <param name="update_mesh_every_n_sec" value="0.0" />
+ <param name="publish_traversable" value="false" />
+ <param name="publish_pointclouds" value="false" />
+
+ <!-- General Settings -->
+ <remap from="odometry" to="/spot/odometry" />
+ <remap from="command/trajectory_path" to="/spot/command/trajectory_path" />
+
+
+
+ <!-- Build the Planner by Configuration -->
+ <rosparam command="load" file="$/tmp/cfg/$(arg planner_config)"/>
+ </node>
+
+ </group>
+
+<node pkg="tf" type="static_transform_publisher" name="world_to_odom" args="0.0 0.0 0.0 0.0 0.0 0.0 0.1 odom world 100" />
+
+
+ <!-- RVIZ Visualization -->
+ <node type="rviz" name="rviz_voxblox" pkg="rviz" args="-d /tmp/cfg/experiments/experiment_visualization.rviz"/>
+
+</launch>

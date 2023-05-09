@@ -17,6 +17,8 @@ services:
     # - '../:/ws'
     - ${SSH_AUTH_SOCK}:/ssh-agent
     - '/tmp/.docker.xauth:/tmp/.docker.xauth'
+    - './launch:/tmp/launch'
+    - './cfg:/tmp/cfg'
     devices:
     - /dev/dri
     privileged: true
