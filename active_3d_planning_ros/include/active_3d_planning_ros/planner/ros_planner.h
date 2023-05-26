@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <ros/ros.h>
 #include <std_srvs/SetBool.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
@@ -28,6 +29,7 @@ class RosPlanner : public OnlinePlanner {
 
   // ros callbacks
   void odomCallback(const nav_msgs::Odometry& msg);
+  void goalCallback(const geometry_msgs::TransformStamped& msg);
 
   bool runSrvCallback(std_srvs::SetBool::Request& req,    // NOLINT
                       std_srvs::SetBool::Response& res);  // NOLINT
@@ -62,16 +64,20 @@ class RosPlanner : public OnlinePlanner {
   ::ros::ServiceServer run_srv_;
   ::ros::ServiceServer get_cpu_time_srv_;
 
+  // Array of subscribers for robot goal pose
+  std::vector<::ros::Subscriber> goal_subs_;
+
   // variables
   ::ros::Time ros_timing_;      // track simulated time
   std::clock_t cpu_srv_timer_;  // To get CPU usage for service
   std::map<std::string, int>
       visualization_overwrite_counter_;  // store the previous number of
                                          // visualizations to overwrite in RVIZ
-
+                                         
   // params
   double p_replan_pos_threshold_;  // m, when is the goal considered reached
   double p_replan_yaw_threshold_;  // rad
+  std::string p_goal_topics_;  // topic names for robot goal poses, multi-agent
 
   // override/adapt planner methods
   void initializePlanning() override;
@@ -81,6 +87,7 @@ class RosPlanner : public OnlinePlanner {
   void requestMovement(const EigenTrajectoryPointVector& trajectory) override;
 
   void setupFromParamMap(Module::ParamMap* param_map) override;
+
 };
 
 }  // namespace ros

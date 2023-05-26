@@ -40,6 +40,18 @@ RosPlanner::RosPlanner(const ::ros::NodeHandle& nh,
   get_cpu_time_srv_ = nh_private_.advertiseService(
       "get_cpu_time", &RosPlanner::cpuSrvCallback, this);
 
+  // Iterate through goal_topics delimited by ',' and subscribe to each
+  if (p_goal_topics_.empty()) {
+    ROS_ERROR("No goal topics specified!");
+  } else {
+    std::stringstream ss(p_goal_topics_);
+    std::string topic;
+    while (std::getline(ss, topic, ',')) {
+      goal_subs_.push_back(nh_.subscribe(topic, 1, &RosPlanner::goalCallback,
+                                        this));
+    }
+  }
+
   // Finish
   ROS_INFO_STREAM(
       "\n******************** Initialized Planner ********************\n"
@@ -53,6 +65,10 @@ void RosPlanner::setupFromParamMap(Module::ParamMap* param_map) {
                    0.1);
   setParam<double>(param_map, "replan_yaw_threshold", &p_replan_yaw_threshold_,
                    0.1);
+
+  // Param of list of topics
+  setParam<std::string>(param_map, "goal_topics", &p_goal_topics_,
+                                     std::string());
 }
 
 void RosPlanner::setupFactoryAndParams(ModuleFactory* factory,
@@ -151,6 +167,24 @@ void RosPlanner::odomCallback(const nav_msgs::Odometry& msg) {
       }
     }
   }
+}
+
+void RosPlanner::goalCallback(const geometry_msgs::TransformStamped& msg) {
+  // Get child frame id
+  const std::string& child_frame_id = msg.child_frame_id;
+  if (child_frame_id.empty()) {
+    LOG(WARNING) << "Received transform without child frame id";
+    return;
+  }
+
+  // Extract pose from TransformStamped into a Vector3d
+  Eigen::Vector3d pose;
+  pose.x() = msg.transform.translation.x;
+  pose.y() = msg.transform.translation.y;
+  pose.z() = msg.transform.translation.z;
+
+  // Update trajectory generator, pass by reference
+  trajectory_generator_->updateGoals(child_frame_id, pose);
 }
 
 void RosPlanner::requestMovement(const EigenTrajectoryPointVector& trajectory) {

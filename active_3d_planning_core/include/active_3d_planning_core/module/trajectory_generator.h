@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <mutex>
 
 #include <Eigen/Core>
 
@@ -44,6 +45,14 @@ class TrajectoryGenerator : public Module {
   // reachable.
   bool checkTraversable(const Eigen::Vector3d& position);
 
+  // Utility function for multi-agent coordination. Returns true if the position is
+  // far away from all other goal positions
+  bool checkMultiRobotCollision(const Eigen::Vector3d& position);
+
+  // Update the goal(s) of the generator
+  bool updateGoals(const std::string& frame_id,
+                           const Eigen::Vector3d& pose);
+
   // in case a trajectory needs to be modified to be published
   virtual bool extractTrajectoryToPublish(
       EigenTrajectoryPointVector* trajectory, const TrajectorySegment& segment);
@@ -62,8 +71,15 @@ class TrajectoryGenerator : public Module {
   bool p_collision_optimistic_;
   double p_clearing_radius_;  // Unknown space within clearing radius is
   // considered traversable
+  double p_robot_radius_;     // robot radius for multi-agent collaborative exploration
+  std::string p_robot_frame_id_; // the robot frame id for this robot
+                                        // to identify which robot this is
   std::string p_selector_args_;
   std::string p_updater_args_;
+
+  // Dictionary to keep track of goals
+  std::unique_ptr<std::map<std::string, Eigen::Vector3d>> recent_goal_poses_;
+  std::mutex recent_goal_poses_mutex_;
 };
 
 // Abstract encapsulation for default/modular implementations of the

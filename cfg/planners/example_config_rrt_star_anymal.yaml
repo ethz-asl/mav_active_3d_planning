@@ -2,6 +2,9 @@
 replan_pos_threshold: 0.6
 replan_yaw_threshold: 0.6
 
+robot_frame_id: "/anymal1"
+goal_topics: "/goal_anymal1, /goal_anymal2"
+
 max_new_segments: 0
 min_new_segments: 0
 max_new_tries: 2
@@ -45,6 +48,7 @@ trajectory_generator:
   maximum_tries: 1000
   sampling_rate: 20.0
   sample_yaw: true
+  robot_radius: 1.0
 
   sampling_mode: "uniform"  #"semilocal"
   semilocal_sampling_count: 5

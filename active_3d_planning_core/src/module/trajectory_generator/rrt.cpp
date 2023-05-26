@@ -110,7 +110,7 @@ bool RRT::selectSegment(TrajectorySegment** result, TrajectorySegment* root) {
     }
     goal_pos = root->trajectory.back().position_W;
     sampleGoal(&goal_pos);
-    if (p_crop_segments_ || checkTraversable(goal_pos)) {
+    if (!checkMultiRobotCollision(goal_pos_) && (p_crop_segments_ || checkTraversable(goal_pos))) {
       goal_found = true;
     }
   }

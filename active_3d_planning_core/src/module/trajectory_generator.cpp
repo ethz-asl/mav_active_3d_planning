@@ -13,6 +13,8 @@ void TrajectoryGenerator::setupFromParamMap(Module::ParamMap* param_map) {
   setParam<bool>(param_map, "collision_optimistic", &p_collision_optimistic_,
                  false);
   setParam<double>(param_map, "clearing_radius", &p_clearing_radius_, 0.0);
+  setParam<double>(param_map, "robot_radius", &p_robot_radius_, 1.0); // Avoid sample within robot pose radius
+  setParam<std::string>(param_map, "robot_frame_id", &p_robot_frame_id_, "");
   std::string ns = (*param_map)["param_namespace"];
   setParam<std::string>(param_map, "segment_selector_args", &p_selector_args_,
                         ns + "/segment_selector");
@@ -43,6 +45,34 @@ bool TrajectoryGenerator::checkTraversable(const Eigen::Vector3d& position) {
     }
   }
   return p_collision_optimistic_;
+}
+
+bool TrajectoryGenerator::checkMultiRobotCollision(const Eigen::Vector3d& position) {
+  // Add a mutex for recent_goal_poses_
+  std::lock_guard<std::mutex> lock(recent_goal_poses_mutex_);
+  // Go through all the recent_goal_poses_ and check if position is within radius
+  for (auto it = recent_goal_poses_->begin(); it != recent_goal_poses_->end(); ++it) {
+    // Skip if this is the robot in question
+    if (it->first == p_robot_frame_id_) {
+      continue;
+    }
+    // Check if position is within radius, if it is, return true
+    if ((it->second - position).norm() < p_robot_radius_) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool TrajectoryGenerator::updateGoals(const std::string& frame_id,
+                                      const Eigen::Vector3d& pose) {
+  // Add a mutex for recent_goal_poses_
+  std::lock_guard<std::mutex> lock(recent_goal_poses_mutex_);
+  if (!recent_goal_poses_) {
+    recent_goal_poses_.reset(new std::map<std::string, Eigen::Vector3d>());
+  }
+  (*recent_goal_poses_)[frame_id] = pose;
+  return true;
 }
 
 bool TrajectoryGenerator::selectSegment(TrajectorySegment** result,
