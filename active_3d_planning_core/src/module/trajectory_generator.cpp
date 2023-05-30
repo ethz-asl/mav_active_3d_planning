@@ -53,15 +53,15 @@ bool TrajectoryGenerator::checkMultiRobotCollision(const Eigen::Vector3d& positi
   std::lock_guard<std::mutex> lock(recent_goal_poses_mutex_);
   // Go through all the recent_goal_poses_ and check if position is within radius
   for (auto it = recent_goal_poses_->begin(); it != recent_goal_poses_->end(); ++it) {
-    // Skip if this is the robot in question
-    if (it->first == p_robot_frame_id_) {
-      continue;
-    }
 
     // Go through all elements in FixedQueue
     for (auto it_q = (it->second).begin(); it_q != (it->second).end(); ++it_q) {
-      // Check if position is within radius, if it is, return true
-      if ((*it_q - position).norm() < p_robot_radius_) {
+      // Get the pose and quat from element
+      Eigen::Vector3d pose = it_q->first;
+      Eigen::Vector4d quat = it_q->second;
+
+      // Check if position is within radius and if quat is within yaw margin return true
+      if ((pose - position).norm() < p_robot_radius_) {
         return true;
       }
     }
@@ -74,21 +74,27 @@ bool TrajectoryGenerator::checkMultiRobotCollision(const Eigen::Vector3d& positi
   return false;
 }
 
-bool TrajectoryGenerator::updateGoals(const std::string& frame_id,
-                                      const Eigen::Vector3d& pose) {
+bool TrajectoryGenerator::updateGoals(const std::string& unique_id,
+                                      const Eigen::Vector3d& pose,
+                                      const Eigen::Vector4d& quat) {
   // Add a mutex for recent_goal_poses_
   std::lock_guard<std::mutex> lock(recent_goal_poses_mutex_);
   if (!recent_goal_poses_) {
-    recent_goal_poses_.reset(new std::map<std::string, FixedQueue<Eigen::Vector3d>>());
+    recent_goal_poses_.reset(new std::map<std::string, FixedQueue<EigenVector3d4d>>());
   }
 
-  if (recent_goal_poses_->find(frame_id) == recent_goal_poses_->end()) {
+  if (recent_goal_poses_->find(unique_id) == recent_goal_poses_->end()) {
       // The key does not exist in the map, so initialize it.
-      (*recent_goal_poses_)[frame_id] = FixedQueue<Eigen::Vector3d>(p_keep_last_n_);
+      (*recent_goal_poses_)[unique_id] = FixedQueue<EigenVector3d4d>(p_keep_last_n_);
   }
+
+  // New EigenVector3d4d as a pair
+  EigenVector3d4d pose_quat;
+  pose_quat.first = pose;
+  pose_quat.second = quat;
 
   // Push the pose into the FixedQueue
-  (*recent_goal_poses_)[frame_id].push(pose);
+  (*recent_goal_poses_)[unique_id].push(pose_quat);
   return true;
 }
 

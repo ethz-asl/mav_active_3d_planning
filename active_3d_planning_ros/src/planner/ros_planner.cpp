@@ -171,8 +171,8 @@ void RosPlanner::odomCallback(const nav_msgs::Odometry& msg) {
 
 void RosPlanner::goalCallback(const geometry_msgs::TransformStamped& msg) {
   // Get child frame id
-  const std::string& child_frame_id = msg.child_frame_id;
-  if (child_frame_id.empty()) {
+  const std::string& unique_id = msg.child_frame_id;
+  if (unique_id.empty()) {
     LOG(WARNING) << "Received transform without child frame id";
     return;
   }
@@ -182,9 +182,14 @@ void RosPlanner::goalCallback(const geometry_msgs::TransformStamped& msg) {
   pose.x() = msg.transform.translation.x;
   pose.y() = msg.transform.translation.y;
   pose.z() = msg.transform.translation.z;
+  Eigen::Vector4d quat;
+  quat.x() = msg.transform.rotation.x;
+  quat.y() = msg.transform.rotation.y;
+  quat.z() = msg.transform.rotation.z;
+  quat.w() = msg.transform.rotation.w;
 
   // Update trajectory generator, pass by reference
-  trajectory_generator_->updateGoals(child_frame_id, pose);
+  trajectory_generator_->updateGoals(unique_id, pose, quat);
 }
 
 void RosPlanner::requestMovement(const EigenTrajectoryPointVector& trajectory) {

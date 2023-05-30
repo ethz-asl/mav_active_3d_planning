@@ -53,7 +53,8 @@ class TrajectoryGenerator : public Module {
 
   // Update the goal(s) of the generator
   bool updateGoals(const std::string& frame_id,
-                           const Eigen::Vector3d& pose);
+                           const Eigen::Vector3d& pose,
+                           const Eigen::Vector4d& quat);
 
   // in case a trajectory needs to be modified to be published
   virtual bool extractTrajectoryToPublish(
@@ -81,8 +82,10 @@ class TrajectoryGenerator : public Module {
   std::string p_selector_args_;
   std::string p_updater_args_;
 
+  // std pair of eigen vector 3d and eigen vector 4d
+  typedef std::pair<Eigen::Vector3d, Eigen::Vector4d> EigenVector3d4d;
   // Dictionary to keep track of goals
-  std::unique_ptr<std::map<std::string, FixedQueue<Eigen::Vector3d>>> recent_goal_poses_;
+  std::unique_ptr<std::map<std::string, FixedQueue<EigenVector3d4d>>> recent_goal_poses_;
   std::mutex recent_goal_poses_mutex_;
 };
 
