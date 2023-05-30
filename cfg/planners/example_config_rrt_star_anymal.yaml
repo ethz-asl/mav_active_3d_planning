@@ -49,6 +49,7 @@ trajectory_generator:
   sampling_rate: 20.0
   sample_yaw: true
   robot_radius: 1.0
+  keep_last_n: 5
 
   sampling_mode: "uniform"  #"semilocal"
   semilocal_sampling_count: 5

@@ -27,6 +27,7 @@ void TrajectoryGenerator::setupFromParamMap(Module::ParamMap* param_map) {
       temp_args, planner_, verbose_modules_);
   setParam<std::string>(param_map, "system_constraints_args", &temp_args,
                         ns + "/system_constraints");
+  setParam<size_t>(param_map, "keep_last_n", &p_keep_last_n_, 5);
 }
 
 bool TrajectoryGenerator::checkTraversable(const Eigen::Vector3d& position) {
@@ -56,10 +57,19 @@ bool TrajectoryGenerator::checkMultiRobotCollision(const Eigen::Vector3d& positi
     if (it->first == p_robot_frame_id_) {
       continue;
     }
-    // Check if position is within radius, if it is, return true
-    if ((it->second - position).norm() < p_robot_radius_) {
-      return true;
+
+    // Go through all elements in FixedQueue
+    for (auto it_q = (it->second).begin(); it_q != (it->second).end(); ++it_q) {
+      // Check if position is within radius, if it is, return true
+      if ((*it_q - position).norm() < p_robot_radius_) {
+        return true;
+      }
     }
+
+    // // Check if position is within radius, if it is, return true
+    // if ((it->second - position).norm() < p_robot_radius_) {
+    //   return true;
+    // }
   }
   return false;
 }
@@ -69,9 +79,16 @@ bool TrajectoryGenerator::updateGoals(const std::string& frame_id,
   // Add a mutex for recent_goal_poses_
   std::lock_guard<std::mutex> lock(recent_goal_poses_mutex_);
   if (!recent_goal_poses_) {
-    recent_goal_poses_.reset(new std::map<std::string, Eigen::Vector3d>());
+    recent_goal_poses_.reset(new std::map<std::string, FixedQueue<Eigen::Vector3d>>());
   }
-  (*recent_goal_poses_)[frame_id] = pose;
+
+  if (recent_goal_poses_->find(frame_id) == recent_goal_poses_->end()) {
+      // The key does not exist in the map, so initialize it.
+      (*recent_goal_poses_)[frame_id] = FixedQueue<Eigen::Vector3d>(p_keep_last_n_);
+  }
+
+  // Push the pose into the FixedQueue
+  (*recent_goal_poses_)[frame_id].push(pose);
   return true;
 }
 

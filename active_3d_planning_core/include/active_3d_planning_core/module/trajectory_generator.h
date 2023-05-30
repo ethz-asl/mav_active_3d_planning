@@ -14,6 +14,8 @@
 #include "active_3d_planning_core/planner/planner_I.h"
 #include "active_3d_planning_core/tools/defaults.h"
 
+#include "active_3d_planning_core/tools/fixedqueue.h"
+
 namespace active_3d_planning {
 
 // Forward declaration
@@ -74,11 +76,13 @@ class TrajectoryGenerator : public Module {
   double p_robot_radius_;     // robot radius for multi-agent collaborative exploration
   std::string p_robot_frame_id_; // the robot frame id for this robot
                                         // to identify which robot this is
+  size_t p_keep_last_n_; // Keep the last n goal poses for multi-agent
+                          // collaborative exploration
   std::string p_selector_args_;
   std::string p_updater_args_;
 
   // Dictionary to keep track of goals
-  std::unique_ptr<std::map<std::string, Eigen::Vector3d>> recent_goal_poses_;
+  std::unique_ptr<std::map<std::string, FixedQueue<Eigen::Vector3d>>> recent_goal_poses_;
   std::mutex recent_goal_poses_mutex_;
 };
 
