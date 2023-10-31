@@ -7,6 +7,12 @@ on:
   pull_request:
     branches:
     - '*'
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 'This does nothing'
+        required: false
+        type: boolean
 
 jobs:
   build:
