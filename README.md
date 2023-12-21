@@ -147,7 +147,7 @@ catkin build # Builds entire workspace, recommended for full install.
 ```
 
 ## Data Repository
-Related resources, such as experiment scenarios and ground truth point clouds, can be downloaded from [here](https://www.polybox.ethz.ch/index.php/s/6vhPDINcISbEogg). 
+Related resources, such as experiment scenarios and ground truth point clouds, can be downloaded from [here](https://drive.google.com/drive/folders/1Q0adl6CJURejYhSnc6fxctvg8YlKfRBY?usp=sharing). 
 
 # Examples
 ## Configuring a Planner
