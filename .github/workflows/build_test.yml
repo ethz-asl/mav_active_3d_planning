@@ -1,5 +1,5 @@
 
-name: Build Tests (Ubuntu 18.04 + ROS Melodic, Ubuntu 20.04 + ROS Noetic)
+name: Build Tests (Ubuntu 20.04 + ROS Noetic)
 on:
   push:
     branches:
@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {rosdistro: 'melodic', container: 'ros:melodic-ros-base-bionic'}
+          # - {rosdistro: 'melodic', container: 'ros:melodic-ros-base-bionic'}
           - {rosdistro: 'noetic', container: 'ros:noetic-ros-base-focal'}
     container: ${{ matrix.config.container }}
     steps:
