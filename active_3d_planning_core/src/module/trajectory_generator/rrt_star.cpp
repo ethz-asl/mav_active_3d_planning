@@ -371,7 +371,7 @@ bool RRTStar::rewireToBestParent(
     planner_.getTrajectoryEvaluator().computeValue(segment);
     if (segment->parent == initial_parent) {
       // Back to old parent
-      return ~force_rewire;
+      return !force_rewire;
     } else if (initial_parent == nullptr) {
       // Found new parent
       segment->parent->children.push_back(
