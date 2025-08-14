@@ -58,7 +58,7 @@ jobs:
         cd $HOME/catkin_ws
         wstool init src src/mav_active_3d_planning/mav_active_3d_planning_https.rosinstall
         wstool update -t src -j4
-        rosdep update
+        rosdep update --include-eol-distros
         rosdep install --from-paths src --ignore-src -y --rosdistro ${{matrix.config.rosdistro}}
         catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release
         catkin build -j$(nproc) -l$(nproc) mav_active_3d_planning
